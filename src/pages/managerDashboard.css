@@ -634,3 +634,31 @@
 @media (max-width: 900px) {
   .dash-insights-grid { grid-template-columns: 1fr; }
 }
+
+/* ─── KPI section toggle ─────────────────────────────────────────────── */
+.dash-kpi-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-kpi-toggle {
+  align-self: flex-end;
+  border: 1px solid #e8ecf2;
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: "DM Sans", system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.2px;
+}
+
+.dash-kpi-toggle:hover {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #cbd5e1;
+}

@@ -15,18 +15,14 @@ const STAGE_COLORS = {
 };
 
 function money(value) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0));
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(Number(value || 0));
 }
 
 function compactMoney(value) {
   const n = Number(value || 0);
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(0)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(0)}M`;
+  if (n >= 1_000)         return `$${(n / 1_000).toFixed(0)}K`;
   return `$${Math.round(n)}`;
 }
 
@@ -53,9 +49,10 @@ function ForecastGauge({ forecast, target, coverage }) {
         <circle cx="100" cy="110" r="5" fill={color}/>
         <text x="100" y="90"  textAnchor="middle" fontSize="22" fontWeight="800" fill="#0f172a" fontFamily="DM Sans">{pct}%</text>
         <text x="100" y="106" textAnchor="middle" fontSize="9"  fontWeight="600" fill="#94a3b8" fontFamily="DM Sans">{label}</text>
-        <text x="22"  y="118" textAnchor="middle" fontSize="8" fill="#c1cdd9" fontFamily="DM Mono">0%</text>
-        <text x="100" y="34"  textAnchor="middle" fontSize="8" fill="#c1cdd9" fontFamily="DM Mono">50%</text>
-        <text x="178" y="118" textAnchor="middle" fontSize="8" fill="#c1cdd9" fontFamily="DM Mono">100%</text>
+        {/* Labels fuera del arco */}
+        <text x="8"   y="124" textAnchor="middle" fontSize="8" fill="#94a3b8" fontFamily="DM Mono">0%</text>
+        <text x="100" y="16"  textAnchor="middle" fontSize="8" fill="#94a3b8" fontFamily="DM Mono">50%</text>
+        <text x="192" y="124" textAnchor="middle" fontSize="8" fill="#94a3b8" fontFamily="DM Mono">100%</text>
       </svg>
       <div className="gauge-vals">
         <div className="gauge-val"><span>Ponderado</span><strong>{compactMoney(forecast)}</strong></div>
@@ -117,7 +114,7 @@ function StageDistributionPanel({ opps }) {
   );
 }
 
-/* ── Últimas visitas del equipo ─────────────────────────────────────── */
+/* ── Últimas visitas ────────────────────────────────────────────────── */
 function RecentVisitsPanel({ visits }) {
   return (
     <article className="dash-panel">
@@ -145,13 +142,14 @@ function RecentVisitsPanel({ visits }) {
 }
 
 export default function ManagerDashboard({ profile, onNavigate }) {
-  const [selectedLine, setSelectedLine]     = useState("Todas");
-  const [accounts, setAccounts]             = useState([]);
-  const [opportunities, setOpportunities]   = useState([]);
-  const [visits, setVisits]                 = useState([]);
-  const [products, setProducts]             = useState([]);
-  const [campaigns, setCampaigns]           = useState([]);
-  const [loading, setLoading]               = useState(true);
+  const [selectedLine, setSelectedLine]   = useState("Todas");
+  const [accounts, setAccounts]           = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
+  const [visits, setVisits]               = useState([]);
+  const [products, setProducts]           = useState([]);
+  const [campaigns, setCampaigns]         = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [kpisCollapsed, setKpisCollapsed] = useState(false); // ← toggle KPIs
 
   const pipelineRef    = useRef(null);
   const activityRef    = useRef(null);
@@ -209,12 +207,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
   const metrics = useMemo(() => {
     const open     = filteredOpps.filter((o) => !["Ganado","Perdido"].includes(o.stage));
     const pipeline = open.reduce((s, o) => s + Number(o.amount || 0), 0);
-
-    /* ── Forecast ponderado: monto × probabilidad ── */
-    const forecast = open.reduce(
-      (s, o) => s + (Number(o.amount || 0) * Number(o.probability || 0)) / 100, 0
-    );
-
+    const forecast = open.reduce((s, o) => s + (Number(o.amount || 0) * Number(o.probability || 0)) / 100, 0);
     const target   = filteredCampaigns.reduce((s, c) => s + Number(c.target_amount || 0), 0);
     const coverage = target > 0 ? Math.round((forecast / target) * 100) : 0;
     const hotDeals = open.filter((o) => Number(o.probability || 0) >= 70).length;
@@ -224,30 +217,23 @@ export default function ManagerDashboard({ profile, onNavigate }) {
     const lost     = filteredOpps.filter((o) => o.stage === "Perdido").length;
     const winRate  = won + lost > 0 ? Math.round((won / (won + lost)) * 100) : 0;
     const avgDeal  = open.length > 0 ? Math.round(pipeline / open.length) : 0;
-
-    const today = new Date();
+    const today    = new Date();
     const daysInPipeline = open.filter((o) => o.created_at).map((o) => Math.floor((today - new Date(o.created_at)) / 86400000));
     const avgDaysInPipeline = daysInPipeline.length > 0 ? Math.round(daysInPipeline.reduce((s, d) => s + d, 0) / daysInPipeline.length) : 0;
-
     const withForecast  = open.filter((o) => Number(o.probability || 0) > 0).length;
     const forecastRatio = open.length > 0 ? Math.round((withForecast / open.length) * 100) : 0;
-
     const leads      = filteredOpps.filter((o) => o.stage === "Lead").length;
     const cotizacion = filteredOpps.filter((o) => ["Cotización","Negociación","Ganado"].includes(o.stage)).length;
     const convRate   = leads + cotizacion > 0 ? Math.round((cotizacion / (leads + cotizacion)) * 100) : 0;
-
     const uniqueAccounts = new Set([
       ...filteredOpps.map((o) => o.account_id),
       ...filteredVisits.map((v) => v.account_id),
     ].filter(Boolean)).size;
-
     return {
-      pipeline, forecast, target, coverage,
-      openOpps: open.length, hotDeals, noAction, overdue,
+      pipeline, forecast, target, coverage, openOpps: open.length, hotDeals, noAction, overdue,
       visits: filteredVisits.length, products: filteredProducts.length,
       campaigns: filteredCampaigns.length, accounts: uniqueAccounts,
-      winRate, won, lost, avgDeal,
-      avgDaysInPipeline, forecastRatio, convRate,
+      winRate, won, lost, avgDeal, avgDaysInPipeline, forecastRatio, convRate,
     };
   }, [filteredOpps, filteredVisits, filteredProducts, filteredCampaigns]);
 
@@ -281,7 +267,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 
   const campaignRows = useMemo(() => {
     return filteredCampaigns.map((c) => {
-      /* Forecast ponderado por campaña */
       const forecast = filteredOpps
         .filter((o) => o.campaign_id === c.id && !["Ganado","Perdido"].includes(o.stage))
         .reduce((s, o) => s + (Number(o.amount || 0) * Number(o.probability || 0)) / 100, 0);
@@ -337,62 +322,52 @@ export default function ManagerDashboard({ profile, onNavigate }) {
   function renderCharts() {
     const Chart = window.Chart;
     if (!Chart) return;
+    [pipelineRef, activityRef, probabilityRef].forEach((ref) => { if (ref.current?.chartInstance) ref.current.chartInstance.destroy(); });
 
-    [pipelineRef, activityRef, probabilityRef].forEach((ref) => {
-      if (ref.current?.chartInstance) ref.current.chartInstance.destroy();
-    });
+    if (pipelineRef.current) {
+      pipelineRef.current.chartInstance = new Chart(pipelineRef.current, {
+        type: "bar",
+        data: { labels: STAGES, datasets: [{ data: pipelineByStage(), backgroundColor: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.7)", borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] },
+        options: chartOptions({ yMoney: true }),
+      });
+    }
 
-    pipelineRef.current.chartInstance = new Chart(pipelineRef.current, {
-      type: "bar",
-      data: {
-        labels: STAGES,
-        datasets: [{ data: pipelineByStage(), backgroundColor: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.7)", borderWidth: 1.5, borderRadius: 6, borderSkipped: false }],
-      },
-      options: chartOptions({ yMoney: true }),
-    });
+    if (activityRef.current) {
+      const actGrad = activityRef.current.getContext("2d").createLinearGradient(0, 0, 0, 200);
+      actGrad.addColorStop(0, "rgba(16,185,129,0.15)");
+      actGrad.addColorStop(1, "rgba(16,185,129,0.01)");
+      activityRef.current.chartInstance = new Chart(activityRef.current, {
+        type: "line",
+        data: { labels: ["Lun","Mar","Mié","Jue","Vie"], datasets: [{ data: activityByWeek(), borderColor: "rgba(16,185,129,0.8)", backgroundColor: actGrad, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: "#10b981", pointBorderColor: "#fff", pointBorderWidth: 2 }] },
+        options: chartOptions(),
+      });
+    }
 
-    const actGrad = activityRef.current.getContext("2d").createLinearGradient(0, 0, 0, 200);
-    actGrad.addColorStop(0, "rgba(16,185,129,0.15)");
-    actGrad.addColorStop(1, "rgba(16,185,129,0.01)");
-    activityRef.current.chartInstance = new Chart(activityRef.current, {
-      type: "line",
-      data: {
-        labels: ["Lun","Mar","Mié","Jue","Vie"],
-        datasets: [{ data: activityByWeek(), borderColor: "rgba(16,185,129,0.8)", backgroundColor: actGrad, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: "#10b981", pointBorderColor: "#fff", pointBorderWidth: 2 }],
-      },
-      options: chartOptions(),
-    });
-
-    const probData   = probabilityData();
-    const probColors = [
-      { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.6)" },
-      { bg: "rgba(59,130,246,0.15)",  border: "rgba(59,130,246,0.6)"  },
-      { bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.7)"  },
-      { bg: "rgba(16,185,129,0.15)",  border: "rgba(16,185,129,0.7)"  },
-    ];
-
-    probabilityRef.current.chartInstance = new Chart(probabilityRef.current, {
-      type: "bar",
-      data: {
-        labels: probData.map((d) => d.label),
-        datasets: [{ data: probData.map((d) => d.amount), backgroundColor: probColors.map((c) => c.bg), borderColor: probColors.map((c) => c.border), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }],
-      },
-      options: {
-        ...chartOptions({ yMoney: true }),
-        indexAxis: "y",
-        plugins: {
-          ...chartOptions({ yMoney: true }).plugins,
-          tooltip: {
-            ...chartOptions({ yMoney: true }).plugins.tooltip,
-            callbacks: { label: (ctx) => { const d = probData[ctx.dataIndex]; return ` ${money(ctx.raw)}  ·  ${d.count} opp${d.count !== 1 ? "s" : ""}`; } },
+    if (probabilityRef.current) {
+      const probData   = probabilityData();
+      const probColors = [
+        { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.6)" },
+        { bg: "rgba(59,130,246,0.15)",  border: "rgba(59,130,246,0.6)"  },
+        { bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.7)"  },
+        { bg: "rgba(16,185,129,0.15)",  border: "rgba(16,185,129,0.7)"  },
+      ];
+      probabilityRef.current.chartInstance = new Chart(probabilityRef.current, {
+        type: "bar",
+        data: { labels: probData.map((d) => d.label), datasets: [{ data: probData.map((d) => d.amount), backgroundColor: probColors.map((c) => c.bg), borderColor: probColors.map((c) => c.border), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] },
+        options: {
+          ...chartOptions({ yMoney: true }),
+          indexAxis: "y",
+          plugins: {
+            ...chartOptions({ yMoney: true }).plugins,
+            tooltip: { ...chartOptions({ yMoney: true }).plugins.tooltip, callbacks: { label: (ctx) => { const d = probData[ctx.dataIndex]; return ` ${money(ctx.raw)}  ·  ${d.count} opp${d.count !== 1 ? "s" : ""}`; } } },
+          },
+          scales: {
+            x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" }, callback: compactMoney } },
+            y: { grid: { display: false }, border: { display: false }, ticks: { color: "#64748b", font: { size: 12, weight: "700", family: "DM Sans" } } },
           },
         },
-        scales: {
-          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" }, callback: compactMoney } },
-          y: { grid: { display: false }, border: { display: false }, ticks: { color: "#64748b", font: { size: 12, weight: "700", family: "DM Sans" } } },
-        },
-      },
-    });
+      });
+    }
   }
 
   if (loading) {
@@ -443,49 +418,43 @@ export default function ManagerDashboard({ profile, onNavigate }) {
           />
         </section>
 
-        {/* SECONDARY KPIs */}
-        <section className="dash-kpi-grid">
-          <Kpi label="Opps. abiertas"   value={metrics.openOpps}/>
-          <Kpi label="Hot deals"        value={metrics.hotDeals}          accent="amber"/>
-          <Kpi label="Sin próx. acción" value={metrics.noAction}          accent="red"/>
-          <Kpi label="Vencidas"         value={metrics.overdue}           accent="red"/>
-          <Kpi label="Win rate"         value={`${metrics.winRate}%`}/>
-          <Kpi label="Ticket promedio"  value={compactMoney(metrics.avgDeal)}/>
-          <Kpi label="Días en pipeline" value={`${metrics.avgDaysInPipeline}d`}/>
-          <Kpi label="Con probabilidad" value={`${metrics.forecastRatio}%`} accent={metrics.forecastRatio < 50 ? "red" : metrics.forecastRatio < 80 ? "amber" : undefined}/>
-        </section>
+        {/* KPIs COLAPSABLES — botón toggle */}
+        <div className="dash-kpi-section">
+          <button
+            className="dash-kpi-toggle"
+            onClick={() => setKpisCollapsed((c) => !c)}
+            title={kpisCollapsed ? "Expandir métricas" : "Contraer métricas"}
+          >
+            {kpisCollapsed ? "▼ Mostrar métricas" : "▲ Ocultar métricas"}
+          </button>
 
-        {/* INSIGHTS */}
-        <section className="dash-insights-grid">
-          <InsightCard
-            label="Conversión al pipeline"
-            value={`${metrics.convRate}%`}
-            sub="Lead → Cotización o superior"
-            tone={metrics.convRate >= 40 ? "green" : metrics.convRate >= 20 ? "amber" : "red"}
-          />
-          <InsightCard
-            label="Días promedio en pipeline"
-            value={`${metrics.avgDaysInPipeline} días`}
-            sub="Desde creación hasta hoy"
-            tone={metrics.avgDaysInPipeline <= 30 ? "green" : metrics.avgDaysInPipeline <= 60 ? "amber" : "red"}
-          />
-          <InsightCard
-            label="Con probabilidad cargada"
-            value={`${metrics.forecastRatio}%`}
-            sub="Opps. con % de cierre definido"
-            tone={metrics.forecastRatio >= 80 ? "green" : metrics.forecastRatio >= 50 ? "amber" : "red"}
-          />
-          <InsightCard
-            label="Visitas esta semana"
-            value={visits.filter((v) => {
-              const d = new Date(v.visit_date);
-              const weekAgo = new Date(new Date().getTime() - 7 * 86400000);
-              return d >= weekAgo;
-            }).length}
-            sub="Últimos 7 días del equipo"
-            tone="blue"
-          />
-        </section>
+          {!kpisCollapsed && (
+            <>
+              <section className="dash-kpi-grid">
+                <Kpi label="Opps. abiertas"   value={metrics.openOpps}/>
+                <Kpi label="Hot deals"        value={metrics.hotDeals}          accent="amber"/>
+                <Kpi label="Sin próx. acción" value={metrics.noAction}          accent="red"/>
+                <Kpi label="Vencidas"         value={metrics.overdue}           accent="red"/>
+                <Kpi label="Win rate"         value={`${metrics.winRate}%`}/>
+                <Kpi label="Ticket promedio"  value={compactMoney(metrics.avgDeal)}/>
+                <Kpi label="Días en pipeline" value={`${metrics.avgDaysInPipeline}d`}/>
+                <Kpi label="Con probabilidad" value={`${metrics.forecastRatio}%`} accent={metrics.forecastRatio < 50 ? "red" : metrics.forecastRatio < 80 ? "amber" : undefined}/>
+              </section>
+
+              <section className="dash-insights-grid">
+                <InsightCard label="Conversión al pipeline"     value={`${metrics.convRate}%`}          sub="Lead → Cotización o superior"     tone={metrics.convRate >= 40 ? "green" : metrics.convRate >= 20 ? "amber" : "red"}/>
+                <InsightCard label="Días promedio en pipeline"  value={`${metrics.avgDaysInPipeline} días`} sub="Desde creación hasta hoy"     tone={metrics.avgDaysInPipeline <= 30 ? "green" : metrics.avgDaysInPipeline <= 60 ? "amber" : "red"}/>
+                <InsightCard label="Con probabilidad cargada"   value={`${metrics.forecastRatio}%`}     sub="Opps. con % de cierre definido"   tone={metrics.forecastRatio >= 80 ? "green" : metrics.forecastRatio >= 50 ? "amber" : "red"}/>
+                <InsightCard
+                  label="Visitas esta semana"
+                  value={visits.filter((v) => { const d = new Date(v.visit_date); return d >= new Date(new Date().getTime() - 7 * 86400000); }).length}
+                  sub="Últimos 7 días del equipo"
+                  tone="blue"
+                />
+              </section>
+            </>
+          )}
+        </div>
 
         {/* MAIN PANELS */}
         <section className="dash-main-grid">
@@ -533,7 +502,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 }
 
 /* ─── Sub-components ─────────────────────────────────────────────────── */
-
 function PrimaryKpi({ label, value, sub, accent = "blue" }) {
   return (
     <article className={`dash-primary-kpi dash-primary-kpi--${accent}`}>
