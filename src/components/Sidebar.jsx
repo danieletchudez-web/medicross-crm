@@ -16,23 +16,6 @@ const MENU = [
   { id: "adminUsers",        label: "Administración",        icon: "⊞" },
 ];
 
-function SidebarClock() {
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const time = now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-  const date = now.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-  return (
-    <div className="sidebar-clock">
-      <span className="sidebar-clock__time">{time}</span>
-      <span className="sidebar-clock__sep">·</span>
-      <span className="sidebar-clock__date">{date}</span>
-    </div>
-  );
-}
-
 export default function Sidebar({ profile, onNavigate }) {
   const [dark, setDark] = useState(() => localStorage.getItem("theme") === "dark");
 
@@ -93,9 +76,6 @@ export default function Sidebar({ profile, onNavigate }) {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-footer-clock">
-            <SidebarClock />
-          </div>
           <div className="sidebar-theme-toggle" onClick={() => setDark((d) => !d)}>
             <span className="sidebar-theme-toggle__icon">{dark ? "☀" : "☽"}</span>
             <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
