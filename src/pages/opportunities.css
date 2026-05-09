@@ -1,0 +1,433 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+
+.opp-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+/* ─── KPIs ───────────────────────────────────────────────────────────── */
+.opp-kpis {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.opp-kpi {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-top: 2px solid #3b82f6;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opp-kpi__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+}
+
+.opp-kpi__value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.4px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.opp-kpi__sub {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ─── Form card ──────────────────────────────────────────────────────── */
+.opp-form-card {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+}
+
+.opp-form-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.opp-form-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.opp-form-head p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.opp-ghost-btn {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.opp-ghost-btn:hover { background: #f1f5f9; }
+
+.opp-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.opp-form label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.opp-form input,
+.opp-form select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+
+.opp-form input:focus,
+.opp-form select:focus {
+  border-color: #3b82f6;
+  background: #ffffff;
+}
+
+.opp-form__wide { grid-column: 1 / -1; }
+
+/* Forecast preview */
+.opp-forecast-preview {
+  background: #f0f7ff;
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.opp-forecast-preview span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #3b82f6;
+}
+
+.opp-forecast-preview strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1d4ed8;
+  font-family: "DM Mono", monospace;
+}
+
+.opp-submit {
+  grid-column: 1 / -1;
+  background: #1d4ed8;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.opp-submit:hover:not(:disabled) { opacity: 0.9; }
+.opp-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Table card ─────────────────────────────────────────────────────── */
+.opp-table-card {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+}
+
+.opp-table-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.opp-table-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.opp-table-head p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Tabs filtro */
+.opp-filter-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.opp-tab {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #64748b;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.opp-tab:hover { background: #f1f5f9; }
+.opp-tab--active { background: #1d4ed8; color: #ffffff; border-color: #1d4ed8; }
+
+/* Tabla */
+.opp-table-wrap { overflow-x: auto; }
+
+.opp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.opp-table thead { background: #f8fafc; }
+
+.opp-table th {
+  text-align: left;
+  padding: 11px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+  border-bottom: 1px solid #e8ecf2;
+  white-space: nowrap;
+}
+
+.opp-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #f0f4f8;
+  color: #334155;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.opp-table tbody tr:hover { background: #fafbfc; }
+.opp-row--overdue td { background: #fff8f8; }
+.opp-row--overdue:hover td { background: #fff0f0; }
+
+.opp-td-name strong { display: block; font-weight: 700; color: #0f172a; }
+.opp-td-name small  { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.opp-td-center { text-align: center; font-family: "DM Mono", monospace; font-size: 12px; }
+.opp-td-overdue { color: #ef4444; font-weight: 700; }
+.opp-td-action { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opp-no-action { color: #cbd5e1; font-style: italic; }
+
+/* Stage pill */
+.opp-stage-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+/* Botones de fila */
+.opp-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.opp-btn {
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.opp-btn:hover { opacity: 0.8; }
+
+.opp-btn--edit {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.opp-btn--won {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.opp-btn--lost {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+.opp-btn--del {
+  background: #fff0f0;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* Empty */
+.opp-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 28px;
+  font-weight: 500;
+}
+
+/* Footer */
+.opp-footer {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.opp-footer a {
+  font-size: 10px;
+  color: #c1cdd9;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.opp-footer a:hover { color: #94a3b8; }
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1400px) {
+  .opp-kpis { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 1000px) {
+  .opp-kpis  { grid-template-columns: repeat(2, 1fr); }
+  .opp-form  { grid-template-columns: repeat(2, 1fr); }
+  .opp-table-head { flex-direction: column; align-items: flex-start; }
+  .opp-filter-tabs { flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+  .opp-page  { padding: 14px; }
+  .opp-kpis  { grid-template-columns: 1fr 1fr; }
+  .opp-form  { grid-template-columns: 1fr; }
+  .opp-form__wide { grid-column: 1; }
+  .opp-submit { grid-column: 1; }
+}
+
+/* ─── Filas por resultado ────────────────────────────────────────────── */
+.opp-row--won td {
+  background: rgba(16, 185, 129, 0.04);
+}
+.opp-row--won:hover td {
+  background: rgba(16, 185, 129, 0.08);
+}
+.opp-row--won .opp-td-name strong {
+  color: #059669;
+}
+
+.opp-row--lost td {
+  background: rgba(148, 163, 184, 0.06);
+  opacity: 0.7;
+}
+.opp-row--lost:hover td {
+  background: rgba(148, 163, 184, 0.1);
+  opacity: 1;
+}
+.opp-row--lost .opp-td-name strong {
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+/* ─── Botón reabrir ──────────────────────────────────────────────────── */
+.opp-btn--reopen {
+  background: #f0f7ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+/* ─── Tabs ganadas/perdidas con color ────────────────────────────────── */
+.opp-tab--won.opp-tab--active {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+.opp-tab--won:not(.opp-tab--active):hover {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.opp-tab--lost.opp-tab--active {
+  background: #64748b;
+  border-color: #64748b;
+  color: #ffffff;
+}
+.opp-tab--lost:not(.opp-tab--active):hover {
+  background: #f1f5f9;
+  color: #64748b;
+}

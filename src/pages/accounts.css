@@ -1,0 +1,455 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap");
+
+.acc-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+/* ─── KPIs ───────────────────────────────────────────────────────────── */
+.acc-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.acc-kpi {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-top: 2px solid #e8ecf2;
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+}
+
+.acc-kpi__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.acc-kpi__value {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+/* ─── Card ───────────────────────────────────────────────────────────── */
+.acc-card {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+}
+
+.acc-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.acc-card-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.acc-card-head p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.acc-ghost-btn {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.acc-ghost-btn:hover { background: #f1f5f9; }
+
+/* ─── Form ───────────────────────────────────────────────────────────── */
+.acc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.acc-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.acc-form-section__label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #94a3b8;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #f0f4f8;
+}
+
+.acc-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.acc-field { display: flex; flex-direction: column; gap: 6px; }
+.acc-field--wide { grid-column: span 2; }
+
+.acc-field label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #64748b;
+}
+
+.acc-field input,
+.acc-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.acc-field input:focus,
+.acc-field select:focus { border-color: #3b82f6; background: #fff; }
+
+/* ─── Contactos por área ─────────────────────────────────────────────── */
+.acc-contacts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.acc-add-contact-btn {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.acc-add-contact-btn:hover { background: #dbeafe; }
+
+.acc-contacts-empty {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.acc-contact-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  background: #f8fafc;
+  border: 1px solid #e8ecf2;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.acc-contact-fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.acc-remove-contact {
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+  align-self: flex-end;
+  transition: background 0.15s;
+}
+
+.acc-remove-contact:hover { background: #fecaca; }
+
+.acc-submit {
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.acc-submit:hover:not(:disabled) { opacity: 0.9; }
+.acc-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Search ─────────────────────────────────────────────────────────── */
+.acc-search {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none;
+  width: 240px;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.acc-search:focus { border-color: #3b82f6; background: #fff; }
+
+/* ─── Table ──────────────────────────────────────────────────────────── */
+.acc-table-wrap { overflow-x: auto; }
+
+.acc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.acc-table thead { background: #f8fafc; }
+
+.acc-table th {
+  text-align: left;
+  padding: 11px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+  border-bottom: 1px solid #e8ecf2;
+  white-space: nowrap;
+}
+
+.acc-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #f0f4f8;
+  color: #334155;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.acc-table tbody tr:hover td { background: #fafbfc; }
+.acc-row--expanded td { background: #f0f7ff; }
+
+.acc-td-name strong { display: block; font-weight: 700; color: #0f172a; }
+.acc-td-name small  { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+.acc-td-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.acc-td-contact span {
+  font-size: 11.5px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.acc-contacts-toggle {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  width: fit-content;
+  transition: background 0.15s;
+}
+
+.acc-contacts-toggle:hover { background: #dbeafe; }
+
+/* ─── Fila expandida de contactos ────────────────────────────────────── */
+.acc-row--contacts td {
+  background: #f8fafc;
+  border-bottom: 2px solid #e8ecf2;
+  padding: 14px 16px;
+}
+
+.acc-contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.acc-contact-card {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.acc-contact-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.acc-contact-card__top strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.acc-contact-area {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.acc-contact-role {
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.acc-contact-info {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.acc-contact-info a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.acc-contact-info a:hover { text-decoration: underline; }
+
+/* ─── Badges ─────────────────────────────────────────────────────────── */
+.acc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.acc-badge--alto   { background: #ecfdf5; color: #059669; }
+.acc-badge--medio  { background: #fff7ed; color: #d97706; }
+.acc-badge--bajo   { background: #f1f5f9; color: #64748b; }
+.acc-badge--verde    { background: #ecfdf5; color: #059669; }
+.acc-badge--amarillo { background: #fffbeb; color: #d97706; }
+.acc-badge--rojo     { background: #fef2f2; color: #dc2626; }
+
+/* ─── Botones de fila ────────────────────────────────────────────────── */
+.acc-actions { display: flex; gap: 6px; }
+
+.acc-btn {
+  border-radius: 7px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid;
+  transition: opacity 0.15s;
+}
+
+.acc-btn--edit { background: #f1f5f9; border-color: #e2e8f0; color: #334155; }
+.acc-btn--del  { background: #fff0f0; border-color: #fecaca; color: #dc2626; }
+.acc-btn:hover { opacity: 0.8; }
+
+/* ─── Empty ──────────────────────────────────────────────────────────── */
+.acc-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 28px;
+  font-weight: 500;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────── */
+.acc-footer { text-align: center; padding: 8px 0 4px; }
+.acc-footer a { font-size: 10px; color: #c1cdd9; text-decoration: none; font-weight: 500; }
+.acc-footer a:hover { color: #94a3b8; }
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .acc-contact-fields { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1000px) {
+  .acc-kpis     { grid-template-columns: repeat(2, 1fr); }
+  .acc-form-grid { grid-template-columns: repeat(2, 1fr); }
+  .acc-field--wide { grid-column: span 2; }
+  .acc-contact-fields { grid-template-columns: repeat(2, 1fr); }
+  .acc-card-head { flex-direction: column; align-items: flex-start; }
+  .acc-search { width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .acc-page    { padding: 14px; }
+  .acc-kpis    { grid-template-columns: 1fr 1fr; }
+  .acc-form-grid { grid-template-columns: 1fr; }
+  .acc-field--wide { grid-column: span 1; }
+  .acc-contact-fields { grid-template-columns: 1fr; }
+}

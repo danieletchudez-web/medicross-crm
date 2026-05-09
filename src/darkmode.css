@@ -1,0 +1,173 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   STORING Medical CRM — Dark Mode
+   Importar este archivo en main.jsx o App.jsx:
+   import "./darkmode.css";
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Accounts ───────────────────────────────────────────────────────── */
+[data-theme="dark"] .account-kpi,
+[data-theme="dark"] .accounts-card {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+[data-theme="dark"] .account-kpi span       { color: #8b949e; }
+[data-theme="dark"] .account-kpi strong     { color: #e6edf3; }
+[data-theme="dark"] .accounts-head h2       { color: #e6edf3; }
+[data-theme="dark"] .accounts-head p        { color: #8b949e; }
+[data-theme="dark"] .accounts-head button   { background: #21262d; border-color: #30363d; color: #c9d1d9; }
+
+[data-theme="dark"] .accounts-form label    { color: #8b949e; }
+[data-theme="dark"] .accounts-form input,
+[data-theme="dark"] .accounts-form select   { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+[data-theme="dark"] .accounts-form input:focus,
+[data-theme="dark"] .accounts-form select:focus { background: #161b22; border-color: #58a6ff; }
+
+[data-theme="dark"] .accounts-table th      { background: #0d1117; color: #8b949e; border-color: #21262d; }
+[data-theme="dark"] .accounts-table td      { color: #c9d1d9; border-color: #21262d; }
+[data-theme="dark"] .accounts-table td strong { color: #e6edf3; }
+[data-theme="dark"] .accounts-table tbody tr:hover { background: #1c2128; }
+
+[data-theme="dark"] .account-actions button { background: #21262d; border-color: #30363d; color: #c9d1d9; }
+[data-theme="dark"] .account-actions button.danger { background: #2d1515; color: #f87171; }
+
+/* ─── Campaigns ──────────────────────────────────────────────────────── */
+[data-theme="dark"] .campaign-hero,
+[data-theme="dark"] .campaign-form-card,
+[data-theme="dark"] .campaign-list-card,
+[data-theme="dark"] .campaign-card {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+[data-theme="dark"] .campaign-hero h2,
+[data-theme="dark"] .campaign-section-head h3,
+[data-theme="dark"] .campaign-card h4       { color: #e6edf3; }
+[data-theme="dark"] .campaign-hero p,
+[data-theme="dark"] .campaign-section-head p,
+[data-theme="dark"] .campaign-card-head span { color: #8b949e; }
+
+[data-theme="dark"] .campaign-kpi           { background: #161b22; border-color: #21262d; }
+[data-theme="dark"] .campaign-kpi span      { color: #8b949e; }
+[data-theme="dark"] .campaign-kpi strong    { color: #e6edf3; }
+
+[data-theme="dark"] .ghost-btn              { background: #21262d; border-color: #30363d; color: #c9d1d9; }
+
+[data-theme="dark"] .campaign-form label    { color: #8b949e; }
+[data-theme="dark"] .campaign-form input,
+[data-theme="dark"] .campaign-form select,
+[data-theme="dark"] .campaign-form textarea { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+[data-theme="dark"] .campaign-form input:focus,
+[data-theme="dark"] .campaign-form select:focus,
+[data-theme="dark"] .campaign-form textarea:focus { background: #161b22; border-color: #58a6ff; }
+
+[data-theme="dark"] .campaign-progress      { background: #21262d; }
+[data-theme="dark"] .campaign-objective     { color: #8b949e; }
+
+[data-theme="dark"] .campaign-data-grid div { background: #0d1117; border-color: #21262d; }
+[data-theme="dark"] .campaign-data-grid span { color: #8b949e; }
+[data-theme="dark"] .campaign-data-grid strong { color: #e6edf3; }
+
+[data-theme="dark"] .campaign-dates span    { background: #0d1117; border-color: #21262d; color: #8b949e; }
+
+[data-theme="dark"] .progress-info strong   { color: #e6edf3; }
+[data-theme="dark"] .progress-info span     { color: #8b949e; }
+
+[data-theme="dark"] .campaign-actions button { background: #21262d; border-color: #30363d; color: #c9d1d9; }
+[data-theme="dark"] .campaign-actions button.danger { border-color: #4d1f1f; color: #f87171; }
+[data-theme="dark"] .campaign-empty         { color: #484f58; }
+
+/* ─── Opportunities ──────────────────────────────────────────────────── */
+[data-theme="dark"] .opportunity-kpi,
+[data-theme="dark"] .opportunity-form-card,
+[data-theme="dark"] .opportunity-table-card {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+[data-theme="dark"] .opportunity-kpi span   { color: #8b949e; }
+[data-theme="dark"] .opportunity-kpi strong { color: #e6edf3; }
+[data-theme="dark"] .opportunity-head h2    { color: #e6edf3; }
+[data-theme="dark"] .opportunity-head p     { color: #8b949e; }
+
+[data-theme="dark"] .opportunity-form label { color: #8b949e; }
+[data-theme="dark"] .opportunity-form input,
+[data-theme="dark"] .opportunity-form select { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+[data-theme="dark"] .opportunity-form input:focus,
+[data-theme="dark"] .opportunity-form select:focus { border-color: #58a6ff; }
+
+[data-theme="dark"] .opportunity-table thead { background: #0d1117; }
+[data-theme="dark"] .opportunity-table th   { color: #8b949e; }
+[data-theme="dark"] .opportunity-table td   { border-color: #21262d; color: #c9d1d9; }
+[data-theme="dark"] .opportunity-table tbody tr:hover { background: #1c2128; }
+
+[data-theme="dark"] .stage-pill             { background: #1c2d3f; color: #58a6ff; }
+[data-theme="dark"] .row-actions button:first-child { background: #21262d; border-color: #30363d; color: #c9d1d9; }
+[data-theme="dark"] .row-actions .danger    { background: #2d1515; border-color: #4d1f1f; color: #f87171; }
+
+/* ─── Products ───────────────────────────────────────────────────────── */
+[data-theme="dark"] .product-kpi,
+[data-theme="dark"] .products-card,
+[data-theme="dark"] .product-card {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+[data-theme="dark"] .product-kpi span      { color: #8b949e; }
+[data-theme="dark"] .product-kpi strong    { color: #e6edf3; }
+[data-theme="dark"] .products-head h2,
+[data-theme="dark"] .product-top h3        { color: #e6edf3; }
+[data-theme="dark"] .products-head p,
+[data-theme="dark"] .product-card p        { color: #8b949e; }
+[data-theme="dark"] .products-head button  { background: #21262d; border-color: #30363d; color: #c9d1d9; }
+
+[data-theme="dark"] .products-form label   { color: #8b949e; }
+[data-theme="dark"] .products-form input,
+[data-theme="dark"] .products-form select,
+[data-theme="dark"] .products-form textarea { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+[data-theme="dark"] .products-form input:focus,
+[data-theme="dark"] .products-form select:focus,
+[data-theme="dark"] .products-form textarea:focus { border-color: #58a6ff; background: #161b22; }
+
+[data-theme="dark"] .product-links a       { background: #21262d; border-color: #30363d; color: #58a6ff; }
+[data-theme="dark"] .product-actions button.secondary { background: #21262d; color: #58a6ff; border-color: #30363d; }
+[data-theme="dark"] .product-actions button.danger    { background: #2d1515; color: #f87171; }
+
+[data-theme="dark"] .empty-products        { background: #0d1117; border-color: #21262d; color: #484f58; }
+
+/* ─── Today Actions ──────────────────────────────────────────────────── */
+[data-theme="dark"] .actions-hero,
+[data-theme="dark"] .action-card,
+[data-theme="dark"] .empty-actions,
+[data-theme="dark"] .action-loading {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+[data-theme="dark"] .actions-hero h2       { color: #e6edf3; }
+[data-theme="dark"] .actions-hero p        { color: #8b949e; }
+
+[data-theme="dark"] .mini-kpi              { background: #0d1117; border-color: #21262d; }
+[data-theme="dark"] .mini-kpi span         { color: #8b949e; }
+[data-theme="dark"] .mini-kpi strong       { color: #e6edf3; }
+
+[data-theme="dark"] .action-main h3        { color: #e6edf3; }
+[data-theme="dark"] .action-main p         { color: #8b949e; }
+[data-theme="dark"] .eyebrow               { color: #8b949e; }
+
+[data-theme="dark"] .score-box             { background: #0d1117; }
+[data-theme="dark"] .score-box span        { color: #8b949e; }
+[data-theme="dark"] .score-box strong      { color: #e6edf3; }
+
+[data-theme="dark"] .metric                { background: #0d1117; }
+[data-theme="dark"] .metric span           { color: #8b949e; }
+[data-theme="dark"] .metric strong         { color: #e6edf3; }
+
+[data-theme="dark"] .decision-box          { background: #1c2d3f; border-color: #21262d; }
+[data-theme="dark"] .decision-box strong   { color: #e6edf3; }
+
+[data-theme="dark"] .action-buttons button { background: #1c2d3f; color: #58a6ff; }
+[data-theme="dark"] .action-buttons .secondary { background: #21262d; color: #8b949e; border-color: #30363d; }
+
+[data-theme="dark"] .empty-actions,
+[data-theme="dark"] .action-loading        { color: #484f58; }

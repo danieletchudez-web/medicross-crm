@@ -1,0 +1,22 @@
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  background: #f3f6fb;
+}.status.green {
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.status.yellow {
+  color: #eab308;
+  font-weight: bold;
+}
+
+.status.red {
+  color: #dc2626;
+  font-weight: bold;
+}

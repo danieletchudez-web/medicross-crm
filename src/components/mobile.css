@@ -1,0 +1,260 @@
+.mobile-menu-button {
+  display: none;
+}
+
+.desktop-sidebar {
+  display: contents;
+}
+
+.mobile-sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .desktop-sidebar {
+    display: none;
+  }
+
+  .main {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .crm-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-radius: 16px;
+  }
+
+  .crm-mobile-header h1 {
+    font-size: 18px;
+    line-height: 1.15;
+  }
+
+  .crm-mobile-header p {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  .mobile-menu-button {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border: 1px solid #d8e2ee;
+    background: #ffffff;
+    color: #253494;
+    border-radius: 12px;
+    font-size: 22px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .mobile-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-sidebar-panel {
+    width: 285px;
+    max-width: 86vw;
+    height: 100vh;
+    background: linear-gradient(180deg, #1e2f85, #2f6fb3);
+    box-shadow: 20px 0 60px rgba(15, 23, 42, 0.25);
+    overflow-y: auto;
+  }
+
+  .mobile-sidebar-panel .sidebar {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+  }
+
+  .sf-dashboard,
+  .manager-dashboard,
+  .accounts-page,
+  .products-page,
+  .opportunities-page,
+  .today-actions,
+  .visit-mode,
+  .visits-container {
+    gap: 14px;
+  }
+
+  .sf-topbar,
+  .dashboard-hero-pro,
+  .accounts-head,
+  .products-head,
+  .opp-head,
+  .actions-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .period-select {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .period-select select {
+    width: 100%;
+  }
+
+  .sf-kpi-grid,
+  .kpi-strip,
+  .accounts-kpis,
+  .products-kpis,
+  .opp-kpi-grid,
+  .actions-kpis,
+  .campaign-summary,
+  .decision-strip,
+  .sf-mid-grid,
+  .sf-chart-grid,
+  .dashboard-grid-pro,
+  .accounts-form,
+  .products-form,
+  .opp-form,
+  .visits-container {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sf-metric,
+  .kpi-card-pro,
+  .account-kpi,
+  .product-kpi,
+  .opp-kpi {
+    min-height: auto;
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .sf-metric strong,
+  .kpi-card-pro strong,
+  .account-kpi strong,
+  .product-kpi strong,
+  .opp-kpi strong {
+    font-size: 20px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .sf-chart-box,
+  .chart-box-pro {
+    height: 260px !important;
+    min-height: 260px !important;
+  }
+
+  .sf-chart-card,
+  .chart-card-pro,
+  .accounts-card,
+  .products-card,
+  .opp-card,
+  .campaign-mini-card {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .chart-card-pro.small,
+  .chart-card-pro.medium,
+  .chart-card-pro.large {
+    grid-column: span 1 !important;
+  }
+
+  .chart-card-head,
+  .chart-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .chart-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .chart-controls button,
+  .chart-controls select {
+    min-height: 36px;
+  }
+
+  .chart-controls select {
+    flex: 1;
+  }
+
+  .accounts-table-wrap,
+  .opp-table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+  }
+
+  .accounts-table,
+  .opp-table,
+  .admin-table {
+    min-width: 900px;
+    font-size: 12px;
+  }
+
+  .accounts-table th,
+  .accounts-table td,
+  .opp-table th,
+  .opp-table td,
+  .admin-table th,
+  .admin-table td {
+    padding: 10px;
+  }
+
+  .product-actions,
+  .account-actions,
+  .opp-actions,
+  .action-buttons,
+  .material-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .product-actions button,
+  .account-actions button,
+  .opp-actions button,
+  .action-buttons button,
+  .material-actions button,
+  .material-actions a {
+    width: 100%;
+    text-align: center;
+    min-height: 42px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+
+  .campaign-head,
+  .campaign-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .campaign-row span,
+  .campaign-row strong,
+  .campaign-row small {
+    white-space: normal;
+  }
+}
