@@ -12,6 +12,7 @@ import VisitsPage          from "./pages/VisitsPage";
 import CalendarPage        from "./pages/CalendarPage";
 import AdminUsersPage      from "./pages/AdminUsersPage";
 import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
+import ImporterPage        from "./pages/ImporterPage";
 import LoginPage           from "./pages/LoginPage";
 import CRMAssistant        from "./components/CRMAssistant";
 
@@ -20,7 +21,7 @@ const FALLBACK_PROFILE = {
   allowed_modules: [
     "managerDashboard","sellerDashboard","accounts","products",
     "opportunities","campaigns","todayActions","visits",
-    "calendar","adminUsers","salesAnalytics",
+    "calendar","adminUsers","salesAnalytics","importer",
   ],
 };
 
@@ -130,6 +131,7 @@ export default function App() {
     case "calendar":         CurrentPage = <CalendarPage       {...pageProps} />; break;
     case "adminUsers":       CurrentPage = <AdminUsersPage     {...pageProps} />; break;
     case "salesAnalytics":   CurrentPage = <SalesAnalyticsPage {...pageProps} />; break;
+    case "importer":         CurrentPage = <ImporterPage       {...pageProps} />; break;
     default:                 CurrentPage = <ManagerDashboard   {...pageProps} />;
   }
 

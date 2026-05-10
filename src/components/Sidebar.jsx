@@ -4,16 +4,17 @@ import "./Sidebar.css";
 import logoImg from "../assets/logo.jpg";
 
 const MENU = [
-  { id: "managerDashboard", label: "Dashboard",           icon: "▦" },
-  { id: "salesAnalytics",   label: "Análisis Comercial",  icon: "◑" },
-  { id: "accounts",         label: "Clientes / Cuentas",  icon: "◎" },
+  { id: "managerDashboard", label: "Dashboard",             icon: "▦" },
+  { id: "salesAnalytics",   label: "Análisis Comercial",    icon: "◑" },
+  { id: "importer",         label: "BI Comercial",          icon: "📊" },
+  { id: "accounts",         label: "Clientes / Cuentas",    icon: "◎" },
   { id: "products",         label: "Productos / Share Kit", icon: "⬡" },
-  { id: "opportunities",    label: "Oportunidades",        icon: "◇" },
-  { id: "campaigns",        label: "Campañas",             icon: "◉" },
-  { id: "todayActions",     label: "Acciones Hoy",         icon: "◷" },
-  { id: "visits",           label: "Visitas",              icon: "◌" },
-  { id: "calendar",         label: "Calendario",           icon: "▦" },
-  { id: "adminUsers",       label: "Administración",       icon: "⊞" },
+  { id: "opportunities",    label: "Oportunidades",         icon: "◇" },
+  { id: "campaigns",        label: "Campañas",              icon: "◉" },
+  { id: "todayActions",     label: "Acciones Hoy",          icon: "◷" },
+  { id: "visits",           label: "Visitas",               icon: "◌" },
+  { id: "calendar",         label: "Calendario",            icon: "▦" },
+  { id: "adminUsers",       label: "Administración",        icon: "⊞" },
 ];
 
 export default function Sidebar({ profile, onNavigate }) {
@@ -34,26 +35,18 @@ export default function Sidebar({ profile, onNavigate }) {
     window.location.reload();
   }
 
-  const initials = (profile?.full_name || profile?.email || "U").slice(0, 1).toUpperCase();
-
-  const roleLabel = {
-    super_admin: "Super Admin",
-    manager:     "Manager",
-    seller:      "Vendedor",
-  }[profile?.role] || profile?.role || "Usuario";
-
-  const email = profile?.email || "";
+  const initials    = (profile?.full_name || profile?.email || "U").slice(0, 1).toUpperCase();
+  const roleLabel   = { super_admin: "Super Admin", manager: "Manager", seller: "Vendedor" }[profile?.role] || profile?.role || "Usuario";
+  const email       = profile?.email || "";
   const emailDisplay = email.length > 24 ? email.slice(0, 22) + "…" : email;
 
   return (
     <aside className="sidebar">
-
       <div className="sidebar-brand">
         <img src={logoImg} alt="STORING Medical" className="sidebar-brand__img" />
       </div>
 
       <div className="sidebar-body">
-
         <div className="sidebar-user">
           <div className="sidebar-user__row">
             <div className="sidebar-user__avatar">{initials}</div>
@@ -88,7 +81,6 @@ export default function Sidebar({ profile, onNavigate }) {
             Cerrar sesión
           </button>
         </div>
-
       </div>
     </aside>
   );
