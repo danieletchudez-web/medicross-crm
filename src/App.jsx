@@ -1,22 +1,27 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 
-import ManagerDashboard  from "./pages/ManagerDashboard";
-import SellerDashboard   from "./pages/SellerDashboard";
-import AccountsPage      from "./pages/AccountsPage";
-import ProductsPage      from "./pages/ProductsPage";
-import OpportunitiesPage from "./pages/OpportunitiesPage";
-import CampaignsPage     from "./pages/CampaignsPage";
-import TodayActionsPage  from "./pages/TodayActionsPage";
-import VisitsPage        from "./pages/VisitsPage";
-import CalendarPage      from "./pages/CalendarPage";
-import AdminUsersPage    from "./pages/AdminUsersPage";
-import LoginPage         from "./pages/LoginPage";
-import CRMAssistant      from "./components/CRMAssistant";
+import ManagerDashboard    from "./pages/ManagerDashboard";
+import SellerDashboard     from "./pages/SellerDashboard";
+import AccountsPage        from "./pages/AccountsPage";
+import ProductsPage        from "./pages/ProductsPage";
+import OpportunitiesPage   from "./pages/OpportunitiesPage";
+import CampaignsPage       from "./pages/CampaignsPage";
+import TodayActionsPage    from "./pages/TodayActionsPage";
+import VisitsPage          from "./pages/VisitsPage";
+import CalendarPage        from "./pages/CalendarPage";
+import AdminUsersPage      from "./pages/AdminUsersPage";
+import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
+import LoginPage           from "./pages/LoginPage";
+import CRMAssistant        from "./components/CRMAssistant";
 
 const FALLBACK_PROFILE = {
   id: null, full_name: "Usuario", email: "", role: "super_admin", approved: true,
-  allowed_modules: ["managerDashboard","sellerDashboard","accounts","products","opportunities","campaigns","todayActions","visits","calendar","adminUsers"],
+  allowed_modules: [
+    "managerDashboard","sellerDashboard","accounts","products",
+    "opportunities","campaigns","todayActions","visits",
+    "calendar","adminUsers","salesAnalytics",
+  ],
 };
 
 export default function App() {
@@ -97,11 +102,13 @@ export default function App() {
 
   if (profile?.approved === false) {
     return (
-      <div style={s.pending}>
-        <div style={s.card}>
+      <div style={st.pending}>
+        <div style={st.card}>
           <h2>Usuario pendiente de aprobación</h2>
           <p>Tu acceso debe ser aprobado por un administrador.</p>
-          <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }} style={s.btn}>Cerrar sesión</button>
+          <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }} style={st.btn}>
+            Cerrar sesión
+          </button>
         </div>
       </div>
     );
@@ -112,17 +119,18 @@ export default function App() {
 
   let CurrentPage;
   switch (page) {
-    case "managerDashboard": CurrentPage = <ManagerDashboard  {...pageProps} />; break;
-    case "sellerDashboard":  CurrentPage = <SellerDashboard   {...pageProps} />; break;
-    case "accounts":         CurrentPage = <AccountsPage      {...pageProps} />; break;
-    case "products":         CurrentPage = <ProductsPage      {...pageProps} />; break;
-    case "opportunities":    CurrentPage = <OpportunitiesPage {...pageProps} />; break;
-    case "campaigns":        CurrentPage = <CampaignsPage     {...pageProps} />; break;
-    case "todayActions":     CurrentPage = <TodayActionsPage  {...pageProps} />; break;
-    case "visits":           CurrentPage = <VisitsPage        {...pageProps} />; break;
-    case "calendar":         CurrentPage = <CalendarPage      {...pageProps} />; break;
-    case "adminUsers":       CurrentPage = <AdminUsersPage    {...pageProps} />; break;
-    default:                 CurrentPage = <ManagerDashboard  {...pageProps} />;
+    case "managerDashboard": CurrentPage = <ManagerDashboard   {...pageProps} />; break;
+    case "sellerDashboard":  CurrentPage = <SellerDashboard    {...pageProps} />; break;
+    case "accounts":         CurrentPage = <AccountsPage       {...pageProps} />; break;
+    case "products":         CurrentPage = <ProductsPage       {...pageProps} />; break;
+    case "opportunities":    CurrentPage = <OpportunitiesPage  {...pageProps} />; break;
+    case "campaigns":        CurrentPage = <CampaignsPage      {...pageProps} />; break;
+    case "todayActions":     CurrentPage = <TodayActionsPage   {...pageProps} />; break;
+    case "visits":           CurrentPage = <VisitsPage         {...pageProps} />; break;
+    case "calendar":         CurrentPage = <CalendarPage       {...pageProps} />; break;
+    case "adminUsers":       CurrentPage = <AdminUsersPage     {...pageProps} />; break;
+    case "salesAnalytics":   CurrentPage = <SalesAnalyticsPage {...pageProps} />; break;
+    default:                 CurrentPage = <ManagerDashboard   {...pageProps} />;
   }
 
   return (
@@ -133,7 +141,7 @@ export default function App() {
   );
 }
 
-const s = {
+const st = {
   pending: { minHeight: "100vh", display: "grid", placeItems: "center", background: "#f3f6fb" },
   card:    { background: "#fff", padding: 30, borderRadius: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.08)", textAlign: "center" },
   btn:     { marginTop: 12, padding: "12px 16px", borderRadius: 10, border: "none", background: "#1677ff", color: "white", fontWeight: 800, cursor: "pointer" },

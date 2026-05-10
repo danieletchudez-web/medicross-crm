@@ -19,86 +19,47 @@ function compactMoney(value) {
   return `$${Math.round(n)}`;
 }
 
-/* Roles que ven datos de TODO el equipo */
-const isManager = (role) => ["super_admin", "manager"].includes(role);
-
 export default function SellerDashboard({ profile, onNavigate }) {
   const [visits, setVisits]               = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [accounts, setAccounts]           = useState([]);
-  const [allProfiles, setAllProfiles]     = useState([]);
-  const [selectedSeller, setSelectedSeller] = useState("all"); // solo manager
   const [loading, setLoading]             = useState(true);
 
   const pipelineRef = useRef(null);
   const activityRef = useRef(null);
 
-  const managerView = isManager(profile?.role);
-
   useEffect(() => { loadData(); }, []);
-  useEffect(() => { if (!loading) renderCharts(); }, [loading, visits, opportunities, accounts, selectedSeller]);
+  useEffect(() => { if (!loading) renderCharts(); }, [loading, visits, opportunities, accounts]);
 
   async function loadData() {
     setLoading(true);
-
-    if (managerView) {
-      /* Manager/Admin: carga todo */
-      const [visitsRes, oppsRes, accountsRes, profilesRes] = await Promise.all([
-        supabase.from("visits").select("*, accounts(name, city, province, potential, follow_status), products(name, line)").order("visit_date", { ascending: false }),
-        supabase.from("opportunities").select("*, accounts(name, city, province, potential, follow_status), products(name, line)").order("created_at", { ascending: false }),
-        supabase.from("accounts").select("*").order("name"),
-        supabase.from("profiles").select("id, full_name, email").eq("approved", true),
-      ]);
-      setVisits(visitsRes.data || []);
-      setOpportunities(oppsRes.data || []);
-      setAccounts(accountsRes.data || []);
-      setAllProfiles(profilesRes.data || []);
-    } else {
-      /* Vendedor: solo sus datos */
-      const [visitsRes, oppsRes, accountsRes] = await Promise.all([
-        supabase.from("visits").select("*, accounts(name, city, province, potential, follow_status), products(name, line)").eq("owner_id", profile.id).order("visit_date", { ascending: false }),
-        supabase.from("opportunities").select("*, accounts(name, city, province, potential, follow_status), products(name, line)").eq("owner_id", profile.id).order("created_at", { ascending: false }),
-        supabase.from("accounts").select("*").eq("owner_id", profile.id).order("name"),
-      ]);
-      setVisits(visitsRes.data || []);
-      setOpportunities(oppsRes.data || []);
-      setAccounts(accountsRes.data || []);
-    }
-
+    // Todos los roles cargan TODOS los datos del equipo — sin filtro por owner
+    const [visitsRes, oppsRes, accountsRes] = await Promise.all([
+      supabase.from("visits").select("*, accounts(name, city, province, potential, follow_status), products(name, line)").order("visit_date", { ascending: false }),
+      supabase.from("opportunities").select("*, accounts(name, city, province, potential, follow_status), products(name, line)").order("created_at", { ascending: false }),
+      supabase.from("accounts").select("*").order("name"),
+    ]);
+    setVisits(visitsRes.data || []);
+    setOpportunities(oppsRes.data || []);
+    setAccounts(accountsRes.data || []);
     setLoading(false);
   }
 
-  /* Filtrar por vendedor seleccionado (solo manager) */
-  const filteredVisits = useMemo(() => {
-    if (!managerView || selectedSeller === "all") return visits;
-    return visits.filter((v) => v.owner_id === selectedSeller);
-  }, [visits, selectedSeller, managerView]);
-
-  const filteredOpps = useMemo(() => {
-    if (!managerView || selectedSeller === "all") return opportunities;
-    return opportunities.filter((o) => o.owner_id === selectedSeller);
-  }, [opportunities, selectedSeller, managerView]);
-
-  const filteredAccounts = useMemo(() => {
-    if (!managerView || selectedSeller === "all") return accounts;
-    return accounts.filter((a) => a.owner_id === selectedSeller);
-  }, [accounts, selectedSeller, managerView]);
-
   const metrics = useMemo(() => {
     const today    = new Date();
-    const openOpps = filteredOpps.filter((o) => !["Ganado","Perdido"].includes(o.stage));
+    const openOpps = opportunities.filter((o) => !["Ganado","Perdido"].includes(o.stage));
     const pipeline = openOpps.reduce((s, o) => s + Number(o.amount || 0), 0);
     const forecast = openOpps.reduce((s, o) => s + (Number(o.amount || 0) * Number(o.probability || 0)) / 100, 0);
     const hotDeals = openOpps.filter((o) => Number(o.probability || 0) >= 70).length;
     const withoutNextAction = openOpps.filter((o) => !o.next_action).length;
-    const redAccounts = filteredAccounts.filter((a) => a.follow_status === "rojo").length;
-    const won  = filteredOpps.filter((o) => o.stage === "Ganado").length;
-    const lost = filteredOpps.filter((o) => o.stage === "Perdido").length;
+    const redAccounts = accounts.filter((a) => a.follow_status === "rojo").length;
+    const won  = opportunities.filter((o) => o.stage === "Ganado").length;
+    const lost = opportunities.filter((o) => o.stage === "Perdido").length;
     const winRate = won + lost > 0 ? Math.round((won / (won + lost)) * 100) : 0;
     const overdueOpps = openOpps.filter((o) => o.expected_close && new Date(o.expected_close) < today).length;
 
-    const coldAccounts = filteredAccounts.filter((a) => {
-      const av = filteredVisits.filter((v) => v.account_id === a.id);
+    const coldAccounts = accounts.filter((a) => {
+      const av = visits.filter((v) => v.account_id === a.id);
       if (!av.length) return true;
       const last = av.sort((x, y) => new Date(y.visit_date) - new Date(x.visit_date))[0];
       return Math.floor((today - new Date(last.visit_date)) / 86400000) > 30;
@@ -106,8 +67,8 @@ export default function SellerDashboard({ profile, onNavigate }) {
 
     const weekAgo    = new Date(today.getTime() - 7 * 86400000);
     const twoWeekAgo = new Date(today.getTime() - 14 * 86400000);
-    const visitsThisWeek = filteredVisits.filter((v) => new Date(v.visit_date) >= weekAgo).length;
-    const visitsPrevWeek = filteredVisits.filter((v) => { const d = new Date(v.visit_date); return d >= twoWeekAgo && d < weekAgo; }).length;
+    const visitsThisWeek = visits.filter((v) => new Date(v.visit_date) >= weekAgo).length;
+    const visitsPrevWeek = visits.filter((v) => { const d = new Date(v.visit_date); return d >= twoWeekAgo && d < weekAgo; }).length;
 
     const in30Days = new Date(today.getTime() + 30 * 86400000);
     const closingThisMonth = openOpps.filter((o) => {
@@ -118,21 +79,21 @@ export default function SellerDashboard({ profile, onNavigate }) {
     const closingAmount = closingThisMonth.reduce((s, o) => s + Number(o.amount || 0), 0);
 
     return {
-      visits: filteredVisits.length, opportunities: filteredOpps.length,
-      openOpps: openOpps.length, accounts: filteredAccounts.length,
+      visits: visits.length, opportunities: opportunities.length,
+      openOpps: openOpps.length, accounts: accounts.length,
       redAccounts, pipeline, forecast, hotDeals, withoutNextAction, winRate,
       overdueOpps, coldAccounts, visitsThisWeek, visitsPrevWeek,
       closingThisMonth: closingThisMonth.length, closingAmount,
     };
-  }, [filteredVisits, filteredOpps, filteredAccounts]);
+  }, [visits, opportunities, accounts]);
 
   const visitPriority = useMemo(() => {
     const today = new Date();
-    return filteredAccounts
+    return accounts
       .map((account) => {
-        const av = filteredVisits.filter((v) => v.account_id === account.id);
+        const av = visits.filter((v) => v.account_id === account.id);
         const lastVisit = av[0];
-        const ao = filteredOpps.filter((o) => o.account_id === account.id);
+        const ao = opportunities.filter((o) => o.account_id === account.id);
         const openPipeline = ao.filter((o) => !["Ganado","Perdido"].includes(o.stage)).reduce((s, o) => s + Number(o.amount || 0), 0);
         let daysWithoutVisit = 999;
         if (lastVisit?.visit_date) daysWithoutVisit = Math.floor((today - new Date(lastVisit.visit_date)) / 86400000);
@@ -149,23 +110,23 @@ export default function SellerDashboard({ profile, onNavigate }) {
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
-  }, [filteredAccounts, filteredVisits, filteredOpps]);
+  }, [accounts, visits, opportunities]);
 
   const closingSoon = useMemo(() => {
     const today = new Date();
     const in30Days = new Date(today.getTime() + 30 * 86400000);
-    return filteredOpps
+    return opportunities
       .filter((o) => !["Ganado","Perdido"].includes(o.stage) && o.expected_close)
       .filter((o) => { const d = new Date(o.expected_close); return d >= today && d <= in30Days; })
       .sort((a, b) => new Date(a.expected_close) - new Date(b.expected_close));
-  }, [filteredOpps]);
+  }, [opportunities]);
 
   function pipelineByStage() {
-    return STAGES.map((stage) => filteredOpps.filter((o) => o.stage === stage).reduce((s, o) => s + Number(o.amount || 0), 0));
+    return STAGES.map((stage) => opportunities.filter((o) => o.stage === stage).reduce((s, o) => s + Number(o.amount || 0), 0));
   }
 
   function activityByWeek() {
-    return ["Lun","Mar","Mié","Jue","Vie"].map((_, i) => filteredVisits.filter((v) => new Date(v.visit_date).getDay() === i + 1).length);
+    return ["Lun","Mar","Mié","Jue","Vie"].map((_, i) => visits.filter((v) => new Date(v.visit_date).getDay() === i + 1).length);
   }
 
   function chartOptions({ yMoney = false } = {}) {
@@ -223,19 +184,9 @@ export default function SellerDashboard({ profile, onNavigate }) {
     );
   }
 
-  const firstName = profile?.full_name?.split(" ")[0] || "vendedor";
+  const firstName = profile?.full_name?.split(" ")[0] || "usuario";
   const weekTrend = metrics.visitsThisWeek >= metrics.visitsPrevWeek ? "↑" : "↓";
   const weekColor = metrics.visitsThisWeek >= metrics.visitsPrevWeek ? "#10b981" : "#ef4444";
-
-  const heroTitle = managerView
-    ? selectedSeller === "all"
-      ? `Hola, ${firstName} 👋`
-      : `Viendo: ${allProfiles.find((p) => p.id === selectedSeller)?.full_name || "vendedor"}`
-    : `Hola, ${firstName} 👋`;
-
-  const heroSub = managerView
-    ? "Resumen del equipo comercial. Filtrá por vendedor para ver datos individuales."
-    : "Resumen diario de tus visitas, oportunidades y clientes prioritarios.";
 
   return (
     <Layout title="Dashboard" profile={profile} onNavigate={onNavigate}>
@@ -245,23 +196,10 @@ export default function SellerDashboard({ profile, onNavigate }) {
         <header className="sd-hero">
           <div className="sd-hero__left">
             <p className="sd-hero__eyebrow">STORING Medical · CRM</p>
-            <h1 className="sd-hero__title">{heroTitle}</h1>
-            <p className="sd-hero__sub">{heroSub}</p>
+            <h1 className="sd-hero__title">Hola, {firstName} 👋</h1>
+            <p className="sd-hero__sub">Resumen del equipo comercial — pipeline, visitas, oportunidades y clientes.</p>
           </div>
           <div className="sd-hero__right">
-            {/* Filtro por vendedor — solo managers */}
-            {managerView && (
-              <select
-                className="sd-seller-filter"
-                value={selectedSeller}
-                onChange={(e) => setSelectedSeller(e.target.value)}
-              >
-                <option value="all">Todo el equipo</option>
-                {allProfiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
-                ))}
-              </select>
-            )}
             <button className="sd-hero__btn" onClick={() => onNavigate("visits")}>+ Registrar visita</button>
           </div>
         </header>
@@ -271,12 +209,12 @@ export default function SellerDashboard({ profile, onNavigate }) {
           <SdPrimaryKpi label="Pipeline abierto"    value={money(metrics.pipeline)}  sub="Total oportunidades activas" accent="blue"/>
           <SdPrimaryKpi label="Forecast ponderado"  value={money(metrics.forecast)}  sub="Probabilidad × monto"        accent="blue"/>
           <SdPrimaryKpi label="Opps. abiertas"      value={metrics.openOpps}         sub="En proceso de cierre"        accent="slate"/>
-          <SdPrimaryKpi label="Visitas registradas" value={metrics.visits}           sub="Total en el período"         accent="green"/>
+          <SdPrimaryKpi label="Visitas registradas" value={metrics.visits}           sub="Total del equipo"            accent="green"/>
         </section>
 
         {/* SECONDARY KPIs */}
         <section className="sd-kpi-grid">
-          <SdKpi label={managerView ? "Clientes totales" : "Clientes asignados"} value={metrics.accounts}/>
+          <SdKpi label="Clientes totales"    value={metrics.accounts}/>
           <SdKpi label="Clientes en riesgo"  value={metrics.redAccounts}       accent="red"/>
           <SdKpi label="Hot deals"           value={metrics.hotDeals}          accent="amber"/>
           <SdKpi label="Sin próxima acción"  value={metrics.withoutNextAction} accent="red"/>
@@ -294,7 +232,7 @@ export default function SellerDashboard({ profile, onNavigate }) {
               <strong className="sd-insight__value">{metrics.visitsThisWeek} visitas</strong>
               <span style={{ color: weekColor, fontWeight: 700, fontSize: 13 }}>{weekTrend} vs semana anterior ({metrics.visitsPrevWeek})</span>
             </div>
-            <span className="sd-insight__sub">Mantené el ritmo de contacto comercial</span>
+            <span className="sd-insight__sub">Ritmo de contacto del equipo</span>
           </div>
 
           <div className="sd-insight-card sd-insight-card--green">
@@ -345,7 +283,7 @@ export default function SellerDashboard({ profile, onNavigate }) {
             tone={visitPriority[0] ? "warning" : "neutral"}
             icon="◷"
             title="Prioridad de visita"
-            text={visitPriority[0] ? `Visitar primero: ${visitPriority[0].name}. Score ${visitPriority[0].score}.` : "No hay clientes asignados todavía."}
+            text={visitPriority[0] ? `Visitar primero: ${visitPriority[0].name}. Score ${visitPriority[0].score}.` : "No hay clientes cargados todavía."}
           />
         </section>
 
@@ -357,9 +295,9 @@ export default function SellerDashboard({ profile, onNavigate }) {
 
         {/* LISTS */}
         <section className="sd-list-grid">
-          <SdListCard title="Últimas visitas" sub="Registro reciente de actividad">
-            {filteredVisits.length === 0 ? <p className="sd-empty">No hay visitas registradas.</p> : (
-              filteredVisits.slice(0, 5).map((v) => (
+          <SdListCard title="Últimas visitas" sub="Actividad reciente del equipo">
+            {visits.length === 0 ? <p className="sd-empty">No hay visitas registradas.</p> : (
+              visits.slice(0, 5).map((v) => (
                 <SdListItem key={v.id} title={v.accounts?.name || "Sin cliente"} sub={`${v.products?.name || "Sin producto"} · ${v.visit_type || "—"}`} right={v.visit_date ? new Date(v.visit_date).toLocaleDateString("es-AR") : "—"}/>
               ))
             )}
@@ -374,7 +312,7 @@ export default function SellerDashboard({ profile, onNavigate }) {
           </SdListCard>
 
           <SdListCard title="Clientes prioritarios" sub="Ordenados por score de urgencia">
-            {visitPriority.length === 0 ? <p className="sd-empty">No hay clientes.</p> : (
+            {visitPriority.length === 0 ? <p className="sd-empty">No hay clientes cargados.</p> : (
               visitPriority.map((c) => (
                 <SdListItem key={c.id} title={c.name} sub={`Score ${c.score} · ${c.daysWithoutVisit} días sin visita`} right={money(c.openPipeline)} rightAccent={c.daysWithoutVisit > 30 ? "red" : undefined}/>
               ))

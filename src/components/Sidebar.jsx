@@ -4,16 +4,17 @@ import "./Sidebar.css";
 import logoImg from "../assets/logo.jpg";
 
 const MENU = [
-  { id: "managerDashboard",  label: "Dashboard Comercial",   icon: "▦" },
-  { id: "sellerDashboard",   label: "Dashboard Vendedor",    icon: "◈" },
-  { id: "accounts",          label: "Clientes / Cuentas",    icon: "◎" },
-  { id: "products",          label: "Productos / Share Kit", icon: "⬡" },
-  { id: "opportunities",     label: "Oportunidades",         icon: "◇" },
-  { id: "campaigns",         label: "Campañas",              icon: "◉" },
-  { id: "todayActions",      label: "Acciones Hoy",          icon: "◷" },
-  { id: "visits",            label: "Visitas",               icon: "◌" },
-  { id: "calendar",          label: "Calendario",            icon: "▦" },
-  { id: "adminUsers",        label: "Administración",        icon: "⊞" },
+  { id: "managerDashboard", label: "Dashboard Comercial",   icon: "▦" },
+  { id: "sellerDashboard",  label: "Dashboard Vendedor",    icon: "◈" },
+  { id: "salesAnalytics",   label: "Análisis Comercial",    icon: "◑" },
+  { id: "accounts",         label: "Clientes / Cuentas",    icon: "◎" },
+  { id: "products",         label: "Productos / Share Kit", icon: "⬡" },
+  { id: "opportunities",    label: "Oportunidades",         icon: "◇" },
+  { id: "campaigns",        label: "Campañas",              icon: "◉" },
+  { id: "todayActions",     label: "Acciones Hoy",          icon: "◷" },
+  { id: "visits",           label: "Visitas",               icon: "◌" },
+  { id: "calendar",         label: "Calendario",            icon: "▦" },
+  { id: "adminUsers",       label: "Administración",        icon: "⊞" },
 ];
 
 export default function Sidebar({ profile, onNavigate }) {
