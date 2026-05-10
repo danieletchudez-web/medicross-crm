@@ -49,16 +49,16 @@ function fmtDate(d) {
 
 /* ─── Column mapping — aliases ───────────────────────────────────────── */
 const COL_MAP = {
-  comprobante:     ["numero","número","nro","n°","comprobante","factura","invoice"],
-  fecha:           ["fecha","date","fecha venta","fecha de venta"],
-  producto:        ["referencia","ref","producto","product","descripcion","descripción","articulo"],
-  cliente:         ["cliente","client","razón social","razon social","nombre cliente"],
-  unidad_negocio:  ["sucursal","unidad negocio","unidad de negocio","línea","linea","bu","branch"],
+  comprobante:     ["numero","número","nro","n°","comprobante","factura","numero de proceso","número de proceso"],
+  fecha:           ["fecha","date","fecha venta","fecha de apertura","fecha apertura","fecha de venta"],
+  producto:        ["referencia","nombre de proceso","nombre proceso","descripcion","descripción","producto","articulo","ref"],
+  cliente:         ["cliente","client","razón social","unidad ejecutora","unidad_ejecutora","hospital","institucion","institución"],
+  condicion_venta: ["tipo de proceso","tipo proceso","condicion","condición","tipo","modalidad"],
   estado:          ["estado","status"],
-  observaciones:   ["adjuntos","adjunto","attachments","observaciones","notas"],
+  unidad_negocio:  ["sucursal","unidad negocio","unidad de negocio","línea","linea","bu"],
+  observaciones:   ["adjuntos","adjunto","observaciones","notas"],
   total_venta:     ["monto total","total","importe","monto","amount","total neto grabado","total neto","neto"],
-  costo:           ["total neto grabado","costo","cost"],
-
+  costo:           ["costo","cost","precio costo"],
 };
 
 function detectColumns(headers) {
