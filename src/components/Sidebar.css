@@ -40,7 +40,8 @@
   overflow: hidden;
   z-index: 100;
   background: var(--sb-bg);
-border-right: 0px solid transparent;}
+  border-right: 1px solid #e8ecf2;
+}
 
 /* ─── Brand ──────────────────────────────────────────────────────────── */
 .sidebar-brand {
@@ -67,9 +68,8 @@ border-right: 0px solid transparent;}
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(190deg, #2d5ca6 0%, #0d1e35 100%);
+  background: var(--sb-body);
   overflow: hidden;
-
 }
 
 /* ─── User card ──────────────────────────────────────────────────────── */
@@ -385,4 +385,98 @@ border-right: 0px solid transparent;}
   .sidebar-theme-toggle__label { display: none; }
   .sidebar-theme-toggle { width: auto; padding: 8px; justify-content: center; }
   .sidebar-footer-clock { display: none; }
+}
+
+/* ─── Edit mode ──────────────────────────────────────────────────────── */
+.sidebar-nav__group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 8px;
+}
+
+.sidebar-edit-btn {
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.35);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: "DM Sans", system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.2px;
+}
+
+.sidebar-edit-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.sidebar-edit-btn.active {
+  background: rgba(16,185,129,0.2);
+  color: #6ee7b7;
+  border-color: rgba(16,185,129,0.3);
+}
+
+.sidebar-edit-hint {
+  margin: 0 8px 6px;
+  font-size: 9.5px;
+  color: rgba(255,255,255,0.2);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  font-style: italic;
+}
+
+.sidebar-nav__item-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9px;
+  transition: background 0.15s;
+}
+
+.sidebar-nav__item-wrap.editing {
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.08);
+  margin-bottom: 2px;
+  cursor: grab;
+}
+
+.sidebar-nav__item-wrap.editing:active { cursor: grabbing; }
+
+.sidebar-drag-handle {
+  color: rgba(255,255,255,0.2);
+  font-size: 14px;
+  padding: 0 4px 0 6px;
+  cursor: grab;
+  flex-shrink: 0;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.sidebar-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255,255,255,0.2);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: "DM Sans", system-ui, sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.sidebar-reset-btn:hover {
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.4);
 }

@@ -11,12 +11,13 @@ function money(value) {
   }).format(Number(value || 0));
 }
 
-function compactMoney(value) {
-  const n = Number(value || 0);
-  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(0)}M`;
-  if (n >= 1_000)         return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${Math.round(n)}`;
+function compactMoney(v) {
+  const n = Number(v || 0);
+  if (n >= 1_000_000_000_000) return `$${(n / 1_000_000_000_000).toFixed(1).replace(".", ",")} MM`;
+  if (n >= 1_000_000_000)     return `$${(n / 1_000_000_000).toFixed(1).replace(".", ",")} MM`;
+  if (n >= 1_000_000)         return `$${(n / 1_000_000).toFixed(1).replace(".", ",")} M`;
+  if (n >= 1_000)             return `$${(n / 1_000).toFixed(0)} K`;
+  return `$${Math.round(n).toLocaleString("es-AR")}`;
 }
 
 export default function SellerDashboard({ profile, onNavigate }) {
