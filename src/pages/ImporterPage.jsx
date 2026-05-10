@@ -232,8 +232,19 @@ export default function ImporterPage({profile,onNavigate}){
     const monthBarData=Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6).map(e=>e[1]);
     const fcast=Number(forecastInputs[String(now.getMonth()+1).padStart(2,"0")]||0);
     const fcastPct=fcast>0?pct(thisMonth,fcast):null;
-    return{total,hasCosto,costoTotal,margenTotal,tickets,clientes,productos,avgTicket,mejorVend,mejorUnit,momChange,thisMonth,prevMonth,sparkData,monthBarData,fcast,fcastPct};
-  },[filteredSales,forecastSaved]);
+    const byMonthObj={};
+    filteredSales.forEach(s=>{
+      const d=new Date(s.fecha);if(isNaN(d))return;
+      const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      byMonthObj[k]=(byMonthObj[k]||0)+Number(s.total_venta||0);
+    });
+    const monthEntries=Object.entries(byMonthObj);
+    const mejorMesEntry=[...monthEntries].sort((a,b)=>b[1]-a[1])[0];
+    const mejorMes=mejorMesEntry?{mes:mejorMesEntry[0],valor:mejorMesEntry[1]}:null;
+    const cantMeses=monthEntries.length;
+    const promedioMensual=cantMeses>0?total/cantMeses:0;
+    return{total,hasCosto,costoTotal,margenTotal,tickets,clientes,productos,avgTicket,mejorVend,mejorUnit,momChange,thisMonth,prevMonth,sparkData,monthBarData,fcast,fcastPct,mejorMes,cantMeses,promedioMensual};
+  },[filteredSales,forecastInputs]);
 
   const topClientes=useMemo(()=>{const byC={};filteredSales.forEach(s=>{if(s.cliente)byC[s.cliente]=(byC[s.cliente]||0)+Number(s.total_venta||0);});return Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,8);},[filteredSales]);
 
@@ -371,34 +382,29 @@ export default function ImporterPage({profile,onNavigate}){
                     </div>
                     <div className="bi-hero__sep"/>
                     <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">FACTURACIÓN TOTAL ANUAL</span>
+                      <span className="bi-hero__eyebrow">ACUMULADO DEL PERÍODO</span>
                       <strong className="bi-hero__val">{compact(kpis.total)}</strong>
-                      {kpis.fcast>0&&<><span className="bi-hero__meta">Meta anual: {compact(kpis.fcast*12)}</span><div className="bi-hero__bar"><div style={{width:`${Math.min(100,pct(kpis.total,kpis.fcast*12))}%`,height:"100%",background:"#3b82f6",borderRadius:999}}/></div><span className="bi-hero__pct">{pct(kpis.total,kpis.fcast*12)}%</span></>}
+                      <span className="bi-hero__meta">{fmtARS(kpis.total)}</span>
                     </div>
                     <div className="bi-hero__sep"/>
                     <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">FACTURACIÓN MES ACTUAL</span>
-                      <strong className="bi-hero__val">{compact(kpis.thisMonth)}</strong>
-                      {kpis.fcast>0&&<><span className="bi-hero__meta">Meta mensual: {compact(kpis.fcast)}</span><div className="bi-hero__bar"><div style={{width:`${Math.min(100,kpis.fcastPct||0)}%`,height:"100%",background:"#10b981",borderRadius:999}}/></div><span className="bi-hero__pct" style={{color:"#6ee7b7"}}>{kpis.fcastPct||0}%</span></>}
+                      <span className="bi-hero__eyebrow">MEJOR MES</span>
+                      <strong className="bi-hero__val">{compact(kpis.mejorMes?.valor||0)}</strong>
+                      <span className="bi-hero__meta">{kpis.mejorMes?.mes||"—"}</span>
                     </div>
                     <div className="bi-hero__sep"/>
                     <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">VARIACIÓN VS. MES ANTERIOR</span>
-                      {kpis.momChange!==null?(
-                        <>
-                          <strong className="bi-hero__val" style={{color:kpis.momChange>=0?"#6ee7b7":"#fca5a5",fontSize:22}}>
-                            {kpis.momChange>=0?"+":""}{kpis.momChange.toFixed(1).replace(".",",")}%
-                          </strong>
-                          <span className="bi-hero__meta">{kpis.momChange>=0?"+":""}{compact(kpis.thisMonth-kpis.prevMonth)}</span>
-                          <Sparkline data={kpis.sparkData} color={kpis.momChange>=0?"#6ee7b7":"#fca5a5"}/>
-                        </>
-                      ):<strong className="bi-hero__val">—</strong>}
+                      <span className="bi-hero__eyebrow">PROMEDIO MENSUAL</span>
+                      <strong className="bi-hero__val">{compact(kpis.promedioMensual||0)}</strong>
+                      <span className="bi-hero__meta">{kpis.cantMeses||0} meses con datos</span>
                     </div>
                     <div className="bi-hero__sep"/>
                     <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">VENTA ACTUAL VS. FORECAST</span>
+                      <span className="bi-hero__eyebrow">MES ACTUAL VS. FORECAST</span>
                       <strong className="bi-hero__val">{kpis.fcastPct!==null?`${kpis.fcastPct}%`:"—"}</strong>
-                      {kpis.fcast>0&&<><span className="bi-hero__meta">Forecast: {compact(kpis.fcast)}</span><div className="bi-hero__bar"><div style={{width:`${Math.min(100,kpis.fcastPct||0)}%`,height:"100%",background:"#f59e0b",borderRadius:999}}/></div></>}
+                      {kpis.fcast>0&&<span className="bi-hero__meta">Forecast mayo: {compact(kpis.fcast)}</span>}
+                      {kpis.fcast>0&&<div className="bi-hero__bar"><div style={{width:`${Math.min(100,kpis.fcastPct||0)}%`,height:"100%",background:"#f59e0b",borderRadius:999}}/></div>}
+                      {kpis.thisMonth>0&&<span className="bi-hero__meta" style={{color:"rgba(255,255,255,.5)"}}>Vendido: {compact(kpis.thisMonth)}</span>}
                     </div>
                     <div className="bi-hero__sep"/>
                     <div className="bi-hero__stats">
