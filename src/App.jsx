@@ -10,7 +10,7 @@ import CampaignsPage       from "./pages/CampaignsPage";
 import TodayActionsPage    from "./pages/TodayActionsPage";
 import VisitsPage          from "./pages/VisitsPage";
 import CalendarPage        from "./pages/CalendarPage";
-import AdminUsersPage      from "./pages/AdminUsersPage";
+import AdminUsersPage      from "./pages/adminUsersPages";
 import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
 import ImporterPage        from "./pages/ImporterPage";
 import LoginPage           from "./pages/LoginPage";
@@ -78,7 +78,6 @@ export default function App() {
       const pipeline = open.reduce((s, o) => s + Number(o.amount || 0), 0);
       const forecast = open.reduce((s, o) => s + Number(o.forecast_amount || 0), 0);
       const target   = campaigns.reduce((s, c) => s + Number(c.target_amount || 0), 0);
-      const coverage = target > 0 ? Math.round((forecast / target) * 100) : 0;
       const hotDeals = open.filter((o) => Number(o.probability || 0) >= 70).length;
       const noAction = open.filter((o) => !o.next_action).length;
       const overdue  = open.filter((o) => o.expected_close && new Date(o.expected_close) < new Date()).length;
@@ -93,8 +92,12 @@ export default function App() {
         return Math.floor((today - new Date(last.visit_date)) / 86400000) > 30;
       }).length;
       const in30 = new Date(today.getTime() + 30 * 86400000);
-      const closingThisMonth = open.filter((o) => { if (!o.expected_close) return false; const d = new Date(o.expected_close); return d >= today && d <= in30; }).length;
-      setCrmData({ pipeline, forecast, target, coverage, openOpps: open.length, hotDeals, noAction, overdue, visits: visits.length, accounts: accounts.length, winRate, coldAccounts, closingThisMonth });
+      const closingThisMonth = open.filter((o) => {
+        if (!o.expected_close) return false;
+        const d = new Date(o.expected_close);
+        return d >= today && d <= in30;
+      }).length;
+      setCrmData({ pipeline, forecast, target, openOpps: open.length, hotDeals, noAction, overdue, visits: visits.length, accounts: accounts.length, winRate, coldAccounts, closingThisMonth });
     } catch { /* silent */ }
   }
 
