@@ -17,11 +17,31 @@ function compact(v) {
   return fmtARS(n);
 }
 function pct(a,b){ return b>0?Math.round((a/b)*100):0; }
+
+/* ─── FIX: parseNum corregido ────────────────────────────────────────
+   SheetJS entrega los números como `number` de JS directamente.
+   Solo cuando viene como string (CSV o texto) aplicamos la conversión
+   de formato argentino (puntos=miles, coma=decimal).
+────────────────────────────────────────────────────────────────────── */
 function parseNum(v){
   if(v===null||v===undefined||v==="") return null;
-  const s=String(v).replace(/\./g,"").replace(",",".");
-  const n=parseFloat(s); return isNaN(n)?null:n;
+  // SheetJS ya parseó el número correctamente → usarlo tal cual
+  if(typeof v === "number") return isNaN(v) ? null : v;
+  // Viene como string (CSV, texto pegado, etc.)
+  const s = String(v).trim().replace(/\s/g,"");
+  // Detectar formato argentino: "66.777.940,00" → quitar puntos, coma→punto
+  // Detectar formato inglés: "66,777,940.00" → quitar comas
+  const hasCommaDecimal = /\d,\d{1,2}$/.test(s);  // termina en ,XX
+  let normalized;
+  if(hasCommaDecimal){
+    normalized = s.replace(/\./g,"").replace(",",".");
+  } else {
+    normalized = s.replace(/,/g,"");
+  }
+  const n = parseFloat(normalized);
+  return isNaN(n) ? null : n;
 }
+
 function parseDate(v){
   if(!v) return null;
   if(v instanceof Date) return v;
@@ -151,12 +171,17 @@ export default function ImporterPage({profile,onNavigate}){
     const XLSX=window.XLSX;
     if(!XLSX){alert("SheetJS no cargado.");return;}
     const ab=await file.arrayBuffer();
-    const wb=XLSX.read(ab,{type:"array"});
+    // raw:false → SheetJS entrega números como number, fechas como Date
+    const wb=XLSX.read(ab,{type:"array",cellDates:true});
     const ws=wb.Sheets[wb.SheetNames[0]];
-    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+    // raw:false preserva los tipos nativos (number, Date, string)
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
     if(raw.length<2){alert("Archivo vacío.");return;}
     const headers=raw[0].map(h=>String(h).trim()).filter(Boolean);
-    const rows=raw.slice(1).filter(r=>r.some(c=>c!=="")).map(r=>{const o={};headers.forEach((h,i)=>{o[h]=r[i];});return o;});
+    // Para números necesitamos raw:true en sheet_to_json (con header:1)
+    // Hacemos una segunda pasada con raw:true para preservar tipos numéricos
+    const rawNums=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+    const rows=rawNums.slice(1).filter(r=>r.some(c=>c!=="")).map(r=>{const o={};headers.forEach((h,i)=>{o[h]=r[i];});return o;});
     setXlsxData({headers,rows});setMapping(detectColumns(headers));setStep(2);
   }
 
@@ -421,7 +446,6 @@ export default function ImporterPage({profile,onNavigate}){
 
                   {/* KPI CARDS */}
                   <div className="bi-kpi-row">
-                    {/* TOP 5 CLIENTES — más ancho */}
                     <div className="bi-kpi bi-kpi--wide">
                       <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(245,158,11,.1)"}}>🏆</span><span className="bi-kpi__label">TOP 5 CLIENTES</span></div>
                       <div className="bi-top3">
@@ -440,7 +464,6 @@ export default function ImporterPage({profile,onNavigate}){
                       </div>
                     </div>
 
-                    {/* TICKET PROMEDIO */}
                     <div className="bi-kpi">
                       <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(59,130,246,.1)"}}>🎯</span><span className="bi-kpi__label">TICKET PROMEDIO</span></div>
                       <strong className="bi-kpi__val" style={{color:"#3b82f6"}}>{compact(kpis.avgTicket)}</strong>
@@ -453,29 +476,17 @@ export default function ImporterPage({profile,onNavigate}){
                       </div>
                     </div>
 
-                    {/* PENDIENTE DE COBRO */}
                     <div className="bi-kpi">
                       <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(239,68,68,.1)"}}>⏳</span><span className="bi-kpi__label">PENDIENTE DE COBRO</span></div>
                       <strong className="bi-kpi__val" style={{color:"#ef4444"}}>{compact(kpis.pendienteCobro)}</strong>
                       <span className="bi-kpi__sub">{kpis.pendienteCount} facturas · {pct(kpis.pendienteCobro,kpis.total)}% del total</span>
                       <div className="bi-kpi__divider"/>
-                      <div className="bi-kpi__bar-label">
-                        <span>Cobrado</span>
-                        <span>{compact(kpis.cobrada)}</span>
-                      </div>
-                      <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
-                        <div style={{width:`${Math.min(100,pct(kpis.cobrada,kpis.total))}%`,height:"100%",background:"#10b981",borderRadius:999}}/>
-                      </div>
-                      <div className="bi-kpi__bar-label" style={{marginTop:3}}>
-                        <span>Pendiente</span>
-                        <span style={{color:"#ef4444"}}>{pct(kpis.pendienteCobro,kpis.total)}%</span>
-                      </div>
-                      <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
-                        <div style={{width:`${Math.min(100,pct(kpis.pendienteCobro,kpis.total))}%`,height:"100%",background:"#ef4444",borderRadius:999}}/>
-                      </div>
+                      <div className="bi-kpi__bar-label"><span>Cobrado</span><span>{compact(kpis.cobrada)}</span></div>
+                      <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}><div style={{width:`${Math.min(100,pct(kpis.cobrada,kpis.total))}%`,height:"100%",background:"#10b981",borderRadius:999}}/></div>
+                      <div className="bi-kpi__bar-label" style={{marginTop:3}}><span>Pendiente</span><span style={{color:"#ef4444"}}>{pct(kpis.pendienteCobro,kpis.total)}%</span></div>
+                      <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}><div style={{width:`${Math.min(100,pct(kpis.pendienteCobro,kpis.total))}%`,height:"100%",background:"#ef4444",borderRadius:999}}/></div>
                     </div>
 
-                    {/* FORECAST MENSUAL */}
                     <div className="bi-kpi bi-kpi--forecast">
                       <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(99,102,241,.1)"}}>📋</span><span className="bi-kpi__label">FORECAST MENSUAL</span></div>
                       <div className="bi-forecast-row">
@@ -500,13 +511,8 @@ export default function ImporterPage({profile,onNavigate}){
                       {forecastInputs[forecastMonth]&&(
                         <>
                           <div className="bi-kpi__divider"/>
-                          <div className="bi-kpi__bar-label">
-                            <span>Forecast</span>
-                            <span style={{color:"#6366f1"}}>{compact(Number(forecastInputs[forecastMonth]))}</span>
-                          </div>
-                          <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
-                            <div style={{width:`${Math.min(100,kpis.fcastPct||0)}%`,height:"100%",background:"#6366f1",borderRadius:999}}/>
-                          </div>
+                          <div className="bi-kpi__bar-label"><span>Forecast</span><span style={{color:"#6366f1"}}>{compact(Number(forecastInputs[forecastMonth]))}</span></div>
+                          <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}><div style={{width:`${Math.min(100,kpis.fcastPct||0)}%`,height:"100%",background:"#6366f1",borderRadius:999}}/></div>
                           <span className="bi-kpi__sub" style={{color:"#6366f1"}}>{kpis.fcastPct||0}% cumplido</span>
                         </>
                       )}
@@ -556,7 +562,6 @@ export default function ImporterPage({profile,onNavigate}){
 
                   {/* BOTTOM ROW */}
                   <div className="bi-row bi-row--33-33-33">
-                    {/* Ranking */}
                     <div className="bi-panel">
                       <div className="bi-panel__hd">
                         <div><h3>Ranking de clientes</h3><p>Top clientes por volumen facturado</p></div>
@@ -579,7 +584,6 @@ export default function ImporterPage({profile,onNavigate}){
                       </div>
                     </div>
 
-                    {/* Alertas */}
                     <div className="bi-panel">
                       <div className="bi-panel__hd"><div><h3>Alertas inteligentes</h3></div></div>
                       <div className="bi-alertas">
@@ -593,7 +597,6 @@ export default function ImporterPage({profile,onNavigate}){
                       </div>
                     </div>
 
-                    {/* Insights */}
                     <div className="bi-panel">
                       <div className="bi-panel__hd"><div><h3>Insights automáticos</h3><p>Análisis generado por el sistema</p></div></div>
                       <div className="bi-insights">
@@ -607,7 +610,6 @@ export default function ImporterPage({profile,onNavigate}){
                     </div>
                   </div>
 
-                  {/* Últimas importaciones */}
                   <div className="bi-panel">
                     <div className="bi-panel__hd">
                       <div><h3>Últimas importaciones</h3></div>
