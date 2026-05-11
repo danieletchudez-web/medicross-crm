@@ -292,10 +292,10 @@ export default function ImporterPage({profile,onNavigate}){
 
   const insights=useMemo(()=>{
     const list=[];
-    if(kpis.mejorUnit)list.push({icon:"🏆",text:`La unidad <strong>${kpis.mejorUnit[0]}</strong> representa el ${pct(kpis.mejorUnit[1],kpis.total)}% del total facturado.`});
-    if(kpis.momChange!==null&&kpis.momChange>0)list.push({icon:"📈",text:`El producto <strong>X123</strong> aumentó ${kpis.momChange.toFixed(0)}% vs. el mes anterior.`});
-    if(kpis.mejorVend)list.push({icon:"⭐",text:`El vendedor <strong>${kpis.mejorVend[0]}</strong> tiene la mejor performance del mes.`});
-    list.push({icon:"💡",text:`La categoría <strong>Insumos Médicos</strong> lidera en margen bruto.`});
+    if(kpis.mejorUnit)list.push({icon:"\uD83C\uDFC6",text:"La unidad <strong>"+kpis.mejorUnit[0]+"</strong> representa el "+pct(kpis.mejorUnit[1],kpis.total)+"% del total facturado."});
+    if(kpis.momChange!==null&&kpis.momChange>0)list.push({icon:"\uD83D\uDCC8",text:"Las ventas subieron "+kpis.momChange.toFixed(0)+"% vs. el mes anterior."});
+    if(kpis.mejorVend)list.push({icon:"\u2B50",text:"El vendedor <strong>"+kpis.mejorVend[0]+"</strong> tiene la mejor performance del mes."});
+    list.push({icon:"\uD83D\uDCA1",text:"La categor\xEDa <strong>Insumos M\xE9dicos</strong> lidera en margen bruto."});
     return list;
   },[kpis]);
 
