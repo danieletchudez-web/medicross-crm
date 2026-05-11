@@ -213,7 +213,8 @@ export default function ImporterPage({profile,onNavigate}){
     const hasCosto=filteredSales.some(r=>r.costo!==null);
     const costoTotal=hasCosto?filteredSales.reduce((s,r)=>s+Number(r.costo||0),0):0;
     const margenTotal=hasCosto?total-costoTotal:null;
-    const tickets=filteredSales.filter(r=>r.total_venta>0).length;
+    const comprobantesUnicos=new Set(filteredSales.map(r=>r.comprobante).filter(Boolean)).size;
+    const tickets=comprobantesUnicos||filteredSales.filter(r=>r.total_venta>0).length;
     const clientes=new Set(filteredSales.map(r=>r.cliente).filter(Boolean)).size;
     const productos=new Set(filteredSales.map(r=>r.producto).filter(Boolean)).size;
     const avgTicket=tickets>0?total/tickets:0;
@@ -232,6 +233,9 @@ export default function ImporterPage({profile,onNavigate}){
     const monthBarData=Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6).map(e=>e[1]);
     const fcast=Number(forecastInputs[String(now.getMonth()+1).padStart(2,"0")]||0);
     const fcastPct=fcast>0?pct(thisMonth,fcast):null;
+    const pendienteCobro=filteredSales.filter(s=>(s.estado||"").toUpperCase().includes("PENDIENTE COBRO")).reduce((s,r)=>s+Number(r.total_venta||0),0);
+    const pendienteCount=filteredSales.filter(s=>(s.estado||"").toUpperCase().includes("PENDIENTE COBRO")).length;
+    const cobrada=filteredSales.filter(s=>(s.estado||"").toUpperCase()==="COBRADA").reduce((s,r)=>s+Number(r.total_venta||0),0);
     const byMonthObj={};
     filteredSales.forEach(s=>{
       const d=new Date(s.fecha);if(isNaN(d))return;
@@ -243,7 +247,7 @@ export default function ImporterPage({profile,onNavigate}){
     const mejorMes=mejorMesEntry?{mes:mejorMesEntry[0],valor:mejorMesEntry[1]}:null;
     const cantMeses=monthEntries.length;
     const promedioMensual=cantMeses>0?total/cantMeses:0;
-    return{total,hasCosto,costoTotal,margenTotal,tickets,clientes,productos,avgTicket,mejorVend,mejorUnit,momChange,thisMonth,prevMonth,sparkData,monthBarData,fcast,fcastPct,mejorMes,cantMeses,promedioMensual};
+    return{total,hasCosto,costoTotal,margenTotal,tickets,clientes,productos,avgTicket,mejorVend,mejorUnit,momChange,thisMonth,prevMonth,sparkData,monthBarData,fcast,fcastPct,mejorMes,cantMeses,promedioMensual,pendienteCobro,pendienteCount,cobrada};
   },[filteredSales,forecastInputs]);
 
   const topClientes=useMemo(()=>{const byC={};filteredSales.forEach(s=>{if(s.cliente)byC[s.cliente]=(byC[s.cliente]||0)+Number(s.total_venta||0);});return Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,8);},[filteredSales]);
@@ -417,39 +421,61 @@ export default function ImporterPage({profile,onNavigate}){
 
                   {/* KPI CARDS */}
                   <div className="bi-kpi-row">
-                    {kpis.hasCosto&&(
-                      <div className="bi-kpi">
-                        <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(16,185,129,.1)"}}>📈</span><span className="bi-kpi__label">MARGEN BRUTO</span></div>
-                        <strong className="bi-kpi__val" style={{color:"#10b981"}}>{compact(kpis.margenTotal)}</strong>
-                        <span className="bi-kpi__sub">{pct(kpis.margenTotal,kpis.total)}% del total</span>
-                        <Sparkline data={kpis.sparkData} color="#10b981"/>
+                    {/* TOP 5 CLIENTES — más ancho */}
+                    <div className="bi-kpi bi-kpi--wide">
+                      <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(245,158,11,.1)"}}>🏆</span><span className="bi-kpi__label">TOP 5 CLIENTES</span></div>
+                      <div className="bi-top3">
+                        {Object.entries(
+                          filteredSales.reduce((acc,s)=>{
+                            if(s.cliente) acc[s.cliente]=(acc[s.cliente]||0)+Number(s.total_venta||0);
+                            return acc;
+                          },{})
+                        ).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([nombre,total],i)=>(
+                          <div key={nombre} className="bi-top3__row">
+                            <span className="bi-top3__pos" style={{color:["#f59e0b","#94a3b8","#cd7c3a","#64748b","#64748b"][i]}}>#{i+1}</span>
+                            <span className="bi-top3__name" title={nombre}>{nombre}</span>
+                            <span className="bi-top3__val">{compact(total)}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {kpis.mejorUnit&&(
-                      <div className="bi-kpi">
-                        <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(245,158,11,.1)"}}>🏆</span><span className="bi-kpi__label">UNIDAD LÍDER</span></div>
-                        <div className="bi-top3">
-                          {Object.entries(
-                            filteredSales.reduce((acc,s)=>{
-                              if(s.unidad_negocio) acc[s.unidad_negocio]=(acc[s.unidad_negocio]||0)+Number(s.total_venta||0);
-                              return acc;
-                            },{})
-                          ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([nombre,total],i)=>(
-                            <div key={nombre} className="bi-top3__row">
-                              <span className="bi-top3__pos" style={{color:["#f59e0b","#94a3b8","#cd7c3a"][i]}}>#{i+1}</span>
-                              <span className="bi-top3__name">{nombre.length>22?nombre.slice(0,20)+"…":nombre}</span>
-                              <span className="bi-top3__val">{compact(total)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    </div>
+
+                    {/* TICKET PROMEDIO */}
                     <div className="bi-kpi">
                       <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(59,130,246,.1)"}}>🎯</span><span className="bi-kpi__label">TICKET PROMEDIO</span></div>
                       <strong className="bi-kpi__val" style={{color:"#3b82f6"}}>{compact(kpis.avgTicket)}</strong>
-                      <span className="bi-kpi__sub">{kpis.tickets} transacciones</span>
-                      <MiniBar data={kpis.monthBarData} color="#3b82f6"/>
+                      <span className="bi-kpi__sub">{kpis.tickets} facturas únicas</span>
+                      <div className="bi-kpi__divider"/>
+                      <div className="bi-kpi__stat-row">
+                        <div className="bi-kpi__stat"><span>Clientes</span><strong>{kpis.clientes}</strong></div>
+                        <div className="bi-kpi__stat"><span>Productos</span><strong>{kpis.productos}</strong></div>
+                        <div className="bi-kpi__stat"><span>Meses</span><strong>{kpis.cantMeses}</strong></div>
+                      </div>
                     </div>
+
+                    {/* PENDIENTE DE COBRO */}
+                    <div className="bi-kpi">
+                      <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(239,68,68,.1)"}}>⏳</span><span className="bi-kpi__label">PENDIENTE DE COBRO</span></div>
+                      <strong className="bi-kpi__val" style={{color:"#ef4444"}}>{compact(kpis.pendienteCobro)}</strong>
+                      <span className="bi-kpi__sub">{kpis.pendienteCount} facturas · {pct(kpis.pendienteCobro,kpis.total)}% del total</span>
+                      <div className="bi-kpi__divider"/>
+                      <div className="bi-kpi__bar-label">
+                        <span>Cobrado</span>
+                        <span>{compact(kpis.cobrada)}</span>
+                      </div>
+                      <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
+                        <div style={{width:`${Math.min(100,pct(kpis.cobrada,kpis.total))}%`,height:"100%",background:"#10b981",borderRadius:999}}/>
+                      </div>
+                      <div className="bi-kpi__bar-label" style={{marginTop:3}}>
+                        <span>Pendiente</span>
+                        <span style={{color:"#ef4444"}}>{pct(kpis.pendienteCobro,kpis.total)}%</span>
+                      </div>
+                      <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
+                        <div style={{width:`${Math.min(100,pct(kpis.pendienteCobro,kpis.total))}%`,height:"100%",background:"#ef4444",borderRadius:999}}/>
+                      </div>
+                    </div>
+
+                    {/* FORECAST MENSUAL */}
                     <div className="bi-kpi bi-kpi--forecast">
                       <div className="bi-kpi__head"><span className="bi-kpi__icon" style={{background:"rgba(99,102,241,.1)"}}>📋</span><span className="bi-kpi__label">FORECAST MENSUAL</span></div>
                       <div className="bi-forecast-row">
@@ -471,7 +497,19 @@ export default function ImporterPage({profile,onNavigate}){
                         />
                         <button className="bi-forecast-save" onClick={saveForecast}>Guardar</button>
                       </div>
-                      {forecastInputs[forecastMonth]&&<span className="bi-kpi__sub" style={{color:"#6366f1"}}>{compact(Number(forecastInputs[forecastMonth]))}</span>}
+                      {forecastInputs[forecastMonth]&&(
+                        <>
+                          <div className="bi-kpi__divider"/>
+                          <div className="bi-kpi__bar-label">
+                            <span>Forecast</span>
+                            <span style={{color:"#6366f1"}}>{compact(Number(forecastInputs[forecastMonth]))}</span>
+                          </div>
+                          <div style={{height:5,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
+                            <div style={{width:`${Math.min(100,kpis.fcastPct||0)}%`,height:"100%",background:"#6366f1",borderRadius:999}}/>
+                          </div>
+                          <span className="bi-kpi__sub" style={{color:"#6366f1"}}>{kpis.fcastPct||0}% cumplido</span>
+                        </>
+                      )}
                       {currentYearFcast>0&&<span className="bi-kpi__sub" style={{color:"#94a3b8",fontSize:10}}>Total anual: {compact(currentYearFcast)}</span>}
                     </div>
                   </div>
