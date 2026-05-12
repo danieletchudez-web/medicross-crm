@@ -491,7 +491,13 @@ export default function ImporterPage({ profile, onNavigate }) {
         <header className="bi-header">
           <div className="bi-header__left">
             <div className="bi-header__tabs">
-              {[{ k: "dashboard", l: "Dashboard BI" }, { k: "import", l: "📥 Importar Excel" }, { k: "history", l: "📋 Historial" }].map(t => (
+              {[
+                { k: "dashboard", l: "Dashboard BI" },
+                ...( ["super_admin","manager"].includes(profile?.role) ? [
+                  { k: "import",  l: "📥 Importar Excel" },
+                  { k: "history", l: "📋 Historial"      },
+                ] : [] ),
+              ].map(t => (
                 <button key={t.k} className={`bi-header__tab ${tab === t.k ? "active" : ""}`} onClick={() => setTab(t.k)}>{t.l}</button>
               ))}
             </div>
@@ -816,7 +822,9 @@ export default function ImporterPage({ profile, onNavigate }) {
                   <div className="bi-panel">
                     <div className="bi-panel__hd">
                       <div><h3>Últimas importaciones</h3></div>
-                      <button className="bi-link" onClick={() => setTab("history")}>Ver historial →</button>
+                      {["super_admin","manager"].includes(profile?.role) && (
+                        <button className="bi-link" onClick={() => setTab("history")}>Ver historial →</button>
+                      )}
                     </div>
                     <div className="bi-tbl-wrap">
                       <table className="bi-tbl">
@@ -840,8 +848,8 @@ export default function ImporterPage({ profile, onNavigate }) {
             </>
           )}
 
-          {/* IMPORTAR */}
-          {tab === "import" && (
+          {/* IMPORTAR — solo manager y super_admin */}
+          {tab === "import" && ["super_admin","manager"].includes(profile?.role) && (
             <div className="bi-import">
               <div className="bi-stepper">
                 {["Subir archivo","Mapear columnas","Validar","Completado"].map((label, i) => (
@@ -913,8 +921,8 @@ export default function ImporterPage({ profile, onNavigate }) {
             </div>
           )}
 
-          {/* HISTORIAL */}
-          {tab === "history" && (
+          {/* HISTORIAL — solo manager y super_admin */}
+          {tab === "history" && ["super_admin","manager"].includes(profile?.role) && (
             <div className="bi-panel" style={{ padding: 22 }}>
               <div className="bi-panel__hd"><div><h3>Historial de importaciones</h3><p>{imports.length} importaciones</p></div></div>
               <div className="bi-tbl-wrap">

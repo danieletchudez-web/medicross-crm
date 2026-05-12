@@ -57,11 +57,36 @@ export default function App() {
   async function loadProfile(user) {
     try {
       const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-      setProfile(error || !data
-        ? { ...FALLBACK_PROFILE, id: user.id, email: user.email, full_name: user.email }
-        : data);
+      if (data && !error) {
+        setProfile(data);
+      } else {
+        // Si no se puede leer el perfil, usar rol mínimo (seller) no super_admin
+        setProfile({
+          id: user.id,
+          email: user.email,
+          full_name: user.email,
+          role: "seller",
+          approved: true,
+          allowed_modules: [
+            "managerDashboard","importer","salesAnalytics",
+            "accounts","products","opportunities","campaigns",
+            "todayActions","visits","calendar",
+          ],
+        });
+      }
     } catch {
-      setProfile({ ...FALLBACK_PROFILE, id: user.id, email: user.email, full_name: user.email });
+      setProfile({
+        id: user.id,
+        email: user.email,
+        full_name: user.email,
+        role: "seller",
+        approved: true,
+        allowed_modules: [
+          "managerDashboard","importer","salesAnalytics",
+          "accounts","products","opportunities","campaigns",
+          "todayActions","visits","calendar",
+        ],
+      });
     }
   }
 

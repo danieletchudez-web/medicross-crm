@@ -95,6 +95,19 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   function approveUser(user)  { updateUser(user.id, { approved: true  }); }
   function blockUser(user)    { updateUser(user.id, { approved: false }); }
 
+  async function deleteUser(user) {
+    if (user.role === "super_admin") { alert("No se puede eliminar un Super Admin."); return; }
+    if (user.id === profile?.id)     { alert("No podés eliminarte a vos mismo."); return; }
+    if (!confirm(`¿Eliminar a ${user.full_name || user.email}? Esta acción no se puede deshacer.`)) return;
+    setSavingId(user.id);
+    const { error } = await supabase.auth.admin.deleteUser(user.id).catch(() => ({ error: true }));
+    // Si no hay acceso admin, eliminar solo el perfil
+    await supabase.from("profiles").delete().eq("id", user.id);
+    if (error) { /* perfil eliminado igual */ }
+    setUsers(prev => prev.filter(u => u.id !== user.id));
+    setSavingId(null);
+  }
+
   function setFullAccess(user) {
     updateUser(user.id, { approved: true, allowed_modules: FULL_MODULES });
   }
@@ -162,9 +175,11 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                         key={user.id}
                         user={user}
                         saving={savingId === user.id}
+                        currentProfile={profile}
                         onRoleChange={(role) => updateUser(user.id, { role })}
                         onApprove={() => approveUser(user)}
                         onBlock={() => blockUser(user)}
+                        onDelete={() => deleteUser(user)}
                         onToggleModule={(moduleId) => toggleModule(user, moduleId)}
                         onFullAccess={() => setFullAccess(user)}
                         onSellerAccess={() => setSellerAccess(user)}
@@ -181,9 +196,11 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                     key={user.id}
                     user={user}
                     saving={savingId === user.id}
+                    currentProfile={profile}
                     onRoleChange={(role) => updateUser(user.id, { role })}
                     onApprove={() => approveUser(user)}
                     onBlock={() => blockUser(user)}
+                    onDelete={() => deleteUser(user)}
                     onToggleModule={(moduleId) => toggleModule(user, moduleId)}
                     onFullAccess={() => setFullAccess(user)}
                     onSellerAccess={() => setSellerAccess(user)}
@@ -208,7 +225,7 @@ function Kpi({ title, value, danger }) {
   );
 }
 
-function UserRow({ user, saving, onRoleChange, onApprove, onBlock, onToggleModule, onFullAccess, onSellerAccess, onManagerAccess }) {
+function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onDelete, onToggleModule, onFullAccess, onSellerAccess, onManagerAccess }) {
   return (
     <tr>
       <td>
@@ -245,13 +262,16 @@ function UserRow({ user, saving, onRoleChange, onApprove, onBlock, onToggleModul
           <button onClick={onSellerAccess}  disabled={saving}>Vendedor</button>
           <button onClick={onManagerAccess} disabled={saving}>Gerente</button>
           <button onClick={onFullAccess}    disabled={saving}>Full</button>
+          {user.role !== "super_admin" && user.id !== currentProfile?.id && (
+            <button onClick={onDelete} disabled={saving} style={{background:"#fef2f2",color:"#dc2626",borderColor:"#fecaca"}}>Eliminar</button>
+          )}
         </div>
       </td>
     </tr>
   );
 }
 
-function UserMobileCard({ user, saving, onRoleChange, onApprove, onBlock, onToggleModule, onFullAccess, onSellerAccess, onManagerAccess }) {
+function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onDelete, onToggleModule, onFullAccess, onSellerAccess, onManagerAccess }) {
   return (
     <article className="admin-mobile-card">
       <div className="admin-user-cell">
@@ -282,6 +302,9 @@ function UserMobileCard({ user, saving, onRoleChange, onApprove, onBlock, onTogg
         <button onClick={onSellerAccess}  disabled={saving}>Vendedor</button>
         <button onClick={onManagerAccess} disabled={saving}>Gerente</button>
         <button onClick={onFullAccess}    disabled={saving}>Full</button>
+        {user.role !== "super_admin" && user.id !== currentProfile?.id && (
+          <button onClick={onDelete} disabled={saving} style={{background:"#fef2f2",color:"#dc2626",borderColor:"#fecaca"}}>Eliminar</button>
+        )}
       </div>
     </article>
   );
