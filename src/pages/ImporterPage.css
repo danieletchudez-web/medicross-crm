@@ -21,8 +21,8 @@
   justify-content: space-between;
   background: #fff;
   border-bottom: 1px solid #e8ecf2;
-  padding: 0 25px;
-  height: 64px;
+  padding: 0 20px;
+  height: 50px;
   position: sticky;
   top: 0;
   z-index: 20;
@@ -393,4 +393,21 @@
 /* Responsive update */
 @media (max-width:1200px) {
   .bi-kpi-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── Hero scale label ───────────────────────────────────────────────── */
+.bi-hero__scale {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: rgba(255,255,255,0.3);
+  margin-top: -2px;
+}
+.bi-hero__big {
+  font-size: 28px !important;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.8px;
+  line-height: 1;
 }
