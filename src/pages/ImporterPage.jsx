@@ -684,11 +684,20 @@ export default function ImporterPage({ profile, onNavigate }) {
                           })}
                         </select>
                       </div>
-                      <div className="bi-forecast-row" style={{ marginTop: 4 }}>
-                        <input className="bi-forecast-input" value={forecastInputs[forecastMonth] || ""} onChange={e => setForecastInputs(prev => ({ ...prev, [forecastMonth]: e.target.value }))} placeholder="Ej: 3400000000" onKeyDown={e => e.key === "Enter" && saveForecast()}/>
-                        <button className="bi-forecast-save" onClick={saveForecast}>Guardar</button>
-                      </div>
-                      {forecastInputs[forecastMonth] && (
+                      {/* Solo super_admin puede editar el forecast */}
+                      {profile?.role === "super_admin" && (
+                        <div className="bi-forecast-row" style={{ marginTop: 4 }}>
+                          <input
+                            className="bi-forecast-input"
+                            value={forecastInputs[forecastMonth] || ""}
+                            onChange={e => setForecastInputs(prev => ({ ...prev, [forecastMonth]: e.target.value }))}
+                            placeholder="Ej: 3400000000"
+                            onKeyDown={e => e.key === "Enter" && saveForecast()}
+                          />
+                          <button className="bi-forecast-save" onClick={saveForecast}>Guardar</button>
+                        </div>
+                      )}
+                      {forecastInputs[forecastMonth] ? (
                         <>
                           <div className="bi-kpi__divider"/>
                           <div className="bi-kpi__bar-label">
@@ -700,6 +709,10 @@ export default function ImporterPage({ profile, onNavigate }) {
                           </div>
                           <span className="bi-kpi__sub" style={{ color: "#6366f1" }}>{kpis.fcastPct || 0}% cumplido</span>
                         </>
+                      ) : (
+                        <span className="bi-kpi__sub" style={{ color: "#94a3b8" }}>
+                          {profile?.role === "super_admin" ? "Ingresá el forecast para este mes" : "Sin forecast cargado"}
+                        </span>
                       )}
                       {currentYearFcast > 0 && <span className="bi-kpi__sub" style={{ color: "#94a3b8", fontSize: 10 }}>Total anual: {compact(currentYearFcast)}</span>}
                     </div>

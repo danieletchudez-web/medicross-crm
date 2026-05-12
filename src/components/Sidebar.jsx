@@ -7,9 +7,9 @@ const MENU_SECTIONS = [
   {
     label: "ANÁLISIS",
     items: [
-      { id: "managerDashboard", label: "Dashboard",           icon: "▦" },
-      { id: "importer",         label: "BI Comercial",        icon: "📊" },
-      { id: "salesAnalytics",   label: "Análisis Comercial",  icon: "◑" },
+      { id: "managerDashboard", label: "Dashboard",          icon: "▦" },
+      { id: "importer",         label: "BI Comercial",       icon: "📊" },
+      { id: "salesAnalytics",   label: "Análisis Comercial", icon: "◑" },
     ],
   },
   {
@@ -32,7 +32,6 @@ const MENU_SECTIONS = [
   },
 ];
 
-// IDs planos para drag & drop
 const ALL_IDS = MENU_SECTIONS.flatMap((s) => s.items.map((i) => i.id));
 
 function loadOrder() {
@@ -41,7 +40,7 @@ function loadOrder() {
     if (!saved) return null;
     const ids = JSON.parse(saved);
     const ordered = ids.map((id) => ALL_IDS.find((x) => x === id)).filter(Boolean);
-    const missing = ALL_IDS.filter((id) => !ids.includes(id));
+    const missing  = ALL_IDS.filter((id) => !ids.includes(id));
     return [...ordered, ...missing];
   } catch { return null; }
 }
@@ -51,7 +50,6 @@ function saveOrder(ids) {
 }
 
 function buildSections(orderedIds) {
-  // Reconstruye las secciones respetando el orden custom pero manteniendo los grupos
   return MENU_SECTIONS.map((section) => ({
     ...section,
     items: section.items.sort((a, b) => {
@@ -66,19 +64,23 @@ function buildSections(orderedIds) {
 }
 
 export default function Sidebar({ profile, onNavigate }) {
-  const [dark, setDark]       = useState(() => localStorage.getItem("theme") === "dark");
-  const [editing, setEditing] = useState(false);
+  const [dark,       setDark]       = useState(() => localStorage.getItem("theme") === "dark");
+  const [editing,    setEditing]    = useState(false);
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
-
-  const dragIdx  = useRef(null);
+  const dragIdx = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
+  /* ── Permisos ─────────────────────────────────────────────────────── */
   const canSee = (module) => {
+    // super_admin ve todo siempre
     if (profile?.role === "super_admin") return true;
+    // Administración solo para manager y super_admin
+    if (module === "adminUsers") return profile?.role === "manager";
+    // El resto: respeta allowed_modules del perfil
     return profile?.allowed_modules?.includes(module);
   };
 
@@ -87,7 +89,6 @@ export default function Sidebar({ profile, onNavigate }) {
     window.location.reload();
   }
 
-  // Drag handlers — reordena dentro de la misma sección
   function onDragStart(id) { dragIdx.current = id; }
 
   function onDragEnter(id) {
@@ -98,7 +99,6 @@ export default function Sidebar({ profile, onNavigate }) {
     if (fromIdx === -1 || toIdx === -1) return;
     next.splice(fromIdx, 1);
     next.splice(toIdx, 0, dragIdx.current);
-    dragIdx.current = dragIdx.current; // keep same
     setOrderedIds(next);
   }
 
@@ -112,25 +112,21 @@ export default function Sidebar({ profile, onNavigate }) {
     localStorage.removeItem("sidebar_order");
   }
 
-  const sections = buildSections(orderedIds);
-
-  const initials    = (profile?.full_name || profile?.email || "U").slice(0, 1).toUpperCase();
-  const roleLabel   = { super_admin: "Super Admin", manager: "Manager", seller: "Vendedor" }[profile?.role] || profile?.role || "Usuario";
-  const email       = profile?.email || "";
+  const sections     = buildSections(orderedIds);
+  const initials     = (profile?.full_name || profile?.email || "U").slice(0, 1).toUpperCase();
+  const roleLabel    = { super_admin: "Super Admin", manager: "Manager", seller: "Vendedor" }[profile?.role] || profile?.role || "Usuario";
+  const email        = profile?.email || "";
   const emailDisplay = email.length > 24 ? email.slice(0, 22) + "…" : email;
 
   return (
     <aside className="sidebar">
 
-      {/* BRAND */}
       <div className="sidebar-brand">
-        <img src={logoImg} alt="STORING Medical" className="sidebar-brand__img" />
+        <img src={logoImg} alt="STORING Medical" className="sidebar-brand__img"/>
       </div>
 
-      {/* BODY */}
       <div className="sidebar-body">
 
-        {/* USER */}
         <div className="sidebar-user">
           <div className="sidebar-user__row">
             <div className="sidebar-user__avatar">{initials}</div>
@@ -142,10 +138,8 @@ export default function Sidebar({ profile, onNavigate }) {
           <span className="sidebar-user__role">{roleLabel}</span>
         </div>
 
-        {/* NAV */}
         <nav className="sidebar-nav">
 
-          {/* Edit button */}
           <div className="sidebar-nav__group-row">
             <span className="sidebar-nav__group-label">MÓDULOS</span>
             <button
@@ -159,7 +153,6 @@ export default function Sidebar({ profile, onNavigate }) {
 
           {editing && <p className="sidebar-edit-hint">Arrastrá para reordenar</p>}
 
-          {/* Sections */}
           {sections.map((section, si) => {
             const visible = section.items.filter((item) => canSee(item.id));
             if (visible.length === 0) return null;
@@ -200,13 +193,12 @@ export default function Sidebar({ profile, onNavigate }) {
           )}
         </nav>
 
-        {/* FOOTER */}
         <div className="sidebar-footer">
           <div className="sidebar-theme-toggle" onClick={() => setDark((d) => !d)}>
             <span className="sidebar-theme-toggle__icon">{dark ? "☀" : "☽"}</span>
             <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
             <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
-              <div className="sidebar-theme-toggle__knob" />
+              <div className="sidebar-theme-toggle__knob"/>
             </div>
           </div>
           <button type="button" className="sidebar-logout" onClick={logout}>
