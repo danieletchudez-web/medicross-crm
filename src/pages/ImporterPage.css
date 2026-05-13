@@ -110,7 +110,7 @@
 .bi-hero__sep { width: 1px; background: rgba(255,255,255,.07); align-self: stretch; margin: 0 16px; flex-shrink: 0; }
 
 .bi-hero__eyebrow { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: rgba(255,255,255,.35); }
-.bi-hero__big     { font-size: 34px; font-weight: 900; color: #fff; letter-spacing: -1px; line-height: 1; }
+.bi-hero__big     { font-size: 28px !important; font-weight: 900; color: #fff; letter-spacing: -0.8px; line-height: 1; }
 .bi-hero__sub     { font-size: 10px; color: rgba(255,255,255,.3); font-family: "DM Mono", monospace; }
 .bi-hero__badge {
   display: inline-flex; align-items: center; gap: 3px;
@@ -300,26 +300,6 @@
 .bi-footer { text-align: center; padding: 12px 0 4px; }
 .bi-footer a { font-size: 10px; color: #c1cdd9; text-decoration: none; font-weight: 500; }
 
-/* ─── Responsive ─────────────────────────────────────────────────────── */
-@media (max-width:1200px){
-  .bi-row--70-30{grid-template-columns:1fr;}
-  .bi-row--33-33-33{grid-template-columns:1fr 1fr;}
-  .bi-kpi-row{grid-template-columns:repeat(2,1fr);}
-}
-@media (max-width:900px){
-  .bi-hero{flex-direction:column;gap:12px;}
-  .bi-hero__sep{display:none;}
-  .bi-hero__stats{margin-left:0;}
-  .bi-row--50-50,.bi-row--33-33-33{grid-template-columns:1fr;}
-  .bi-kpi-row{grid-template-columns:1fr 1fr;}
-  .bi-map-grid{grid-template-columns:repeat(2,1fr);}
-}
-@media (max-width:600px){
-  .bi-kpi-row{grid-template-columns:1fr;}
-  .bi-map-grid{grid-template-columns:1fr;}
-  .bi-hero__big{font-size:26px;}
-}
-
 /* ─── Top 3 unidades ─────────────────────────────────────────────────── */
 .bi-top3 { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
 .bi-top3__row { display: flex; align-items: center; gap: 6px; }
@@ -344,18 +324,7 @@
 }
 .bi-forecast-select:focus { border-color: #6366f1; background: #fff; }
 
-/* ─── Top 5 clientes — nombre completo ──────────────────────────────── */
-.bi-top3__name {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
-  line-height: 1.3;
-  flex: 1;
-}
-
 /* ─── KPI card variants ──────────────────────────────────────────────── */
-.bi-kpi--wide { /* 15% wider via grid column */ }
-
 .bi-kpi__divider {
   height: 1px;
   background: #f0f4f8;
@@ -390,11 +359,6 @@
   margin-bottom: 3px;
 }
 
-/* Responsive update */
-@media (max-width:1200px) {
-  .bi-kpi-row { grid-template-columns: 1fr 1fr; }
-}
-
 /* ─── Hero scale label ───────────────────────────────────────────────── */
 .bi-hero__scale {
   font-size: 9px;
@@ -404,10 +368,94 @@
   color: rgba(255,255,255,0.3);
   margin-top: -2px;
 }
-.bi-hero__big {
-  font-size: 28px !important;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: -0.8px;
-  line-height: 1;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width:1200px){
+  .bi-row--70-30 { grid-template-columns: 1fr; }
+  .bi-row--33-33-33 { grid-template-columns: 1fr 1fr; }
+  .bi-kpi-row { grid-template-columns: repeat(2,1fr); }
+}
+
+@media (max-width:900px){
+  .bi-hero { flex-direction: column; gap: 12px; }
+  .bi-hero__sep { display: none; }
+  .bi-hero__stats { margin-left: 0; width: 100%; justify-content: space-around; }
+  .bi-row--50-50, .bi-row--33-33-33 { grid-template-columns: 1fr; }
+  .bi-kpi-row { grid-template-columns: 1fr 1fr; }
+  .bi-map-grid { grid-template-columns: repeat(2,1fr); }
+}
+
+/* ── Mobile ≤ 600px ─────────────────────────────────────────────────── */
+@media (max-width:600px){
+
+  /* Compensar topbar fija */
+  .bi-content { padding-top: 66px; padding-left: 10px; padding-right: 10px; }
+
+  /* Hero compacto */
+  .bi-hero { padding: 14px 16px; border-radius: 12px; }
+  .bi-hero__big { font-size: 22px !important; }
+  .bi-hero__val { font-size: 16px; }
+  .bi-hero__sub { font-size: 9px; }
+  .bi-hero__eyebrow { font-size: 8px; }
+
+  /* Stats del hero en fila compacta */
+  .bi-hero__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 8px 0;
+  }
+  .bi-hero__stat strong { font-size: 14px; }
+  .bi-hero__stat span   { font-size: 7px; }
+
+  /* KPIs — 2 columnas */
+  .bi-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .bi-kpi { padding: 10px 11px; }
+  .bi-kpi__val { font-size: 15px; }
+  .bi-kpi__label { font-size: 8.5px; }
+  .bi-kpi__sub { font-size: 9px; }
+
+  /* Paneles — 1 columna */
+  .bi-row--70-30,
+  .bi-row--50-50,
+  .bi-row--33-33-33 { grid-template-columns: 1fr; }
+
+  /* Filtros apilados */
+  .bi-filters { flex-direction: column; gap: 8px; }
+  .bi-fg select { min-width: 0; width: 100%; }
+
+  /* Ranking — nombre truncado más corto */
+  .bi-rank-name { font-size: 10px; }
+  .bi-rank-val  { font-size: 10px; min-width: 46px; }
+
+  /* Top 5 clientes — nombre en 2 líneas máx */
+  .bi-top3__name {
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    font-size: 10px;
+  }
+  .bi-top3__val { font-size: 10px; }
+
+  /* Mapa de columnas importador */
+  .bi-map-grid { grid-template-columns: 1fr; }
+
+  /* Stepper compacto */
+  .bi-step span { display: none; }
+  .bi-step__line { min-width: 10px; }
+
+  /* Tabla con scroll horizontal */
+  .bi-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .bi-tbl { font-size: 11px; }
+  .bi-tbl th, .bi-tbl td { padding: 7px 10px; }
 }
