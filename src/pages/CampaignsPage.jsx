@@ -7,6 +7,7 @@ const EMPTY_FORM = {
   name: "",
   product_line: "EchoLaser",
   target_amount: "",
+  forecast_manual: "",
   start_date: "",
   end_date: "",
   status: "activa",
@@ -71,10 +72,13 @@ export default function CampaignsPage({ profile, onNavigate }) {
         0
       );
 
-      const forecast = openOpps.reduce(
+      const forecastOpps = openOpps.reduce(
         (sum, o) => sum + Number(o.forecast_amount || 0),
         0
       );
+
+      // Usar forecast_manual si existe, sino usar el de oportunidades
+      const forecast = Number(campaign.forecast_manual || 0) || forecastOpps;
 
       const target = Number(campaign.target_amount || 0);
       const coverage = target > 0 ? Math.round((forecast / target) * 100) : 0;
@@ -83,6 +87,7 @@ export default function CampaignsPage({ profile, onNavigate }) {
         ...campaign,
         pipeline,
         forecast,
+        forecastOpps,
         target,
         coverage,
         opportunities: relatedOpps.length,
@@ -92,13 +97,13 @@ export default function CampaignsPage({ profile, onNavigate }) {
   }, [campaigns, opportunities]);
 
   const stats = useMemo(() => {
-    const totalTarget = enrichedCampaigns.reduce((s, c) => s + c.target, 0);
+    const totalTarget   = enrichedCampaigns.reduce((s, c) => s + c.target, 0);
     const totalForecast = enrichedCampaigns.reduce((s, c) => s + c.forecast, 0);
 
     return {
-      total: campaigns.length,
-      active: campaigns.filter((c) => c.status === "activa").length,
-      target: totalTarget,
+      total:    campaigns.length,
+      active:   campaigns.filter((c) => c.status === "activa").length,
+      target:   totalTarget,
       forecast: totalForecast,
       coverage: totalTarget > 0 ? Math.round((totalForecast / totalTarget) * 100) : 0,
     };
@@ -109,16 +114,17 @@ export default function CampaignsPage({ profile, onNavigate }) {
     setLoading(true);
 
     const payload = {
-      name: form.name,
-      product_line: form.product_line,
-      line: form.product_line,
-      target_amount: Number(form.target_amount || 0),
-      start_date: form.start_date || null,
-      end_date: form.end_date || null,
-      status: form.status,
-      objective: form.objective,
-      owner_id: profile?.id || null,
-      updated_at: new Date().toISOString(),
+      name:             form.name,
+      product_line:     form.product_line,
+      line:             form.product_line,
+      target_amount:    Number(form.target_amount || 0),
+      forecast_manual:  Number(form.forecast_manual || 0),
+      start_date:       form.start_date || null,
+      end_date:         form.end_date || null,
+      status:           form.status,
+      objective:        form.objective,
+      owner_id:         profile?.id || null,
+      updated_at:       new Date().toISOString(),
     };
 
     let result;
@@ -144,13 +150,14 @@ export default function CampaignsPage({ profile, onNavigate }) {
   function editCampaign(campaign) {
     setEditingId(campaign.id);
     setForm({
-      name: campaign.name || "",
-      product_line: campaign.product_line || campaign.line || "EchoLaser",
-      target_amount: campaign.target_amount || "",
-      start_date: campaign.start_date || "",
-      end_date: campaign.end_date || "",
-      status: campaign.status || "activa",
-      objective: campaign.objective || "",
+      name:            campaign.name || "",
+      product_line:    campaign.product_line || campaign.line || "EchoLaser",
+      target_amount:   campaign.target_amount || "",
+      forecast_manual: campaign.forecast_manual || "",
+      start_date:      campaign.start_date || "",
+      end_date:        campaign.end_date || "",
+      status:          campaign.status || "activa",
+      objective:       campaign.objective || "",
     });
   }
 
@@ -183,11 +190,11 @@ export default function CampaignsPage({ profile, onNavigate }) {
         </section>
 
         <section className="campaign-kpi-grid">
-          <Kpi title="Campañas totales" value={stats.total} />
-          <Kpi title="Activas" value={stats.active} />
-          <Kpi title="Objetivo total" value={money(stats.target)} />
+          <Kpi title="Campañas totales"     value={stats.total} />
+          <Kpi title="Activas"              value={stats.active} />
+          <Kpi title="Objetivo total"       value={money(stats.target)} />
           <Kpi title="Forecast manual total" value={money(stats.forecast)} />
-          <Kpi title="Cobertura global" value={`${stats.coverage}%`} />
+          <Kpi title="Cobertura global"     value={`${stats.coverage}%`} />
         </section>
 
         <section className="campaign-form-card">
@@ -240,6 +247,16 @@ export default function CampaignsPage({ profile, onNavigate }) {
                 value={form.target_amount}
                 onChange={(e) => setForm({ ...form, target_amount: e.target.value })}
                 placeholder="150000000"
+              />
+            </div>
+
+            <div>
+              <label>Forecast manual ARS</label>
+              <input
+                type="number"
+                value={form.forecast_manual}
+                onChange={(e) => setForm({ ...form, forecast_manual: e.target.value })}
+                placeholder="Ej: 120000000"
               />
             </div>
 
@@ -341,7 +358,9 @@ export default function CampaignsPage({ profile, onNavigate }) {
 
                     <div>
                       <span>Forecast manual</span>
-                      <strong>{money(campaign.forecast)}</strong>
+                      <strong style={{ color: campaign.forecast > 0 ? "#3b82f6" : undefined }}>
+                        {money(campaign.forecast)}
+                      </strong>
                     </div>
 
                     <div>
