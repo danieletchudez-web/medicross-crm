@@ -3,6 +3,22 @@ import { supabase } from "../lib/supabaseClient";
 import Sidebar from "../components/Sidebar";
 import "./ImporterPage.css";
 
+/* ── Tooltip ────────────────────────────────────────────────────────── */
+function Tooltip({ text }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span className="kpi-tooltip-wrap">
+      <span
+        className="kpi-tooltip-trigger"
+        onMouseEnter={() => setVisible(true)}
+        onMouseLeave={() => setVisible(false)}
+        onClick={() => setVisible(v => !v)}
+      >?</span>
+      {visible && <span className="kpi-tooltip-box">{text}</span>}
+    </span>
+  );
+}
+
 /* ─── Formato financiero argentino ──────────────────────────────────── */
 function fmtARS(v) {
   const n = Number(v || 0);
@@ -13,12 +29,6 @@ function fmtARS(v) {
   }).format(n);
 }
 
-/* compact — etiquetas claras en español argentino
-   MM  = miles de millones (billion)
-   M   = millones
-   K   = miles
-   siempre 1 decimal para MM y M, sin decimal para K
-*/
 function compact(v) {
   const n = Number(v || 0);
   if (isNaN(n) || !isFinite(n)) return "$ 0";
@@ -32,7 +42,6 @@ function compact(v) {
   return fmtARS(n);
 }
 
-/* Versión con 2 decimales para valores más precisos */
 function compactPrecise(v) {
   const n = Number(v || 0);
   if (isNaN(n) || !isFinite(n)) return "$ 0";
@@ -157,7 +166,6 @@ function Sparkline({ data, color = "#10b981", w = 90, h = 30 }) {
 const PAL  = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#84cc16","#f97316","#6366f1"];
 const EPAL = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444","#06b6d4"];
 
-/* Etiqueta de escala para el hero */
 function scaleLabel(n) {
   const abs = Math.abs(Number(n || 0));
   if (abs >= 1_000_000_000) return "miles de millones";
@@ -304,19 +312,16 @@ export default function ImporterPage({ profile, onNavigate }) {
   const kpis = useMemo(() => {
     const safeN = v => { const n = Number(v); return isFinite(n) ? n : 0; };
     const total = filteredSales.reduce((s, r) => s + safeN(r.total_venta), 0);
-
     const filasConCosto   = filteredSales.filter(r => r.costo !== null && r.costo !== undefined);
     const hasCosto        = filasConCosto.length > 0;
     const costoTotal      = filasConCosto.reduce((s, r) => s + safeN(r.costo), 0);
     const ventasConCosto  = filasConCosto.reduce((s, r) => s + safeN(r.total_venta), 0);
     const margenTotal     = hasCosto ? ventasConCosto - costoTotal : null;
-
     const comprobantesUnicos = new Set(filteredSales.map(r => r.comprobante).filter(Boolean)).size;
     const tickets    = comprobantesUnicos || filteredSales.filter(r => safeN(r.total_venta) > 0).length;
     const clientes   = new Set(filteredSales.map(r => r.cliente).filter(Boolean)).size;
     const productos  = new Set(filteredSales.map(r => r.producto).filter(Boolean)).size;
     const avgTicket  = tickets > 0 ? total / tickets : 0;
-
     const byVend = {}, byUnit = {};
     filteredSales.forEach(r => {
       const v = safeN(r.total_venta);
@@ -325,67 +330,36 @@ export default function ImporterPage({ profile, onNavigate }) {
     });
     const mejorVend = Object.entries(byVend).sort((a, b) => b[1] - a[1])[0];
     const mejorUnit = Object.entries(byUnit).sort((a, b) => b[1] - a[1])[0];
-
-    const now      = new Date();
-    const nowM     = now.getMonth(), nowY = now.getFullYear();
-    const prevM    = nowM === 0 ? 11 : nowM - 1;
-    const prevY    = nowM === 0 ? nowY - 1 : nowY;
-
-    const thisMonth = filteredSales
-      .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === nowM && d.getFullYear() === nowY; })
-      .reduce((s, r) => s + safeN(r.total_venta), 0);
-    const prevMonth = filteredSales
-      .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === prevM && d.getFullYear() === prevY; })
-      .reduce((s, r) => s + safeN(r.total_venta), 0);
-
+    const now   = new Date();
+    const nowM  = now.getMonth(), nowY = now.getFullYear();
+    const prevM = nowM === 0 ? 11 : nowM - 1;
+    const prevY = nowM === 0 ? nowY - 1 : nowY;
+    const thisMonth = filteredSales.filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === nowM && d.getFullYear() === nowY; }).reduce((s, r) => s + safeN(r.total_venta), 0);
+    const prevMonth = filteredSales.filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === prevM && d.getFullYear() === prevY; }).reduce((s, r) => s + safeN(r.total_venta), 0);
     const momChange = prevMonth > 0 ? ((thisMonth - prevMonth) / prevMonth) * 100 : null;
-
     const byWeek = {};
-    filteredSales.forEach(s => {
-      const d = new Date(s.fecha); if (isNaN(d)) return;
-      const wk = Math.floor(d.getTime() / (7 * 86400000));
-      byWeek[wk] = (byWeek[wk] || 0) + safeN(s.total_venta);
-    });
+    filteredSales.forEach(s => { const d = new Date(s.fecha); if (isNaN(d)) return; const wk = Math.floor(d.getTime() / (7 * 86400000)); byWeek[wk] = (byWeek[wk] || 0) + safeN(s.total_venta); });
     const sparkData = Object.entries(byWeek).sort((a, b) => Number(a[0]) - Number(b[0])).slice(-8).map(e => e[1]);
-
     const byMonthObj = {};
-    filteredSales.forEach(s => {
-      const d = new Date(s.fecha); if (isNaN(d)) return;
-      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      byMonthObj[k] = (byMonthObj[k] || 0) + safeN(s.total_venta);
-    });
+    filteredSales.forEach(s => { const d = new Date(s.fecha); if (isNaN(d)) return; const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; byMonthObj[k] = (byMonthObj[k] || 0) + safeN(s.total_venta); });
     const monthEntries    = Object.entries(byMonthObj);
     const mejorMesEntry   = [...monthEntries].sort((a, b) => b[1] - a[1])[0];
     const mejorMes        = mejorMesEntry ? { mes: mejorMesEntry[0], valor: mejorMesEntry[1] } : null;
     const cantMeses       = monthEntries.length;
     const promedioMensual = cantMeses > 0 ? total / cantMeses : 0;
-
     const fcastKey  = String(nowM + 1).padStart(2, "0");
     const fcast     = Number(forecastInputs[fcastKey] || 0);
     const fcastPct  = fcast > 0 ? safePct(thisMonth, fcast) : null;
-
     const pendienteRows  = filteredSales.filter(s => (s.estado || "").toUpperCase().includes("PENDIENTE COBRO"));
     const pendienteCobro = pendienteRows.reduce((s, r) => s + safeN(r.total_venta), 0);
     const pendienteCount = pendienteRows.length;
-    const cobrada        = filteredSales.filter(s => (s.estado || "").toUpperCase() === "COBRADA")
-                                        .reduce((s, r) => s + safeN(r.total_venta), 0);
-
-    return {
-      total, hasCosto, costoTotal, margenTotal, ventasConCosto,
-      tickets, clientes, productos, avgTicket,
-      mejorVend, mejorUnit, momChange, thisMonth, prevMonth,
-      sparkData, fcast, fcastPct,
-      mejorMes, cantMeses, promedioMensual,
-      pendienteCobro, pendienteCount, cobrada,
-    };
+    const cobrada        = filteredSales.filter(s => (s.estado || "").toUpperCase() === "COBRADA").reduce((s, r) => s + safeN(r.total_venta), 0);
+    return { total, hasCosto, costoTotal, margenTotal, ventasConCosto, tickets, clientes, productos, avgTicket, mejorVend, mejorUnit, momChange, thisMonth, prevMonth, sparkData, fcast, fcastPct, mejorMes, cantMeses, promedioMensual, pendienteCobro, pendienteCount, cobrada };
   }, [filteredSales, forecastInputs]);
 
   const topClientes = useMemo(() => {
     const byC = {};
-    filteredSales.forEach(s => {
-      if (!s.cliente) return;
-      const v = Number(s.total_venta); byC[s.cliente] = (byC[s.cliente] || 0) + (isFinite(v) ? v : 0);
-    });
+    filteredSales.forEach(s => { if (!s.cliente) return; const v = Number(s.total_venta); byC[s.cliente] = (byC[s.cliente] || 0) + (isFinite(v) ? v : 0); });
     return Object.entries(byC).sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [filteredSales]);
 
@@ -398,17 +372,12 @@ export default function ImporterPage({ profile, onNavigate }) {
 
   const alertas = useMemo(() => {
     const list = [];
-    if (kpis.momChange !== null && kpis.momChange < -5)
-      list.push({ type: "danger", icon: "📉", title: "Caída de ventas", desc: `Las ventas cayeron ${Math.abs(kpis.momChange).toFixed(1).replace(".", ",")}% vs. el mes anterior.`, val: `${kpis.momChange.toFixed(1).replace(".", ",")}%` });
-    if (kpis.fcastPct !== null && kpis.fcastPct < 90)
-      list.push({ type: "warning", icon: "⚠", title: "Forecast en riesgo", desc: `Cumplimiento del ${kpis.fcastPct}% del forecast mensual.`, val: `${kpis.fcastPct}%` });
+    if (kpis.momChange !== null && kpis.momChange < -5) list.push({ type: "danger", icon: "📉", title: "Caída de ventas", desc: `Las ventas cayeron ${Math.abs(kpis.momChange).toFixed(1).replace(".", ",")}% vs. el mes anterior.`, val: `${kpis.momChange.toFixed(1).replace(".", ",")}%` });
+    if (kpis.fcastPct !== null && kpis.fcastPct < 90) list.push({ type: "warning", icon: "⚠", title: "Forecast en riesgo", desc: `Cumplimiento del ${kpis.fcastPct}% del forecast mensual.`, val: `${kpis.fcastPct}%` });
     const sinCompra60 = new Set(filteredSales.filter(s => { const d = new Date(s.fecha); return !isNaN(d) && (new Date() - d) > 60 * 86400000; }).map(s => s.cliente)).size;
-    if (sinCompra60 > 0)
-      list.push({ type: "info", icon: "👥", title: "Clientes inactivos", desc: `${sinCompra60} clientes sin compras en más de 60 días.`, val: String(sinCompra60) });
-    if (kpis.pendienteCount > 0)
-      list.push({ type: "warning", icon: "⏳", title: "Facturas pendientes de cobro", desc: `${kpis.pendienteCount} facturas por ${compact(kpis.pendienteCobro)} sin cobrar.`, val: `${safePct(kpis.pendienteCobro, kpis.total)}%` });
-    if (list.length === 0)
-      list.push({ type: "info", icon: "✓", title: "Sin alertas", desc: "Todos los indicadores dentro de parámetros.", val: "OK" });
+    if (sinCompra60 > 0) list.push({ type: "info", icon: "👥", title: "Clientes inactivos", desc: `${sinCompra60} clientes sin compras en más de 60 días.`, val: String(sinCompra60) });
+    if (kpis.pendienteCount > 0) list.push({ type: "warning", icon: "⏳", title: "Facturas pendientes de cobro", desc: `${kpis.pendienteCount} facturas por ${compact(kpis.pendienteCobro)} sin cobrar.`, val: `${safePct(kpis.pendienteCobro, kpis.total)}%` });
+    if (list.length === 0) list.push({ type: "info", icon: "✓", title: "Sin alertas", desc: "Todos los indicadores dentro de parámetros.", val: "OK" });
     return list;
   }, [kpis, filteredSales]);
 
@@ -425,54 +394,33 @@ export default function ImporterPage({ profile, onNavigate }) {
     const Chart = window.Chart; if (!Chart) return;
     [lineRef, barRef, vendRef, donutRef].forEach(r => { if (r.current?.chartInstance) r.current.chartInstance.destroy(); });
     const byMonth = {};
-    filteredSales.forEach(s => {
-      if (!s.fecha) return; const d = new Date(s.fecha); if (isNaN(d)) return;
-      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const v = Number(s.total_venta); byMonth[k] = (byMonth[k] || 0) + (isFinite(v) ? v : 0);
-    });
+    filteredSales.forEach(s => { if (!s.fecha) return; const d = new Date(s.fecha); if (isNaN(d)) return; const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; const v = Number(s.total_venta); byMonth[k] = (byMonth[k] || 0) + (isFinite(v) ? v : 0); });
     const mKeys = Object.keys(byMonth).sort();
     let cData = mKeys.map(k => byMonth[k]);
     if (chartMode === "acumulado") { let acc = 0; cData = cData.map(v => { acc += v; return acc; }); }
     const tOpts = { backgroundColor: "#1e293b", bodyColor: "#f1f5f9", titleColor: "#94a3b8", cornerRadius: 8, padding: 10, displayColors: false, callbacks: { label: ctx => ` ${compact(ctx.raw)}` } };
     const sX = { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 10, family: "DM Sans" } } };
     const sY = { beginAtZero: true, border: { display: false }, grid: { color: "#f1f5f9", lineWidth: 1 }, ticks: { color: "#94a3b8", font: { size: 10, family: "DM Sans" }, callback: compact } };
-
     if (lineRef.current && mKeys.length > 0) {
       const ctx = lineRef.current.getContext("2d");
       const grad = ctx.createLinearGradient(0, 0, 0, 240);
       grad.addColorStop(0, "rgba(59,130,246,0.18)"); grad.addColorStop(1, "rgba(59,130,246,0)");
-      lineRef.current.chartInstance = new Chart(lineRef.current, {
-        type: "line",
-        data: { labels: mKeys, datasets: [{ data: cData, borderColor: "#3b82f6", backgroundColor: grad, fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: "#3b82f6", pointBorderColor: "#fff", pointBorderWidth: 2 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: sX, y: sY } },
-      });
+      lineRef.current.chartInstance = new Chart(lineRef.current, { type: "line", data: { labels: mKeys, datasets: [{ data: cData, borderColor: "#3b82f6", backgroundColor: grad, fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: "#3b82f6", pointBorderColor: "#fff", pointBorderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: sX, y: sY } } });
     }
     const byUnit = {};
     filteredSales.forEach(s => { const k = s.unidad_negocio || "Sin unidad"; const v = Number(s.total_venta); byUnit[k] = (byUnit[k] || 0) + (isFinite(v) ? v : 0); });
     const uE = Object.entries(byUnit).sort((a, b) => b[1] - a[1]).slice(0, 7);
     if (barRef.current && uE.length > 0) {
-      barRef.current.chartInstance = new Chart(barRef.current, {
-        type: "bar",
-        data: { labels: uE.map(e => e[0].length > 16 ? e[0].slice(0, 14) + "…" : e[0]), datasets: [{ data: uE.map(e => e[1]), backgroundColor: uE.map((_, i) => PAL[i % PAL.length] + "28"), borderColor: uE.map((_, i) => PAL[i % PAL.length]), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: { ...sX, ticks: { ...sX.ticks, color: "#64748b", font: { size: 10, family: "DM Sans", weight: "600" }, maxRotation: 35, minRotation: 20 } }, y: sY } },
-      });
+      barRef.current.chartInstance = new Chart(barRef.current, { type: "bar", data: { labels: uE.map(e => e[0].length > 16 ? e[0].slice(0, 14) + "…" : e[0]), datasets: [{ data: uE.map(e => e[1]), backgroundColor: uE.map((_, i) => PAL[i % PAL.length] + "28"), borderColor: uE.map((_, i) => PAL[i % PAL.length]), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: { ...sX, ticks: { ...sX.ticks, color: "#64748b", font: { size: 10, family: "DM Sans", weight: "600" }, maxRotation: 35, minRotation: 20 } }, y: sY } } });
     }
     const byVend = {};
     filteredSales.forEach(s => { const k = s.vendedor || "Sin asignar"; const v = Number(s.total_venta); byVend[k] = (byVend[k] || 0) + (isFinite(v) ? v : 0); });
     const vE = Object.entries(byVend).sort((a, b) => b[1] - a[1]).slice(0, 6);
     if (vendRef.current && vE.length > 0) {
-      vendRef.current.chartInstance = new Chart(vendRef.current, {
-        type: "bar",
-        data: { labels: vE.map(e => e[0].split(" ")[0]), datasets: [{ data: vE.map(e => e[1]), backgroundColor: vE.map((_, i) => PAL[(i + 4) % PAL.length] + "28"), borderColor: vE.map((_, i) => PAL[(i + 4) % PAL.length]), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: sX, y: sY } },
-      });
+      vendRef.current.chartInstance = new Chart(vendRef.current, { type: "bar", data: { labels: vE.map(e => e[0].split(" ")[0]), datasets: [{ data: vE.map(e => e[1]), backgroundColor: vE.map((_, i) => PAL[(i + 4) % PAL.length] + "28"), borderColor: vE.map((_, i) => PAL[(i + 4) % PAL.length]), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: sX, y: sY } } });
     }
     if (donutRef.current && estadoEntries.length > 0) {
-      donutRef.current.chartInstance = new Chart(donutRef.current, {
-        type: "doughnut",
-        data: { labels: estadoEntries.map(e => e[0]), datasets: [{ data: estadoEntries.map(e => e[1]), backgroundColor: EPAL.slice(0, estadoEntries.length), borderWidth: 0, hoverOffset: 5 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", bodyColor: "#f1f5f9", titleColor: "#94a3b8", cornerRadius: 8, padding: 10 } } },
-      });
+      donutRef.current.chartInstance = new Chart(donutRef.current, { type: "doughnut", data: { labels: estadoEntries.map(e => e[0]), datasets: [{ data: estadoEntries.map(e => e[1]), backgroundColor: EPAL.slice(0, estadoEntries.length), borderWidth: 0, hoverOffset: 5 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1e293b", bodyColor: "#f1f5f9", titleColor: "#94a3b8", cornerRadius: 8, padding: 10 } } } });
     }
   }
 
@@ -548,9 +496,8 @@ export default function ImporterPage({ profile, onNavigate }) {
                     </FilterGroup>
                   </div>
 
-                  {/* HERO — formato numérico mejorado */}
+                  {/* HERO */}
                   <div className="bi-hero">
-                    {/* Bloque principal */}
                     <div className="bi-hero__block bi-hero__block--main">
                       <span className="bi-hero__eyebrow">TOTAL VENTAS ACUMULADAS</span>
                       <strong className="bi-hero__big">{compact(kpis.total)}</strong>
@@ -562,30 +509,21 @@ export default function ImporterPage({ profile, onNavigate }) {
                         </span>
                       )}
                     </div>
-
                     <div className="bi-hero__sep"/>
-
-                    {/* Mejor mes */}
                     <div className="bi-hero__block">
                       <span className="bi-hero__eyebrow">MEJOR MES</span>
                       <strong className="bi-hero__val">{compact(kpis.mejorMes?.valor || 0)}</strong>
                       <span className="bi-hero__scale">{scaleLabel(kpis.mejorMes?.valor || 0)}</span>
                       <span className="bi-hero__meta">{kpis.mejorMes?.mes || "—"}</span>
                     </div>
-
                     <div className="bi-hero__sep"/>
-
-                    {/* Promedio mensual */}
                     <div className="bi-hero__block">
                       <span className="bi-hero__eyebrow">PROMEDIO MENSUAL</span>
                       <strong className="bi-hero__val">{compact(kpis.promedioMensual || 0)}</strong>
                       <span className="bi-hero__scale">{scaleLabel(kpis.promedioMensual || 0)}</span>
                       <span className="bi-hero__meta">{kpis.cantMeses || 0} meses con datos</span>
                     </div>
-
                     <div className="bi-hero__sep"/>
-
-                    {/* Forecast */}
                     <div className="bi-hero__block">
                       <span className="bi-hero__eyebrow">MES ACTUAL VS. FORECAST</span>
                       <strong className="bi-hero__val">{kpis.fcastPct !== null ? `${kpis.fcastPct}%` : "—"}</strong>
@@ -595,16 +533,11 @@ export default function ImporterPage({ profile, onNavigate }) {
                           <div className="bi-hero__bar">
                             <div style={{ width: `${Math.min(100, kpis.fcastPct || 0)}%`, height: "100%", background: "#f59e0b", borderRadius: 999 }}/>
                           </div>
-                          <span className="bi-hero__meta" style={{ color: "rgba(255,255,255,.45)" }}>
-                            Vendido: {compact(kpis.thisMonth)}
-                          </span>
+                          <span className="bi-hero__meta" style={{ color: "rgba(255,255,255,.45)" }}>Vendido: {compact(kpis.thisMonth)}</span>
                         </>
                       )}
                     </div>
-
                     <div className="bi-hero__sep"/>
-
-                    {/* Stats rápidos */}
                     <div className="bi-hero__stats">
                       <div className="bi-hero__stat"><strong>{kpis.tickets}</strong><span>FACTURAS</span></div>
                       <div className="bi-hero__stat"><strong>{kpis.clientes}</strong><span>CLIENTES</span></div>
@@ -619,10 +552,13 @@ export default function ImporterPage({ profile, onNavigate }) {
 
                   {/* KPI CARDS */}
                   <div className="bi-kpi-row">
+
+                    {/* Top 5 clientes */}
                     <div className="bi-kpi bi-kpi--wide">
                       <div className="bi-kpi__head">
                         <span className="bi-kpi__icon" style={{ background: "rgba(245,158,11,.1)" }}>🏆</span>
                         <span className="bi-kpi__label">TOP 5 CLIENTES</span>
+                        <Tooltip text="Los 5 clientes con mayor volumen facturado en el período seleccionado. Se calcula sumando todas las facturas por cliente."/>
                       </div>
                       <div className="bi-top3">
                         {Object.entries(
@@ -642,10 +578,12 @@ export default function ImporterPage({ profile, onNavigate }) {
                       </div>
                     </div>
 
+                    {/* Ticket promedio */}
                     <div className="bi-kpi">
                       <div className="bi-kpi__head">
                         <span className="bi-kpi__icon" style={{ background: "rgba(59,130,246,.1)" }}>🎯</span>
                         <span className="bi-kpi__label">TICKET PROMEDIO</span>
+                        <Tooltip text="Monto promedio por factura única. Se calcula como: Total ventas ÷ cantidad de comprobantes únicos. Indica el valor típico de cada operación."/>
                       </div>
                       <strong className="bi-kpi__val" style={{ color: "#3b82f6" }}>{compact(kpis.avgTicket)}</strong>
                       <span className="bi-kpi__sub">{kpis.tickets} facturas únicas</span>
@@ -657,10 +595,12 @@ export default function ImporterPage({ profile, onNavigate }) {
                       </div>
                     </div>
 
+                    {/* Pendiente de cobro */}
                     <div className="bi-kpi">
                       <div className="bi-kpi__head">
                         <span className="bi-kpi__icon" style={{ background: "rgba(239,68,68,.1)" }}>⏳</span>
                         <span className="bi-kpi__label">PENDIENTE DE COBRO</span>
+                        <Tooltip text="Suma de facturas con estado 'Pendiente de cobro'. Representa el dinero facturado pero aún no cobrado. La barra muestra la proporción cobrada vs pendiente sobre el total."/>
                       </div>
                       <strong className="bi-kpi__val" style={{ color: "#ef4444" }}>{compact(kpis.pendienteCobro)}</strong>
                       <span className="bi-kpi__sub">{kpis.pendienteCount} facturas · {safePct(kpis.pendienteCobro, kpis.total)}% del total</span>
@@ -677,10 +617,12 @@ export default function ImporterPage({ profile, onNavigate }) {
                       </div>
                     </div>
 
+                    {/* Forecast mensual */}
                     <div className="bi-kpi bi-kpi--forecast">
                       <div className="bi-kpi__head">
                         <span className="bi-kpi__icon" style={{ background: "rgba(99,102,241,.1)" }}>📋</span>
                         <span className="bi-kpi__label">FORECAST MENSUAL</span>
+                        <Tooltip text="Objetivo de ventas para el mes seleccionado, cargado manualmente. La barra muestra el % de cumplimiento: ventas del mes actual ÷ forecast. Solo el super_admin puede editar el forecast."/>
                       </div>
                       <div className="bi-forecast-row">
                         <select className="bi-forecast-select" value={forecastMonth} onChange={e => setForecastMonth(e.target.value)}>
@@ -690,35 +632,23 @@ export default function ImporterPage({ profile, onNavigate }) {
                           })}
                         </select>
                       </div>
-                      {/* Solo super_admin puede editar el forecast */}
                       {profile?.role === "super_admin" && (
                         <div className="bi-forecast-row" style={{ marginTop: 4 }}>
-                          <input
-                            className="bi-forecast-input"
-                            value={forecastInputs[forecastMonth] || ""}
-                            onChange={e => setForecastInputs(prev => ({ ...prev, [forecastMonth]: e.target.value }))}
-                            placeholder="Ej: 3400000000"
-                            onKeyDown={e => e.key === "Enter" && saveForecast()}
-                          />
+                          <input className="bi-forecast-input" value={forecastInputs[forecastMonth] || ""} onChange={e => setForecastInputs(prev => ({ ...prev, [forecastMonth]: e.target.value }))} placeholder="Ej: 3400000000" onKeyDown={e => e.key === "Enter" && saveForecast()}/>
                           <button className="bi-forecast-save" onClick={saveForecast}>Guardar</button>
                         </div>
                       )}
                       {forecastInputs[forecastMonth] ? (
                         <>
                           <div className="bi-kpi__divider"/>
-                          <div className="bi-kpi__bar-label">
-                            <span>Forecast</span>
-                            <span style={{ color: "#6366f1" }}>{compact(Number(forecastInputs[forecastMonth]))}</span>
-                          </div>
+                          <div className="bi-kpi__bar-label"><span>Forecast</span><span style={{ color: "#6366f1" }}>{compact(Number(forecastInputs[forecastMonth]))}</span></div>
                           <div style={{ height: 5, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
                             <div style={{ width: `${Math.min(100, kpis.fcastPct || 0)}%`, height: "100%", background: "#6366f1", borderRadius: 999 }}/>
                           </div>
                           <span className="bi-kpi__sub" style={{ color: "#6366f1" }}>{kpis.fcastPct || 0}% cumplido</span>
                         </>
                       ) : (
-                        <span className="bi-kpi__sub" style={{ color: "#94a3b8" }}>
-                          {profile?.role === "super_admin" ? "Ingresá el forecast para este mes" : "Sin forecast cargado"}
-                        </span>
+                        <span className="bi-kpi__sub" style={{ color: "#94a3b8" }}>{profile?.role === "super_admin" ? "Ingresá el forecast para este mes" : "Sin forecast cargado"}</span>
                       )}
                       {currentYearFcast > 0 && <span className="bi-kpi__sub" style={{ color: "#94a3b8", fontSize: 10 }}>Total anual: {compact(currentYearFcast)}</span>}
                     </div>
@@ -728,19 +658,28 @@ export default function ImporterPage({ profile, onNavigate }) {
                   <div className="bi-row bi-row--70-30">
                     <div className="bi-panel">
                       <div className="bi-panel__hd">
-                        <div><h3>Evolución de ventas</h3><p>Tendencia mensual</p></div>
-                        <div className="bi-toggle">
-                          {["acumulado","mensual"].map(m => (
-                            <button key={m} className={chartMode === m ? "active" : ""} onClick={() => setChartMode(m)}>
-                              {m.charAt(0).toUpperCase() + m.slice(1)}
-                            </button>
-                          ))}
+                        <div>
+                          <h3>Evolución de ventas</h3>
+                          <p>Tendencia mensual</p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Tooltip text="Muestra la evolución de ventas mes a mes. Modo 'Acumulado': suma progresiva del año. Modo 'Mensual': ventas de cada mes por separado. Útil para ver tendencias y estacionalidad."/>
+                          <div className="bi-toggle">
+                            {["acumulado","mensual"].map(m => (
+                              <button key={m} className={chartMode === m ? "active" : ""} onClick={() => setChartMode(m)}>
+                                {m.charAt(0).toUpperCase() + m.slice(1)}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                       <div style={{ height: 220, padding: "10px 14px 8px" }}><canvas ref={lineRef}/></div>
                     </div>
                     <div className="bi-panel">
-                      <div className="bi-panel__hd"><div><h3>Ventas por estado</h3><p>Distribución de registros</p></div></div>
+                      <div className="bi-panel__hd">
+                        <div><h3>Ventas por estado</h3><p>Distribución de registros</p></div>
+                        <Tooltip text="Distribución de las facturas según su estado (Cobrada, Pendiente, etc.). Cada segmento muestra el porcentaje de registros en ese estado sobre el total filtrado."/>
+                      </div>
                       <div className="bi-donut-layout">
                         <div style={{ width: 130, height: 130, flexShrink: 0 }}><canvas ref={donutRef}/></div>
                         <div className="bi-donut-legend">
@@ -759,11 +698,17 @@ export default function ImporterPage({ profile, onNavigate }) {
                   {/* CHARTS ROW 2 */}
                   <div className="bi-row bi-row--50-50">
                     <div className="bi-panel">
-                      <div className="bi-panel__hd"><div><h3>Ventas por unidad de negocio</h3><p>Ventas por sucursal / unidad</p></div></div>
+                      <div className="bi-panel__hd">
+                        <div><h3>Ventas por unidad de negocio</h3><p>Ventas por sucursal / unidad</p></div>
+                        <Tooltip text="Comparativa de ventas totales por unidad de negocio o sucursal. Permite identificar qué unidades generan más volumen y cuáles necesitan atención."/>
+                      </div>
                       <div style={{ height: 240, padding: "10px 14px 14px" }}><canvas ref={barRef}/></div>
                     </div>
                     <div className="bi-panel">
-                      <div className="bi-panel__hd"><div><h3>Ventas por vendedor</h3><p>Performance individual</p></div></div>
+                      <div className="bi-panel__hd">
+                        <div><h3>Ventas por vendedor</h3><p>Performance individual</p></div>
+                        <Tooltip text="Ranking de ventas por vendedor en el período filtrado. Permite comparar la performance individual del equipo comercial y detectar quién lidera y quién necesita apoyo."/>
+                      </div>
                       <div style={{ height: 200, padding: "10px 14px 8px" }}><canvas ref={vendRef}/></div>
                     </div>
                   </div>
@@ -773,7 +718,10 @@ export default function ImporterPage({ profile, onNavigate }) {
                     <div className="bi-panel">
                       <div className="bi-panel__hd">
                         <div><h3>Ranking de clientes</h3><p>Top clientes por volumen facturado</p></div>
-                        <span className="bi-badge">{topClientes.length} clientes</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Tooltip text="Clientes ordenados de mayor a menor volumen facturado. La barra horizontal muestra la proporción de cada cliente respecto al cliente #1. Útil para identificar concentración de ventas."/>
+                          <span className="bi-badge">{topClientes.length} clientes</span>
+                        </div>
                       </div>
                       <div className="bi-ranking">
                         {topClientes.map(([cliente, total], i) => {
@@ -793,7 +741,10 @@ export default function ImporterPage({ profile, onNavigate }) {
                     </div>
 
                     <div className="bi-panel">
-                      <div className="bi-panel__hd"><div><h3>Alertas inteligentes</h3></div></div>
+                      <div className="bi-panel__hd">
+                        <div><h3>Alertas inteligentes</h3></div>
+                        <Tooltip text="Alertas automáticas generadas por el sistema según los datos. Detecta caídas de ventas vs mes anterior, forecast en riesgo, clientes inactivos (+60 días sin compras) y facturas pendientes de cobro."/>
+                      </div>
                       <div className="bi-alertas">
                         {alertas.map((a, i) => (
                           <div key={i} className={`bi-alerta bi-alerta--${a.type}`}>
@@ -806,7 +757,10 @@ export default function ImporterPage({ profile, onNavigate }) {
                     </div>
 
                     <div className="bi-panel">
-                      <div className="bi-panel__hd"><div><h3>Insights automáticos</h3><p>Calculados con datos reales</p></div></div>
+                      <div className="bi-panel__hd">
+                        <div><h3>Insights automáticos</h3><p>Calculados con datos reales</p></div>
+                        <Tooltip text="Conclusiones generadas automáticamente a partir de los datos filtrados: unidad líder, mejor vendedor, variación mensual y mejor mes histórico. Se actualizan al cambiar los filtros."/>
+                      </div>
                       <div className="bi-insights">
                         {insights.map((ins, i) => (
                           <div key={i} className="bi-insight">
@@ -848,7 +802,7 @@ export default function ImporterPage({ profile, onNavigate }) {
             </>
           )}
 
-          {/* IMPORTAR — solo manager y super_admin */}
+          {/* IMPORTAR */}
           {tab === "import" && ["super_admin","manager"].includes(profile?.role) && (
             <div className="bi-import">
               <div className="bi-stepper">
@@ -860,7 +814,6 @@ export default function ImporterPage({ profile, onNavigate }) {
                   </div>
                 ))}
               </div>
-
               {step === 1 && (
                 <div className={`bi-drop ${dragOver ? "over" : ""}`} onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}>
                   <div style={{ fontSize: 44, marginBottom: 10 }}>📂</div>
@@ -870,7 +823,6 @@ export default function ImporterPage({ profile, onNavigate }) {
                   <p className="bi-drop__hint">Las columnas se detectan automáticamente.</p>
                 </div>
               )}
-
               {step === 2 && xlsxData && (
                 <div className="bi-panel" style={{ padding: 22 }}>
                   <div className="bi-panel__hd"><div><h3>Mapear columnas</h3><p>Verificá el mapeo automático.</p></div><span className="bi-badge bi-badge--blue">{xlsxData.headers.length} columnas</span></div>
@@ -893,7 +845,6 @@ export default function ImporterPage({ profile, onNavigate }) {
                   <div className="bi-actions"><button className="bi-btn bi-btn--ghost" onClick={() => setStep(1)}>← Volver</button><button className="bi-btn bi-btn--primary" onClick={runValidation}>Validar →</button></div>
                 </div>
               )}
-
               {step === 3 && (
                 <div className="bi-panel" style={{ padding: 22 }}>
                   <div className="bi-panel__hd"><div><h3>Resultado de validación</h3></div><div style={{ display: "flex", gap: 8 }}><span className="bi-badge bi-badge--green">✓ {okRows.length}</span>{errRows.length > 0 && <span className="bi-badge bi-badge--red">✕ {errRows.length}</span>}</div></div>
@@ -906,7 +857,6 @@ export default function ImporterPage({ profile, onNavigate }) {
                   <div className="bi-actions"><button className="bi-btn bi-btn--ghost" onClick={() => setStep(2)}>← Volver</button><button className="bi-btn bi-btn--primary" onClick={doImport} disabled={importing || okRows.length === 0}>{importing ? `Importando… ${progress}%` : `Importar ${okRows.length} registros →`}</button></div>
                 </div>
               )}
-
               {step === 4 && (
                 <div style={{ background: "#fff", border: "1px solid #e8ecf2", borderRadius: 16, padding: "60px 40px", textAlign: "center" }}>
                   <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ecfdf5", color: "#10b981", fontSize: 28, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", border: "2px solid #bbf7d0" }}>✓</div>
@@ -921,7 +871,7 @@ export default function ImporterPage({ profile, onNavigate }) {
             </div>
           )}
 
-          {/* HISTORIAL — solo manager y super_admin */}
+          {/* HISTORIAL */}
           {tab === "history" && ["super_admin","manager"].includes(profile?.role) && (
             <div className="bi-panel" style={{ padding: 22 }}>
               <div className="bi-panel__hd"><div><h3>Historial de importaciones</h3><p>{imports.length} importaciones</p></div></div>
