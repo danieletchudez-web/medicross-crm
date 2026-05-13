@@ -81,20 +81,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #e2e8f0;
-  color: #64748b;
+  background: #3b82f6;
+  color: #ffffff;
   font-size: 9px;
   font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, transform 0.15s;
   line-height: 1;
   user-select: none;
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(59,130,246,0.35);
 }
-.kpi-tooltip-trigger:hover { background: #3b82f6; color: #fff; }
+.kpi-tooltip-trigger:hover { background: #1d4ed8; transform: scale(1.15); }
 .kpi-tooltip-box {
   position: absolute;
   top: calc(100% + 8px);
