@@ -469,30 +469,6 @@
   color: #cbd5e1; letter-spacing: 0.3px; padding: 4px 0 8px;
 }
 
-/* ─── Responsive ─────────────────────────────────────────────────────── */
-@media (max-width: 1400px) {
-  .dash-primary-kpis { grid-template-columns: repeat(2, 1fr); }
-  .dash-kpi-grid     { grid-template-columns: repeat(4, 1fr); }
-  .dash-main-grid, .dash-chart-grid { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 900px) {
-  .unified-dashboard { padding: 14px; gap: 14px; }
-  .dash-header { flex-direction: column; align-items: stretch; gap: 16px; }
-  .dash-header-right { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .dash-clock { align-items: flex-start; }
-  .dash-filter-select { min-width: 0; width: 100%; }
-  .dash-primary-kpis { grid-template-columns: 1fr 1fr; }
-  .dash-kpi-grid     { grid-template-columns: repeat(2, 1fr); }
-  .dash-chart-box    { height: 200px; }
-  .dash-chart-box--donut { height: 200px; }
-}
-
-@media (max-width: 480px) {
-  .dash-primary-kpis, .dash-kpi-grid { grid-template-columns: 1fr; }
-  .dash-title { font-size: 18px; }
-}
-
 /* ─── Stage Distribution Panel ──────────────────────────────────────── */
 .stage-dist {
   display: flex;
@@ -607,7 +583,7 @@
   color: var(--text-tertiary);
 }
 
-/* ─── Bottom grid (actividad + visitas) ─────────────────────────────── */
+/* ─── Bottom grid ────────────────────────────────────────────────────── */
 .dash-bottom-grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
@@ -625,15 +601,6 @@
 }
 
 .dash-footer-link:hover { color: #94a3b8; }
-
-@media (max-width: 1400px) {
-  .dash-insights-grid { grid-template-columns: repeat(2, 1fr); }
-  .dash-bottom-grid   { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 900px) {
-  .dash-insights-grid { grid-template-columns: 1fr; }
-}
 
 /* ─── KPI section toggle ─────────────────────────────────────────────── */
 .dash-kpi-section {
@@ -661,4 +628,76 @@
   background: #f8fafc;
   color: #64748b;
   border-color: #cbd5e1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1400px) {
+  .dash-primary-kpis  { grid-template-columns: repeat(2, 1fr); }
+  .dash-kpi-grid      { grid-template-columns: repeat(4, 1fr); }
+  .dash-insights-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-main-grid, .dash-chart-grid { grid-template-columns: 1fr; }
+  .dash-bottom-grid   { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .unified-dashboard  { padding: 14px; gap: 14px; }
+  .dash-header        { flex-direction: column; align-items: stretch; gap: 16px; }
+  .dash-header-right  { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .dash-clock         { align-items: flex-start; }
+  .dash-filter-select { min-width: 0; width: 100%; }
+  .dash-primary-kpis  { grid-template-columns: repeat(2, 1fr); }
+  .dash-kpi-grid      { grid-template-columns: repeat(2, 1fr); }
+  .dash-insights-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-chart-box     { height: 200px; }
+  .dash-chart-box--donut { height: 200px; }
+}
+
+/* ── Mobile ≤ 480px ── 2 columnas en todas las tarjetas ─────────────── */
+@media (max-width: 480px) {
+  .unified-dashboard { padding: 10px; gap: 10px; }
+
+  /* Compensar topbar fija del sidebar mobile */
+  .unified-dashboard { padding-top: 66px; }
+
+  .dash-title    { font-size: 18px; }
+  .dash-subtitle { font-size: 11px; }
+
+  /* Header compacto */
+  .dash-header { padding: 14px 16px; }
+
+  /* Primary KPIs — 2 columnas */
+  .dash-primary-kpis          { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .dash-primary-kpi           { padding: 14px 12px; gap: 4px; }
+  .dash-primary-kpi__value    { font-size: 15px; }
+  .dash-primary-kpi__label    { font-size: 9px; }
+  .dash-primary-kpi__sub      { font-size: 9px; }
+
+  /* KPIs secundarios — 2 columnas */
+  .dash-kpi-grid   { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .dash-kpi        { padding: 10px 11px; gap: 5px; }
+  .dash-kpi__value { font-size: 16px; }
+  .dash-kpi__label { font-size: 9px; }
+
+  /* Insights — 2 columnas */
+  .dash-insights-grid    { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .dash-insight          { padding: 12px; }
+  .dash-insight__value   { font-size: 18px; }
+  .dash-insight__label   { font-size: 9px; }
+  .dash-insight__sub     { font-size: 10px; }
+
+  /* Paneles y grillas — 1 columna */
+  .dash-main-grid,
+  .dash-chart-grid,
+  .dash-bottom-grid { grid-template-columns: 1fr; }
+
+  /* Stage distribution compacto */
+  .stage-dist__row { grid-template-columns: 100px 1fr 50px; gap: 6px; }
+  .stage-dist__name   { font-size: 11px; }
+  .stage-dist__amount { font-size: 10px; }
+
+  /* Toggle KPIs alineado a la izquierda */
+  .dash-kpi-toggle { align-self: flex-start; }
 }
