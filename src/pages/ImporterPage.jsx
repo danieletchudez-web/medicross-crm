@@ -288,7 +288,7 @@ export default function ImporterPage({ profile, onNavigate }) {
 
   const filteredSales = useMemo(() => sales.filter(s => {
     if (filterVendedor !== "todos" && s.vendedor !== filterVendedor) return false;
-    if (filterUnidad   !== "todas" && s.unidad_negocio !== filterUnidad) return false;
+    if (filterUnidad   !== "todas" && (s.sucursal || s.unidad_negocio) !== filterUnidad) return false;
     if (filterImport   !== "todos" && s.import_id !== filterImport) return false;
     if (filterMes !== "todos") {
       const d = new Date(s.fecha); if (isNaN(d)) return false;
@@ -299,7 +299,7 @@ export default function ImporterPage({ profile, onNavigate }) {
   }), [sales, filterVendedor, filterUnidad, filterMes, filterImport]);
 
   const vendedores = useMemo(() => [...new Set(sales.map(s => s.vendedor).filter(Boolean))], [sales]);
-  const unidades   = useMemo(() => [...new Set(sales.map(s => s.unidad_negocio).filter(Boolean))], [sales]);
+  const unidades   = useMemo(() => [...new Set(sales.map(s => s.sucursal || s.unidad_negocio).filter(Boolean))].sort(), [sales]);
   const meses      = useMemo(() => {
     const set = new Set(sales.map(s => {
       if (!s.fecha) return null;
@@ -326,7 +326,7 @@ export default function ImporterPage({ profile, onNavigate }) {
     filteredSales.forEach(r => {
       const v = safeN(r.total_venta);
       if (r.vendedor)       byVend[r.vendedor]       = (byVend[r.vendedor]       || 0) + v;
-      if (r.unidad_negocio) byUnit[r.unidad_negocio] = (byUnit[r.unidad_negocio] || 0) + v;
+      const su = r.sucursal || r.unidad_negocio; if (su) byUnit[su] = (byUnit[su] || 0) + v;
     });
     const mejorVend = Object.entries(byVend).sort((a, b) => b[1] - a[1])[0];
     const mejorUnit = Object.entries(byUnit).sort((a, b) => b[1] - a[1])[0];
@@ -383,7 +383,7 @@ export default function ImporterPage({ profile, onNavigate }) {
 
   const insights = useMemo(() => {
     const list = [];
-    if (kpis.mejorUnit) list.push({ icon: "🏆", text: `La unidad <strong>${kpis.mejorUnit[0]}</strong> representa el ${safePct(kpis.mejorUnit[1], kpis.total)}% del total (${compact(kpis.mejorUnit[1])}).` });
+    if (kpis.mejorUnit) list.push({ icon: "🏆", text: `La sucursal <strong>${kpis.mejorUnit[0]}</strong> representa el ${safePct(kpis.mejorUnit[1], kpis.total)}% del total (${compact(kpis.mejorUnit[1])}).` });
     if (kpis.mejorVend) list.push({ icon: "⭐", text: `Mejor vendedor: <strong>${kpis.mejorVend[0]}</strong> con ${compact(kpis.mejorVend[1])} facturados.` });
     if (kpis.momChange !== null) list.push({ icon: kpis.momChange >= 0 ? "📈" : "📉", text: `Variación mensual: <strong>${kpis.momChange >= 0 ? "+" : ""}${kpis.momChange.toFixed(1).replace(".", ",")}%</strong> vs. mes anterior.` });
     if (kpis.mejorMes) list.push({ icon: "📅", text: `Mejor mes: <strong>${kpis.mejorMes.mes}</strong> con ${compact(kpis.mejorMes.valor)}.` });
@@ -408,10 +408,40 @@ export default function ImporterPage({ profile, onNavigate }) {
       lineRef.current.chartInstance = new Chart(lineRef.current, { type: "line", data: { labels: mKeys, datasets: [{ data: cData, borderColor: "#3b82f6", backgroundColor: grad, fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: "#3b82f6", pointBorderColor: "#fff", pointBorderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: sX, y: sY } } });
     }
     const byUnit = {};
-    filteredSales.forEach(s => { const k = s.unidad_negocio || "Sin unidad"; const v = Number(s.total_venta); byUnit[k] = (byUnit[k] || 0) + (isFinite(v) ? v : 0); });
-    const uE = Object.entries(byUnit).sort((a, b) => b[1] - a[1]).slice(0, 7);
+    filteredSales.forEach(s => {
+      // Agrupar por sucursal; limpiar ciudad en mayúsculas al final del texto
+      const raw = s.sucursal || s.unidad_negocio || "Sin sucursal";
+      const clean = raw.replace(/\s+[A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚ\s]+$/, "").trim();
+      const k = clean.length > 2 ? clean : raw;
+      const v = Number(s.total_venta);
+      byUnit[k] = (byUnit[k] || 0) + (isFinite(v) ? v : 0);
+    });
+    const uE = Object.entries(byUnit).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    function splitLabel(str) {
+      if (str.length <= 20) return str;
+      const words = str.split(" ");
+      const mid = Math.ceil(words.length / 2);
+      return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+    }
     if (barRef.current && uE.length > 0) {
-      barRef.current.chartInstance = new Chart(barRef.current, { type: "bar", data: { labels: uE.map(e => e[0].length > 16 ? e[0].slice(0, 14) + "…" : e[0]), datasets: [{ data: uE.map(e => e[1]), backgroundColor: uE.map((_, i) => PAL[i % PAL.length] + "28"), borderColor: uE.map((_, i) => PAL[i % PAL.length]), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: { ...sX, ticks: { ...sX.ticks, color: "#64748b", font: { size: 10, family: "DM Sans", weight: "600" }, maxRotation: 35, minRotation: 20 } }, y: sY } } });
+      barRef.current.chartInstance = new Chart(barRef.current, {
+        type: "bar",
+        data: {
+          labels: uE.map(e => splitLabel(e[0])),
+          datasets: [{ data: uE.map(e => e[1]), backgroundColor: uE.map((_, i) => PAL[i % PAL.length] + "28"), borderColor: uE.map((_, i) => PAL[i % PAL.length]), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...tOpts, callbacks: { label: ctx => " " + compact(ctx.raw), title: ctx => [uE[ctx[0].dataIndex][0]] } }
+          },
+          scales: {
+            x: { ...sX, ticks: { ...sX.ticks, color: "#64748b", font: { size: 9, family: "DM Sans", weight: "600" }, maxRotation: 0, minRotation: 0, autoSkip: false } },
+            y: sY
+          }
+        }
+      });
     }
     const byVend = {};
     filteredSales.forEach(s => { const k = s.vendedor || "Sin asignar"; const v = Number(s.total_venta); byVend[k] = (byVend[k] || 0) + (isFinite(v) ? v : 0); });
@@ -487,7 +517,7 @@ export default function ImporterPage({ profile, onNavigate }) {
                       {vendedores.map(v => <option key={v} value={v}>{v}</option>)}
                     </FilterGroup>
                     <FilterGroup label="Unidades" value={filterUnidad} onChange={setFilterUnidad}>
-                      <option value="todas">Todas las unidades</option>
+                      <option value="todas">Todas las sucursales</option>
                       {unidades.map(u => <option key={u} value={u}>{u}</option>)}
                     </FilterGroup>
                     <FilterGroup label="Importación" value={filterImport} onChange={setFilterImport}>
@@ -699,8 +729,8 @@ export default function ImporterPage({ profile, onNavigate }) {
                   <div className="bi-row bi-row--50-50">
                     <div className="bi-panel">
                       <div className="bi-panel__hd">
-                        <div><h3>Ventas por unidad de negocio</h3><p>Ventas por sucursal / unidad</p></div>
-                        <Tooltip text="Comparativa de ventas totales por unidad de negocio o sucursal. Permite identificar qué unidades generan más volumen y cuáles necesitan atención."/>
+                        <div><h3>Ventas por sucursal</h3><p>Top sucursales por volumen facturado</p></div>
+                        <Tooltip text="Ventas totales agrupadas por sucursal del cliente. Permite identificar qué zonas o puntos de venta generan más facturación. El tooltip de cada barra muestra el nombre completo."/>
                       </div>
                       <div style={{ height: 240, padding: "10px 14px 14px" }}><canvas ref={barRef}/></div>
                     </div>
