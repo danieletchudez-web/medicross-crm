@@ -294,17 +294,51 @@ export default function TendersPage({ profile, onNavigate }) {
     setAttachCounts(counts);
   }
 
-  /* ── KPIs ── */
+  /* ── KPIs — lógica auditada ── */
   const kpis = useMemo(() => {
-    const activas    = tenders.filter(t => !["Finalizada","Perdida / No adjudicada","Vencida"].includes(t.operational_status));
+    // Estados que significan "cerrado / no requiere seguimiento"
+    const CERRADAS = ["Finalizada","Perdida / No adjudicada","Vencida","Cobrada"];
+    // Estados que significan "en curso activo"
+    const EN_CURSO = ["En análisis","Cotizada","Presentada","Adjudicada",
+                      "Orden de compra recibida","En ejecución","Entrega parcial",
+                      "Entregada","Facturada"];
+
+    // KPI 1: Activas = licitaciones en curso (excluye cerradas)
+    const activas    = tenders.filter(t => EN_CURSO.includes(t.operational_status));
     const montoTotal = activas.reduce((s,t) => s + Number(t.purchase_order_amount||0), 0);
-    const adjMontos  = tenders
-      .filter(t => ["Adjudicada","Orden de compra recibida","En ejecución","Entrega parcial","Entregada","Facturada","Cobrada"].includes(t.operational_status))
+
+    // KPI 2: Adjudicado = monto de OC confirmadas (desde Adjudicada en adelante)
+    const adjMontos = tenders
+      .filter(t => ["Adjudicada","Orden de compra recibida","En ejecución",
+                    "Entrega parcial","Entregada","Facturada","Cobrada"].includes(t.operational_status))
       .reduce((s,t) => s + Number(t.purchase_order_amount||0), 0);
-    const proxVencer = tenders.filter(t => { const d=daysUntil(t.end_date); return d!==null&&d>=0&&d<=30; }).length;
-    const vencidas   = tenders.filter(t => { const d=daysUntil(t.end_date); return d!==null&&d<0&&!["Finalizada","Cobrada"].includes(t.operational_status); }).length;
-    const sinAccion  = tenders.filter(t => !t.next_action && !["Finalizada","Cobrada","Perdida / No adjudicada"].includes(t.operational_status)).length;
-    const docPend    = tenders.filter(t => t.documentation_status==="Pendiente" && !["Finalizada","Cobrada"].includes(t.operational_status)).length;
+
+    // KPI 3: Próximas a vencer = solo licitaciones activas con end_date en 30 días
+    const proxVencer = tenders.filter(t => {
+      if (CERRADAS.includes(t.operational_status)) return false; // excluir cerradas
+      const d = daysUntil(t.end_date);
+      return d !== null && d >= 0 && d <= 30;
+    }).length;
+
+    // KPI 4: Vencidas = end_date pasada y no cerradas
+    const vencidas = tenders.filter(t => {
+      if (["Finalizada","Cobrada","Perdida / No adjudicada"].includes(t.operational_status)) return false;
+      const d = daysUntil(t.end_date);
+      return d !== null && d < 0;
+    }).length;
+
+    // KPI 5: Sin próxima acción = activas sin next_action definida
+    const sinAccion = tenders.filter(t =>
+      EN_CURSO.includes(t.operational_status) && !t.next_action
+    ).length;
+
+    // KPI 6: Doc pendiente — case-insensitive para tolerar valores en mayúsculas viejos
+    const docPend = tenders.filter(t => {
+      if (["Finalizada","Cobrada"].includes(t.operational_status)) return false;
+      const ds = (t.documentation_status||"").toLowerCase();
+      return ds === "pendiente" || ds === "incompleta";
+    }).length;
+
     return { activas:activas.length, montoTotal, adjMontos, proxVencer, vencidas, sinAccion, docPend };
   }, [tenders]);
 
@@ -587,34 +621,34 @@ export default function TendersPage({ profile, onNavigate }) {
         {/* KPIs */}
         <div className="tn-kpis">
           <div className="tn-kpi">
-            <span className="tn-kpi__label">Activas</span>
+            <span className="tn-kpi__label">En curso</span>
             <span className="tn-kpi__val">{kpis.activas}</span>
-            <span className="tn-kpi__sub">{compactMoney(kpis.montoTotal)} en curso</span>
+            <span className="tn-kpi__sub">{compactMoney(kpis.montoTotal)} acumulado</span>
           </div>
           <div className="tn-kpi tn-kpi--green">
-            <span className="tn-kpi__label">Adjudicado</span>
+            <span className="tn-kpi__label">Monto adjudicado</span>
             <span className="tn-kpi__val">{compactMoney(kpis.adjMontos)}</span>
-            <span className="tn-kpi__sub">monto total OC</span>
+            <span className="tn-kpi__sub">con OC confirmada</span>
           </div>
           <div className={`tn-kpi ${kpis.proxVencer>0?"tn-kpi--warn":""}`}>
-            <span className="tn-kpi__label">Próx. vencer</span>
+            <span className="tn-kpi__label">Vencen en 30 días</span>
             <span className="tn-kpi__val">{kpis.proxVencer}</span>
-            <span className="tn-kpi__sub">en 30 días</span>
+            <span className="tn-kpi__sub">licitaciones activas</span>
           </div>
           <div className={`tn-kpi ${kpis.vencidas>0?"tn-kpi--danger":""}`}>
-            <span className="tn-kpi__label">Vencidas</span>
+            <span className="tn-kpi__label">Fecha vencida</span>
             <span className="tn-kpi__val">{kpis.vencidas}</span>
-            <span className="tn-kpi__sub">sin cerrar</span>
+            <span className="tn-kpi__sub">sin cerrar o finalizar</span>
           </div>
           <div className={`tn-kpi ${kpis.sinAccion>0?"tn-kpi--danger":""}`}>
-            <span className="tn-kpi__label">Sin acción</span>
+            <span className="tn-kpi__label">Sin próxima acción</span>
             <span className="tn-kpi__val">{kpis.sinAccion}</span>
-            <span className="tn-kpi__sub">requieren seguimiento</span>
+            <span className="tn-kpi__sub">licitaciones activas</span>
           </div>
           <div className={`tn-kpi ${kpis.docPend>0?"tn-kpi--warn":"tn-kpi--green"}`}>
-            <span className="tn-kpi__label">Doc. pendiente</span>
+            <span className="tn-kpi__label">Doc. pendiente / incompleta</span>
             <span className="tn-kpi__val">{kpis.docPend}</span>
-            <span className="tn-kpi__sub">docs incompletos</span>
+            <span className="tn-kpi__sub">requieren atención</span>
           </div>
         </div>
 
