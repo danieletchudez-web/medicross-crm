@@ -22,12 +22,17 @@ const MENU_SECTIONS = [
     ],
   },
   {
+    label: "COTIZACIONES",
+    items: [
+      { id: "tenders", label: "Licitaciones", icon: "📄" },
+    ],
+  },
+  {
     label: "OPERACIONES",
     items: [
       { id: "todayActions", label: "Acciones Hoy",  icon: "◷" },
       { id: "visits",       label: "Visitas",        icon: "◌" },
       { id: "calendar",     label: "Calendario",     icon: "▦" },
-      { id: "tenders",     label: "Cotizaciones",   icon: "📄" },
       { id: "adminUsers",   label: "Administración", icon: "⊞" },
     ],
   },
