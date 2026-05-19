@@ -67,81 +67,88 @@ function statusBadge(s) {
 }
 function pClass(p){ return {Alta:"alta",Crítica:"critica",Media:"media",Baja:"baja"}[p]||"baja"; }
 function pIcon(p) { return {Alta:"▲",Crítica:"⬆",Media:"→",Baja:"▼"}[p]||"→"; }
-
 function fileIcon(name) {
-  const ext = name.split(".").pop().toLowerCase();
-  if(ext==="pdf")  return "📄";
+  const ext=name.split(".").pop().toLowerCase();
+  if(ext==="pdf") return "📄";
   if(ext==="xlsx"||ext==="xls") return "📊";
   if(ext==="docx"||ext==="doc") return "📝";
   return "📎";
 }
 
 const COLS = [
-  { key:"_check",         label:"☑",               w:36,  fixed:true },
-  { key:"_alert",         label:"⚡",               w:44,  fixed:true },
-  { key:"jurisdiction",   label:"Jurisdicción",      w:120 },
-  { key:"institution",    label:"Hospital / Inst.",  w:200 },
-  { key:"process_number", label:"N° Proceso",        w:130 },
-  { key:"process_name",   label:"Nombre proceso",    w:220 },
-  { key:"expedient_number",label:"Expediente",       w:140 },
-  { key:"process_type",   label:"Tipo proceso",      w:160 },
-  { key:"tender_type",    label:"Tipo",              w:100 },
-  { key:"purchase_order_number",label:"N° OC",       w:120 },
-  { key:"purchase_order_date",  label:"Fecha OC",    w:100 },
-  { key:"purchase_order_amount",label:"Monto OC",    w:120 },
-  { key:"start_date",     label:"Inicio",            w:90  },
-  { key:"end_date",       label:"Fin",               w:90  },
-  { key:"operational_status",   label:"Estado",      w:180 },
-  { key:"priority",       label:"Prioridad",         w:90  },
-  { key:"internal_owner", label:"Responsable",       w:130 },
-  { key:"product_line",   label:"Línea prod.",       w:130 },
-  { key:"next_action",    label:"Próxima acción",    w:180 },
-  { key:"next_action_date",label:"Fecha acción",     w:100 },
-  { key:"documentation_status", label:"Doc.",        w:110 },
-  { key:"billing_status", label:"Facturación",       w:110 },
-  { key:"delivery_status",label:"Entrega",           w:100 },
-  { key:"execution_policy",label:"Póliza",           w:110 },
-  { key:"bridge_ot",      label:"OT Bridge",         w:110 },
-  { key:"contract_term",  label:"Plazo",             w:90  },
-  { key:"requesting_sector",label:"Sector",          w:130 },
-  { key:"_attachments",   label:"📎 Adjuntos",       w:90  },
-  { key:"notes",          label:"Observaciones",     w:200 },
-  { key:"_actions",       label:"",                  w:80,  fixed:true },
+  { key:"_check",               label:"☑",             w:36,  fixed:true },
+  { key:"_alert",               label:"⚡",             w:44,  fixed:true },
+  { key:"jurisdiction",         label:"Jurisdicción",   w:120 },
+  { key:"institution",          label:"Hospital/Inst.", w:200 },
+  { key:"process_number",       label:"N° Proceso",     w:130 },
+  { key:"process_name",         label:"Nombre proceso", w:220 },
+  { key:"expedient_number",     label:"Expediente",     w:140 },
+  { key:"process_type",         label:"Tipo proceso",   w:160 },
+  { key:"tender_type",          label:"Tipo",           w:100 },
+  { key:"purchase_order_number",label:"N° OC",          w:120 },
+  { key:"purchase_order_date",  label:"Fecha OC",       w:100 },
+  { key:"purchase_order_amount",label:"Monto OC",       w:120 },
+  { key:"start_date",           label:"Inicio",         w:90  },
+  { key:"end_date",             label:"Fin",            w:90  },
+  { key:"operational_status",   label:"Estado",         w:180 },
+  { key:"priority",             label:"Prioridad",      w:90  },
+  { key:"internal_owner",       label:"Responsable",    w:130 },
+  { key:"product_line",         label:"Línea prod.",    w:130 },
+  { key:"next_action",          label:"Próxima acción", w:180 },
+  { key:"next_action_date",     label:"Fecha acción",   w:100 },
+  { key:"documentation_status", label:"Doc.",           w:110 },
+  { key:"billing_status",       label:"Facturación",    w:110 },
+  { key:"delivery_status",      label:"Entrega",        w:100 },
+  { key:"execution_policy",     label:"Póliza",         w:110 },
+  { key:"bridge_ot",            label:"OT Bridge",      w:110 },
+  { key:"contract_term",        label:"Plazo",          w:90  },
+  { key:"requesting_sector",    label:"Sector",         w:130 },
+  { key:"_attachments",         label:"📎",             w:70  },
+  { key:"notes",                label:"Observaciones",  w:200 },
+  { key:"_actions",             label:"",               w:80,  fixed:true },
 ];
 
-/* ─── Panel de adjuntos ──────────────────────────────────────────────── */
-function AttachmentsPanel({ tender, onClose }) {
-  const [files,       setFiles]       = useState([]);
-  const [uploading,   setUploading]   = useState(false);
-  const [loadingFiles,setLoadingFiles]= useState(true);
+/* ─── Componente inline de adjuntos (usado dentro del formulario) ────── */
+function InlineAttachments({ tenderId }) {
+  const [files,     setFiles]     = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [loading,   setLoading]   = useState(true);
   const inputRef = useRef(null);
-  const folder   = `tender_${tender.id}`;
+  const folder   = `tender_${tenderId}`;
 
-  useEffect(() => { loadFiles(); }, [tender.id]);
+  useEffect(() => { if(tenderId) loadFiles(); }, [tenderId]);
 
   async function loadFiles() {
-    setLoadingFiles(true);
-    const { data } = await supabase.storage.from(BUCKET).list(folder, { sortBy:{column:"created_at",order:"desc"} });
-    setFiles(data || []);
-    setLoadingFiles(false);
+    setLoading(true);
+    const { data, error } = await supabase.storage.from(BUCKET).list(folder);
+    if (!error) setFiles(data||[]);
+    setLoading(false);
   }
 
-  async function uploadFiles(e) {
-    const selected = Array.from(e.target.files);
-    if (!selected.length) return;
+  async function handleUpload(e) {
+    const fileList = Array.from(e.target.files||[]);
+    if (!fileList.length) return;
     setUploading(true);
-    for (const file of selected) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    for (const file of fileList) {
+      // Sanitizar nombre: reemplazar caracteres no permitidos
+      const safeName = file.name
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+        .replace(/[^a-zA-Z0-9._-]/g,"_");
       const path = `${folder}/${Date.now()}_${safeName}`;
-      await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      if (error) console.error("Upload error:", error.message);
     }
     await loadFiles();
     setUploading(false);
-    e.target.value = "";
+    if (inputRef.current) inputRef.current.value = "";
   }
 
-  async function deleteFile(name) {
-    if (!confirm(`¿Eliminar "${name}"?`)) return;
+  async function handleDelete(name) {
+    if (!confirm(`¿Eliminar "${name.replace(/^\d+_/,"")}"?`)) return;
     await supabase.storage.from(BUCKET).remove([`${folder}/${name}`]);
     setFiles(prev => prev.filter(f => f.name !== name));
   }
@@ -152,86 +159,81 @@ function AttachmentsPanel({ tender, onClose }) {
   }
 
   return (
-    <div className="tn-overlay" onClick={e=>{ if(e.target.classList.contains("tn-overlay")) onClose(); }}>
-      <div className="tn-modal" style={{maxWidth:520}}>
-        <div className="tn-modal__header">
-          <h3>📎 Adjuntos — {tender.process_number||tender.institution||"Licitación"}</h3>
-          <button className="tn-modal__close" onClick={onClose}>✕</button>
-        </div>
-        <div className="tn-modal__body" style={{gap:12}}>
-
-          {/* Drop zone / upload */}
-          <div
-            className="tn-drop-zone"
-            onClick={() => inputRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("over"); }}
-            onDragLeave={e => e.currentTarget.classList.remove("over")}
-            onDrop={async e => {
-              e.preventDefault();
-              e.currentTarget.classList.remove("over");
-              const fakeEv = { target: { files: e.dataTransfer.files, value: "" } };
-              await uploadFiles(fakeEv);
-            }}
-          >
-            <span style={{fontSize:28}}>📂</span>
-            <p style={{margin:"6px 0 2px",fontWeight:700,fontSize:13,color:"#0f172a"}}>
-              {uploading ? "Subiendo…" : "Arrastrá archivos o hacé click"}
-            </p>
-            <p style={{margin:0,fontSize:11.5,color:"#94a3b8"}}>PDF, Word, Excel · Múltiples archivos permitidos</p>
-            <input
-              ref={inputRef}
-              type="file"
-              multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx"
-              style={{display:"none"}}
-              onChange={uploadFiles}
-            />
-          </div>
-
-          {/* Lista de archivos */}
-          {loadingFiles ? (
-            <p style={{color:"#94a3b8",fontSize:13,textAlign:"center"}}>Cargando archivos…</p>
-          ) : files.length === 0 ? (
-            <p style={{color:"#94a3b8",fontSize:13,textAlign:"center"}}>Sin archivos adjuntos todavía.</p>
-          ) : (
-            <div className="tn-file-list">
-              {files.map(f => (
-                <div key={f.name} className="tn-file-row">
-                  <span className="tn-file-icon">{fileIcon(f.name)}</span>
-                  <span className="tn-file-name" title={f.name}>{f.name.replace(/^\d+_/,"")}</span>
-                  <span className="tn-file-size">{f.metadata?.size ? `${Math.round(f.metadata.size/1024)} KB` : ""}</span>
-                  <div className="tn-file-actions">
-                    <a href={getUrl(f.name)} target="_blank" rel="noreferrer" className="tn-btn tn-btn--ghost tn-btn--sm" title="Ver / Descargar">⬇</a>
-                    <button className="tn-btn tn-btn--danger tn-btn--sm" onClick={()=>deleteFile(f.name)} title="Eliminar">✕</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="tn-modal__footer">
-          <span style={{fontSize:11,color:"#94a3b8"}}>{files.length} archivo{files.length!==1?"s":""} adjunto{files.length!==1?"s":""}</span>
-          <button className="tn-btn tn-btn--ghost" onClick={onClose}>Cerrar</button>
-        </div>
+    <div className="tn-inline-attach">
+      {/* Upload button */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+        <button
+          type="button"
+          className="tn-btn tn-btn--ghost tn-btn--sm"
+          onClick={()=>inputRef.current?.click()}
+          disabled={uploading}
+          style={{display:"flex",alignItems:"center",gap:6}}
+        >
+          📎 {uploading ? "Subiendo…" : "Adjuntar archivos"}
+        </button>
+        <span style={{fontSize:11,color:"#94a3b8"}}>PDF, Word, Excel</span>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.xls,.xlsx"
+          style={{display:"none"}}
+          onChange={handleUpload}
+        />
       </div>
+
+      {/* Lista */}
+      {loading ? (
+        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>Cargando archivos…</p>
+      ) : files.length === 0 ? (
+        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>Sin archivos adjuntos. Usá el botón para subir.</p>
+      ) : (
+        <div className="tn-file-list">
+          {files.map(f=>(
+            <div key={f.name} className="tn-file-row">
+              <span className="tn-file-icon">{fileIcon(f.name)}</span>
+              <span className="tn-file-name" title={f.name.replace(/^\d+_/,"")}>
+                {f.name.replace(/^\d+_/,"")}
+              </span>
+              <span className="tn-file-size">
+                {f.metadata?.size ? `${Math.round(f.metadata.size/1024)} KB` : ""}
+              </span>
+              <div className="tn-file-actions">
+                <a
+                  href={getUrl(f.name)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="tn-btn tn-btn--ghost tn-btn--sm"
+                  title="Ver / Descargar"
+                >⬇</a>
+                <button
+                  type="button"
+                  className="tn-btn tn-btn--danger tn-btn--sm"
+                  onClick={()=>handleDelete(f.name)}
+                  title="Eliminar"
+                >✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 /* ─── Componente principal ───────────────────────────────────────────── */
 export default function TendersPage({ profile, onNavigate }) {
-  const [tenders,      setTenders]      = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [showForm,     setShowForm]     = useState(false);
-  const [editData,     setEditData]     = useState(null);
-  const [saving,       setSaving]       = useState(false);
-  const [selected,     setSelected]     = useState(new Set());
-  const [form,         setForm]         = useState(EMPTY_FORM);
-  const [sortCol,      setSortCol]      = useState("created_at");
-  const [sortDir,      setSortDir]      = useState("desc");
-  const [colFilters,   setColFilters]   = useState({});
-  const [globalQ,      setGlobalQ]      = useState("");
-  const [attachTender, setAttachTender] = useState(null);
+  const [tenders,    setTenders]    = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [showForm,   setShowForm]   = useState(false);
+  const [editData,   setEditData]   = useState(null);
+  const [saving,     setSaving]     = useState(false);
+  const [selected,   setSelected]   = useState(new Set());
+  const [form,       setForm]       = useState(EMPTY_FORM);
+  const [sortCol,    setSortCol]    = useState("created_at");
+  const [sortDir,    setSortDir]    = useState("desc");
+  const [colFilters, setColFilters] = useState({});
+  const [globalQ,    setGlobalQ]    = useState("");
   const [attachCounts, setAttachCounts] = useState({});
 
   useEffect(() => { loadTenders(); }, []);
@@ -239,10 +241,9 @@ export default function TendersPage({ profile, onNavigate }) {
   async function loadTenders() {
     setLoading(true);
     const { data } = await supabase.from("tenders").select("*").order("created_at",{ascending:false});
-    const rows = data || [];
+    const rows = data||[];
     setTenders(rows);
     setLoading(false);
-    // cargar conteo de adjuntos para cada licitación
     loadAttachCounts(rows);
   }
 
@@ -250,12 +251,12 @@ export default function TendersPage({ profile, onNavigate }) {
     const counts = {};
     await Promise.all(rows.map(async t => {
       const { data } = await supabase.storage.from(BUCKET).list(`tender_${t.id}`);
-      counts[t.id] = data?.length || 0;
+      counts[t.id] = data?.length||0;
     }));
     setAttachCounts(counts);
   }
 
-  const kpis = useMemo(() => {
+  const kpis = useMemo(()=>{
     const activas    = tenders.filter(t=>!["Finalizada","Perdida / No adjudicada","Vencida"].includes(t.operational_status));
     const montoTotal = activas.reduce((s,t)=>s+Number(t.purchase_order_amount||0),0);
     const adjMontos  = tenders.filter(t=>["Adjudicada","Orden de compra recibida","En ejecución","Entrega parcial","Entregada","Facturada","Cobrada"].includes(t.operational_status)).reduce((s,t)=>s+Number(t.purchase_order_amount||0),0);
@@ -264,48 +265,59 @@ export default function TendersPage({ profile, onNavigate }) {
     const sinAccion  = tenders.filter(t=>!t.next_action&&!["Finalizada","Cobrada","Perdida / No adjudicada"].includes(t.operational_status)).length;
     const docPend    = tenders.filter(t=>t.documentation_status==="Pendiente"&&!["Finalizada","Cobrada"].includes(t.operational_status)).length;
     return {activas:activas.length,montoTotal,adjMontos,proxVencer,vencidas,sinAccion,docPend};
-  }, [tenders]);
+  },[tenders]);
 
-  const filtered = useMemo(() => {
-    let rows = [...tenders];
-    if (globalQ) {
-      const q = globalQ.toLowerCase();
-      rows = rows.filter(t => Object.values(t).some(v=>v&&String(v).toLowerCase().includes(q)));
+  const filtered = useMemo(()=>{
+    let rows=[...tenders];
+    if(globalQ){
+      const q=globalQ.toLowerCase();
+      rows=rows.filter(t=>Object.values(t).some(v=>v&&String(v).toLowerCase().includes(q)));
     }
-    Object.entries(colFilters).forEach(([k,v]) => {
-      if (!v) return;
-      rows = rows.filter(t=>String(t[k]||"").toLowerCase().includes(v.toLowerCase()));
+    Object.entries(colFilters).forEach(([k,v])=>{
+      if(!v) return;
+      rows=rows.filter(t=>String(t[k]||"").toLowerCase().includes(v.toLowerCase()));
     });
-    rows.sort((a,b) => {
-      const av=a[sortCol]||"", bv=b[sortCol]||"";
+    rows.sort((a,b)=>{
+      const av=a[sortCol]||"",bv=b[sortCol]||"";
       return sortDir==="asc"?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
     });
     return rows;
-  }, [tenders,globalQ,colFilters,sortCol,sortDir]);
+  },[tenders,globalQ,colFilters,sortCol,sortDir]);
 
   function setColFilter(k,v){ setColFilters(prev=>({...prev,[k]:v})); }
   function toggleSort(k){ if(sortCol===k) setSortDir(d=>d==="asc"?"desc":"asc"); else{ setSortCol(k); setSortDir("asc"); } }
   function toggleSelect(id){ setSelected(prev=>{ const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; }); }
   function toggleSelectAll(){ setSelected(prev=>prev.size===filtered.length?new Set():new Set(filtered.map(t=>t.id))); }
 
-  function openNew(){ setEditData(null); setForm({...EMPTY_FORM}); setShowForm(true); }
-  function openEdit(t,e){ e?.stopPropagation(); setEditData(t); setForm({
-    jurisdiction:t.jurisdiction||"",institution:t.institution||"",
-    process_type:t.process_type||"",process_number:t.process_number||"",
-    tender_type:t.tender_type||"Original",process_name:t.process_name||"",
-    expedient_number:t.expedient_number||"",requesting_sector:t.requesting_sector||"",
-    contract_term:t.contract_term||"",purchase_order_number:t.purchase_order_number||"",
-    purchase_order_date:t.purchase_order_date||"",purchase_order_amount:t.purchase_order_amount||"",
-    start_date:t.start_date||"",end_date:t.end_date||"",
-    validity_status:t.validity_status||"En análisis",execution_policy:t.execution_policy||"",
-    bridge_ot:t.bridge_ot||"",internal_owner:t.internal_owner||"",
-    product_line:t.product_line||"",operational_status:t.operational_status||"En análisis",
-    next_action:t.next_action||"",next_action_date:t.next_action_date||"",
-    documentation_status:t.documentation_status||"Pendiente",
-    documentation_pending_detail:t.documentation_pending_detail||"",
-    billing_status:t.billing_status||"Pendiente",delivery_status:t.delivery_status||"Pendiente",
-    priority:t.priority||"Media",portal_link:t.portal_link||"",notes:t.notes||"",
-  }); setShowForm(true); }
+  function openNew(){
+    setEditData(null);
+    setForm({...EMPTY_FORM});
+    setShowForm(true);
+  }
+
+  /* Click en fila → abre edición */
+  function openEdit(t, e) {
+    e?.stopPropagation();
+    setEditData(t);
+    setForm({
+      jurisdiction:t.jurisdiction||"", institution:t.institution||"",
+      process_type:t.process_type||"", process_number:t.process_number||"",
+      tender_type:t.tender_type||"Original", process_name:t.process_name||"",
+      expedient_number:t.expedient_number||"", requesting_sector:t.requesting_sector||"",
+      contract_term:t.contract_term||"", purchase_order_number:t.purchase_order_number||"",
+      purchase_order_date:t.purchase_order_date||"", purchase_order_amount:t.purchase_order_amount||"",
+      start_date:t.start_date||"", end_date:t.end_date||"",
+      validity_status:t.validity_status||"En análisis", execution_policy:t.execution_policy||"",
+      bridge_ot:t.bridge_ot||"", internal_owner:t.internal_owner||"",
+      product_line:t.product_line||"", operational_status:t.operational_status||"En análisis",
+      next_action:t.next_action||"", next_action_date:t.next_action_date||"",
+      documentation_status:t.documentation_status||"Pendiente",
+      documentation_pending_detail:t.documentation_pending_detail||"",
+      billing_status:t.billing_status||"Pendiente", delivery_status:t.delivery_status||"Pendiente",
+      priority:t.priority||"Media", portal_link:t.portal_link||"", notes:t.notes||"",
+    });
+    setShowForm(true);
+  }
 
   function setF(k,v){ setForm(prev=>({...prev,[k]:typeof v==="string"?v.toUpperCase():v})); }
 
@@ -321,22 +333,26 @@ export default function TendersPage({ profile, onNavigate }) {
       owner_id:profile?.id,
       updated_at:new Date().toISOString(),
     };
-    if(editData){ const{error}=await supabase.from("tenders").update(payload).eq("id",editData.id); if(error) alert("Error: "+error.message); }
-    else { const{error}=await supabase.from("tenders").insert([payload]); if(error) alert("Error: "+error.message); }
+    if(editData){
+      const{error}=await supabase.from("tenders").update(payload).eq("id",editData.id);
+      if(error){ alert("Error: "+error.message); setSaving(false); return; }
+    } else {
+      const{error}=await supabase.from("tenders").insert([payload]);
+      if(error){ alert("Error: "+error.message); setSaving(false); return; }
+    }
     await loadTenders();
-    setSaving(false); setShowForm(false);
+    setSaving(false);
+    setShowForm(false);
   }
 
   async function deleteTender(id,e){
     e?.stopPropagation();
     if(!confirm("¿Eliminar esta licitación y todos sus adjuntos?")) return;
-    // eliminar archivos del storage
     const { data: files } = await supabase.storage.from(BUCKET).list(`tender_${id}`);
-    if (files?.length) {
-      await supabase.storage.from(BUCKET).remove(files.map(f=>`tender_${id}/${f.name}`));
-    }
+    if(files?.length) await supabase.storage.from(BUCKET).remove(files.map(f=>`tender_${id}/${f.name}`));
     await supabase.from("tenders").delete().eq("id",id);
     setTenders(p=>p.filter(t=>t.id!==id));
+    if(showForm && editData?.id===id) setShowForm(false);
   }
 
   function exportToExcel(){
@@ -355,21 +371,31 @@ export default function TendersPage({ profile, onNavigate }) {
       case "_check":
         return <input type="checkbox" checked={selected.has(t.id)} onChange={()=>toggleSelect(t.id)} onClick={e=>e.stopPropagation()} style={{cursor:"pointer",width:14,height:14,accentColor:"#0f2444"}}/>;
       case "_alert":
-        return <div style={{display:"flex",gap:3,justifyContent:"center"}}><span className={`tn-alert-dot tn-alert-dot--${endColor(t.end_date)}`} title={`Venc: ${fmtDate(t.end_date)}`}/><span className={`tn-alert-dot tn-alert-dot--${actionColor(t)}`} title={`Acción: ${t.next_action||"Sin definir"}`}/></div>;
-      case "_attachments": {
-        const cnt = attachCounts[t.id]||0;
         return (
-          <button
+          <div style={{display:"flex",gap:3,justifyContent:"center"}}>
+            <span className={`tn-alert-dot tn-alert-dot--${endColor(t.end_date)}`} title={`Venc: ${fmtDate(t.end_date)}`}/>
+            <span className={`tn-alert-dot tn-alert-dot--${actionColor(t)}`} title={`Acción: ${t.next_action||"Sin definir"}`}/>
+          </div>
+        );
+      case "_attachments": {
+        const cnt=attachCounts[t.id]||0;
+        return (
+          <span
             className="tn-attach-btn"
-            onClick={e=>{ e.stopPropagation(); setAttachTender(t); }}
-            title={`${cnt} adjunto${cnt!==1?"s":""}`}
+            onClick={e=>{ e.stopPropagation(); openEdit(t,e); }}
+            title={`${cnt} adjunto${cnt!==1?"s":""} — click para abrir`}
           >
-            📎 {cnt>0?<span className="tn-attach-count">{cnt}</span>:<span style={{color:"#94a3b8",fontSize:10}}>+</span>}
-          </button>
+            📎 {cnt>0?<span className="tn-attach-count">{cnt}</span>:<span style={{color:"#94a3b8",fontSize:10}}>0</span>}
+          </span>
         );
       }
       case "_actions":
-        return <div style={{display:"flex",gap:3}} onClick={e=>e.stopPropagation()}><button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={e=>openEdit(t,e)} title="Editar">✎</button><button className="tn-btn tn-btn--danger tn-btn--sm" onClick={e=>deleteTender(t.id,e)} title="Eliminar">✕</button></div>;
+        return (
+          <div style={{display:"flex",gap:3}} onClick={e=>e.stopPropagation()}>
+            <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={e=>openEdit(t,e)} title="Editar">✎</button>
+            <button className="tn-btn tn-btn--danger tn-btn--sm" onClick={e=>deleteTender(t.id,e)} title="Eliminar">✕</button>
+          </div>
+        );
       case "operational_status":
         return <span className={`tn-badge tn-badge--${statusBadge(t.operational_status)}`} style={{fontSize:10.5,padding:"2px 8px"}}>{t.operational_status||"—"}</span>;
       case "priority":
@@ -402,12 +428,13 @@ export default function TendersPage({ profile, onNavigate }) {
     }
   }
 
-  const hasFilters = globalQ||Object.values(colFilters).some(Boolean);
+  const hasFilters=globalQ||Object.values(colFilters).some(Boolean);
 
   return (
     <Layout title="Licitaciones" profile={profile} onNavigate={onNavigate}>
       <div className="tn-page">
 
+        {/* Header */}
         <div className="tn-header">
           <div>
             <h2>Licitaciones y Órdenes de Compra</h2>
@@ -422,6 +449,7 @@ export default function TendersPage({ profile, onNavigate }) {
           </div>
         </div>
 
+        {/* KPIs */}
         <div className="tn-kpis">
           <div className="tn-kpi"><span className="tn-kpi__label">Activas</span><span className="tn-kpi__val">{kpis.activas}</span><span className="tn-kpi__sub">{compactMoney(kpis.montoTotal)}</span></div>
           <div className="tn-kpi tn-kpi--green"><span className="tn-kpi__label">Adjudicado</span><span className="tn-kpi__val">{compactMoney(kpis.adjMontos)}</span><span className="tn-kpi__sub">monto total OC</span></div>
@@ -431,11 +459,13 @@ export default function TendersPage({ profile, onNavigate }) {
           <div className={`tn-kpi ${kpis.docPend>0?"tn-kpi--warn":"tn-kpi--green"}`}><span className="tn-kpi__label">Doc. pendiente</span><span className="tn-kpi__val">{kpis.docPend}</span><span className="tn-kpi__sub">docs incompletos</span></div>
         </div>
 
+        {/* Búsqueda global */}
         <div className="tn-search-bar">
           <input className="tn-search-input" placeholder="🔍  Buscar en todos los campos…" value={globalQ} onChange={e=>setGlobalQ(e.target.value)}/>
           <span className="tn-search-count">{filtered.length} resultado{filtered.length!==1?"s":""}</span>
         </div>
 
+        {/* Grilla */}
         <div className="tn-grid-wrap">
           {loading?(
             <div className="tn-empty"><div className="tn-empty__icon">⏳</div><h3>Cargando…</h3></div>
@@ -445,7 +475,8 @@ export default function TendersPage({ profile, onNavigate }) {
                 <thead>
                   <tr className="tn-grid__head-row">
                     {COLS.map(col=>(
-                      <th key={col.key} className={`tn-grid__th ${col.fixed?"tn-grid__th--fixed":""}`} style={{minWidth:col.w,maxWidth:col.w,width:col.w}} onClick={()=>{ if(col.key==="_check") toggleSelectAll(); else if(col.key[0]!=="_") toggleSort(col.key); }}>
+                      <th key={col.key} className={`tn-grid__th ${col.fixed?"tn-grid__th--fixed":""}`} style={{minWidth:col.w,maxWidth:col.w,width:col.w}}
+                        onClick={()=>{ if(col.key==="_check") toggleSelectAll(); else if(col.key[0]!=="_") toggleSort(col.key); }}>
                         {col.key==="_check"?(
                           <input type="checkbox" checked={filtered.length>0&&selected.size===filtered.length} onChange={toggleSelectAll} style={{cursor:"pointer",width:14,height:14,accentColor:"#93c5fd"}}/>
                         ):(
@@ -466,9 +497,17 @@ export default function TendersPage({ profile, onNavigate }) {
                 </thead>
                 <tbody>
                   {filtered.length===0?(
-                    <tr><td colSpan={COLS.length} className="tn-grid__empty">{tenders.length===0?"Sin licitaciones. Creá la primera con + Nueva licitación.":"Sin resultados con los filtros aplicados."}</td></tr>
+                    <tr><td colSpan={COLS.length} className="tn-grid__empty">
+                      {tenders.length===0?"Sin licitaciones. Creá la primera con + Nueva licitación.":"Sin resultados con los filtros aplicados."}
+                    </td></tr>
                   ):filtered.map((t,idx)=>(
-                    <tr key={t.id} className={`tn-grid__row ${idx%2===0?"":"tn-grid__row--alt"}`}>
+                    /* Click en fila → abre edición */
+                    <tr
+                      key={t.id}
+                      className={`tn-grid__row ${idx%2===0?"":"tn-grid__row--alt"}`}
+                      style={{cursor:"pointer"}}
+                      onClick={()=>openEdit(t)}
+                    >
                       {COLS.map(col=>(
                         <td key={col.key} className={`tn-grid__td ${col.fixed?"tn-grid__td--fixed":""}`} style={{minWidth:col.w,maxWidth:col.w,width:col.w}}>
                           {renderCell(col,t)}
@@ -483,28 +522,31 @@ export default function TendersPage({ profile, onNavigate }) {
         </div>
       </div>
 
-      {/* Modal adjuntos */}
-      {attachTender && (
-        <AttachmentsPanel
-          tender={attachTender}
-          onClose={()=>{ setAttachTender(null); loadAttachCounts(tenders); }}
-        />
-      )}
-
-      {/* Modal formulario */}
+      {/* Modal formulario + adjuntos integrados */}
       {showForm&&(
         <div className="tn-overlay" onClick={e=>{ if(e.target.classList.contains("tn-overlay")) setShowForm(false); }}>
-          <div className="tn-modal">
+          <div className="tn-modal" style={{maxWidth:820}}>
             <div className="tn-modal__header">
               <h3>{editData?"Editar licitación":"Nueva licitación"}</h3>
-              <button className="tn-modal__close" onClick={()=>setShowForm(false)}>✕</button>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                {editData&&(
+                  <button
+                    type="button"
+                    className="tn-btn tn-btn--danger tn-btn--sm"
+                    onClick={e=>deleteTender(editData.id,e)}
+                  >
+                    🗑 Eliminar
+                  </button>
+                )}
+                <button className="tn-modal__close" onClick={()=>setShowForm(false)}>✕</button>
+              </div>
             </div>
             <div className="tn-modal__body">
 
               <div className="tn-form-section">
                 <p className="tn-form-section__title">Datos generales</p>
                 <div className="tn-form-grid">
-                  <div className="tn-field"><label>Jurisdicción</label><input value={form.jurisdiction} onChange={e=>setF("jurisdiction",e.target.value)} placeholder="EJ: CABA, PROVINCIA DE BUENOS AIRES"/></div>
+                  <div className="tn-field"><label>Jurisdicción</label><input value={form.jurisdiction} onChange={e=>setF("jurisdiction",e.target.value)} placeholder="EJ: CABA"/></div>
                   <div className="tn-field"><label>Hospital / Institución</label><input value={form.institution} onChange={e=>setF("institution",e.target.value)}/></div>
                   <div className="tn-field"><label>Responsable interno</label><input value={form.internal_owner} onChange={e=>setF("internal_owner",e.target.value)}/></div>
                   <div className="tn-field"><label>Línea de producto</label><input value={form.product_line} onChange={e=>setF("product_line",e.target.value)}/></div>
@@ -515,7 +557,7 @@ export default function TendersPage({ profile, onNavigate }) {
                 <p className="tn-form-section__title">Datos del proceso</p>
                 <div className="tn-form-grid">
                   <div className="tn-field"><label>Número de proceso</label><input value={form.process_number} onChange={e=>setF("process_number",e.target.value)} placeholder="EJ: LP 001/2026"/></div>
-                  <div className="tn-field"><label>Tipo de proceso</label><input value={form.process_type} onChange={e=>setF("process_type",e.target.value)} placeholder="EJ: LICITACIÓN PÚBLICA"/></div>
+                  <div className="tn-field"><label>Tipo de proceso</label><input value={form.process_type} onChange={e=>setF("process_type",e.target.value)}/></div>
                   <div className="tn-field"><label>Tipo</label><select value={form.tender_type} onChange={e=>setF("tender_type",e.target.value)}>{TENDER_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
                   <div className="tn-field"><label>Número de expediente</label><input value={form.expedient_number} onChange={e=>setF("expedient_number",e.target.value)}/></div>
                 </div>
@@ -578,9 +620,24 @@ export default function TendersPage({ profile, onNavigate }) {
                 <div className="tn-field"><textarea value={form.notes} onChange={e=>setF("notes",e.target.value)} placeholder="NOTAS, HISTORIAL DE SEGUIMIENTO…"/></div>
               </div>
 
+              {/* ADJUNTOS — solo visible cuando se está editando una licitación existente */}
+              {editData && (
+                <div className="tn-form-section">
+                  <p className="tn-form-section__title">📎 Archivos adjuntos (pliegos, OC, pólizas…)</p>
+                  <InlineAttachments tenderId={editData.id} />
+                </div>
+              )}
+
+              {!editData && (
+                <div className="tn-form-section">
+                  <p className="tn-form-section__title">📎 Archivos adjuntos</p>
+                  <p style={{fontSize:12,color:"#94a3b8",margin:0}}>Guardá la licitación primero y luego podrás adjuntar archivos.</p>
+                </div>
+              )}
+
             </div>
             <div className="tn-modal__footer">
-              <button className="tn-btn tn-btn--ghost" onClick={()=>setShowForm(false)}>Cancelar</button>
+              <button className="tn-btn tn-btn--ghost" onClick={()=>setShowForm(false)}>Cerrar</button>
               <button className="tn-btn tn-btn--primary" onClick={saveTender} disabled={saving}>
                 {saving?"Guardando…":editData?"Guardar cambios":"Crear licitación"}
               </button>
