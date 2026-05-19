@@ -107,6 +107,16 @@ function statusBadge(s) {
 function pClass(p) { return {Alta:"alta",Crítica:"critica",Media:"media",Baja:"baja"}[p]||"baja"; }
 function pIcon(p)  { return {Alta:"▲",Crítica:"⬆",Media:"→",Baja:"▼"}[p]||"→"; }
 
+/* Normaliza valores que pueden venir en mayúsculas de registros viejos */
+function normalizeSelect(val, options, fallback) {
+  if (!val) return fallback;
+  // Buscar match exacto
+  if (options.includes(val)) return val;
+  // Buscar match case-insensitive
+  const found = options.find(o => o.toUpperCase() === val.toUpperCase());
+  return found || fallback;
+}
+
 function fileIcon(name) {
   const ext = (name||"").split(".").pop().toLowerCase();
   if (ext === "pdf")              return "📄";
@@ -344,7 +354,7 @@ export default function TendersPage({ profile, onNavigate }) {
       institution:                  t.institution                  || "",
       process_type:                 t.process_type                 || "",
       process_number:               t.process_number               || "",
-      tender_type:                  t.tender_type                  || "Original",
+      tender_type:                  normalizeSelect(t.tender_type, TENDER_TYPES, "Original"),
       process_name:                 t.process_name                 || "",
       expedient_number:             t.expedient_number             || "",
       requesting_sector:            t.requesting_sector            || "",
@@ -354,19 +364,19 @@ export default function TendersPage({ profile, onNavigate }) {
       purchase_order_amount:        t.purchase_order_amount        != null ? String(t.purchase_order_amount) : "",
       start_date:                   t.start_date                   || "",
       end_date:                     t.end_date                     || "",
-      validity_status:              t.validity_status              || "En análisis",
+      validity_status:              normalizeSelect(t.validity_status, ESTADOS, "En análisis"),
       execution_policy:             t.execution_policy             || "",
       bridge_ot:                    t.bridge_ot                    || "",
       internal_owner:               t.internal_owner               || "",
       product_line:                 t.product_line                 || "",
-      operational_status:           t.operational_status           || "En análisis",
+      operational_status:           normalizeSelect(t.operational_status, ESTADOS, "En análisis"),
       next_action:                  t.next_action                  || "",
       next_action_date:             t.next_action_date             || "",
-      documentation_status:         t.documentation_status         || "Pendiente",
+      documentation_status:         normalizeSelect(t.documentation_status, DOC_ESTADOS, "Pendiente"),
       documentation_pending_detail: t.documentation_pending_detail || "",
-      billing_status:               t.billing_status               || "Pendiente",
-      delivery_status:              t.delivery_status              || "Pendiente",
-      priority:                     t.priority                     || "Media",
+      billing_status:               normalizeSelect(t.billing_status, BILL_ESTADOS, "Pendiente"),
+      delivery_status:              normalizeSelect(t.delivery_status, DEL_ESTADOS, "Pendiente"),
+      priority:                     normalizeSelect(t.priority, PRIORIDADES, "Media"),
       portal_link:                  t.portal_link                  || "",
       notes:                        t.notes                        || "",
     });
@@ -374,10 +384,16 @@ export default function TendersPage({ profile, onNavigate }) {
   }
 
   /* ── setF con uppercase para strings ── */
+  /* Campos select — NO convertir a mayúsculas */
+  const SELECT_FIELDS = [
+    "tender_type","validity_status","operational_status","priority",
+    "documentation_status","billing_status","delivery_status","portal_link",
+  ];
+
   function setF(k, v) {
     setForm(prev => ({
       ...prev,
-      [k]: typeof v === "string" && !["portal_link"].includes(k) ? v.toUpperCase() : v,
+      [k]: typeof v === "string" && !SELECT_FIELDS.includes(k) ? v.toUpperCase() : v,
     }));
   }
 
@@ -776,7 +792,7 @@ export default function TendersPage({ profile, onNavigate }) {
                   <div className="tn-field">
                     <label>Tipo de licitación</label>
                     <select value={form.tender_type}
-                      onChange={e => setF("tender_type", e.target.value)}>
+                      onChange={e => setForm(prev => ({...prev, tender_type: e.target.value}))}>
                       {TENDER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
@@ -852,7 +868,7 @@ export default function TendersPage({ profile, onNavigate }) {
                   <div className="tn-field">
                     <label>Estado de vigencia</label>
                     <select value={form.validity_status}
-                      onChange={e => setF("validity_status", e.target.value)}>
+                      onChange={e => setForm(prev => ({...prev, validity_status: e.target.value}))}>
                       {ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
@@ -866,7 +882,7 @@ export default function TendersPage({ profile, onNavigate }) {
                   <div className="tn-field">
                     <label>Estado operativo *</label>
                     <select value={form.operational_status}
-                      onChange={e => setF("operational_status", e.target.value)}
+                      onChange={e => setForm(prev => ({...prev, operational_status: e.target.value}))}
                       style={{fontWeight:700,borderColor: statusBadge(form.operational_status)==="red"?"#fecaca":statusBadge(form.operational_status)==="green"?"#bbf7d0":"#e2e8f0"}}>
                       {ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -874,7 +890,7 @@ export default function TendersPage({ profile, onNavigate }) {
                   <div className="tn-field">
                     <label>Prioridad</label>
                     <select value={form.priority}
-                      onChange={e => setF("priority", e.target.value)}>
+                      onChange={e => setForm(prev => ({...prev, priority: e.target.value}))}>
                       {PRIORIDADES.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
@@ -894,21 +910,21 @@ export default function TendersPage({ profile, onNavigate }) {
                   <div className="tn-field">
                     <label>Estado documentación</label>
                     <select value={form.documentation_status}
-                      onChange={e => setF("documentation_status", e.target.value)}>
+                      onChange={e => setForm(prev => ({...prev, documentation_status: e.target.value}))}>
                       {DOC_ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div className="tn-field">
                     <label>Estado facturación</label>
                     <select value={form.billing_status}
-                      onChange={e => setF("billing_status", e.target.value)}>
+                      onChange={e => setForm(prev => ({...prev, billing_status: e.target.value}))}>
                       {BILL_ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div className="tn-field">
                     <label>Estado entrega</label>
                     <select value={form.delivery_status}
-                      onChange={e => setF("delivery_status", e.target.value)}>
+                      onChange={e => setForm(prev => ({...prev, delivery_status: e.target.value}))}>
                       {DEL_ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
