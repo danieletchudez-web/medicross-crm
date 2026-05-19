@@ -88,15 +88,34 @@
   border-radius: var(--tn-radius2);
   padding: 14px 16px;
   box-shadow: 0 1px 3px rgba(15,23,42,.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 .tn-kpi--blue   { border-top-color: var(--tn-accent); }
 .tn-kpi--green  { border-top-color: #2d7d46; }
 .tn-kpi--warn   { border-top-color: #d97706; }
 .tn-kpi--danger { border-top-color: #dc2626; }
 .tn-kpi--gray   { border-top-color: #64748b; }
-.tn-kpi__label  { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--tn-text3); margin-bottom: 8px; }
-.tn-kpi__val    { font-size: 26px; font-weight: 600; color: var(--tn-navy); line-height: 1; font-family: "DM Mono", monospace; }
-.tn-kpi__sub    { font-size: 11px; color: var(--tn-text3); margin-top: 5px; }
+.tn-kpi__label  {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--tn-text3);
+  margin: 0 0 6px 0;
+  display: block;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tn-kpi__val    {
+  font-size: 26px; font-weight: 600; color: var(--tn-navy);
+  line-height: 1.1; font-family: "DM Mono", monospace;
+  display: block;
+  margin: 0 0 4px 0;
+}
+.tn-kpi__sub    {
+  font-size: 11px; color: var(--tn-text3);
+  display: block;
+  margin: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 /* ─── SEARCH ─────────────────────────────────────────────────────────── */
 .tn-search-bar {
