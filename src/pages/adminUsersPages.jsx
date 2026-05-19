@@ -21,6 +21,7 @@ const MODULES = [
   { id: "todayActions",     label: "Acciones Hoy"          },
   { id: "visits",           label: "Visitas"               },
   { id: "calendar",         label: "Calendario"            },
+  { id: "tenders",          label: "Licitaciones"          },
   { id: "adminUsers",       label: "Administración"        },
 ];
 
@@ -28,13 +29,13 @@ const MODULES = [
 const SELLER_MODULES = [
   "managerDashboard", "importer", "salesAnalytics",
   "accounts", "products", "opportunities", "campaigns",
-  "todayActions", "visits", "calendar",
+  "todayActions", "visits", "calendar", "tenders",
 ];
 
 const MANAGER_MODULES = [
   "managerDashboard", "importer", "salesAnalytics",
   "accounts", "products", "opportunities", "campaigns",
-  "todayActions", "visits", "calendar", "adminUsers",
+  "todayActions", "visits", "calendar", "tenders", "adminUsers",
 ];
 
 const FULL_MODULES = MODULES.map((m) => m.id);

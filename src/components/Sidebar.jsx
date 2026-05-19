@@ -27,6 +27,7 @@ const MENU_SECTIONS = [
       { id: "todayActions", label: "Acciones Hoy",  icon: "◷" },
       { id: "visits",       label: "Visitas",        icon: "◌" },
       { id: "calendar",     label: "Calendario",     icon: "▦" },
+      { id: "tenders",     label: "Licitaciones",   icon: "📄" },
       { id: "adminUsers",   label: "Administración", icon: "⊞" },
     ],
   },
@@ -67,7 +68,6 @@ export default function Sidebar({ profile, onNavigate }) {
   const [dark,       setDark]       = useState(() => localStorage.getItem("theme") === "dark");
   const [editing,    setEditing]    = useState(false);
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
-  const [menuOpen,   setMenuOpen]   = useState(false);
   const dragIdx = useRef(null);
 
   useEffect(() => {
@@ -75,29 +75,19 @@ export default function Sidebar({ profile, onNavigate }) {
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
-  // Cerrar menú al rotar o cambiar tamaño a desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 768) setMenuOpen(false);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+  /* ── Permisos ─────────────────────────────────────────────────────── */
   const canSee = (module) => {
+    // super_admin ve todo siempre
     if (profile?.role === "super_admin") return true;
+    // Administración solo para manager y super_admin
     if (module === "adminUsers") return profile?.role === "manager";
+    // El resto: respeta allowed_modules del perfil
     return profile?.allowed_modules?.includes(module);
   };
 
   async function logout() {
     await supabase.auth.signOut();
     window.location.reload();
-  }
-
-  function handleNavigate(id) {
-    onNavigate(id);
-    setMenuOpen(false); // cierra el menú en mobile al navegar
   }
 
   function onDragStart(id) { dragIdx.current = id; }
@@ -130,113 +120,95 @@ export default function Sidebar({ profile, onNavigate }) {
   const emailDisplay = email.length > 24 ? email.slice(0, 22) + "…" : email;
 
   return (
-    <>
-      <aside className="sidebar">
+    <aside className="sidebar">
 
-        <div className="sidebar-brand">
-          <img src={logoImg} alt="MediCross" className="sidebar-brand__img"/>
+      <div className="sidebar-brand">
+        <img src={logoImg} alt="STORING Medical" className="sidebar-brand__img"/>
+      </div>
+
+      <div className="sidebar-body">
+
+        <div className="sidebar-user">
+          <div className="sidebar-user__row">
+            <div className="sidebar-user__avatar">{initials}</div>
+            <div className="sidebar-user__info">
+              <strong>{profile?.full_name || "Usuario"}</strong>
+              <small title={email}>{emailDisplay}</small>
+            </div>
+          </div>
+          <span className="sidebar-user__role">{roleLabel}</span>
         </div>
 
-        {/* Botón hamburguesa — solo visible en mobile */}
-        <button
-          className={`sidebar-hamburger ${menuOpen ? "open" : ""}`}
-          onClick={() => setMenuOpen((o) => !o)}
-          aria-label="Abrir menú"
-        >
-          <span/><span/><span/>
-        </button>
+        <nav className="sidebar-nav">
 
-        {/* Drawer / body del menú */}
-        <div className={`sidebar-body ${menuOpen ? "open" : ""}`}>
-
-          <div className="sidebar-user">
-            <div className="sidebar-user__row">
-              <div className="sidebar-user__avatar">{initials}</div>
-              <div className="sidebar-user__info">
-                <strong>{profile?.full_name || "Usuario"}</strong>
-                <small title={email}>{emailDisplay}</small>
-              </div>
-            </div>
-            <span className="sidebar-user__role">{roleLabel}</span>
-          </div>
-
-          <nav className="sidebar-nav">
-
-            <div className="sidebar-nav__group-row">
-              <span className="sidebar-nav__group-label">MÓDULOS</span>
-              <button
-                className={`sidebar-edit-btn ${editing ? "active" : ""}`}
-                onClick={() => { setEditing((e) => !e); if (editing) saveOrder(orderedIds); }}
-                title={editing ? "Guardar orden" : "Editar orden"}
-              >
-                {editing ? "✓ Listo" : "✎ Editar"}
-              </button>
-            </div>
-
-            {editing && <p className="sidebar-edit-hint">Arrastrá para reordenar</p>}
-
-            {sections.map((section, si) => {
-              const visible = section.items.filter((item) => canSee(item.id));
-              if (visible.length === 0) return null;
-              return (
-                <div key={section.label} className="sidebar-section">
-                  {si > 0 && <div className="sidebar-section__divider"/>}
-                  <span className="sidebar-section__label">{section.label}</span>
-                  {visible.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`sidebar-nav__item-wrap ${editing ? "editing" : ""}`}
-                      draggable={editing}
-                      onDragStart={() => onDragStart(item.id)}
-                      onDragEnter={() => onDragEnter(item.id)}
-                      onDragEnd={onDragEnd}
-                      onDragOver={(e) => e.preventDefault()}
-                    >
-                      {editing && <span className="sidebar-drag-handle">⠿</span>}
-                      <button
-                        type="button"
-                        className="sidebar-nav__item"
-                        onClick={() => { if (!editing) handleNavigate(item.id); }}
-                        style={{ cursor: editing ? "grab" : "pointer" }}
-                      >
-                        <span className="sidebar-nav__icon">{item.icon}</span>
-                        <span className="sidebar-nav__label">{item.label}</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-
-            {editing && (
-              <button className="sidebar-reset-btn" onClick={resetOrder}>
-                ↺ Restablecer orden
-              </button>
-            )}
-          </nav>
-
-          <div className="sidebar-footer">
-            <div className="sidebar-theme-toggle" onClick={() => setDark((d) => !d)}>
-              <span className="sidebar-theme-toggle__icon">{dark ? "☀" : "☽"}</span>
-              <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
-              <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
-                <div className="sidebar-theme-toggle__knob"/>
-              </div>
-            </div>
-            <button type="button" className="sidebar-logout" onClick={logout}>
-              <span className="sidebar-logout__icon">↪</span>
-              Cerrar sesión
+          <div className="sidebar-nav__group-row">
+            <span className="sidebar-nav__group-label">MÓDULOS</span>
+            <button
+              className={`sidebar-edit-btn ${editing ? "active" : ""}`}
+              onClick={() => { setEditing((e) => !e); if (editing) saveOrder(orderedIds); }}
+              title={editing ? "Guardar orden" : "Editar orden"}
+            >
+              {editing ? "✓ Listo" : "✎ Editar"}
             </button>
           </div>
 
-        </div>
-      </aside>
+          {editing && <p className="sidebar-edit-hint">Arrastrá para reordenar</p>}
 
-      {/* Overlay oscuro al abrir el menú en mobile */}
-      <div
-        className={`sidebar-overlay ${menuOpen ? "open" : ""}`}
-        onClick={() => setMenuOpen(false)}
-      />
-    </>
+          {sections.map((section, si) => {
+            const visible = section.items.filter((item) => canSee(item.id));
+            if (visible.length === 0) return null;
+            return (
+              <div key={section.label} className="sidebar-section">
+                {si > 0 && <div className="sidebar-section__divider"/>}
+                <span className="sidebar-section__label">{section.label}</span>
+                {visible.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`sidebar-nav__item-wrap ${editing ? "editing" : ""}`}
+                    draggable={editing}
+                    onDragStart={() => onDragStart(item.id)}
+                    onDragEnter={() => onDragEnter(item.id)}
+                    onDragEnd={onDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    {editing && <span className="sidebar-drag-handle">⠿</span>}
+                    <button
+                      type="button"
+                      className="sidebar-nav__item"
+                      onClick={() => { if (!editing) onNavigate(item.id); }}
+                      style={{ cursor: editing ? "grab" : "pointer" }}
+                    >
+                      <span className="sidebar-nav__icon">{item.icon}</span>
+                      <span className="sidebar-nav__label">{item.label}</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+
+          {editing && (
+            <button className="sidebar-reset-btn" onClick={resetOrder}>
+              ↺ Restablecer orden
+            </button>
+          )}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-theme-toggle" onClick={() => setDark((d) => !d)}>
+            <span className="sidebar-theme-toggle__icon">{dark ? "☀" : "☽"}</span>
+            <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
+            <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
+              <div className="sidebar-theme-toggle__knob"/>
+            </div>
+          </div>
+          <button type="button" className="sidebar-logout" onClick={logout}>
+            <span className="sidebar-logout__icon">↪</span>
+            Cerrar sesión
+          </button>
+        </div>
+
+      </div>
+    </aside>
   );
 }

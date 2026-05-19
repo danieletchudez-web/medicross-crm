@@ -13,6 +13,7 @@ import CalendarPage        from "./pages/CalendarPage";
 import AdminUsersPage      from "./pages/adminUsersPages";
 import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
 import ImporterPage        from "./pages/ImporterPage";
+import TendersPage         from "./pages/TendersPage";
 import LoginPage           from "./pages/LoginPage";
 import CRMAssistant        from "./components/CRMAssistant";
 
@@ -160,6 +161,7 @@ export default function App() {
     case "adminUsers":       CurrentPage = <AdminUsersPage     {...pageProps} />; break;
     case "salesAnalytics":   CurrentPage = <SalesAnalyticsPage {...pageProps} />; break;
     case "importer":         CurrentPage = <ImporterPage       {...pageProps} />; break;
+    case "tenders":          CurrentPage = <TendersPage        {...pageProps} />; break;
     default:                 CurrentPage = <ManagerDashboard   {...pageProps} />;
   }
 
