@@ -90,15 +90,21 @@ function actionDotColor(t) {
 
 function calcProgress(t) {
   if (!t.end_date) return null;
-  // Usar detection_date si existe, sino created_at, sino null
-  const startStr = t.detection_date || (t.created_at ? t.created_at.slice(0,10) : null);
+  // Usar detection_date si existe, sino created_at como fallback
+  const startStr = t.detection_date
+    ? String(t.detection_date).slice(0,10)
+    : t.created_at
+      ? String(t.created_at).slice(0,10)
+      : null;
   if (!startStr) return null;
-  const start = new Date(startStr.slice(0,10)+"T00:00:00");
-  const end   = new Date(t.end_date+"T00:00:00");
+  const start = new Date(startStr + "T00:00:00");
+  const end   = new Date(String(t.end_date).slice(0,10) + "T00:00:00");
   const now   = new Date(); now.setHours(0,0,0,0);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
   const total = end - start;
   if (total <= 0) return 100;
-  return Math.min(100, Math.max(0, Math.round((now - start) / total * 100)));
+  const elapsed = now - start;
+  return Math.min(100, Math.max(0, Math.round(elapsed / total * 100)));
 }
 
 function statusBadge(s) {
@@ -480,17 +486,21 @@ export default function TendersPage({ profile, onNavigate }) {
       case "_progress": {
         const pct = calcProgress(t);
         const isClosed = CERRADAS.includes(t.operational_status);
-        if (isClosed || pct === null) return <span style={{color:"#94a3b8",fontSize:11}}>—</span>;
+        // Sin end_date → no hay barra
+        if (!t.end_date) return <span style={{color:"#94a3b8",fontSize:11}}>Sin fecha</span>;
+        if (isClosed) return <span style={{color:"#94a3b8",fontSize:11}}>—</span>;
+        if (pct === null) return <span style={{color:"#94a3b8",fontSize:11}}>—</span>;
+        const barColor = progColor(days);
         return (
           <div className="tn-prog">
             <div className="tn-prog__labels">
-              <span className="tn-prog__days" style={{color}}>
-                {days < 0 ? `Vencida ${Math.abs(days)}d` : days===0?"HOY":days===1?"MAÑANA":`${days}d`}
+              <span className="tn-prog__days" style={{color:barColor}}>
+                {days === null ? "—" : days < 0 ? `Vencida ${Math.abs(days)}d` : days===0?"HOY":days===1?"MAÑANA":`${days}d`}
               </span>
               <span className="tn-prog__pct">{pct}%</span>
             </div>
             <div className="tn-prog__bar">
-              <div className="tn-prog__fill" style={{width:`${pct}%`,background:color}}/>
+              <div className="tn-prog__fill" style={{width:`${pct}%`,background:barColor}}/>
             </div>
           </div>
         );
