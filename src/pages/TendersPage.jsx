@@ -89,8 +89,11 @@ function actionDotColor(t) {
 }
 
 function calcProgress(t) {
-  if (!t.detection_date || !t.end_date) return null;
-  const start = new Date(t.detection_date+"T00:00:00");
+  if (!t.end_date) return null;
+  // Usar detection_date si existe, sino created_at, sino null
+  const startStr = t.detection_date || (t.created_at ? t.created_at.slice(0,10) : null);
+  if (!startStr) return null;
+  const start = new Date(startStr.slice(0,10)+"T00:00:00");
   const end   = new Date(t.end_date+"T00:00:00");
   const now   = new Date(); now.setHours(0,0,0,0);
   const total = end - start;
