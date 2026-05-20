@@ -61,19 +61,24 @@ export default function App() {
       if (data && !error) {
         setProfile(data);
       } else {
-        // Si no se puede leer el perfil, usar rol mínimo (seller) no super_admin
-        setProfile({
-          id: user.id,
-          email: user.email,
-          full_name: user.email,
-          role: "seller",
-          approved: true,
-          allowed_modules: [
-            "managerDashboard","importer","salesAnalytics",
-            "accounts","products","opportunities","campaigns",
-            "todayActions","visits","calendar",
-          ],
-        });
+        // Si no se puede leer el perfil, reintentar una vez
+        setTimeout(async () => {
+          const { data: retry } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+          if (retry) { setProfile(retry); return; }
+          // Fallback con todos los módulos — el admin arregla desde Supabase
+          setProfile({
+            id: user.id,
+            email: user.email,
+            full_name: user.email,
+            role: "seller",
+            approved: true,
+            allowed_modules: [
+              "managerDashboard","importer","salesAnalytics",
+              "accounts","products","opportunities","campaigns",
+              "todayActions","visits","calendar","tenders",
+            ],
+          });
+        }, 1000);
       }
     } catch {
       setProfile({
@@ -85,7 +90,7 @@ export default function App() {
         allowed_modules: [
           "managerDashboard","importer","salesAnalytics",
           "accounts","products","opportunities","campaigns",
-          "todayActions","visits","calendar",
+          "todayActions","visits","calendar","tenders",
         ],
       });
     }
