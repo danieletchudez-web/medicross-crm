@@ -3,6 +3,22 @@ import { supabase } from "../lib/supabaseClient";
 import Sidebar from "../components/Sidebar";
 import "./ImporterPage.css";
 
+/* ── Tooltip ────────────────────────────────────────────────────────── */
+function Tooltip({ text }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span className="kpi-tooltip-wrap">
+      <span
+        className="kpi-tooltip-trigger"
+        onMouseEnter={() => setVisible(true)}
+        onMouseLeave={() => setVisible(false)}
+        onClick={() => setVisible(v => !v)}
+      >?</span>
+      {visible && <span className="kpi-tooltip-box">{text}</span>}
+    </span>
+  );
+}
+
 /* ─── Formato financiero argentino ──────────────────────────────────── */
 function fmtARS(v) {
   const n = Number(v || 0);
