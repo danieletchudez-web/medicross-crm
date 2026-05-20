@@ -472,7 +472,7 @@ export default function ImporterPage({ profile, onNavigate }) {
         }
       });
     }
-    const byVend    const byMonthTicket = {};
+    const byMonthTicket = {};
     filteredSales.forEach(s => {
       if (!s.fecha) return;
       const d = new Date(s.fecha); if (isNaN(d)) return;
