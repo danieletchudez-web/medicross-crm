@@ -105,7 +105,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
 
   /* ── Init ── */
   useEffect(() => {
-    // Preset vendedor según perfil
     const vMatch = VENDEDORES.find(v =>
       profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase())
     );
@@ -113,7 +112,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
 
     loadDashData();
 
-    // Precargar logo para PDF
     try {
       import("../assets/logo.jpg").then(m => {
         fetch(m.default).then(r=>r.blob()).then(b=>{
@@ -198,16 +196,13 @@ export default function CotizadorPage({ profile, onNavigate }) {
     setSaving(true);
     try {
       if (docId) {
-        // Editar existente
         const { error } = await supabase.from("cotizaciones")
           .update(buildSnap())
           .eq("id", docId);
         if (error) throw error;
         showToast(`Cotización #${quoteNum} actualizada ✓`);
-        // Actualizar cache dashboard
         setDashData(prev => prev.map(d => d.id === docId ? {...d, ...buildSnap(), total_general: totalGeneral} : d));
       } else {
-        // Nueva — obtener número correlativo
         const { data: numData, error: numError } = await supabase.rpc("next_quote_number");
         if (numError) throw numError;
         const qNum      = numData;
@@ -383,7 +378,7 @@ export default function CotizadorPage({ profile, onNavigate }) {
     : histItems;
 
   /* ── Export PDF ── */
-  function exportPDF() {
+  async function exportPDF() {
     const hasData = renglones.some(r => parseN(r.costo) > 0);
     if (!hasData) { showToast("Ingresá el costo en al menos un renglón","err"); return; }
     const tcN   = parseN(tc);
@@ -566,6 +561,18 @@ export default function CotizadorPage({ profile, onNavigate }) {
     const a=document.createElement("a"); a.href=url; a.download=fn;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url),10000);
+
+    // Subir a Supabase Storage
+    try {
+      const file = new File([fin], fn, { type: "application/pdf" });
+      const { error: upErr } = await supabase.storage
+        .from("cotizaciones-pdf")
+        .upload(`pdfs/${fn}`, file, { upsert: true });
+      if (upErr) showToast("PDF descargado (error al subir: "+upErr.message+")", "err");
+      else showToast("PDF descargado y guardado en la nube ✓");
+    } catch(e) {
+      showToast("PDF descargado pero no subido: "+e.message, "err");
+    }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -681,7 +688,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
                 <button className="cot-btn-del" onClick={()=>removeR(r.id)}>×</button>
               </div>
               <div className="cot-renglon__body">
-                {/* Izquierda: identificación + costo */}
                 <div className="cot-renglon__left">
                   <div className="cot-grid-3">
                     <div className="cot-field"><label>Empresa / Proveedor</label>
@@ -745,7 +751,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
                   )}
                 </div>
 
-                {/* Derecha: resultados */}
                 <div className="cot-renglon__right">
                   {calc ? (
                     <>
