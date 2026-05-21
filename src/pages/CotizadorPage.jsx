@@ -1,20 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
+import DashboardComercial from "../components/DashboardComercial";
 import "./CotizadorPage.css";
 
 /* ─── Helpers numéricos ──────────────────────────────────────────────────── */
 const fARS  = (n) => "$ " + Number(n||0).toLocaleString("es-AR", { minimumFractionDigits:2, maximumFractionDigits:2 });
 const fUSD  = (n) => "U$D " + Number(n||0).toLocaleString("es-AR", { minimumFractionDigits:2, maximumFractionDigits:2 });
 const fPct  = (n) => Number(n||0).toFixed(1) + "%";
-const fCmp  = (n) => {
-  const x = Number(n||0);
-  if (x >= 1e9) return "$ " + (x/1e9).toFixed(1) + "MM";
-  if (x >= 1e6) return "$ " + (x/1e6).toFixed(1) + "M";
-  if (x >= 1e3) return "$ " + (x/1e3).toFixed(0) + "K";
-  return "$ " + x.toLocaleString("es-AR", { minimumFractionDigits:0 });
-};
-const fFull = (n) => "$ " + Number(n||0).toLocaleString("es-AR", { minimumFractionDigits:0 });
 const parseN = (s) => parseFloat(String(s||"").replace(",",".")) || 0;
 
 /* ─── Cálculo de un renglón ─────────────────────────────────────────────── */
@@ -94,10 +87,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
   const [histSearch,    setHistSearch]    = useState("");
   const [loadingHist,   setLoadingHist]   = useState(false);
 
-  /* ── Dashboard ── */
-  const [dashData, setDashData] = useState([]);
-  const [loadingDash, setLoadingDash] = useState(true);
-
   /* ── Logo para PDF ── */
   const logoB64Ref = useRef(null);
   const logoWRef   = useRef(400);
@@ -109,8 +98,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
       profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase())
     );
     if (vMatch) setVendedor(vMatch);
-
-    loadDashData();
 
     try {
       import("../assets/logo.jpg").then(m => {
@@ -201,7 +188,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
           .eq("id", docId);
         if (error) throw error;
         showToast(`Cotización #${quoteNum} actualizada ✓`);
-        setDashData(prev => prev.map(d => d.id === docId ? {...d, ...buildSnap(), total_general: totalGeneral} : d));
       } else {
         const { data: numData, error: numError } = await supabase.rpc("next_quote_number");
         if (numError) throw numError;
@@ -220,65 +206,12 @@ export default function CotizadorPage({ profile, onNavigate }) {
         setDocId(newRow.id);
         setQuoteNum(qFormatted);
         showToast(`Cotización #${qFormatted} guardada ✓`);
-        setDashData(prev => [{...newRow, _date: new Date(), _gm: calcGM(newRow), _total: totalGeneral}, ...prev]);
       }
     } catch(e) {
       showToast("Error al guardar: " + e.message, "err");
     }
     setSaving(false);
   }
-
-  /* ── Calcular GM desde un registro ── */
-  function calcGM(row) {
-    const tc_  = parseN(row.tc) || 1425;
-    const rens = row.renglones  || [];
-    if (!rens.length) return 0;
-    let totalPV = 0, totalC = 0;
-    rens.forEach(r => {
-      const cr = parseN(r.costo); if (!cr) return;
-      const mult = parseN(r.markup) || 2;
-      const mon  = r.moneda || "USD";
-      const cARS = mon === "ARS" ? cr : cr * tc_;
-      const cant = parseInt(r.cant) || 1;
-      totalPV += cARS * mult * cant;
-      totalC  += cARS * cant;
-    });
-    return totalPV > 0 ? (totalPV - totalC) / totalPV * 100 : 0;
-  }
-
-  /* ── Cargar dashboard ── */
-  async function loadDashData() {
-    setLoadingDash(true);
-    const { data, error } = await supabase
-      .from("cotizaciones")
-      .select("id,quote_num_formatted,vendedor,tc,renglones,total_general,estado,created_at,deleted")
-      .eq("deleted", false)
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (!error && data) {
-      setDashData(data.map(d => ({
-        ...d,
-        _date:  d.created_at ? new Date(d.created_at) : null,
-        _gm:    calcGM(d),
-        _total: parseN(d.total_general),
-      })));
-    }
-    setLoadingDash(false);
-  }
-
-  /* ── KPIs dashboard ── */
-  const now    = new Date();
-  const thisM  = dashData.filter(d => d._date && d._date.getMonth() === now.getMonth() && d._date.getFullYear() === now.getFullYear());
-  const prevMo = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const prevYr = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-  const prevM  = dashData.filter(d => d._date && d._date.getMonth() === prevMo && d._date.getFullYear() === prevYr);
-  const avgGM  = arr => { const v = arr.filter(d=>d._gm>0); return v.length ? v.reduce((s,d)=>s+d._gm,0)/v.length : 0; };
-  const dashKPIs = {
-    gmMes:     avgGM(thisM).toFixed(1),
-    gmPrevMes: avgGM(prevM).toFixed(1),
-    countMes:  thisM.length,
-    totalMes:  thisM.reduce((s,d)=>s+d._total,0),
-  };
 
   /* ── Historial ── */
   async function abrirHistorial() {
@@ -301,7 +234,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
     }).eq("id", id);
     if (!error) {
       setHistItems(prev => prev.map(c => c.id === id ? {...c, estado} : c));
-      setDashData(prev => prev.map(d => d.id === id ? {...d, estado} : d));
       showToast("Estado actualizado");
     } else showToast("Error: " + error.message, "err");
   }
@@ -315,7 +247,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
     }).eq("id", id);
     if (!error) {
       setHistItems(prev => prev.filter(c => c.id !== id));
-      setDashData(prev => prev.filter(d => d.id !== id));
       showToast("Cotización eliminada");
     } else showToast("Error: " + error.message, "err");
   }
@@ -341,7 +272,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
     if (!error) {
       setPapItems(prev => prev.filter(c => c.id !== id));
       showToast(`Cotización #${num} restaurada`);
-      loadDashData();
     } else showToast("Error: " + error.message, "err");
   }
 
@@ -433,7 +363,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
 
     drawHeader();
 
-    // Tabla resumen
     const LX=20, CW=W-40;
     const colDefs=[{l:"#",w:14},{l:"Empresa",w:52},{l:"Renglon",w:26},{l:"Descripcion",w:108},
                    {l:"Marca",w:48},{l:"Costo ARS",w:58},{l:"PV USD s/IVA",w:60},
@@ -467,7 +396,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
     const ts=fARS(totalGeneral); txt(W-LX-4-ts.length*5.1,y-10,ts,9,true);
     ps.push("0 0 0 rg"); y-=22; pageY=y;
 
-    // Detalle renglones
     renglones.forEach((r,idx)=>{
       const c=calcR(r,tcN); if(!c) return;
       if(pageY-200 < 65){ pages.push([...ps]); ps=[]; drawHeader(); }
@@ -509,14 +437,12 @@ export default function CotizadorPage({ profile, onNavigate }) {
       txt(LX+6,y-34,fARS(c.sub),14,true); ps.push("0 0 0 rg"); y-=56; pageY=y;
     });
 
-    // Footer
     hln(LX,52,W-LX,.78,.78,.78,.4); ps.push(".62 .62 .62 rg");
     txt(LX,42,"Analisis de Precios — Medi-Cross S.R.L.",7.5,false);
     if(vendedor) txt(LX,31,"Cotizacion realizada por: "+vendedor,7.5,false);
     txt(W-110,42,fecha,7.5,false); ps.push("0 0 0 rg");
     pages.push([...ps]);
 
-    // Generar binario PDF
     const s2u8 = s => { const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i)&0xFF; return u; };
     const offs={};
     let pdf="%PDF-1.4\n%\xFF\xFF\n";
@@ -562,7 +488,6 @@ export default function CotizadorPage({ profile, onNavigate }) {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url),10000);
 
-    // Subir a Supabase Storage
     try {
       const file = new File([fin], fn, { type: "application/pdf" });
       const { error: upErr } = await supabase.storage
@@ -607,32 +532,8 @@ export default function CotizadorPage({ profile, onNavigate }) {
           </div>
         </div>
 
-        {/* KPIs */}
-        <div className="cot-dash-kpis">
-          <div className="cot-kpi">
-            <span className="cot-kpi__label">GM promedio mes actual</span>
-            <span className="cot-kpi__val">{loadingDash?"…":dashKPIs.gmMes+"%"}</span>
-            <span className="cot-kpi__sub">vs mes ant: {dashKPIs.gmPrevMes}%</span>
-          </div>
-          <div className="cot-kpi">
-            <span className="cot-kpi__label">Cotizaciones este mes</span>
-            <span className="cot-kpi__val">{loadingDash?"…":dashKPIs.countMes}</span>
-            <span className="cot-kpi__sub">{dashData.length} totales activas</span>
-          </div>
-          <div className="cot-kpi cot-kpi--blue">
-            <span className="cot-kpi__label">Monto cotizado este mes</span>
-            <span className="cot-kpi__val">{loadingDash?"…":fCmp(dashKPIs.totalMes)}</span>
-            <span className="cot-kpi__sub">total bruto c/IVA</span>
-          </div>
-          <div className="cot-kpi">
-            <span className="cot-kpi__label">Ganadas / En negociación</span>
-            <span className="cot-kpi__val">
-              {dashData.filter(d=>d.estado==="ganada").length} /
-              {dashData.filter(d=>d.estado==="negociacion").length}
-            </span>
-            <span className="cot-kpi__sub">del total registrado</span>
-          </div>
-        </div>
+        {/* ── DASHBOARD COMERCIAL COMPLETO ── */}
+        <DashboardComercial />
 
         {/* Parámetros globales */}
         <div className="cot-card">
