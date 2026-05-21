@@ -21,19 +21,20 @@ const MODULES = [
   { id: "visits",           label: "Visitas"               },
   { id: "calendar",         label: "Calendario"            },
   { id: "tenders",          label: "Licitaciones"          },
+  { id: "cotizador",        label: "Cotizador"             },
   { id: "adminUsers",       label: "Administración"        },
 ];
 
 const SELLER_MODULES = [
   "managerDashboard","importer","salesAnalytics",
   "accounts","products","opportunities","campaigns",
-  "todayActions","visits","calendar","tenders",
+  "todayActions","visits","calendar","tenders","cotizador",
 ];
 
 const MANAGER_MODULES = [
   "managerDashboard","importer","salesAnalytics",
   "accounts","products","opportunities","campaigns",
-  "todayActions","visits","calendar","tenders","adminUsers",
+  "todayActions","visits","calendar","tenders","cotizador","adminUsers",
 ];
 
 const FULL_MODULES = MODULES.map(m => m.id);
@@ -94,7 +95,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   const [savingId,    setSavingId]    = useState(null);
   const [loading,     setLoading]     = useState(true);
   const [showArchived,setShowArchived]= useState(false);
-  const [deleteTarget,setDeleteTarget]= useState(null); // usuario a archivar
+  const [deleteTarget,setDeleteTarget]= useState(null);
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -107,7 +108,6 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     setLoading(false);
   }
 
-  /* Usuarios activos vs archivados */
   const activeUsers   = useMemo(() => users.filter(u => u.is_active !== false), [users]);
   const archivedUsers = useMemo(() => users.filter(u => u.is_active === false),  [users]);
 
@@ -156,7 +156,6 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   function setSellerAccess(user)  { updateUser(user.id, { approved: true, role: "seller",  allowed_modules: SELLER_MODULES  }); }
   function setManagerAccess(user) { updateUser(user.id, { approved: true, role: "manager", allowed_modules: MANAGER_MODULES }); }
 
-  /* Soft delete — no borra, archiva */
   async function archiveUser(user) {
     setSavingId(user.id);
     await updateUser(user.id, {
@@ -169,7 +168,6 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     setSavingId(null);
   }
 
-  /* Restaurar usuario archivado */
   async function restoreUser(user) {
     if (!confirm(`¿Restaurar acceso a ${user.full_name||user.email}?`)) return;
     await updateUser(user.id, {
