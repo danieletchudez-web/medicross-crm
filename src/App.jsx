@@ -132,7 +132,31 @@ export default function App() {
     } catch { /* silent */ }
   }
 
-  if (loading) return <div style={{ padding: 30 }}>Cargando CRM...</div>;
+  if (loading) return (
+    <div style={{
+      minHeight:"100vh", display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center",
+      background:"#f0f2f5", gap:16,
+      fontFamily:"DM Sans, system-ui, sans-serif"
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:9}}>
+        <div style={{width:9,height:9,borderRadius:"50%",background:"#4da3f0",animation:"crmPulse 1.2s ease-in-out infinite"}}/>
+        <span style={{fontSize:16,fontWeight:600,color:"#0f2444",letterSpacing:"-0.3px"}}>MediCross CRM</span>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+        <div style={{display:"flex",gap:5}}>
+          {[0,1,2].map(i=>(
+            <div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#0f2444",animation:`crmBounce 1.2s ease-in-out ${i*0.18}s infinite`}}/>
+          ))}
+        </div>
+        <span style={{fontSize:12,color:"#94a3b8",fontWeight:500,letterSpacing:"0.5px"}}>Trabajando…</span>
+      </div>
+      <style>{`
+        @keyframes crmPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.35);opacity:.65} }
+        @keyframes crmBounce { 0%,80%,100%{transform:translateY(0);opacity:.18} 40%{transform:translateY(-7px);opacity:.85} }
+      `}</style>
+    </div>
+  );
   if (!session) return <LoginPage />;
 
   if (profile?.approved === false) {
