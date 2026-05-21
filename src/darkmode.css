@@ -227,3 +227,279 @@
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #0d1117; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MÓDULOS ADICIONALES
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Análisis Comercial (SalesAnalyticsPage) ────────────────────────────── */
+[data-theme="dark"] .sa-page { background: var(--bg); }
+
+[data-theme="dark"] .sa-loading { background: var(--card); border-color: var(--border); color: var(--text-secondary); }
+
+[data-theme="dark"] .sa-toolbar { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .sa-toolbar__title { color: var(--text-primary); }
+[data-theme="dark"] .sa-toolbar__sub   { color: var(--text-secondary); }
+
+[data-theme="dark"] .sa-period-tabs { background: #0d1117; }
+[data-theme="dark"] .sa-period-tab  { color: var(--text-secondary); }
+[data-theme="dark"] .sa-period-tab.active { background: var(--card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+
+[data-theme="dark"] .sa-kpi { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .sa-kpi__label { color: var(--text-tertiary); }
+[data-theme="dark"] .sa-kpi__value { color: var(--text-primary); }
+[data-theme="dark"] .sa-kpi__sub   { color: var(--text-tertiary); }
+
+[data-theme="dark"] .sa-seller-filter { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .sa-seller-filter__head { color: var(--text-tertiary); }
+[data-theme="dark"] .sa-seller-filter__actions button { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .sa-seller-filter__actions button:hover { background: var(--border); }
+[data-theme="dark"] .sa-seller-chip { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+
+[data-theme="dark"] .sa-tab { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .sa-tab.active { background: #0f2444; color: #fff; border-color: #0f2444; }
+[data-theme="dark"] .sa-tab:not(.active):hover { background: var(--border); }
+
+[data-theme="dark"] .sa-chart-card { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .sa-chart-card__header { border-color: var(--border); }
+[data-theme="dark"] .sa-chart-card__header h3 { color: var(--text-primary); }
+[data-theme="dark"] .sa-chart-card__header p  { color: var(--text-secondary); }
+
+[data-theme="dark"] .sa-heatmap__labels span { color: var(--text-tertiary); }
+[data-theme="dark"] .sa-heatmap__name { color: var(--text-secondary); }
+
+[data-theme="dark"] .sa-rank-card { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .sa-rank-card__info strong { color: var(--text-primary); }
+[data-theme="dark"] .sa-rank-card__info span   { color: var(--text-secondary); }
+[data-theme="dark"] .sa-rank-score-bar { background: var(--border); }
+[data-theme="dark"] .sa-stat span   { color: var(--text-tertiary); }
+[data-theme="dark"] .sa-stat strong { color: var(--text-primary); }
+
+[data-theme="dark"] .sa-table-wrap { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .sa-table thead { background: #0d1117; }
+[data-theme="dark"] .sa-table th { color: var(--text-tertiary); border-color: var(--border); }
+[data-theme="dark"] .sa-table td { color: var(--text-secondary); border-color: var(--border); }
+[data-theme="dark"] .sa-table tbody tr:hover td { background: #1c2d3f; }
+
+[data-theme="dark"] .sa-pct-badge.green { background: #0d2918; color: #6ee7b7; }
+[data-theme="dark"] .sa-pct-badge.amber { background: #1f1500; color: #fcd34d; }
+[data-theme="dark"] .sa-pct-badge.red   { background: #1f0505; color: #fca5a5; }
+
+[data-theme="dark"] .sa-alert-card { background: var(--card); }
+[data-theme="dark"] .sa-alert-card strong { color: var(--text-primary); }
+[data-theme="dark"] .sa-alert-card p { color: var(--text-secondary); }
+
+[data-theme="dark"] .sa-empty  { color: var(--text-tertiary); }
+[data-theme="dark"] .sa-footer a { color: var(--text-tertiary); }
+
+/* ── Clientes / Cuentas (AccountsPage) ──────────────────────────────────── */
+[data-theme="dark"] .acc-page { background: var(--bg); }
+
+[data-theme="dark"] .acc-kpi { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .acc-kpi__label { color: var(--text-tertiary); }
+[data-theme="dark"] .acc-kpi__value { color: var(--text-primary); }
+
+[data-theme="dark"] .acc-card { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .acc-card-head h2 { color: var(--text-primary); }
+[data-theme="dark"] .acc-card-head p  { color: var(--text-secondary); }
+
+[data-theme="dark"] .acc-ghost-btn { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .acc-ghost-btn:hover { background: var(--border); }
+
+[data-theme="dark"] .acc-form-section__label { color: var(--text-tertiary); border-color: var(--border); }
+[data-theme="dark"] .acc-field label { color: var(--text-secondary); }
+[data-theme="dark"] .acc-field input,
+[data-theme="dark"] .acc-field select { background: var(--bg); border-color: var(--border); color: var(--text); }
+[data-theme="dark"] .acc-field input:focus,
+[data-theme="dark"] .acc-field select:focus { background: #0d1117; border-color: var(--primary); }
+
+[data-theme="dark"] .acc-contact-row { background: var(--bg); border-color: var(--border); }
+[data-theme="dark"] .acc-add-contact-btn { background: #1c2d3f; border-color: #2d4a6e; color: #93c5fd; }
+[data-theme="dark"] .acc-add-contact-btn:hover { background: #2d4a6e; }
+
+[data-theme="dark"] .acc-search { background: var(--bg); border-color: var(--border); color: var(--text); }
+[data-theme="dark"] .acc-search:focus { background: #0d1117; border-color: var(--primary); }
+
+[data-theme="dark"] .acc-table thead { background: #0d1117; }
+[data-theme="dark"] .acc-table th { color: var(--text-tertiary); border-color: var(--border); }
+[data-theme="dark"] .acc-table td { color: var(--text-secondary); border-color: var(--border); }
+[data-theme="dark"] .acc-table tbody tr:hover td { background: #1c2d3f; }
+[data-theme="dark"] .acc-row--expanded td { background: #1c2d3f; }
+
+[data-theme="dark"] .acc-td-name strong { color: var(--text-primary); }
+[data-theme="dark"] .acc-td-name small  { color: var(--text-tertiary); }
+[data-theme="dark"] .acc-td-contact span { color: var(--text-secondary); }
+
+[data-theme="dark"] .acc-contacts-toggle { background: #1c2d3f; border-color: #2d4a6e; color: #93c5fd; }
+[data-theme="dark"] .acc-contacts-toggle:hover { background: #2d4a6e; }
+
+[data-theme="dark"] .acc-row--contacts td { background: #0d1117; border-color: var(--border); }
+[data-theme="dark"] .acc-contact-card { background: var(--card); border-color: var(--border); }
+[data-theme="dark"] .acc-contact-card__top strong { color: var(--text-primary); }
+[data-theme="dark"] .acc-contact-area { background: #1c2d3f; border-color: #2d4a6e; color: #93c5fd; }
+[data-theme="dark"] .acc-contact-role { color: var(--text-secondary); }
+[data-theme="dark"] .acc-contact-info { color: var(--text-secondary); }
+
+[data-theme="dark"] .acc-btn--edit { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .acc-btn--del  { background: #1f0505; border-color: #7f1d1d; color: #fca5a5; }
+[data-theme="dark"] .acc-empty  { color: var(--text-tertiary); }
+[data-theme="dark"] .acc-footer a { color: var(--text-tertiary); }
+
+/* ── Oportunidades (OpportunitiesPage) ──────────────────────────────────── */
+[data-theme="dark"] .opp-page { background: var(--bg); }
+
+[data-theme="dark"] .opp-kpi { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .opp-kpi__label { color: var(--text-tertiary); }
+[data-theme="dark"] .opp-kpi__value { color: var(--text-primary); }
+[data-theme="dark"] .opp-kpi__sub   { color: var(--text-tertiary); }
+
+[data-theme="dark"] .opp-form-card { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .opp-form-head h2 { color: var(--text-primary); }
+[data-theme="dark"] .opp-form-head p  { color: var(--text-secondary); }
+[data-theme="dark"] .opp-ghost-btn { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .opp-ghost-btn:hover { background: var(--border); }
+
+[data-theme="dark"] .opp-form label { color: var(--text-secondary); }
+[data-theme="dark"] .opp-form input,
+[data-theme="dark"] .opp-form select { background: var(--bg); border-color: var(--border); color: var(--text); }
+[data-theme="dark"] .opp-form input:focus,
+[data-theme="dark"] .opp-form select:focus { background: #0d1117; border-color: var(--primary); }
+
+[data-theme="dark"] .opp-forecast-preview { background: #1c2d3f; border-color: #2d4a6e; }
+[data-theme="dark"] .opp-forecast-preview span   { color: #93c5fd; }
+[data-theme="dark"] .opp-forecast-preview strong { color: #bfdbfe; }
+
+[data-theme="dark"] .opp-table-card { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .opp-table-head h2 { color: var(--text-primary); }
+[data-theme="dark"] .opp-table-head p  { color: var(--text-secondary); }
+
+[data-theme="dark"] .opp-tab { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .opp-tab:hover { background: var(--border); }
+[data-theme="dark"] .opp-tab--active { background: #1e3a5f; color: #93c5fd; border-color: #2d4a6e; }
+
+[data-theme="dark"] .opp-table thead { background: #0d1117; }
+[data-theme="dark"] .opp-table th { color: var(--text-tertiary); border-color: var(--border); }
+[data-theme="dark"] .opp-table td { color: var(--text-secondary); border-color: var(--border); }
+[data-theme="dark"] .opp-table tbody tr:hover { background: #1c2d3f; }
+
+[data-theme="dark"] .opp-td-name strong { color: var(--text-primary); }
+[data-theme="dark"] .opp-td-name small  { color: var(--text-tertiary); }
+[data-theme="dark"] .opp-no-action { color: var(--text-tertiary); }
+[data-theme="dark"] .opp-row--overdue td { background: #1a0a0a; }
+
+[data-theme="dark"] .opp-btn--edit   { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .opp-btn--won    { background: #0d2918; border-color: #1a4a2e; color: #6ee7b7; }
+[data-theme="dark"] .opp-btn--lost   { background: var(--bg); border-color: var(--border); color: var(--text-tertiary); }
+[data-theme="dark"] .opp-btn--del    { background: #1f0505; border-color: #7f1d1d; color: #fca5a5; }
+[data-theme="dark"] .opp-btn--reopen { background: #1c2d3f; border-color: #2d4a6e; color: #93c5fd; }
+
+[data-theme="dark"] .opp-empty  { color: var(--text-tertiary); }
+[data-theme="dark"] .opp-footer a { color: var(--text-tertiary); }
+
+/* ── Acciones Hoy (TodayActionsPage) ────────────────────────────────────── */
+[data-theme="dark"] .ta-page { background: var(--bg); }
+
+[data-theme="dark"] .ta-loading { background: var(--card); border-color: var(--border); color: var(--text-secondary); box-shadow: none; }
+
+[data-theme="dark"] .ta-header { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .ta-header__eyebrow { color: var(--text-tertiary); }
+[data-theme="dark"] .ta-header__title   { color: var(--text-primary); }
+[data-theme="dark"] .ta-header__sub     { color: var(--text-secondary); }
+
+[data-theme="dark"] .ta-kpi { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .ta-kpi__label { color: var(--text-tertiary); }
+[data-theme="dark"] .ta-kpi__value { color: var(--text-primary); }
+[data-theme="dark"] .ta-kpi--red   .ta-kpi__value { color: #fca5a5; }
+[data-theme="dark"] .ta-kpi--amber .ta-kpi__value { color: #fcd34d; }
+
+[data-theme="dark"] .ta-card { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .ta-card--alta  { border-left-color: #fca5a5; }
+[data-theme="dark"] .ta-card--media { border-left-color: #fcd34d; }
+[data-theme="dark"] .ta-card--baja  { border-left-color: #6ee7b7; }
+
+[data-theme="dark"] .ta-card__eyebrow { color: var(--text-tertiary); }
+[data-theme="dark"] .ta-card__name    { color: var(--text-primary); }
+[data-theme="dark"] .ta-card__location { color: var(--text-secondary); }
+
+[data-theme="dark"] .ta-score { background: var(--bg); border-color: var(--border); }
+[data-theme="dark"] .ta-score span   { color: var(--text-tertiary); }
+[data-theme="dark"] .ta-score strong { color: var(--text-primary); }
+
+[data-theme="dark"] .ta-metric { background: var(--bg); border-color: var(--border); }
+[data-theme="dark"] .ta-metric span   { color: var(--text-tertiary); }
+[data-theme="dark"] .ta-metric strong { color: var(--text-primary); }
+
+[data-theme="dark"] .ta-decision { background: #1c2d3f; border-color: #2d4a6e; }
+[data-theme="dark"] .ta-decision span { color: #93c5fd; }
+[data-theme="dark"] .ta-decision p    { color: var(--text-primary); }
+
+[data-theme="dark"] .ta-btn--primary   { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .ta-btn--secondary { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .ta-btn--secondary:hover { background: var(--border); }
+
+[data-theme="dark"] .ta-empty { background: var(--card); border-color: var(--border); color: var(--text-tertiary); }
+
+/* ── Calendario (CalendarPage) ──────────────────────────────────────────── */
+[data-theme="dark"] .cal-page { background: var(--bg); }
+
+[data-theme="dark"] .cal-kpi { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .cal-kpi__label { color: var(--text-tertiary); }
+[data-theme="dark"] .cal-kpi__value { color: var(--text-primary); }
+
+[data-theme="dark"] .cal-toolbar { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .cal-toolbar__title { color: var(--text-primary); }
+[data-theme="dark"] .cal-nav-btn { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .cal-nav-btn:hover { background: var(--border); }
+[data-theme="dark"] .cal-today-btn { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .cal-today-btn:hover { background: var(--border); }
+[data-theme="dark"] .cal-filter-select { background: var(--bg); border-color: var(--border); color: var(--text); }
+[data-theme="dark"] .cal-view-tabs { background: #0d1117; }
+[data-theme="dark"] .cal-view-tab { color: var(--text-secondary); }
+[data-theme="dark"] .cal-view-tab.active { background: var(--card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+[data-theme="dark"] .cal-new-btn { background: #1e3a5f; color: #93c5fd; }
+
+[data-theme="dark"] .cal-main { background: var(--card); border-color: var(--border); box-shadow: none; }
+[data-theme="dark"] .cal-month__header { background: #0d1117; border-color: var(--border); }
+[data-theme="dark"] .cal-month__day-label { color: var(--text-tertiary); }
+[data-theme="dark"] .cal-cell { border-color: var(--border); }
+[data-theme="dark"] .cal-cell:hover { background: #1c2d3f; }
+[data-theme="dark"] .cal-cell--empty { background: #0d1117; }
+[data-theme="dark"] .cal-cell--today { background: #1c2d3f; }
+[data-theme="dark"] .cal-cell__num { color: var(--text-secondary); }
+[data-theme="dark"] .cal-cell--today .cal-cell__num { background: var(--primary); color: #fff; }
+[data-theme="dark"] .cal-cell__more { color: var(--text-tertiary); }
+
+[data-theme="dark"] .cal-week__header { background: #0d1117; border-color: var(--border); }
+[data-theme="dark"] .cal-week__day-name { color: var(--text-tertiary); }
+[data-theme="dark"] .cal-week__day-num  { color: var(--text-primary); }
+[data-theme="dark"] .cal-week__day-num.today { background: var(--primary); color: #fff; }
+[data-theme="dark"] .cal-week__col { border-color: var(--border); }
+[data-theme="dark"] .cal-week__col.today { background: #1c2d3f; }
+[data-theme="dark"] .cal-week__empty { color: var(--border); }
+
+[data-theme="dark"] .cal-list__date-sep { background: #0d1117; border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .cal-list-item { border-color: var(--border); }
+[data-theme="dark"] .cal-list-item:hover { background: #1c2d3f; }
+[data-theme="dark"] .cal-list-item__left strong { color: var(--text-primary); }
+[data-theme="dark"] .cal-list-item__left span   { color: var(--text-secondary); }
+[data-theme="dark"] .cal-list-item__left em     { color: var(--text-tertiary); }
+
+[data-theme="dark"] .cal-legend-item { color: var(--text-secondary); }
+
+[data-theme="dark"] .cal-modal-overlay { background: rgba(0,0,0,0.6); }
+[data-theme="dark"] .cal-modal { background: var(--card); }
+[data-theme="dark"] .cal-modal__header { background: var(--card); border-color: var(--border); }
+[data-theme="dark"] .cal-modal__header h3 { color: var(--text-primary); }
+[data-theme="dark"] .cal-modal__close { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .cal-modal__close:hover { background: #1f0505; color: #fca5a5; border-color: #7f1d1d; }
+[data-theme="dark"] .cal-modal__chip { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .cal-modal__grid { background: var(--bg); border-color: var(--border); }
+[data-theme="dark"] .cal-modal__row-label { color: var(--text-tertiary); }
+[data-theme="dark"] .cal-modal__row-value { color: var(--text-secondary); }
+[data-theme="dark"] .cal-modal__section-label { color: var(--text-tertiary); }
+[data-theme="dark"] .cal-modal__section-text  { background: var(--bg); border-color: var(--border); color: var(--text-secondary); }
+[data-theme="dark"] .cal-modal__footer { border-color: var(--border); }
+[data-theme="dark"] .cal-modal__btn { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .cal-modal__btn:hover { opacity: 0.9; }
+
+[data-theme="dark"] .cal-footer a { color: var(--text-tertiary); }
