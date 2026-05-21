@@ -636,6 +636,18 @@ export default function ImporterPage({ profile, onNavigate }) {
                     </div>
 
                     <div className="bi-hero__sep"/>
+                    <div className="bi-hero__block">
+                      <span className="bi-hero__eyebrow">FACTURADO MES ACTUAL</span>
+                      <strong className="bi-hero__val">{compact(kpis.thisMonth)}</strong>
+                      <span className="bi-hero__scale">{scaleLabel(kpis.thisMonth)}</span>
+                      <span className="bi-hero__meta">
+                        {kpis.momChange !== null
+                          ? `${kpis.momChange >= 0 ? "▲" : "▼"} ${Math.abs(kpis.momChange).toFixed(1).replace(".",",")}% vs. mes ant.`
+                          : "—"}
+                      </span>
+                    </div>
+
+                    <div className="bi-hero__sep"/>
 
                     {/* Forecast */}
                     <div className="bi-hero__block">
@@ -647,9 +659,7 @@ export default function ImporterPage({ profile, onNavigate }) {
                           <div className="bi-hero__bar">
                             <div style={{ width: `${Math.min(100, kpis.fcastPct || 0)}%`, height: "100%", background: "#f59e0b", borderRadius: 999 }}/>
                           </div>
-                          <span className="bi-hero__meta" style={{ color: "rgba(255,255,255,.45)" }}>
-                            Vendido: {compact(kpis.thisMonth)}
-                          </span>
+
                         </>
                       )}
                     </div>
