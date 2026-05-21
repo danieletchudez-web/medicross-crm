@@ -29,7 +29,7 @@ const FALLBACK_PROFILE = {
 export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [page, setPage]       = useState("managerDashboard");
+  const [page, setPage]       = useState(() => localStorage.getItem("crm_current_page") || "managerDashboard");
   const [loading, setLoading] = useState(true);
   const [crmData, setCrmData] = useState(null);
 
@@ -150,7 +150,8 @@ export default function App() {
   }
 
   const safeProfile = profile || FALLBACK_PROFILE;
-  const pageProps   = { profile: safeProfile, onNavigate: setPage };
+  function navigate(p) { setPage(p); localStorage.setItem("crm_current_page", p); }
+  const pageProps   = { profile: safeProfile, onNavigate: navigate };
 
   let CurrentPage;
   switch (page) {
