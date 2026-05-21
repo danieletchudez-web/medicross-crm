@@ -197,9 +197,9 @@ export default function ImporterPage({ profile, onNavigate }) {
   const [forecastInputs, setForecastInputs] = useState(() => {
     try { return JSON.parse(localStorage.getItem("bi_forecast_monthly") || "{}"); } catch { return {}; }
   });
-  const [sales,          setSales]          = useState([]);
-  const [imports,        setImports]        = useState([]);
-  const [loadingBI,      setLoadingBI]      = useState(true);
+  const [sales,          setSales]          = useState(() => { try { const s = localStorage.getItem("bi_cache_sales"); return s ? JSON.parse(s) : []; } catch { return []; } });
+  const [imports,        setImports]        = useState(() => { try { const s = localStorage.getItem("bi_cache_imports"); return s ? JSON.parse(s) : []; } catch { return []; } });
+  const [loadingBI,      setLoadingBI]      = useState(() => { try { return !localStorage.getItem("bi_cache_sales"); } catch { return true; } });
   const [filterVendedor, setFilterVendedor] = useState("todos");
   const [filterUnidad,   setFilterUnidad]   = useState("todas");
   const [filterMes,      setFilterMes]      = useState("todos");
@@ -225,8 +225,14 @@ export default function ImporterPage({ profile, onNavigate }) {
       supabase.from("sales").select("*").order("fecha", { ascending: true }),
       supabase.from("imports").select("*").order("created_at", { ascending: false }),
     ]);
-    setSales(sRes.data || []);
-    setImports(iRes.data || []);
+    const salesData = sRes.data || [];
+    const importsData = iRes.data || [];
+    setSales(salesData);
+    setImports(importsData);
+    try {
+      localStorage.setItem("bi_cache_sales", JSON.stringify(salesData));
+      localStorage.setItem("bi_cache_imports", JSON.stringify(importsData));
+    } catch {}
     try { const s = localStorage.getItem("bi_forecast_monthly"); if (s) setForecastInputs(JSON.parse(s)); } catch {}
     setLoadingBI(false);
   }
