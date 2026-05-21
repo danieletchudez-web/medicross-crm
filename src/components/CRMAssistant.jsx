@@ -147,7 +147,7 @@ function analyzeWithRules(input, crmData, currentPage) {
 
   /* Ayuda / qué podés hacer */
   if (q.includes("ayuda") || q.includes("qué pod") || q.includes("que pod") || q.includes("cómo") || q.includes("como funciona")) {
-    return `**Soy tu asistente comercial de STORING Medical.** Puedo analizar los datos del CRM y darte recomendaciones concretas.\n\nPreguntame sobre:\n• **Pipeline** — estado de oportunidades y montos\n• **Forecast** — cobertura vs objetivo de campañas\n• **Clientes** — actividad y clientes fríos\n• **Prioridades** — qué hacer hoy\n• **Riesgos** — alertas y problemas detectados\n• **Win rate** — tasa de conversión\n\nUsá las sugerencias de abajo o escribí tu pregunta.`;
+    return `**Soy tu asistente comercial de Medicross Productos Médicos Integrales.** Puedo analizar los datos del CRM y darte recomendaciones concretas.\n\nPreguntame sobre:\n• **Pipeline** — estado de oportunidades y montos\n• **Forecast** — cobertura vs objetivo de campañas\n• **Clientes** — actividad y clientes fríos\n• **Prioridades** — qué hacer hoy\n• **Riesgos** — alertas y problemas detectados\n• **Win rate** — tasa de conversión\n\nUsá las sugerencias de abajo o escribí tu pregunta.`;
   }
 
   /* Respuesta genérica contextual */
@@ -304,7 +304,7 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
               <div className="crm-ai-header__dot" />
               <div>
                 <span className="crm-ai-header__title">Asistente Comercial</span>
-                <span className="crm-ai-header__sub">STORING Medical · Motor local</span>
+                <span className="crm-ai-header__sub">Medicross Productos Médicos Integrales</span>
               </div>
             </div>
             <button className="crm-ai-clear" onClick={clearChat} title="Nueva conversación">↺</button>
