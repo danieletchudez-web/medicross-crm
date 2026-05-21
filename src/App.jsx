@@ -52,7 +52,7 @@ export default function App() {
       setSession(s);
       if (s?.user) loadProfile(s.user);
     } catch { setSession(null); setProfile(null); }
-    finally { setLoading(false); }
+    finally { setTimeout(() => setLoading(false), 900); }
   }
 
   async function loadProfile(user) {
