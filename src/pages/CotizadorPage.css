@@ -1,0 +1,280 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap");
+
+.cot-page {
+  padding: 20px 24px 60px;
+  display: flex; flex-direction: column; gap: 16px;
+  font-family: "DM Sans", system-ui, sans-serif;
+  background: #f0f2f5; min-height: 100vh;
+  position: relative;
+}
+
+/* ── Toast ── */
+.cot-toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 22px; border-radius: 99px;
+  font-size: 13px; font-weight: 600;
+  z-index: 2000; pointer-events: none; white-space: nowrap;
+  animation: cotToastIn .25s ease;
+}
+@keyframes cotToastIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+.cot-toast--ok  { background: #166534; color: #fff; }
+.cot-toast--err { background: #991b1b; color: #fff; }
+
+.cot-banner-warn {
+  background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px;
+  padding: 10px 14px; font-size: 12.5px; color: #78350f; font-weight: 500;
+}
+
+/* ── Header ── */
+.cot-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.cot-header h2 { margin: 0; font-size: 20px; font-weight: 700; color: #0f172a; }
+.cot-header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.cot-quote-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
+  margin-top: 4px;
+}
+.cot-quote-badge--saved { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+.cot-quote-badge--new   { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+/* ── Botones ── */
+.cot-btn {
+  padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+  font-family: inherit; cursor: pointer; border: 1px solid #e2e8f0;
+  background: #fff; color: #334155; transition: background .15s; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.cot-btn:hover  { background: #f1f5f9; }
+.cot-btn:active { transform: scale(.98); }
+.cot-btn--primary { background: #0f2444; color: #fff; border-color: #0f2444; }
+.cot-btn--primary:hover { background: #1a3a6b; }
+.cot-btn--ghost { border-color: transparent; background: transparent; }
+.cot-btn--ghost:hover { background: #f1f5f9; border-color: #e2e8f0; }
+.cot-btn--danger { color: #dc2626; border-color: #fecaca; }
+.cot-btn--danger:hover { background: #fef2f2; }
+.cot-btn--sm { padding: 4px 10px; font-size: 11.5px; border-radius: 6px; }
+
+/* ── KPIs dashboard ── */
+.cot-dash-kpis {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 10px;
+}
+@media(max-width:900px){ .cot-dash-kpis{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:500px){ .cot-dash-kpis{grid-template-columns:1fr 1fr;} }
+
+.cot-kpi {
+  background: #fff; border: 1px solid #e8ecf2;
+  border-top: 3px solid #94a3b8; border-radius: 12px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.cot-kpi--blue { border-top-color: #0f2444; }
+.cot-kpi__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; }
+.cot-kpi__val   { font-size: 26px; font-weight: 700; color: #0f172a; line-height: 1; }
+.cot-kpi__sub   { font-size: 11px; color: #64748b; }
+
+/* ── Card ── */
+.cot-card {
+  background: #fff; border: 1px solid #e8ecf2; border-radius: 14px; padding: 18px 20px;
+}
+.cot-section-title {
+  font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .6px; color: #94a3b8; margin: 0 0 12px;
+  padding-bottom: 8px; border-bottom: 1px solid #f0f4f8;
+}
+
+/* ── Grids ── */
+.cot-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cot-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.cot-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+@media(max-width:900px){ .cot-grid-4{grid-template-columns:1fr 1fr;} }
+@media(max-width:600px){ .cot-grid-2,.cot-grid-3,.cot-grid-4{grid-template-columns:1fr;} }
+
+/* ── Fields ── */
+.cot-field { display: flex; flex-direction: column; gap: 4px; }
+.cot-field label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .3px; }
+.cot-field input, .cot-field select, .cot-field textarea {
+  border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 8px;
+  padding: 8px 11px; font-size: 13px; font-family: inherit; color: #0f172a;
+  outline: none; transition: border-color .15s; width: 100%;
+}
+.cot-field input:focus, .cot-field select:focus, .cot-field textarea:focus {
+  border-color: #0f2444; background: #fff;
+}
+.cot-field textarea { resize: vertical; min-height: 72px; }
+
+/* ── Renglón ── */
+.cot-renglon {
+  background: #fff; border: 1px solid #e8ecf2; border-radius: 14px; padding: 16px 18px;
+}
+.cot-renglon__header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f0f4f8;
+}
+.cot-renglon__num { font-size: 11px; font-weight: 800; color: #0f2444; text-transform: uppercase; letter-spacing: .5px; }
+.cot-btn-del {
+  width: 28px; height: 28px; border-radius: 50%; background: transparent;
+  border: 1px solid #e2e8f0; color: #94a3b8; font-size: 18px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.cot-btn-del:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+.cot-renglon__body {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+@media(max-width:900px){ .cot-renglon__body{grid-template-columns:1fr;} }
+
+.cot-renglon__left  { display: flex; flex-direction: column; gap: 0; }
+.cot-renglon__right { display: flex; flex-direction: column; gap: 12px; }
+
+.cot-divider { height: 1px; background: #f0f4f8; margin: 12px 0; }
+
+.cot-costo-box {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+  padding: 8px 12px; margin-top: 10px; gap: 8px; flex-wrap: wrap;
+  font-size: 12.5px; color: #1d4ed8;
+}
+.cot-costo-box strong { font-size: 15px; font-weight: 700; }
+
+.cot-mk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cot-mk-card {
+  background: #f8fafc; border: 1px solid #e8ecf2; border-radius: 10px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;
+}
+.cot-mk-card span  { font-size: 11px; color: #94a3b8; font-weight: 600; }
+.cot-mk-card strong{ font-size: 22px; font-weight: 700; color: #0f172a; }
+.cot-mk-card--ok { background: #f0fdf4; border-color: rgba(22,163,74,.2); }
+.cot-mk-card--ok span  { color: #15803d; }
+.cot-mk-card--ok strong{ color: #15803d; }
+
+.cot-pv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cot-pv {
+  background: #f8fafc; border: 1px solid #e8ecf2; border-radius: 10px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;
+}
+.cot-pv span  { font-size: 10.5px; color: #94a3b8; font-weight: 600; }
+.cot-pv strong{ font-size: 13px; font-weight: 700; color: #0f172a; }
+.cot-pv--acc { background: #eff6ff; border-color: rgba(14,95,168,.2); }
+.cot-pv--acc span  { color: #1d4ed8; }
+.cot-pv--acc strong{ color: #0f2444; }
+
+.cot-subtotal {
+  background: #0f2444; border-radius: 12px; padding: 16px 18px;
+  display: flex; justify-content: space-between; align-items: center; color: #fff;
+}
+.cot-subtotal span  { font-size: 12px; opacity: .8; }
+.cot-subtotal strong{ font-size: 20px; font-weight: 700; }
+
+.cot-calc-placeholder {
+  background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 12px;
+  padding: 32px; text-align: center; color: #94a3b8; font-size: 13px;
+}
+
+/* ── Agregar renglón ── */
+.cot-btn-add {
+  width: 100%; height: 44px; border-radius: 12px; background: transparent;
+  border: 1.5px dashed rgba(15,36,68,.3); color: #0f2444;
+  font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
+  transition: background .15s; display: flex; align-items: center; justify-content: center;
+}
+.cot-btn-add:hover { background: #eff6ff; border-color: #0f2444; }
+
+/* ── Preview ── */
+.cot-preview { background: #fff; border: 1px solid #e8ecf2; border-radius: 14px; overflow: hidden; }
+.cot-table-wrap { overflow-x: auto; }
+.cot-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
+.cot-table th {
+  background: #0f2444; color: #fff; padding: 8px 10px;
+  text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
+}
+.cot-table td { padding: 8px 10px; border-bottom: 1px solid #f0f4f8; color: #334155; }
+.cot-table tr:nth-child(even) td { background: #f8fafc; }
+.nr { text-align: right; }
+.nb { text-align: right; font-weight: 700; color: #0f2444; }
+.cot-total-bar {
+  background: #0f2444; color: #fff; padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.cot-total-bar span  { font-size: 12px; opacity: .8; }
+.cot-total-bar strong{ font-size: 18px; font-weight: 700; }
+
+/* ── Acciones bottom ── */
+.cot-actions-bottom {
+  display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
+  padding-top: 8px;
+}
+
+/* ── Overlay / Modal ── */
+.cot-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,.5);
+  z-index: 1000; display: flex; align-items: flex-start;
+  justify-content: center; padding: 40px 16px; overflow-y: auto;
+}
+.cot-modal {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 720px;
+  box-shadow: 0 24px 60px rgba(15,23,42,.18); overflow: hidden; margin: auto;
+}
+.cot-modal__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid #f0f4f8; background: #f8fafc;
+}
+.cot-modal__header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; }
+.cot-modal__close {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e2e8f0;
+  background: #fff; cursor: pointer; font-size: 16px; color: #64748b;
+  display: flex; align-items: center; justify-content: center;
+}
+.cot-modal__close:hover { background: #fef2f2; color: #dc2626; }
+.cot-modal__body {
+  padding: 16px; max-height: 70vh; overflow-y: auto;
+}
+
+.cot-search {
+  width: 100%; padding: 9px 14px; border: 1px solid #e2e8f0;
+  border-radius: 10px; font-size: 13px; font-family: inherit; outline: none;
+}
+.cot-search:focus { border-color: #0f2444; }
+
+/* ── Historial items ── */
+.cot-hist-item {
+  background: #f8fafc; border: 1px solid #e8ecf2; border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
+  transition: border-color .15s;
+}
+.cot-hist-item:hover { border-color: #0f2444; background: #eff6ff; }
+.cot-hist-item__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cot-hist-num  { font-size: 13px; font-weight: 700; color: #0f2444; font-family: monospace; }
+.cot-hist-vend { font-size: 11px; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+.cot-hist-date { font-size: 11px; color: #94a3b8; margin-left: auto; }
+.cot-hist-actions { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+
+.cot-estado-select {
+  height: 30px; padding: 0 8px; border-radius: 6px; border: 1px solid #e2e8f0;
+  background: #f8fafc; font-size: 12px; font-family: inherit; cursor: pointer; outline: none;
+}
+
+/* ── Badges de estado ── */
+.cot-estado {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+.cot-estado--borrador    { background:#f3f4f6; color:#374151; }
+.cot-estado--enviada     { background:#dbeafe; color:#1d4ed8; }
+.cot-estado--seguimiento { background:#fef3c7; color:#b45309; }
+.cot-estado--negociacion { background:#ede9fe; color:#6d28d9; }
+.cot-estado--ganada      { background:#d1fae5; color:#065f46; }
+.cot-estado--perdida     { background:#fee2e2; color:#991b1b; }
+.cot-estado--facturada   { background:#cffafe; color:#0e7490; }
+.cot-estado--cobrada     { background:#d1fae5; color:#064e3b; border:1px solid #6ee7b7; }
+
+@media(max-width:600px){
+  .cot-page { padding: 14px; }
+  .cot-renglon__body { grid-template-columns: 1fr; }
+  .cot-pv-grid { grid-template-columns: 1fr; }
+  .cot-mk-row { grid-template-columns: 1fr; }
+}

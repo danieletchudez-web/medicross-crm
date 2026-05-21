@@ -14,6 +14,7 @@ import AdminUsersPage      from "./pages/adminUsersPages";
 import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
 import ImporterPage        from "./pages/ImporterPage";
 import TendersPage         from "./pages/TendersPage";
+import CotizadorPage       from "./pages/CotizadorPage";
 import LoginPage           from "./pages/LoginPage";
 import CRMAssistant        from "./components/CRMAssistant";
 
@@ -22,7 +23,7 @@ const FALLBACK_PROFILE = {
   allowed_modules: [
     "managerDashboard","sellerDashboard","accounts","products",
     "opportunities","campaigns","todayActions","visits",
-    "calendar","adminUsers","salesAnalytics","importer",
+    "calendar","adminUsers","salesAnalytics","importer","tenders","cotizador",
   ],
 };
 
@@ -61,36 +62,28 @@ export default function App() {
       if (data && !error) {
         setProfile(data);
       } else {
-        // Si no se puede leer el perfil, reintentar una vez
         setTimeout(async () => {
           const { data: retry } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
           if (retry) { setProfile(retry); return; }
-          // Fallback con todos los módulos — el admin arregla desde Supabase
           setProfile({
-            id: user.id,
-            email: user.email,
-            full_name: user.email,
-            role: "seller",
-            approved: true,
+            id: user.id, email: user.email, full_name: user.email,
+            role: "seller", approved: true,
             allowed_modules: [
               "managerDashboard","importer","salesAnalytics",
               "accounts","products","opportunities","campaigns",
-              "todayActions","visits","calendar","tenders",
+              "todayActions","visits","calendar","tenders","cotizador",
             ],
           });
         }, 1000);
       }
     } catch {
       setProfile({
-        id: user.id,
-        email: user.email,
-        full_name: user.email,
-        role: "seller",
-        approved: true,
+        id: user.id, email: user.email, full_name: user.email,
+        role: "seller", approved: true,
         allowed_modules: [
           "managerDashboard","importer","salesAnalytics",
           "accounts","products","opportunities","campaigns",
-          "todayActions","visits","calendar","tenders",
+          "todayActions","visits","calendar","tenders","cotizador",
         ],
       });
     }
@@ -157,6 +150,7 @@ export default function App() {
       `}</style>
     </div>
   );
+
   if (!session) return <LoginPage />;
 
   if (profile?.approved === false) {
@@ -175,7 +169,7 @@ export default function App() {
 
   const safeProfile = profile || FALLBACK_PROFILE;
   function navigate(p) { setPage(p); localStorage.setItem("crm_current_page", p); }
-  const pageProps   = { profile: safeProfile, onNavigate: navigate };
+  const pageProps = { profile: safeProfile, onNavigate: navigate };
 
   let CurrentPage;
   switch (page) {
@@ -192,6 +186,7 @@ export default function App() {
     case "salesAnalytics":   CurrentPage = <SalesAnalyticsPage {...pageProps} />; break;
     case "importer":         CurrentPage = <ImporterPage       {...pageProps} />; break;
     case "tenders":          CurrentPage = <TendersPage        {...pageProps} />; break;
+    case "cotizador":        CurrentPage = <CotizadorPage      {...pageProps} />; break;
     default:                 CurrentPage = <ManagerDashboard   {...pageProps} />;
   }
 

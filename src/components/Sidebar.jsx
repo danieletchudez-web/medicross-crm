@@ -24,7 +24,8 @@ const MENU_SECTIONS = [
   {
     label: "COTIZACIONES",
     items: [
-      { id: "tenders", label: "Licitaciones", icon: "📄" },
+      { id: "cotizador", label: "Cotizador",    icon: "🧮" },
+      { id: "tenders",   label: "Licitaciones", icon: "📄" },
     ],
   },
   {
@@ -80,13 +81,9 @@ export default function Sidebar({ profile, onNavigate }) {
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
-  /* ── Permisos ─────────────────────────────────────────────────────── */
   const canSee = (module) => {
-    // super_admin ve todo siempre
     if (profile?.role === "super_admin") return true;
-    // Administración solo para manager y super_admin
     if (module === "adminUsers") return profile?.role === "manager";
-    // El resto: respeta allowed_modules del perfil
     return profile?.allowed_modules?.includes(module);
   };
 
