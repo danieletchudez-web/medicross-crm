@@ -473,6 +473,244 @@ function ResultadoBox({ form, setForm }) {
   );
 }
 
+/* ─── MODAL LICITACIÓN ─────────────────────────────────────────────── */
+function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTab,
+  saving, onClose, onSave, onDelete, onCotizador }) {
+
+  if (!showForm) return null;
+
+  function setF(k, v) {
+    const NO_UPPER = [
+      "tender_type","validity_status","operational_status","priority",
+      "documentation_status","billing_status","delivery_status","portal_link",
+      "detection_date","start_date","end_date","next_action_date","purchase_order_date",
+      "resultado","motivo_perdida","competitor_winner","notes",
+      "documentation_pending_detail","next_action","process_name",
+    ];
+    setForm(prev => ({...prev, [k]: typeof v==="string" && !NO_UPPER.includes(k) ? v.toUpperCase() : v}));
+  }
+
+  return (
+<div className="tn-overlay" onClick={e=>{if(e.target.classList.contains("tn-overlay"))onClose();}}>
+  <div className="tn-modal" style={{maxWidth:900}}>
+
+    <div className="tn-modal__header">
+      <div>
+        <h3>{editData?"Editar licitación":"Nueva licitación"}</h3>
+        {editData && <span style={{fontSize:11.5,color:"#94a3b8"}}>{editData.process_number||""} · {editData.institution||""}</span>}
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        {editData && <span className={`tn-badge tn-badge--${statusBadge(form.operational_status)}`} style={{fontSize:11,padding:"3px 10px"}}>{form.operational_status}</span>}
+        {editData && (
+          <button type="button" className="tn-btn tn-btn--success tn-btn--sm"
+            onClick={e=>onCotizador(editData,e)} >
+            📊 Crear cotización
+          </button>
+        )}
+        {editData && <button type="button" className="tn-btn tn-btn--danger tn-btn--sm" onClick={e=>onDelete(editData.id,e)}>🗑 Eliminar</button>}
+        <button className="tn-modal__close" onClick={()=>onClose()}>✕</button>
+      </div>
+    </div>
+
+    <div className="tn-modal-tabs">
+      {[
+        {key:"datos",       label:"📋 Datos"},
+        {key:"resultado",   label:"🏆 Resultado"},
+        {key:"competidores",label:"🔍 Competidores"},
+        ...(editData?[
+          {key:"historial", label:"📜 Historial"},
+          {key:"adjuntos",  label:"📎 Adjuntos"},
+        ]:[]),
+      ].map(tab => (
+        <button key={tab.key} className={`tn-modal-tab ${activeTab===tab.key?"tn-modal-tab--active":""}`}
+          onClick={()=>setActiveTab(tab.key)}>
+          {tab.label}
+        </button>
+      ))}
+    </div>
+
+    <div className="tn-modal__body">
+
+      {/* TAB DATOS */}
+      <div style={{display:activeTab==="datos"?"":"none"}}>
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">📋 Identificación</p>
+          <div className="tn-form-grid">
+            <div className="tn-field"><label>Jurisdicción</label>
+              <input value={form.jurisdiction} onChange={e=>setF("jurisdiction",e.target.value)} placeholder="EJ: CABA, PBA, CÓRDOBA"/></div>
+            <div className="tn-field"><label>Hospital / Institución *</label>
+              <input value={form.institution} onChange={e=>setF("institution",e.target.value)} placeholder="NOMBRE DEL HOSPITAL O ENTE"/></div>
+            <div className="tn-field"><label>Tipo de proceso</label>
+              <input value={form.process_type} onChange={e=>setF("process_type",e.target.value)} placeholder="EJ: LICITACIÓN PÚBLICA"/></div>
+            <div className="tn-field"><label>N° de proceso</label>
+              <input value={form.process_number} onChange={e=>setF("process_number",e.target.value)} placeholder="EJ: LP 001/2026"/></div>
+            <div className="tn-field"><label>N° de expediente</label>
+              <input value={form.expedient_number} onChange={e=>setF("expedient_number",e.target.value)} placeholder="EJ: EX-2026-12345"/></div>
+            <div className="tn-field"><label>Tipo</label>
+              <select value={form.tender_type} onChange={e=>setForm(p=>({...p,tender_type:e.target.value}))}>
+                {TENDER_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+          </div>
+          <div className="tn-form-grid tn-form-grid--1">
+            <div className="tn-field"><label>Nombre / Descripción del proceso</label>
+              <input value={form.process_name} onChange={e=>setF("process_name",e.target.value)} placeholder="DESCRIPCIÓN DEL OBJETO DE LA LICITACIÓN"/></div>
+          </div>
+          <div className="tn-form-grid">
+            <div className="tn-field"><label>Sector solicitante</label>
+              <input value={form.requesting_sector} onChange={e=>setF("requesting_sector",e.target.value)} placeholder="EJ: QUIRÓFANO, UTI"/></div>
+            <div className="tn-field"><label>Línea de producto</label>
+              <input value={form.product_line} onChange={e=>setF("product_line",e.target.value)} placeholder="EJ: FILTROS, APHERESIS"/></div>
+          </div>
+        </div>
+
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">📅 Fechas clave</p>
+          <div className="tn-form-grid tn-form-grid--3">
+            <div className="tn-field"><label>Fecha de detección</label>
+              <input type="date" value={form.detection_date} onChange={e=>setF("detection_date",e.target.value)}/>
+              <span className="tn-field__hint">Cuándo detectamos la oportunidad</span></div>
+            <div className="tn-field"><label>Fecha de vencimiento / apertura</label>
+              <input type="date" value={form.end_date} onChange={e=>setF("end_date",e.target.value)}/>
+              <span className="tn-field__hint">Vencimiento para presentar oferta</span></div>
+            <div className="tn-field"><label>Fecha de inicio estimada</label>
+              <input type="date" value={form.start_date} onChange={e=>setF("start_date",e.target.value)}/>
+              <span className="tn-field__hint">Si se adjudica, inicio del contrato</span></div>
+          </div>
+        </div>
+
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">⚙️ Estado y seguimiento</p>
+          <div className="tn-form-grid tn-form-grid--3">
+            <div className="tn-field"><label>Estado operativo</label>
+              <select value={form.operational_status} onChange={e=>setForm(p=>({...p,operational_status:e.target.value}))} style={{fontWeight:700}}>
+                {ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+            <div className="tn-field"><label>Prioridad</label>
+              <select value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>
+                {PRIORIDADES.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+            <div className="tn-field"><label>Responsable interno</label>
+              <input value={form.internal_owner} onChange={e=>setF("internal_owner",e.target.value)} placeholder="NOMBRE DEL RESPONSABLE"/></div>
+            <div className="tn-field"><label>Próxima acción</label>
+              <input value={form.next_action} onChange={e=>setF("next_action",e.target.value)} placeholder="EJ: PREPARAR COTIZACIÓN, PEDIR PLIEGO"/></div>
+            <div className="tn-field"><label>Fecha próxima acción</label>
+              <input type="date" value={form.next_action_date} onChange={e=>setF("next_action_date",e.target.value)}/></div>
+            <div className="tn-field"><label>Estado documentación</label>
+              <select value={form.documentation_status} onChange={e=>setForm(p=>({...p,documentation_status:e.target.value}))}>
+                {DOC_ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+          </div>
+        </div>
+
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">💰 Económico</p>
+          <div className="tn-form-grid tn-form-grid--3">
+            <div className="tn-field"><label>Monto estimado / OC ($)</label>
+              <input type="number" value={form.purchase_order_amount} onChange={e=>setF("purchase_order_amount",e.target.value)} placeholder="0" min="0"/></div>
+            <div className="tn-field"><label>Link / Portal de licitación</label>
+              <input value={form.portal_link} onChange={e=>setForm(p=>({...p,portal_link:e.target.value}))} placeholder="https://…"/></div>
+            <div className="tn-field"><label>Plazo de contrato</label>
+              <input value={form.contract_term} onChange={e=>setF("contract_term",e.target.value)} placeholder="EJ: 12 MESES"/></div>
+          </div>
+        </div>
+
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">🧾 Orden de compra</p>
+          <div className="tn-form-grid tn-form-grid--3">
+            <div className="tn-field"><label>N° de OC</label>
+              <input value={form.purchase_order_number} onChange={e=>setF("purchase_order_number",e.target.value)} placeholder="EJ: OC-2026-001"/></div>
+            <div className="tn-field"><label>Fecha de OC</label>
+              <input type="date" value={form.purchase_order_date} onChange={e=>setF("purchase_order_date",e.target.value)}/></div>
+            <div className="tn-field"><label>Estado facturación</label>
+              <select value={form.billing_status} onChange={e=>setForm(p=>({...p,billing_status:e.target.value}))}>
+                {BILL_ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+            <div className="tn-field"><label>Estado entrega</label>
+              <select value={form.delivery_status} onChange={e=>setForm(p=>({...p,delivery_status:e.target.value}))}>
+                {DEL_ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+            <div className="tn-field"><label>Póliza de ejecución</label>
+              <input value={form.execution_policy} onChange={e=>setF("execution_policy",e.target.value)} placeholder="NRO. O DESCRIPCIÓN"/></div>
+            <div className="tn-field"><label>OT Sistema Bridge</label>
+              <input value={form.bridge_ot} onChange={e=>setF("bridge_ot",e.target.value)} placeholder="NRO. DE OT"/></div>
+          </div>
+          <div className="tn-form-grid tn-form-grid--1">
+            <div className="tn-field"><label>Detalle documentación pendiente</label>
+              <input value={form.documentation_pending_detail} onChange={e=>setF("documentation_pending_detail",e.target.value)} placeholder="QUÉ FALTA, QUÉ ESTÁ INCOMPLETO"/></div>
+          </div>
+        </div>
+
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">📝 Observaciones</p>
+          <div className="tn-field">
+            <textarea value={form.notes} onChange={e=>setF("notes",e.target.value)} rows={3}
+              placeholder="NOTAS, HISTORIAL DE SEGUIMIENTO, ESTRATEGIA, COMENTARIOS…"/>
+          </div>
+        </div>
+
+        {editData && (
+          <div className="tn-cotizador-link">
+            <span className="tn-cotizador-link__icon">📊</span>
+            <div className="tn-cotizador-link__info">
+              <div className="tn-cotizador-link__title">Cotizador MediCross</div>
+              <div className="tn-cotizador-link__sub">Abre el cotizador con los datos de esta licitación pre-cargados</div>
+            </div>
+            <button className="tn-btn tn-btn--success" onClick={e=>onCotizador(editData,e)}>Crear cotización →</button>
+          </div>
+        )}
+      </div>
+
+      {/* TAB RESULTADO — display:none para preservar estado */}
+      <div style={{display:activeTab==="resultado"?"":"none"}}>
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">🏆 Resultado de la licitación</p>
+          <ResultadoBox form={form} setForm={setForm}/>
+        </div>
+      </div>
+
+      {/* TAB COMPETIDORES */}
+      <div style={{display:activeTab==="competidores"?"":"none"}}>
+        <div className="tn-form-section">
+          <p className="tn-form-section__title">🔍 Competidores registrados</p>
+          {editData
+            ? <Competitors tenderId={editData.id}/>
+            : <div style={{fontSize:12.5,color:"#94a3b8",padding:"16px 0",textAlign:"center"}}>Guardá la licitación primero para agregar competidores.</div>
+          }
+        </div>
+      </div>
+
+      {/* TAB HISTORIAL — display:none para preservar el input de nota */}
+      {editData && (
+        <div style={{display:activeTab==="historial"?"":"none"}}>
+          <div className="tn-form-section">
+            <p className="tn-form-section__title">📜 Historial y notas de seguimiento</p>
+            <TenderHistory tenderId={editData.id}/>
+          </div>
+        </div>
+      )}
+
+      {/* TAB ADJUNTOS */}
+      {editData && (
+        <div style={{display:activeTab==="adjuntos"?"":"none"}}>
+          <div className="tn-form-section">
+            <p className="tn-form-section__title">📎 Archivos adjuntos (pliegos, OC, pólizas…)</p>
+            <InlineAttachments tenderId={editData.id}/>
+          </div>
+        </div>
+      )}
+
+    </div>
+
+    <div className="tn-modal__footer">
+      <span style={{fontSize:11,color:"#94a3b8"}}>
+        {editData ? `Actualizado: ${fmtDateTime(editData.updated_at||editData.created_at)}` : "Nueva licitación"}
+      </span>
+      <div style={{display:"flex",gap:8}}>
+        <button className="tn-btn tn-btn--ghost" onClick={()=>onClose()}>Cerrar</button>
+        <button className="tn-btn tn-btn--primary" onClick={onSave} disabled={saving}>
+          {saving?"Guardando…":editData?"💾 Guardar cambios":"✓ Crear licitación"}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+  );
+}
+
 /* ─── COMPONENTE PRINCIPAL ───────────────────────────────────────────── */
 export default function TendersPage({ profile, onNavigate }) {
   const [tenders,      setTenders]      = useState([]);
@@ -637,16 +875,7 @@ export default function TendersPage({ profile, onNavigate }) {
     setShowForm(true);
   }
 
-  function setF(k,v) {
-    const NO_UPPER = [
-      "tender_type","validity_status","operational_status","priority",
-      "documentation_status","billing_status","delivery_status","portal_link",
-      "detection_date","start_date","end_date","next_action_date","purchase_order_date",
-      "resultado","motivo_perdida","competitor_winner","notes",
-      "documentation_pending_detail","next_action","process_name",
-    ];
-    setForm(prev => ({...prev, [k]: typeof v==="string" && !NO_UPPER.includes(k) ? v.toUpperCase() : v}));
-  }
+
 
   async function saveTender() {
     if (!form.institution?.trim()) { alert("Ingresá el hospital o institución."); return; }
@@ -969,226 +1198,19 @@ export default function TendersPage({ profile, onNavigate }) {
           )}
         </div>
       </div>
-
-      {showForm && (
-        <div className="tn-overlay" onClick={e=>{if(e.target.classList.contains("tn-overlay"))setShowForm(false);}}>
-          <div className="tn-modal" style={{maxWidth:900}}>
-
-            <div className="tn-modal__header">
-              <div>
-                <h3>{editData?"Editar licitación":"Nueva licitación"}</h3>
-                {editData && <span style={{fontSize:11.5,color:"#94a3b8"}}>{editData.process_number||""} · {editData.institution||""}</span>}
-              </div>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                {editData && <span className={`tn-badge tn-badge--${statusBadge(form.operational_status)}`} style={{fontSize:11,padding:"3px 10px"}}>{form.operational_status}</span>}
-                {editData && (
-                  <button type="button" className="tn-btn tn-btn--success tn-btn--sm"
-                    onClick={e=>abrirCotizador(editData,e)} title="Abrir cotizador con datos de esta licitación">
-                    📊 Crear cotización
-                  </button>
-                )}
-                {editData && <button type="button" className="tn-btn tn-btn--danger tn-btn--sm" onClick={e=>deleteTender(editData.id,e)}>🗑 Eliminar</button>}
-                <button className="tn-modal__close" onClick={()=>setShowForm(false)}>✕</button>
-              </div>
-            </div>
-
-            <div className="tn-modal-tabs">
-              {[
-                {key:"datos",       label:"📋 Datos"},
-                {key:"resultado",   label:"🏆 Resultado"},
-                {key:"competidores",label:"🔍 Competidores"},
-                ...(editData?[
-                  {key:"historial", label:"📜 Historial"},
-                  {key:"adjuntos",  label:"📎 Adjuntos"},
-                ]:[]),
-              ].map(tab => (
-                <button key={tab.key} className={`tn-modal-tab ${activeTab===tab.key?"tn-modal-tab--active":""}`}
-                  onClick={()=>setActiveTab(tab.key)}>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="tn-modal__body">
-
-              {/* TAB DATOS */}
-              <div style={{display:activeTab==="datos"?"":"none"}}>
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">📋 Identificación</p>
-                  <div className="tn-form-grid">
-                    <div className="tn-field"><label>Jurisdicción</label>
-                      <input value={form.jurisdiction} onChange={e=>setF("jurisdiction",e.target.value)} placeholder="EJ: CABA, PBA, CÓRDOBA"/></div>
-                    <div className="tn-field"><label>Hospital / Institución *</label>
-                      <input value={form.institution} onChange={e=>setF("institution",e.target.value)} placeholder="NOMBRE DEL HOSPITAL O ENTE"/></div>
-                    <div className="tn-field"><label>Tipo de proceso</label>
-                      <input value={form.process_type} onChange={e=>setF("process_type",e.target.value)} placeholder="EJ: LICITACIÓN PÚBLICA"/></div>
-                    <div className="tn-field"><label>N° de proceso</label>
-                      <input value={form.process_number} onChange={e=>setF("process_number",e.target.value)} placeholder="EJ: LP 001/2026"/></div>
-                    <div className="tn-field"><label>N° de expediente</label>
-                      <input value={form.expedient_number} onChange={e=>setF("expedient_number",e.target.value)} placeholder="EJ: EX-2026-12345"/></div>
-                    <div className="tn-field"><label>Tipo</label>
-                      <select value={form.tender_type} onChange={e=>setForm(p=>({...p,tender_type:e.target.value}))}>
-                        {TENDER_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
-                  </div>
-                  <div className="tn-form-grid tn-form-grid--1">
-                    <div className="tn-field"><label>Nombre / Descripción del proceso</label>
-                      <input value={form.process_name} onChange={e=>setF("process_name",e.target.value)} placeholder="DESCRIPCIÓN DEL OBJETO DE LA LICITACIÓN"/></div>
-                  </div>
-                  <div className="tn-form-grid">
-                    <div className="tn-field"><label>Sector solicitante</label>
-                      <input value={form.requesting_sector} onChange={e=>setF("requesting_sector",e.target.value)} placeholder="EJ: QUIRÓFANO, UTI"/></div>
-                    <div className="tn-field"><label>Línea de producto</label>
-                      <input value={form.product_line} onChange={e=>setF("product_line",e.target.value)} placeholder="EJ: FILTROS, APHERESIS"/></div>
-                  </div>
-                </div>
-
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">📅 Fechas clave</p>
-                  <div className="tn-form-grid tn-form-grid--3">
-                    <div className="tn-field"><label>Fecha de detección</label>
-                      <input type="date" value={form.detection_date} onChange={e=>setF("detection_date",e.target.value)}/>
-                      <span className="tn-field__hint">Cuándo detectamos la oportunidad</span></div>
-                    <div className="tn-field"><label>Fecha de vencimiento / apertura</label>
-                      <input type="date" value={form.end_date} onChange={e=>setF("end_date",e.target.value)}/>
-                      <span className="tn-field__hint">Vencimiento para presentar oferta</span></div>
-                    <div className="tn-field"><label>Fecha de inicio estimada</label>
-                      <input type="date" value={form.start_date} onChange={e=>setF("start_date",e.target.value)}/>
-                      <span className="tn-field__hint">Si se adjudica, inicio del contrato</span></div>
-                  </div>
-                </div>
-
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">⚙️ Estado y seguimiento</p>
-                  <div className="tn-form-grid tn-form-grid--3">
-                    <div className="tn-field"><label>Estado operativo</label>
-                      <select value={form.operational_status} onChange={e=>setForm(p=>({...p,operational_status:e.target.value}))} style={{fontWeight:700}}>
-                        {ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-                    <div className="tn-field"><label>Prioridad</label>
-                      <select value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>
-                        {PRIORIDADES.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
-                    <div className="tn-field"><label>Responsable interno</label>
-                      <input value={form.internal_owner} onChange={e=>setF("internal_owner",e.target.value)} placeholder="NOMBRE DEL RESPONSABLE"/></div>
-                    <div className="tn-field"><label>Próxima acción</label>
-                      <input value={form.next_action} onChange={e=>setF("next_action",e.target.value)} placeholder="EJ: PREPARAR COTIZACIÓN, PEDIR PLIEGO"/></div>
-                    <div className="tn-field"><label>Fecha próxima acción</label>
-                      <input type="date" value={form.next_action_date} onChange={e=>setF("next_action_date",e.target.value)}/></div>
-                    <div className="tn-field"><label>Estado documentación</label>
-                      <select value={form.documentation_status} onChange={e=>setForm(p=>({...p,documentation_status:e.target.value}))}>
-                        {DOC_ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-                  </div>
-                </div>
-
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">💰 Económico</p>
-                  <div className="tn-form-grid tn-form-grid--3">
-                    <div className="tn-field"><label>Monto estimado / OC ($)</label>
-                      <input type="number" value={form.purchase_order_amount} onChange={e=>setF("purchase_order_amount",e.target.value)} placeholder="0" min="0"/></div>
-                    <div className="tn-field"><label>Link / Portal de licitación</label>
-                      <input value={form.portal_link} onChange={e=>setForm(p=>({...p,portal_link:e.target.value}))} placeholder="https://…"/></div>
-                    <div className="tn-field"><label>Plazo de contrato</label>
-                      <input value={form.contract_term} onChange={e=>setF("contract_term",e.target.value)} placeholder="EJ: 12 MESES"/></div>
-                  </div>
-                </div>
-
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">🧾 Orden de compra</p>
-                  <div className="tn-form-grid tn-form-grid--3">
-                    <div className="tn-field"><label>N° de OC</label>
-                      <input value={form.purchase_order_number} onChange={e=>setF("purchase_order_number",e.target.value)} placeholder="EJ: OC-2026-001"/></div>
-                    <div className="tn-field"><label>Fecha de OC</label>
-                      <input type="date" value={form.purchase_order_date} onChange={e=>setF("purchase_order_date",e.target.value)}/></div>
-                    <div className="tn-field"><label>Estado facturación</label>
-                      <select value={form.billing_status} onChange={e=>setForm(p=>({...p,billing_status:e.target.value}))}>
-                        {BILL_ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-                    <div className="tn-field"><label>Estado entrega</label>
-                      <select value={form.delivery_status} onChange={e=>setForm(p=>({...p,delivery_status:e.target.value}))}>
-                        {DEL_ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-                    <div className="tn-field"><label>Póliza de ejecución</label>
-                      <input value={form.execution_policy} onChange={e=>setF("execution_policy",e.target.value)} placeholder="NRO. O DESCRIPCIÓN"/></div>
-                    <div className="tn-field"><label>OT Sistema Bridge</label>
-                      <input value={form.bridge_ot} onChange={e=>setF("bridge_ot",e.target.value)} placeholder="NRO. DE OT"/></div>
-                  </div>
-                  <div className="tn-form-grid tn-form-grid--1">
-                    <div className="tn-field"><label>Detalle documentación pendiente</label>
-                      <input value={form.documentation_pending_detail} onChange={e=>setF("documentation_pending_detail",e.target.value)} placeholder="QUÉ FALTA, QUÉ ESTÁ INCOMPLETO"/></div>
-                  </div>
-                </div>
-
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">📝 Observaciones</p>
-                  <div className="tn-field">
-                    <textarea value={form.notes} onChange={e=>setF("notes",e.target.value)} rows={3}
-                      placeholder="NOTAS, HISTORIAL DE SEGUIMIENTO, ESTRATEGIA, COMENTARIOS…"/>
-                  </div>
-                </div>
-
-                {editData && (
-                  <div className="tn-cotizador-link">
-                    <span className="tn-cotizador-link__icon">📊</span>
-                    <div className="tn-cotizador-link__info">
-                      <div className="tn-cotizador-link__title">Cotizador MediCross</div>
-                      <div className="tn-cotizador-link__sub">Abre el cotizador con los datos de esta licitación pre-cargados</div>
-                    </div>
-                    <button className="tn-btn tn-btn--success" onClick={e=>abrirCotizador(editData,e)}>Crear cotización →</button>
-                  </div>
-                )}
-              </div>
-
-              {/* TAB RESULTADO — display:none para preservar estado */}
-              <div style={{display:activeTab==="resultado"?"":"none"}}>
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">🏆 Resultado de la licitación</p>
-                  <ResultadoBox form={form} setForm={setForm}/>
-                </div>
-              </div>
-
-              {/* TAB COMPETIDORES */}
-              <div style={{display:activeTab==="competidores"?"":"none"}}>
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">🔍 Competidores registrados</p>
-                  {editData
-                    ? <Competitors tenderId={editData.id}/>
-                    : <div style={{fontSize:12.5,color:"#94a3b8",padding:"16px 0",textAlign:"center"}}>Guardá la licitación primero para agregar competidores.</div>
-                  }
-                </div>
-              </div>
-
-              {/* TAB HISTORIAL — display:none para preservar el input de nota */}
-              {editData && (
-                <div style={{display:activeTab==="historial"?"":"none"}}>
-                  <div className="tn-form-section">
-                    <p className="tn-form-section__title">📜 Historial y notas de seguimiento</p>
-                    <TenderHistory tenderId={editData.id}/>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB ADJUNTOS */}
-              {editData && (
-                <div style={{display:activeTab==="adjuntos"?"":"none"}}>
-                  <div className="tn-form-section">
-                    <p className="tn-form-section__title">📎 Archivos adjuntos (pliegos, OC, pólizas…)</p>
-                    <InlineAttachments tenderId={editData.id}/>
-                  </div>
-                </div>
-              )}
-
-            </div>
-
-            <div className="tn-modal__footer">
-              <span style={{fontSize:11,color:"#94a3b8"}}>
-                {editData ? `Actualizado: ${fmtDateTime(editData.updated_at||editData.created_at)}` : "Nueva licitación"}
-              </span>
-              <div style={{display:"flex",gap:8}}>
-                <button className="tn-btn tn-btn--ghost" onClick={()=>setShowForm(false)}>Cerrar</button>
-                <button className="tn-btn tn-btn--primary" onClick={saveTender} disabled={saving}>
-                  {saving?"Guardando…":editData?"💾 Guardar cambios":"✓ Crear licitación"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <TenderModal
+        showForm={showForm}
+        form={form}
+        setForm={setForm}
+        editData={editData}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        saving={saving}
+        onClose={() => setShowForm(false)}
+        onSave={saveTender}
+        onDelete={deleteTender}
+        onCotizador={abrirCotizador}
+      />
     </Layout>
   );
 }
