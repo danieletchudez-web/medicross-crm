@@ -36,13 +36,11 @@ const EMPTY_FORM = {
   documentation_status:"Pendiente", documentation_pending_detail:"",
   billing_status:"Pendiente", delivery_status:"Pendiente",
   priority:"Media", portal_link:"", notes:"",
-  // Nuevos campos: resultado final
   resultado:"", monto_adjudicado:"", motivo_perdida:"", competitor_winner:"",
 };
 
 const EMPTY_COMPETITOR = { name:"", price:"", notes:"" };
 
-/* ─── Helpers ────────────────────────────────────────────────────────── */
 const today = () => new Date().toISOString().slice(0,10);
 
 function fmtDate(d) {
@@ -147,9 +145,6 @@ function fileIcon(name) {
   return "📎";
 }
 
-/* ─── COTIZADOR URL ──────────────────────────────────────────────────── */
-
-/* ─── COLUMNAS GRILLA ────────────────────────────────────────────────── */
 const COLS = [
   { key:"_check",               label:"☑",              w:36,  fixed:true },
   { key:"_alert",               label:"⚡",              w:52,  fixed:true },
@@ -187,10 +182,9 @@ const COLS = [
 
 /* ─── ADJUNTOS INLINE ────────────────────────────────────────────────── */
 function InlineAttachments({ tenderId }) {
-  const [files,setFiles]=[useState([]),useState(false),useState(true)].map(s=>s);
-  const [fileList, setFileList]     = useState([]);
-  const [uploading, setUploading]   = useState(false);
-  const [loadingF,  setLoadingF]    = useState(true);
+  const [fileList, setFileList]   = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [loadingF, setLoadingF]   = useState(true);
   const inputRef = useRef(null);
   const folder   = `tender_${tenderId}`;
 
@@ -262,7 +256,7 @@ function InlineAttachments({ tenderId }) {
   );
 }
 
-/* ─── HISTORIAL DE ESTADO ────────────────────────────────────────────── */
+/* ─── HISTORIAL ──────────────────────────────────────────────────────── */
 function TenderHistory({ tenderId }) {
   const [logs, setLogs]       = useState([]);
   const [loading, setLoading] = useState(true);
@@ -274,9 +268,7 @@ function TenderHistory({ tenderId }) {
   async function loadLogs() {
     setLoading(true);
     const { data } = await supabase
-      .from("tender_logs")
-      .select("*")
-      .eq("tender_id", tenderId)
+      .from("tender_logs").select("*").eq("tender_id", tenderId)
       .order("created_at", { ascending: false });
     setLogs(data || []);
     setLoading(false);
@@ -286,10 +278,8 @@ function TenderHistory({ tenderId }) {
     if (!nota.trim()) return;
     setSaving(true);
     await supabase.from("tender_logs").insert([{
-      tender_id: tenderId,
-      action: "nota",
-      description: nota.trim(),
-      created_at: new Date().toISOString(),
+      tender_id: tenderId, action: "nota",
+      description: nota.trim(), created_at: new Date().toISOString(),
     }]);
     setNota("");
     await loadLogs();
@@ -300,7 +290,6 @@ function TenderHistory({ tenderId }) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      {/* Agregar nota */}
       <div style={{display:"flex",gap:8}}>
         <input
           style={{flex:1,padding:"8px 10px",border:"1px solid #e2e8f0",borderRadius:8,fontSize:12.5,fontFamily:"inherit",outline:"none"}}
@@ -312,10 +301,8 @@ function TenderHistory({ tenderId }) {
           {saving?"…":"+ Agregar"}
         </button>
       </div>
-
-      {/* Lista de eventos */}
       {logs.length === 0
-        ? <div className="tn-history-empty">Sin historial todavía. Los cambios de estado y notas aparecerán aquí.</div>
+        ? <div className="tn-history-empty">Sin historial todavía.</div>
         : (
           <div className="tn-history">
             {logs.map((log,i) => (
@@ -349,16 +336,14 @@ function TenderHistory({ tenderId }) {
 function Competitors({ tenderId }) {
   const [comps, setComps]     = useState([]);
   const [loading, setLoading] = useState(true);
-  const [draft, setDraft]     = useState(null); // fila en edición
+  const [draft, setDraft]     = useState(null);
 
   useEffect(() => { if (tenderId) load(); }, [tenderId]);
 
   async function load() {
     setLoading(true);
     const { data } = await supabase
-      .from("tender_competitors")
-      .select("*")
-      .eq("tender_id", tenderId)
+      .from("tender_competitors").select("*").eq("tender_id", tenderId)
       .order("created_at", { ascending: true });
     setComps(data || []);
     setLoading(false);
@@ -397,7 +382,6 @@ function Competitors({ tenderId }) {
         <span>Observaciones</span>
         <span/>
       </div>
-
       <div className="tn-comp-list">
         {comps.map(c => (
           draft?.id === c.id ? (
@@ -422,7 +406,6 @@ function Competitors({ tenderId }) {
             </div>
           )
         ))}
-
         {draft && !draft.id && (
           <div className="tn-comp-row" style={{background:"#eff6ff",borderColor:"#93c5fd"}}>
             <input autoFocus value={draft.name} onChange={e=>setDraft(d=>({...d,name:e.target.value}))} placeholder="Nombre empresa"/>
@@ -435,12 +418,57 @@ function Competitors({ tenderId }) {
           </div>
         )}
       </div>
-
       {!draft && (
         <button className="tn-comp-add" onClick={()=>setDraft({...EMPTY_COMPETITOR})}>
           + Agregar competidor
         </button>
       )}
+    </div>
+  );
+}
+
+/* ─── RESULTADO BOX — fuera del componente para evitar re-mount ──────── */
+function ResultadoBox({ form, setForm }) {
+  const estado = form.resultado;
+  const cls    = estado==="ganada"?"ganada":estado==="perdida"?"perdida":"pendiente";
+  return (
+    <div className={`tn-resultado-box tn-resultado-box--${cls}`}>
+      <div>
+        <span className={`tn-resultado-label tn-resultado-label--${cls}`}>
+          {cls==="ganada"?"✅ GANADA":cls==="perdida"?"❌ PERDIDA":"⏳ Resultado pendiente"}
+        </span>
+      </div>
+      <div className="tn-form-grid">
+        <div className="tn-field">
+          <label>Resultado final</label>
+          <select value={form.resultado} onChange={e=>setForm(p=>({...p,resultado:e.target.value}))}>
+            <option value="">Pendiente</option>
+            <option value="ganada">✅ Ganada / Adjudicada</option>
+            <option value="perdida">❌ Perdida / No adjudicada</option>
+          </select>
+        </div>
+        <div className="tn-field">
+          <label>Monto adjudicado final ($)</label>
+          <input type="number" value={form.monto_adjudicado}
+            onChange={e=>setForm(p=>({...p,monto_adjudicado:e.target.value}))}
+            placeholder="Monto real de la OC" min="0"/>
+          {form.monto_adjudicado && <span className="tn-resultado-monto">{fullMoney(form.monto_adjudicado)}</span>}
+        </div>
+        {form.resultado==="perdida" && <>
+          <div className="tn-field">
+            <label>Motivo de pérdida</label>
+            <input value={form.motivo_perdida}
+              onChange={e=>setForm(p=>({...p,motivo_perdida:e.target.value}))}
+              placeholder="Ej: Precio, marca, técnica, descalificado…"/>
+          </div>
+          <div className="tn-field">
+            <label>Empresa que ganó</label>
+            <input value={form.competitor_winner}
+              onChange={e=>setForm(p=>({...p,competitor_winner:e.target.value}))}
+              placeholder="Nombre del competidor adjudicado"/>
+          </div>
+        </>}
+      </div>
     </div>
   );
 }
@@ -507,20 +535,15 @@ export default function TendersPage({ profile, onNavigate }) {
     setAlerts(newAlerts);
   }
 
-  /* ── Logging de cambios de estado ── */
   async function logEvent(tenderId, action, description, oldVal, newVal) {
     await supabase.from("tender_logs").insert([{
-      tender_id: tenderId,
-      action,
-      description: description||null,
-      old_value: oldVal||null,
-      new_value: newVal||null,
+      tender_id: tenderId, action,
+      description: description||null, old_value: oldVal||null, new_value: newVal||null,
       user_name: profile?.full_name || profile?.email || "Usuario",
       created_at: new Date().toISOString(),
     }]);
   }
 
-  /* ── KPIs ── */
   const kpis = useMemo(() => {
     const activas    = tenders.filter(t => EN_CURSO.includes(t.operational_status));
     const montoTotal = activas.reduce((s,t) => s + Number(t.purchase_order_amount||0), 0);
@@ -539,7 +562,6 @@ export default function TendersPage({ profile, onNavigate }) {
     return { activas:activas.length, montoTotal, adjMontos, proxVencer, sinAccion, ganadas, perdidas, total:tenders.length, tasaCierre };
   }, [tenders]);
 
-  /* ── Filtrado + sort ── */
   const filtered = useMemo(() => {
     let rows = [...tenders];
     if (globalQ) {
@@ -557,9 +579,9 @@ export default function TendersPage({ profile, onNavigate }) {
     return rows;
   }, [tenders, globalQ, colFilters, sortCol, sortDir]);
 
-  const setColFilter = (k,v) => setColFilters(prev => ({...prev,[k]:v}));
-  const toggleSort   = (k) => { if(sortCol===k) setSortDir(d=>d==="asc"?"desc":"asc"); else{setSortCol(k);setSortDir("asc");} };
-  const toggleSelect = (id) => setSelected(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
+  const setColFilter    = (k,v) => setColFilters(prev => ({...prev,[k]:v}));
+  const toggleSort      = (k) => { if(sortCol===k) setSortDir(d=>d==="asc"?"desc":"asc"); else{setSortCol(k);setSortDir("asc");} };
+  const toggleSelect    = (id) => setSelected(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
   const toggleSelectAll = () => setSelected(prev => prev.size===filtered.length ? new Set() : new Set(filtered.map(t=>t.id)));
   const dismissAlert    = (key) => setDismissedAlerts(prev => new Set([...prev, key]));
 
@@ -616,16 +638,19 @@ export default function TendersPage({ profile, onNavigate }) {
   }
 
   function setF(k,v) {
-    const NO_UPPER = ["tender_type","validity_status","operational_status","priority",
-                      "documentation_status","billing_status","delivery_status","portal_link",
-                      "detection_date","start_date","end_date","next_action_date","purchase_order_date","resultado"];
+    const NO_UPPER = [
+      "tender_type","validity_status","operational_status","priority",
+      "documentation_status","billing_status","delivery_status","portal_link",
+      "detection_date","start_date","end_date","next_action_date","purchase_order_date",
+      "resultado","motivo_perdida","competitor_winner","notes",
+      "documentation_pending_detail","next_action","process_name",
+    ];
     setForm(prev => ({...prev, [k]: typeof v==="string" && !NO_UPPER.includes(k) ? v.toUpperCase() : v}));
   }
 
   async function saveTender() {
     if (!form.institution?.trim()) { alert("Ingresá el hospital o institución."); return; }
     setSaving(true);
-
     const payload = {
       jurisdiction:                 form.jurisdiction||null,
       institution:                  form.institution||null,
@@ -657,7 +682,6 @@ export default function TendersPage({ profile, onNavigate }) {
       priority:                     form.priority||"Media",
       portal_link:                  form.portal_link||null,
       notes:                        form.notes||null,
-      // Nuevos campos resultado
       resultado:                    form.resultado||null,
       monto_adjudicado:             form.monto_adjudicado!==""?Number(form.monto_adjudicado):null,
       motivo_perdida:               form.motivo_perdida||null,
@@ -665,25 +689,17 @@ export default function TendersPage({ profile, onNavigate }) {
       owner_id:                     profile?.id,
       updated_at:                   new Date().toISOString(),
     };
-
     if (editData) {
       const { error } = await supabase.from("tenders").update(payload).eq("id", editData.id);
       if (error) { alert("Error: "+error.message); setSaving(false); return; }
-
-      // Registrar cambio de estado en el historial
       if (prevStatusRef.current && prevStatusRef.current !== form.operational_status) {
-        await logEvent(editData.id, "estado",
-          `Cambio de estado`,
-          prevStatusRef.current, form.operational_status
-        );
+        await logEvent(editData.id, "estado", "Cambio de estado", prevStatusRef.current, form.operational_status);
       }
     } else {
       const { data: newRow, error } = await supabase.from("tenders").insert([payload]).select().single();
       if (error) { alert("Error: "+error.message); setSaving(false); return; }
-      // Registrar creación
       await logEvent(newRow.id, "creacion", `Licitación creada: ${form.institution} · ${form.process_number||""}`, null, null);
     }
-
     setSaving(false);
     setShowForm(false);
     await loadTenders();
@@ -701,7 +717,6 @@ export default function TendersPage({ profile, onNavigate }) {
     if (editData?.id === id) setShowForm(false);
   }
 
-  /* ── Exportación mejorada ── */
   function exportToExcel() {
     const rows = filtered.filter(t => selected.size===0 || selected.has(t.id));
     if (!rows.length) { alert("No hay filas para exportar."); return; }
@@ -711,8 +726,7 @@ export default function TendersPage({ profile, onNavigate }) {
       "Monto estimado ($)","Monto adjudicado ($)","Resultado","Motivo pérdida","Competidor ganador",
       "Responsable","Línea Producto","Próxima Acción","Fecha Próx. Acción",
       "Documentación","Detalle doc. pendiente","Facturación","Entrega",
-      "N° OC","Fecha OC","Inicio","Póliza","OT Bridge","Plazo","Sector",
-      "Portal","Observaciones"
+      "N° OC","Fecha OC","Inicio","Póliza","OT Bridge","Plazo","Sector","Portal","Observaciones"
     ];
     const keys = [
       "jurisdiction","institution","process_number","process_name","expedient_number",
@@ -723,7 +737,6 @@ export default function TendersPage({ profile, onNavigate }) {
       "purchase_order_number","purchase_order_date","start_date","execution_policy","bridge_ot",
       "contract_term","requesting_sector","portal_link","notes"
     ];
-    // Separador ; para Excel en español (Argentina)
     const sep = ";";
     const csv = [
       headers.join(sep),
@@ -732,7 +745,6 @@ export default function TendersPage({ profile, onNavigate }) {
         return `"${v}"`;
       }).join(sep))
     ].join("\n");
-    // BOM para que Excel lo abra bien con acentos
     const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -740,40 +752,24 @@ export default function TendersPage({ profile, onNavigate }) {
     a.click();
   }
 
-  /* ── Abrir cotizador con datos pre-cargados ── */
   async function abrirCotizador(t, e) {
     e?.stopPropagation();
-    const src = t || {
-      institution:    form.institution,
-      process_number: form.process_number,
-      end_date:       form.end_date,
-      internal_owner: form.internal_owner,
-    };
-    // Registrar en el historial
-    if (src?.id) {
-      await logEvent(src.id, "cotizador", "Cotización iniciada desde Licitaciones", null, null);
-    }
-    // Navegar internamente al cotizador del CRM con los datos pre-cargados
-    // El cotizador lee estos datos desde el segundo argumento de onNavigate
+    const src = t || { institution:form.institution, process_number:form.process_number, end_date:form.end_date, internal_owner:form.internal_owner };
+    if (src?.id) await logEvent(src.id, "cotizador", "Cotización iniciada desde Licitaciones", null, null);
     onNavigate("cotizador", {
-      institucion:  src.institution    || "",
-      nroLicit:     src.process_number  || "",
-      fechaApert:   src.end_date        || "",
-      vendedor:     src.internal_owner  || "",
+      institucion: src.institution||"", nroLicit: src.process_number||"",
+      fechaApert: src.end_date||"", vendedor: src.internal_owner||"",
     });
-    setShowForm(false); // cerrar el modal de licitación
+    setShowForm(false);
   }
 
-  /* ── Render celda ── */
   function renderCell(col, t) {
     const days  = daysUntil(t.end_date);
     const color = progColor(days);
-
     switch(col.key) {
       case "_check":
         return <input type="checkbox" checked={selected.has(t.id)} onChange={()=>toggleSelect(t.id)}
           onClick={e=>e.stopPropagation()} style={{cursor:"pointer",width:14,height:14,accentColor:"#0f2444"}}/>;
-
       case "_alert":
         return (
           <div className="tn-dot-wrap">
@@ -781,13 +777,11 @@ export default function TendersPage({ profile, onNavigate }) {
             <span className={`tn-dot tn-dot--${actionDotColor(t)}`} title={`Acción: ${t.next_action||"Sin definir"}`}/>
           </div>
         );
-
       case "_progress": {
-        const pct      = calcProgress(t);
+        const pct = calcProgress(t);
         const isClosed = CERRADAS.includes(t.operational_status);
         if (!t.end_date) return <span style={{color:"#94a3b8",fontSize:11}}>Sin fecha</span>;
-        if (isClosed)    return <span style={{color:"#94a3b8",fontSize:11}}>—</span>;
-        if (pct === null) return <span style={{color:"#94a3b8",fontSize:11}}>—</span>;
+        if (isClosed || pct === null) return <span style={{color:"#94a3b8",fontSize:11}}>—</span>;
         return (
           <div className="tn-prog">
             <div className="tn-prog__labels">
@@ -796,22 +790,14 @@ export default function TendersPage({ profile, onNavigate }) {
               </span>
               <span className="tn-prog__pct">{pct}%</span>
             </div>
-            <div className="tn-prog__bar">
-              <div className="tn-prog__fill" style={{width:`${pct}%`,background:color}}/>
-            </div>
+            <div className="tn-prog__bar"><div className="tn-prog__fill" style={{width:`${pct}%`,background:color}}/></div>
           </div>
         );
       }
-
       case "_attachments": {
         const cnt = attachCounts[t.id]||0;
-        return (
-          <span className="tn-attach-btn" onClick={e=>{e.stopPropagation();openEdit(t,e);}}>
-            📎{cnt>0&&<span className="tn-attach-count">{cnt}</span>}
-          </span>
-        );
+        return <span className="tn-attach-btn" onClick={e=>{e.stopPropagation();openEdit(t,e);}}>📎{cnt>0&&<span className="tn-attach-count">{cnt}</span>}</span>;
       }
-
       case "_actions":
         return (
           <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
@@ -820,43 +806,32 @@ export default function TendersPage({ profile, onNavigate }) {
             <button className="tn-btn tn-btn--danger tn-btn--sm" onClick={e=>deleteTender(t.id,e)} title="Eliminar">✕</button>
           </div>
         );
-
       case "operational_status":
-        return <span className={`tn-badge tn-badge--${statusBadge(t.operational_status)}`}
-          style={{fontSize:10.5,padding:"2px 8px",whiteSpace:"nowrap"}}>{t.operational_status||"—"}</span>;
-
+        return <span className={`tn-badge tn-badge--${statusBadge(t.operational_status)}`} style={{fontSize:10.5,padding:"2px 8px",whiteSpace:"nowrap"}}>{t.operational_status||"—"}</span>;
       case "priority":
         return <span className={`tn-prio tn-prio--${pClass(t.priority)}`}>{pIcon(t.priority)} {t.priority||"—"}</span>;
-
       case "purchase_order_amount":
         return <span style={{fontWeight:700,fontSize:12,whiteSpace:"nowrap"}}>{compactMoney(t.purchase_order_amount)}</span>;
-
       case "monto_adjudicado":
         return t.monto_adjudicado
           ? <span style={{fontWeight:700,fontSize:12,whiteSpace:"nowrap",color:"#166534"}}>{compactMoney(t.monto_adjudicado)}</span>
           : <span style={{color:"#94a3b8",fontSize:11}}>—</span>;
-
       case "end_date": {
         const clr = days!==null&&days<0?"#ef4444":days!==null&&days<=3?"#f97316":days!==null&&days<=7?"#d97706":"#334155";
         return (
           <div>
             <div style={{fontWeight:600,fontSize:12.5,color:clr,whiteSpace:"nowrap"}}>{fmtDate(t.end_date)}</div>
-            {days!==null&&<div style={{fontSize:10.5,color:clr}}>
-              {days<0?`Vencida ${Math.abs(days)}d`:days===0?"HOY":days===1?"MAÑANA":`${days}d restantes`}
-            </div>}
+            {days!==null&&<div style={{fontSize:10.5,color:clr}}>{days<0?`Vencida ${Math.abs(days)}d`:days===0?"HOY":days===1?"MAÑANA":`${days}d restantes`}</div>}
           </div>
         );
       }
-
       case "start_date": case "purchase_order_date": case "detection_date":
         return <span style={{fontSize:11.5,color:"#64748b",whiteSpace:"nowrap"}}>{fmtDate(t[col.key])}</span>;
-
       case "next_action_date": {
-        const ac  = actionDotColor(t);
+        const ac = actionDotColor(t);
         const clr = ac==="red"?"#ef4444":ac==="yellow"?"#d97706":"#334155";
         return <span style={{fontSize:11.5,color:clr,whiteSpace:"nowrap"}}>{fmtDate(t.next_action_date)}</span>;
       }
-
       case "documentation_status": {
         const bc = t.documentation_status==="Completa"?"green":t.documentation_status==="Incompleta"?"yellow":"red";
         return <span className={`tn-badge tn-badge--${bc}`} style={{fontSize:10.5,padding:"2px 6px"}}>{t.documentation_status||"—"}</span>;
@@ -876,58 +851,13 @@ export default function TendersPage({ profile, onNavigate }) {
     }
   }
 
-  /* ── Box de resultado final ── */
-  function ResultadoBox() {
-    const estado = form.resultado;
-    const cls    = estado==="ganada"?"ganada":estado==="perdida"?"perdida":"pendiente";
-    return (
-      <div className={`tn-resultado-box tn-resultado-box--${cls}`}>
-        <div>
-          <span className={`tn-resultado-label tn-resultado-label--${cls}`}>
-            {cls==="ganada"?"✅ GANADA":cls==="perdida"?"❌ PERDIDA":"⏳ Resultado pendiente"}
-          </span>
-        </div>
-        <div className="tn-form-grid">
-          <div className="tn-field">
-            <label>Resultado final</label>
-            <select value={form.resultado} onChange={e=>setForm(p=>({...p,resultado:e.target.value}))}>
-              <option value="">Pendiente</option>
-              <option value="ganada">✅ Ganada / Adjudicada</option>
-              <option value="perdida">❌ Perdida / No adjudicada</option>
-            </select>
-          </div>
-          <div className="tn-field">
-            <label>Monto adjudicado final ($)</label>
-            <input type="number" value={form.monto_adjudicado} onChange={e=>setF("monto_adjudicado",e.target.value)}
-              placeholder="Monto real de la OC" min="0"/>
-            {form.monto_adjudicado && <span className="tn-resultado-monto">{fullMoney(form.monto_adjudicado)}</span>}
-          </div>
-          {form.resultado==="perdida" && <>
-            <div className="tn-field">
-              <label>Motivo de pérdida</label>
-              <input value={form.motivo_perdida} onChange={e=>setF("motivo_perdida",e.target.value)}
-                placeholder="EJ: PRECIO, MARCA, TÉCNICA, DESCALIFICADO…"/>
-            </div>
-            <div className="tn-field">
-              <label>Empresa que ganó</label>
-              <input value={form.competitor_winner} onChange={e=>setF("competitor_winner",e.target.value)}
-                placeholder="Nombre del competidor adjudicado"/>
-            </div>
-          </>}
-        </div>
-      </div>
-    );
-  }
+  const hasFilters    = globalQ || Object.values(colFilters).some(Boolean);
+  const visibleAlerts = alerts.filter(a => !dismissedAlerts.has(a.key));
 
-  const hasFilters      = globalQ || Object.values(colFilters).some(Boolean);
-  const visibleAlerts   = alerts.filter(a => !dismissedAlerts.has(a.key));
-
-  /* ─── RENDER PRINCIPAL ─────────────────────────────────────────────── */
   return (
     <Layout title="Cotizaciones" profile={profile} onNavigate={onNavigate}>
       <div className="tn-page">
 
-        {/* Alertas */}
         {visibleAlerts.length > 0 && (
           <div className="tn-alerts">
             {visibleAlerts.map(a => (
@@ -940,25 +870,20 @@ export default function TendersPage({ profile, onNavigate }) {
           </div>
         )}
 
-        {/* Header */}
         <div className="tn-header">
           <div>
             <h2>Pipeline de Licitaciones</h2>
             <p>{kpis.activas} en seguimiento · {filtered.length} visible{filtered.length!==1?"s":""}{hasFilters?" (filtrado)":""}</p>
           </div>
           <div className="tn-header__actions">
-            {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm"
-              onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
+            {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
             {selected.size > 0 && <span style={{fontSize:12,fontWeight:700,color:"#0f2444"}}>{selected.size} selec.</span>}
-            <button className="tn-btn tn-btn--ghost" onClick={exportToExcel}>
-              ⬇ {selected.size>0?`Exportar (${selected.size})`:"Exportar"}
-            </button>
+            <button className="tn-btn tn-btn--ghost" onClick={exportToExcel}>⬇ {selected.size>0?`Exportar (${selected.size})`:"Exportar"}</button>
             <button className="tn-btn tn-btn--ghost" onClick={loadTenders} title="Actualizar">↻</button>
             <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
           </div>
         </div>
 
-        {/* KPIs */}
         <div className="tn-kpis">
           <div className="tn-kpi tn-kpi--blue">
             <span className="tn-kpi__label">En seguimiento</span>
@@ -987,7 +912,6 @@ export default function TendersPage({ profile, onNavigate }) {
           </div>
         </div>
 
-        {/* Búsqueda */}
         <div className="tn-search-bar">
           <input className="tn-search-input"
             placeholder="🔍  Buscar hospital, proceso, expediente, sector, responsable…"
@@ -995,7 +919,6 @@ export default function TendersPage({ profile, onNavigate }) {
           <span className="tn-search-count">{filtered.length} resultado{filtered.length!==1?"s":""}</span>
         </div>
 
-        {/* Grilla */}
         <div className="tn-grid-wrap">
           {loading ? (
             <div className="tn-empty"><div className="tn-empty__icon">⏳</div><h3>Cargando…</h3></div>
@@ -1005,16 +928,12 @@ export default function TendersPage({ profile, onNavigate }) {
                 <thead>
                   <tr className="tn-grid__head-row">
                     {COLS.map(col => (
-                      <th key={col.key} className="tn-grid__th"
-                        style={{minWidth:col.w,maxWidth:col.w,width:col.w}}
+                      <th key={col.key} className="tn-grid__th" style={{minWidth:col.w,maxWidth:col.w,width:col.w}}
                         onClick={()=>{ if(col.key==="_check") toggleSelectAll(); else if(col.key[0]!=="_") toggleSort(col.key); }}>
                         {col.key==="_check"
                           ? <input type="checkbox" checked={filtered.length>0&&selected.size===filtered.length}
                               onChange={toggleSelectAll} style={{cursor:"pointer",width:14,height:14,accentColor:"#93c5fd"}}/>
-                          : <span className="tn-grid__th-label">
-                              {col.label}
-                              {sortCol===col.key&&<span style={{marginLeft:3,opacity:.6}}>{sortDir==="asc"?"↑":"↓"}</span>}
-                            </span>
+                          : <span className="tn-grid__th-label">{col.label}{sortCol===col.key&&<span style={{marginLeft:3,opacity:.6}}>{sortDir==="asc"?"↑":"↓"}</span>}</span>
                         }
                       </th>
                     ))}
@@ -1035,11 +954,9 @@ export default function TendersPage({ profile, onNavigate }) {
                         {tenders.length===0?"Sin licitaciones. Creá la primera con + Nueva licitación.":"Sin resultados con los filtros aplicados."}
                       </td></tr>
                     : filtered.map((t,idx) => (
-                      <tr key={t.id} className={`tn-grid__row ${idx%2===0?"":"tn-grid__row--alt"}`}
-                        onClick={()=>openEdit(t)}>
+                      <tr key={t.id} className={`tn-grid__row ${idx%2===0?"":"tn-grid__row--alt"}`} onClick={()=>openEdit(t)}>
                         {COLS.map(col => (
-                          <td key={col.key} className="tn-grid__td"
-                            style={{minWidth:col.w,maxWidth:col.w,width:col.w}}>
+                          <td key={col.key} className="tn-grid__td" style={{minWidth:col.w,maxWidth:col.w,width:col.w}}>
                             {renderCell(col,t)}
                           </td>
                         ))}
@@ -1053,45 +970,36 @@ export default function TendersPage({ profile, onNavigate }) {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* MODAL CON TABS                                                  */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
       {showForm && (
         <div className="tn-overlay" onClick={e=>{if(e.target.classList.contains("tn-overlay"))setShowForm(false);}}>
           <div className="tn-modal" style={{maxWidth:900}}>
 
-            {/* Header del modal */}
             <div className="tn-modal__header">
               <div>
                 <h3>{editData?"Editar licitación":"Nueva licitación"}</h3>
-                {editData && <span style={{fontSize:11.5,color:"#94a3b8"}}>
-                  {editData.process_number||""} · {editData.institution||""}
-                </span>}
+                {editData && <span style={{fontSize:11.5,color:"#94a3b8"}}>{editData.process_number||""} · {editData.institution||""}</span>}
               </div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                {editData && <span className={`tn-badge tn-badge--${statusBadge(form.operational_status)}`}
-                  style={{fontSize:11,padding:"3px 10px"}}>{form.operational_status}</span>}
+                {editData && <span className={`tn-badge tn-badge--${statusBadge(form.operational_status)}`} style={{fontSize:11,padding:"3px 10px"}}>{form.operational_status}</span>}
                 {editData && (
                   <button type="button" className="tn-btn tn-btn--success tn-btn--sm"
                     onClick={e=>abrirCotizador(editData,e)} title="Abrir cotizador con datos de esta licitación">
                     📊 Crear cotización
                   </button>
                 )}
-                {editData && <button type="button" className="tn-btn tn-btn--danger tn-btn--sm"
-                  onClick={e=>deleteTender(editData.id,e)}>🗑 Eliminar</button>}
+                {editData && <button type="button" className="tn-btn tn-btn--danger tn-btn--sm" onClick={e=>deleteTender(editData.id,e)}>🗑 Eliminar</button>}
                 <button className="tn-modal__close" onClick={()=>setShowForm(false)}>✕</button>
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="tn-modal-tabs">
               {[
-                {key:"datos",    label:"📋 Datos"},
-                {key:"resultado",label:"🏆 Resultado"},
+                {key:"datos",       label:"📋 Datos"},
+                {key:"resultado",   label:"🏆 Resultado"},
                 {key:"competidores",label:"🔍 Competidores"},
                 ...(editData?[
-                  {key:"historial",  label:"📜 Historial"},
-                  {key:"adjuntos",   label:"📎 Adjuntos"},
+                  {key:"historial", label:"📜 Historial"},
+                  {key:"adjuntos",  label:"📎 Adjuntos"},
                 ]:[]),
               ].map(tab => (
                 <button key={tab.key} className={`tn-modal-tab ${activeTab===tab.key?"tn-modal-tab--active":""}`}
@@ -1101,11 +1009,10 @@ export default function TendersPage({ profile, onNavigate }) {
               ))}
             </div>
 
-            {/* Body según tab activo */}
             <div className="tn-modal__body">
 
-              {/* TAB: DATOS */}
-              {activeTab==="datos" && <>
+              {/* TAB DATOS */}
+              <div style={{display:activeTab==="datos"?"":"none"}}>
                 <div className="tn-form-section">
                   <p className="tn-form-section__title">📋 Identificación</p>
                   <div className="tn-form-grid">
@@ -1124,14 +1031,14 @@ export default function TendersPage({ profile, onNavigate }) {
                         {TENDER_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
                   </div>
                   <div className="tn-form-grid tn-form-grid--1">
-                    <div className="tn-field"><label>Nombre / Descripción del proceso *</label>
+                    <div className="tn-field"><label>Nombre / Descripción del proceso</label>
                       <input value={form.process_name} onChange={e=>setF("process_name",e.target.value)} placeholder="DESCRIPCIÓN DEL OBJETO DE LA LICITACIÓN"/></div>
                   </div>
                   <div className="tn-form-grid">
                     <div className="tn-field"><label>Sector solicitante</label>
-                      <input value={form.requesting_sector} onChange={e=>setF("requesting_sector",e.target.value)} placeholder="EJ: QUIRÓFANO, UTI, HEMODIÁLISIS"/></div>
+                      <input value={form.requesting_sector} onChange={e=>setF("requesting_sector",e.target.value)} placeholder="EJ: QUIRÓFANO, UTI"/></div>
                     <div className="tn-field"><label>Línea de producto</label>
-                      <input value={form.product_line} onChange={e=>setF("product_line",e.target.value)} placeholder="EJ: FILTROS, APHERESIS, IV SETS"/></div>
+                      <input value={form.product_line} onChange={e=>setF("product_line",e.target.value)} placeholder="EJ: FILTROS, APHERESIS"/></div>
                   </div>
                 </div>
 
@@ -1141,7 +1048,7 @@ export default function TendersPage({ profile, onNavigate }) {
                     <div className="tn-field"><label>Fecha de detección</label>
                       <input type="date" value={form.detection_date} onChange={e=>setF("detection_date",e.target.value)}/>
                       <span className="tn-field__hint">Cuándo detectamos la oportunidad</span></div>
-                    <div className="tn-field"><label>Fecha de vencimiento / apertura *</label>
+                    <div className="tn-field"><label>Fecha de vencimiento / apertura</label>
                       <input type="date" value={form.end_date} onChange={e=>setF("end_date",e.target.value)}/>
                       <span className="tn-field__hint">Vencimiento para presentar oferta</span></div>
                     <div className="tn-field"><label>Fecha de inicio estimada</label>
@@ -1153,10 +1060,8 @@ export default function TendersPage({ profile, onNavigate }) {
                 <div className="tn-form-section">
                   <p className="tn-form-section__title">⚙️ Estado y seguimiento</p>
                   <div className="tn-form-grid tn-form-grid--3">
-                    <div className="tn-field"><label>Estado operativo *</label>
-                      <select value={form.operational_status}
-                        onChange={e=>setForm(p=>({...p,operational_status:e.target.value}))}
-                        style={{fontWeight:700}}>
+                    <div className="tn-field"><label>Estado operativo</label>
+                      <select value={form.operational_status} onChange={e=>setForm(p=>({...p,operational_status:e.target.value}))} style={{fontWeight:700}}>
                         {ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                     <div className="tn-field"><label>Prioridad</label>
                       <select value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>
@@ -1177,8 +1082,7 @@ export default function TendersPage({ profile, onNavigate }) {
                   <p className="tn-form-section__title">💰 Económico</p>
                   <div className="tn-form-grid tn-form-grid--3">
                     <div className="tn-field"><label>Monto estimado / OC ($)</label>
-                      <input type="number" value={form.purchase_order_amount}
-                        onChange={e=>setF("purchase_order_amount",e.target.value)} placeholder="0" min="0"/></div>
+                      <input type="number" value={form.purchase_order_amount} onChange={e=>setF("purchase_order_amount",e.target.value)} placeholder="0" min="0"/></div>
                     <div className="tn-field"><label>Link / Portal de licitación</label>
                       <input value={form.portal_link} onChange={e=>setForm(p=>({...p,portal_link:e.target.value}))} placeholder="https://…"/></div>
                     <div className="tn-field"><label>Plazo de contrato</label>
@@ -1214,71 +1118,66 @@ export default function TendersPage({ profile, onNavigate }) {
                   <p className="tn-form-section__title">📝 Observaciones</p>
                   <div className="tn-field">
                     <textarea value={form.notes} onChange={e=>setF("notes",e.target.value)} rows={3}
-                      placeholder="NOTAS, HISTORIAL DE SEGUIMIENTO, ESTRATEGIA, COMENTARIOS…"/></div>
+                      placeholder="NOTAS, HISTORIAL DE SEGUIMIENTO, ESTRATEGIA, COMENTARIOS…"/>
+                  </div>
                 </div>
-              </>}
 
-              {/* TAB: RESULTADO FINAL */}
-              {activeTab==="resultado" && (
+                {editData && (
+                  <div className="tn-cotizador-link">
+                    <span className="tn-cotizador-link__icon">📊</span>
+                    <div className="tn-cotizador-link__info">
+                      <div className="tn-cotizador-link__title">Cotizador MediCross</div>
+                      <div className="tn-cotizador-link__sub">Abre el cotizador con los datos de esta licitación pre-cargados</div>
+                    </div>
+                    <button className="tn-btn tn-btn--success" onClick={e=>abrirCotizador(editData,e)}>Crear cotización →</button>
+                  </div>
+                )}
+              </div>
+
+              {/* TAB RESULTADO — display:none para preservar estado */}
+              <div style={{display:activeTab==="resultado"?"":"none"}}>
                 <div className="tn-form-section">
                   <p className="tn-form-section__title">🏆 Resultado de la licitación</p>
-                  <ResultadoBox/>
+                  <ResultadoBox form={form} setForm={setForm}/>
                 </div>
-              )}
+              </div>
 
-              {/* TAB: COMPETIDORES */}
-              {activeTab==="competidores" && (
+              {/* TAB COMPETIDORES */}
+              <div style={{display:activeTab==="competidores"?"":"none"}}>
                 <div className="tn-form-section">
                   <p className="tn-form-section__title">🔍 Competidores registrados</p>
                   {editData
                     ? <Competitors tenderId={editData.id}/>
-                    : <div style={{fontSize:12.5,color:"#94a3b8",padding:"16px 0",textAlign:"center"}}>
-                        Guardá la licitación primero para agregar competidores.
-                      </div>
+                    : <div style={{fontSize:12.5,color:"#94a3b8",padding:"16px 0",textAlign:"center"}}>Guardá la licitación primero para agregar competidores.</div>
                   }
                 </div>
-              )}
+              </div>
 
-              {/* TAB: HISTORIAL */}
-              {activeTab==="historial" && editData && (
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">📜 Historial y notas de seguimiento</p>
-                  <TenderHistory tenderId={editData.id}/>
-                </div>
-              )}
-
-              {/* TAB: ADJUNTOS */}
-              {activeTab==="adjuntos" && editData && (
-                <div className="tn-form-section">
-                  <p className="tn-form-section__title">📎 Archivos adjuntos (pliegos, OC, pólizas…)</p>
-                  <InlineAttachments tenderId={editData.id}/>
-                </div>
-              )}
-
-              {/* Vinculación con cotizador (visible en tab datos, solo al editar) */}
-              {activeTab==="datos" && editData && (
-                <div className="tn-cotizador-link">
-                  <span className="tn-cotizador-link__icon">📊</span>
-                  <div className="tn-cotizador-link__info">
-                    <div className="tn-cotizador-link__title">Cotizador MediCross</div>
-                    <div className="tn-cotizador-link__sub">
-                      Abre el cotizador con los datos de esta licitación pre-cargados (institución, N° proceso, fecha apertura, responsable)
-                    </div>
+              {/* TAB HISTORIAL — display:none para preservar el input de nota */}
+              {editData && (
+                <div style={{display:activeTab==="historial"?"":"none"}}>
+                  <div className="tn-form-section">
+                    <p className="tn-form-section__title">📜 Historial y notas de seguimiento</p>
+                    <TenderHistory tenderId={editData.id}/>
                   </div>
-                  <button className="tn-btn tn-btn--success" onClick={e=>abrirCotizador(editData,e)}>
-                    Crear cotización →
-                  </button>
+                </div>
+              )}
+
+              {/* TAB ADJUNTOS */}
+              {editData && (
+                <div style={{display:activeTab==="adjuntos"?"":"none"}}>
+                  <div className="tn-form-section">
+                    <p className="tn-form-section__title">📎 Archivos adjuntos (pliegos, OC, pólizas…)</p>
+                    <InlineAttachments tenderId={editData.id}/>
+                  </div>
                 </div>
               )}
 
             </div>
 
-            {/* Footer */}
             <div className="tn-modal__footer">
               <span style={{fontSize:11,color:"#94a3b8"}}>
-                {editData
-                  ? `Actualizado: ${fmtDateTime(editData.updated_at||editData.created_at)}`
-                  : "Nueva licitación"}
+                {editData ? `Actualizado: ${fmtDateTime(editData.updated_at||editData.created_at)}` : "Nueva licitación"}
               </span>
               <div style={{display:"flex",gap:8}}>
                 <button className="tn-btn tn-btn--ghost" onClick={()=>setShowForm(false)}>Cerrar</button>
@@ -1292,4 +1191,4 @@ export default function TendersPage({ profile, onNavigate }) {
       )}
     </Layout>
   );
-}// ─── COTIZADOR: navegación interna (usa onNavigate, sin abrir URL externa)
+}
