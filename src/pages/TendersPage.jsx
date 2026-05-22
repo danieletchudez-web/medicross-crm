@@ -148,20 +148,6 @@ function fileIcon(name) {
 }
 
 /* ─── COTIZADOR URL ──────────────────────────────────────────────────── */
-// Genera la URL al cotizador con los datos de la licitación pre-cargados
-// Ajustá COTIZADOR_URL a la URL real de tu cotizador
-const COTIZADOR_URL = typeof window !== "undefined"
-  ? window.location.origin.replace("crm.", "") + "/ventas.cotizaciones.interno/index.html"
-  : "";
-
-function buildCotizadorUrl(tender) {
-  const params = new URLSearchParams();
-  if (tender.institution)    params.set("institucion", tender.institution);
-  if (tender.process_number) params.set("nroLicit", tender.process_number);
-  if (tender.end_date)       params.set("fechaApert", tender.end_date);
-  if (tender.internal_owner) params.set("vendedor", tender.internal_owner);
-  return `${COTIZADOR_URL}?${params.toString()}`;
-}
 
 /* ─── COLUMNAS GRILLA ────────────────────────────────────────────────── */
 const COLS = [
@@ -757,12 +743,25 @@ export default function TendersPage({ profile, onNavigate }) {
   /* ── Abrir cotizador con datos pre-cargados ── */
   async function abrirCotizador(t, e) {
     e?.stopPropagation();
-    // Registrar en el historial que se inició una cotización
-    if (t?.id) {
-      await logEvent(t.id, "cotizador", `Cotización iniciada desde el CRM`, null, null);
+    const src = t || {
+      institution:    form.institution,
+      process_number: form.process_number,
+      end_date:       form.end_date,
+      internal_owner: form.internal_owner,
+    };
+    // Registrar en el historial
+    if (src?.id) {
+      await logEvent(src.id, "cotizador", "Cotización iniciada desde Licitaciones", null, null);
     }
-    const url = buildCotizadorUrl(t || { institution: form.institution, process_number: form.process_number, end_date: form.end_date, internal_owner: form.internal_owner });
-    window.open(url, "_blank");
+    // Navegar internamente al cotizador del CRM con los datos pre-cargados
+    // El cotizador lee estos datos desde el segundo argumento de onNavigate
+    onNavigate("cotizador", {
+      institucion:  src.institution    || "",
+      nroLicit:     src.process_number  || "",
+      fechaApert:   src.end_date        || "",
+      vendedor:     src.internal_owner  || "",
+    });
+    setShowForm(false); // cerrar el modal de licitación
   }
 
   /* ── Render celda ── */
@@ -1293,4 +1292,4 @@ export default function TendersPage({ profile, onNavigate }) {
       )}
     </Layout>
   );
-}
+}// ─── COTIZADOR: navegación interna (usa onNavigate, sin abrir URL externa)

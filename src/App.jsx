@@ -23,16 +23,17 @@ const FALLBACK_PROFILE = {
   allowed_modules: [
     "managerDashboard","sellerDashboard","accounts","products",
     "opportunities","campaigns","todayActions","visits",
-    "calendar","adminUsers","salesAnalytics","importer","tenders","cotizador",
+    "calendar","adminUsers","salesAnalytics","importer",
   ],
 };
 
 export default function App() {
-  const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [page, setPage]       = useState(() => localStorage.getItem("crm_current_page") || "managerDashboard");
-  const [loading, setLoading] = useState(true);
-  const [crmData, setCrmData] = useState(null);
+  const [session,      setSession]      = useState(null);
+  const [profile,      setProfile]      = useState(null);
+  const [page,         setPage]         = useState(() => localStorage.getItem("crm_current_page") || "managerDashboard");
+  const [navigateData, setNavigateData] = useState(null); // datos opcionales al navegar
+  const [loading,      setLoading]      = useState(true);
+  const [crmData,      setCrmData]      = useState(null);
 
   useEffect(() => {
     init();
@@ -150,7 +151,6 @@ export default function App() {
       `}</style>
     </div>
   );
-
   if (!session) return <LoginPage />;
 
   if (profile?.approved === false) {
@@ -168,7 +168,14 @@ export default function App() {
   }
 
   const safeProfile = profile || FALLBACK_PROFILE;
-  function navigate(p) { setPage(p); localStorage.setItem("crm_current_page", p); }
+
+  // navigate acepta un segundo argumento opcional con datos para la página destino
+  function navigate(p, data) {
+    setNavigateData(data || null);
+    setPage(p);
+    localStorage.setItem("crm_current_page", p);
+  }
+
   const pageProps = { profile: safeProfile, onNavigate: navigate };
 
   let CurrentPage;
@@ -186,7 +193,8 @@ export default function App() {
     case "salesAnalytics":   CurrentPage = <SalesAnalyticsPage {...pageProps} />; break;
     case "importer":         CurrentPage = <ImporterPage       {...pageProps} />; break;
     case "tenders":          CurrentPage = <TendersPage        {...pageProps} />; break;
-    case "cotizador":        CurrentPage = <CotizadorPage      {...pageProps} />; break;
+    // El cotizador recibe initialData con los datos pre-cargados desde licitaciones
+    case "cotizador":        CurrentPage = <CotizadorPage      {...pageProps} initialData={navigateData} />; break;
     default:                 CurrentPage = <ManagerDashboard   {...pageProps} />;
   }
 

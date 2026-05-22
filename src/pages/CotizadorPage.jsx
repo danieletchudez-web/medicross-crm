@@ -57,15 +57,18 @@ const ESTADO_LABELS = {
 
 /* ══════════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
+   initialData: datos opcionales pre-cargados desde el módulo de Licitaciones
+   { institucion, nroLicit, fechaApert, vendedor }
 ══════════════════════════════════════════════════════════════════════════ */
-export default function CotizadorPage({ profile, onNavigate }) {
+export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
-  /* ── Parámetros globales ── */
-  const [vendedor,    setVendedor]    = useState("");
+  /* ── Parámetros globales
+     Si initialData viene de Licitaciones, se usan como valores iniciales ── */
+  const [vendedor,    setVendedor]    = useState(initialData?.vendedor    || "");
   const [tc,          setTc]          = useState("1425");
-  const [fechaApert,  setFechaApert]  = useState("");
-  const [nroLicit,    setNroLicit]    = useState("");
-  const [institucion, setInstitucion] = useState("");
+  const [fechaApert,  setFechaApert]  = useState(initialData?.fechaApert  || "");
+  const [nroLicit,    setNroLicit]    = useState(initialData?.nroLicit    || "");
+  const [institucion, setInstitucion] = useState(initialData?.institucion || "");
   const [plazoVenta,  setPlazoVenta]  = useState("");
   const [mantOferta,  setMantOferta]  = useState("");
   const [formaCobro,  setFormaCobro]  = useState("");
@@ -94,10 +97,18 @@ export default function CotizadorPage({ profile, onNavigate }) {
 
   /* ── Init ── */
   useEffect(() => {
-    const vMatch = VENDEDORES.find(v =>
-      profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase())
-    );
-    if (vMatch) setVendedor(vMatch);
+    // Si no viene vendedor de initialData, intentar inferirlo del perfil
+    if (!initialData?.vendedor) {
+      const vMatch = VENDEDORES.find(v =>
+        profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase())
+      );
+      if (vMatch) setVendedor(vMatch);
+    }
+
+    // Mostrar banner si viene desde licitaciones
+    if (initialData?.institucion || initialData?.nroLicit) {
+      showToast(`Cotización pre-cargada desde Licitaciones: ${initialData.institucion || initialData.nroLicit}`);
+    }
 
     try {
       import("../assets/logo.jpg").then(m => {
@@ -118,7 +129,7 @@ export default function CotizadorPage({ profile, onNavigate }) {
   /* ── Toast ── */
   const showToast = useCallback((msg, type = "ok") => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   }, []);
 
   /* ── Total general ── */
@@ -510,6 +521,15 @@ export default function CotizadorPage({ profile, onNavigate }) {
         {/* Toast */}
         {toast && <div className={`cot-toast cot-toast--${toast.type}`}>{toast.msg}</div>}
 
+        {/* Banner cuando viene pre-cargado desde Licitaciones */}
+        {initialData?.institucion && !docId && (
+          <div className="cot-banner-warn">
+            📋 Cotización iniciada desde Licitaciones — <strong>{initialData.institucion}</strong>
+            {initialData.nroLicit ? ` · ${initialData.nroLicit}` : ""}
+            . Completá los renglones y guardá.
+          </div>
+        )}
+
         {/* Header */}
         <div className="cot-header">
           <div>
@@ -522,6 +542,7 @@ export default function CotizadorPage({ profile, onNavigate }) {
             </p>
           </div>
           <div className="cot-header-actions">
+            <button className="cot-btn cot-btn--ghost" onClick={()=>onNavigate("tenders")}>← Licitaciones</button>
             <button className="cot-btn cot-btn--ghost" onClick={abrirHistorial}>📋 Historial</button>
             <button className="cot-btn cot-btn--ghost" onClick={abrirPapelera} style={{color:"#dc2626"}}>🗑 Papelera</button>
             <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>+ Nueva</button>
