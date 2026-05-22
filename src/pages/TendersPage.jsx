@@ -727,7 +727,17 @@ export default function TendersPage({ profile, onNavigate }) {
   const [globalQ,      setGlobalQ]      = useState("");
   const [attachCounts, setAttachCounts] = useState({});
   const [alerts,       setAlerts]       = useState([]);
-  const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
+  const [dismissedAlerts, setDismissedAlerts] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("tn_dismissed_alerts") || "{}");
+      const now = Date.now();
+      // Filtrar solo los que no expiraron (TTL: 24 horas)
+      const valid = new Set(Object.entries(saved)
+        .filter(([, exp]) => exp > now)
+        .map(([key]) => key));
+      return valid;
+    } catch { return new Set(); }
+  });
   const prevStatusRef = useRef(null);
 
   useEffect(() => { loadTenders(); }, []);
@@ -821,7 +831,21 @@ export default function TendersPage({ profile, onNavigate }) {
   const toggleSort      = (k) => { if(sortCol===k) setSortDir(d=>d==="asc"?"desc":"asc"); else{setSortCol(k);setSortDir("asc");} };
   const toggleSelect    = (id) => setSelected(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
   const toggleSelectAll = () => setSelected(prev => prev.size===filtered.length ? new Set() : new Set(filtered.map(t=>t.id)));
-  const dismissAlert    = (key) => setDismissedAlerts(prev => new Set([...prev, key]));
+  const dismissAlert = (key) => {
+    setDismissedAlerts(prev => {
+      const next = new Set([...prev, key]);
+      // Guardar en localStorage con TTL de 24 horas
+      try {
+        const saved = JSON.parse(localStorage.getItem("tn_dismissed_alerts") || "{}");
+        saved[key] = Date.now() + 24 * 60 * 60 * 1000; // expira en 24hs
+        // Limpiar expirados
+        const now = Date.now();
+        Object.keys(saved).forEach(k => { if (saved[k] <= now) delete saved[k]; });
+        localStorage.setItem("tn_dismissed_alerts", JSON.stringify(saved));
+      } catch {}
+      return next;
+    });
+  };
 
   function openNew() {
     setEditData(null);
