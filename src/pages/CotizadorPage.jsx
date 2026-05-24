@@ -330,14 +330,15 @@ fill(0, H-HDR, 192, HDR, .06, .14, .27);
       // Línea azul inferior del header
       hln(0, H-HDR-1, W, .055, .373, .659, 2);
 
-      // ── LOGO en margen superior izquierdo ──────────────────────────
-      if (logoB64Ref.current) {
-        const LLW = 160;
-        const LLH = Math.round(LLW * (logoHRef.current / logoWRef.current));
-        const logoY = H - HDR + (HDR - LLH) / 2;
-        ps.push(`q ${LLW} 0 0 ${LLH} 16 ${logoY} cm /Img1 Do Q`);
-      }
-
+ // ── LOGO textual en margen superior izquierdo ──────────────────
+fill(0, H-HDR, 192, HDR, .06, .14, .27);
+ps.push(".27 .59 .85 rg");
+txt(16, H-38, "Medi", 22, true);
+ps.push("1 1 1 rg");
+txt(16 + 50, H-38, "Cross", 22, true);
+ps.push(".55 .75 .95 rg");
+txt(16, H-56, "Productos Medicos Integrales", 7, false);
+ps.push("0 0 0 rg");
       // ── Separador vertical entre logo y texto ──────────────────────
       vln(190, H-12, H-HDR+8, .82, .82, .82, .5);
 
