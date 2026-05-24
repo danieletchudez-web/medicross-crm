@@ -323,8 +323,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const vln  = (x,y1,y2,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x} ${y1} m ${x} ${y2} l S 0 0 0 RG`);
 
     function drawHeader() {
-      // Fondo blanco header
-      fill(0, H-HDR, W, HDR, 1, 1, 1);
+      // Fondo blanco header completo
+fill(0, H-HDR, W, HDR, 1, 1, 1);
+// Fondo oscuro detrás del logo
+fill(0, H-HDR, 192, HDR, .06, .14, .27);
       // Línea azul inferior del header
       hln(0, H-HDR-1, W, .055, .373, .659, 2);
 
