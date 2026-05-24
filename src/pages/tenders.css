@@ -257,3 +257,21 @@
   .tn-form-grid, .tn-form-grid--3 { grid-template-columns: 1fr; }
   .tn-comp-row { grid-template-columns: 1fr 1fr; }
 }
+/* ─── BOTÓN INTELIGENCIA DE PRECIOS ─────────────────────────────────── */
+.tn-btn--inteligencia {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  background: #fff;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  animation: tnPulseBtn 2.5s ease-in-out infinite;
+}
+.tn-btn--inteligencia:hover {
+  background: #7c3aed;
+  color: #fff;
+}
+@keyframes tnPulseBtn {
+  0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,.4); border-color: #7c3aed; }
+  50%      { box-shadow: 0 0 0 6px rgba(124,58,237,0); border-color: #a78bfa; }
+}
