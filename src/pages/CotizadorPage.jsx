@@ -326,8 +326,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       // Fondo blanco header completo
 fill(0, H-HDR, W, HDR, 1, 1, 1);
 // Fondo oscuro detrás del logo
-fill(0, H-HDR, 192, HDR, .06, .14, .27);
-      // Línea azul inferior del header
+
+fill(0, H-HDR, 192, HDR, .055, .373, .659);
+// Línea azul inferior del header
       hln(0, H-HDR-1, W, .055, .373, .659, 2);
 
  // ── LOGO textual en margen superior izquierdo ──────────────────
