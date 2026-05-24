@@ -188,7 +188,7 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
               <div className="crm-ai-header__dot"/>
               <div>
                 <span className="crm-ai-header__title">Medix - Asistente Comercial</span>
-                <span className="crm-ai-header__sub">Medi-Cross CRM</span>
+                <span className="crm-ai-header__sub">MediCross CRM</span>
               </div>
             </div>
             <button className="crm-ai-clear" onClick={clearChat} title="Nueva conversación">↺</button>
