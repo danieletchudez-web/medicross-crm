@@ -1340,8 +1340,18 @@ export default function TendersPage({ profile, onNavigate }) {
     switch(col.key){
       case "_check":
         return <input type="checkbox" checked={selected.has(t.id)} onChange={()=>toggleSelect(t.id)} onClick={e=>e.stopPropagation()} style={{cursor:"pointer",width:14,height:14,accentColor:"#0f2444"}}/>;
-      case "_alert":
-        return <div className="tn-dot-wrap"><span className={`tn-dot tn-dot--${dotColor(days)}`} title={`Vencimiento: ${fmtDate(t.end_date)}`}/><span className={`tn-dot tn-dot--${actionDotColor(t)}`} title={`Acción: ${t.next_action||"Sin definir"}`}/></div>;
+      case "_alert": {
+        const venc  = dotColor(days);
+        const acct  = actionDotColor(t);
+        // Prioridad: vencimiento manda si es urgente
+        const level = (venc==="red"||acct==="red") ? "red"
+                    : (venc==="orange"||acct==="orange") ? "orange"
+                    : (venc==="yellow"||acct==="yellow") ? "yellow"
+                    : (venc==="green"&&acct==="green") ? "green" : "gray";
+        const icon  = level==="red" ? "🔴" : level==="orange" ? "🟠" : level==="yellow" ? "🟡" : level==="green" ? "🟢" : "⚪";
+        const tip   = `Vencimiento: ${fmtDate(t.end_date)} · Acción: ${t.next_action||"Sin definir"}`;
+        return <div style={{display:"flex",justifyContent:"center"}}><span className={`tn-alert-indicator tn-alert-indicator--${level}`} title={tip}>{icon}</span></div>;
+      }
       case "_progress":{
         const pct=calcProgress(t);
         const isClosed=CERRADAS.includes(t.operational_status);
@@ -1413,7 +1423,7 @@ export default function TendersPage({ profile, onNavigate }) {
         )}
 
         <div className="tn-header">
-          <div>
+          <div className="tn-header__title">
             <h2>Pipeline de Licitaciones</h2>
             <p>{kpis.activas} en seguimiento · {filtered.length} visible{filtered.length!==1?"s":""}{hasFilters?" (filtrado)":""}</p>
           </div>
@@ -1421,20 +1431,46 @@ export default function TendersPage({ profile, onNavigate }) {
             {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
             {selected.size > 0 && <span style={{fontSize:12,fontWeight:700,color:"#0f2444"}}>{selected.size} selec.</span>}
             <button className="tn-btn tn-btn--ghost" onClick={exportToExcel}>⬇ {selected.size>0?`Exportar (${selected.size})`:"Exportar"}</button>
-            <button className="tn-btn tn-btn--ghost" onClick={loadTenders} title="Actualizar">↻</button>
-           <button className="tn-btn tn-btn--inteligencia" onClick={() => onNavigate("preciosHistoricos")}>
-  🔍 Inteligencia de precios
-</button>
+            <button className="tn-btn tn-btn--refresh" onClick={loadTenders} title="Actualizar">↻</button>
+            <button className="tn-btn tn-btn--ghost" onClick={() => onNavigate("preciosHistoricos")}
+              style={{borderColor:"#bfdbfe",color:"#1e40af",background:"#eff6ff"}}>
+              📈 Inteligencia de precios
+            </button>
             <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
           </div>
         </div>
 
         <div className="tn-kpis">
-          <div className="tn-kpi tn-kpi--blue"><span className="tn-kpi__label">En seguimiento</span><span className="tn-kpi__val">{kpis.activas}</span><span className="tn-kpi__sub">{compactMoney(kpis.montoTotal)} potencial</span></div>
-          <div className={`tn-kpi ${kpis.proxVencer>0?"tn-kpi--danger":"tn-kpi--gray"}`}><span className="tn-kpi__label">Vencen en ≤7 días</span><span className="tn-kpi__val">{kpis.proxVencer}</span><span className="tn-kpi__sub">atención urgente</span></div>
-          <div className={`tn-kpi ${kpis.sinAccion>0?"tn-kpi--warn":"tn-kpi--gray"}`}><span className="tn-kpi__label">Sin próxima acción</span><span className="tn-kpi__val">{kpis.sinAccion}</span><span className="tn-kpi__sub">de activas</span></div>
-          <div className="tn-kpi tn-kpi--green"><span className="tn-kpi__label">Monto adjudicado</span><span className="tn-kpi__val">{compactMoney(kpis.adjMontos)}</span><span className="tn-kpi__sub">{kpis.ganadas} ganadas · {kpis.tasaCierre!==null?kpis.tasaCierre+"%":"—"} cierre</span></div>
-          <div className="tn-kpi tn-kpi--gray"><span className="tn-kpi__label">Total registradas</span><span className="tn-kpi__val">{kpis.total}</span><span className="tn-kpi__sub">{kpis.perdidas} perdidas</span></div>
+          <div className="tn-kpi tn-kpi--blue">
+            <span className="tn-kpi__icon">📋</span>
+            <span className="tn-kpi__label">En seguimiento</span>
+            <span className="tn-kpi__val">{kpis.activas}</span>
+            <span className="tn-kpi__sub">{compactMoney(kpis.montoTotal)} potencial</span>
+          </div>
+          <div className={`tn-kpi ${kpis.proxVencer>0?"tn-kpi--danger":"tn-kpi--gray"}`}>
+            <span className="tn-kpi__icon">⏰</span>
+            <span className="tn-kpi__label">Vencen en ≤7 días</span>
+            <span className="tn-kpi__val">{kpis.proxVencer}</span>
+            <span className="tn-kpi__sub">atención urgente</span>
+          </div>
+          <div className={`tn-kpi ${kpis.sinAccion>0?"tn-kpi--warn":"tn-kpi--gray"}`}>
+            <span className="tn-kpi__icon">⚡</span>
+            <span className="tn-kpi__label">Sin próxima acción</span>
+            <span className="tn-kpi__val">{kpis.sinAccion}</span>
+            <span className="tn-kpi__sub">de activas</span>
+          </div>
+          <div className="tn-kpi tn-kpi--green">
+            <span className="tn-kpi__icon">💰</span>
+            <span className="tn-kpi__label">Monto adjudicado</span>
+            <span className="tn-kpi__val">{compactMoney(kpis.adjMontos)}</span>
+            <span className="tn-kpi__sub">{kpis.ganadas} ganadas · {kpis.tasaCierre!==null?kpis.tasaCierre+"%":"—"} cierre</span>
+          </div>
+          <div className="tn-kpi tn-kpi--gray">
+            <span className="tn-kpi__icon">📊</span>
+            <span className="tn-kpi__label">Total registradas</span>
+            <span className="tn-kpi__val">{kpis.total}</span>
+            <span className="tn-kpi__sub">{kpis.perdidas} perdidas</span>
+          </div>
         </div>
 
         <div className="tn-search-bar">
