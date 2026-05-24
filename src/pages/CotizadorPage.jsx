@@ -219,17 +219,17 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       // Fondo blanco para todo el header
       fill(0, H-HDR, W, HDR, 1, 1, 1);
 
-      // Fondo azul oscuro solo en la zona del logo (izquierda)
-      fill(0, H-HDR, 192, HDR, .06, .14, .27);
+// Fondo blanco en zona logo
+fill(0, H-HDR, 192, HDR, 1, 1, 1);
 
-      // Logo textual blanco sobre fondo azul oscuro
-      ps.push(".27 .59 .85 rg");
-      txt(16, H-HDR+(HDR/2)+6, "Medi", 20, true);
-      ps.push("1 1 1 rg");
-      txt(16+44, H-HDR+(HDR/2)+6, "Cross", 20, true);
-      ps.push(".65 .80 .95 rg");
-      txt(16, H-HDR+(HDR/2)-10, "Productos Medicos Integrales", 6.5, false);
-      ps.push("0 0 0 rg");
+// Logo textual en azul sobre fondo blanco
+ps.push(".055 .373 .659 rg");
+txt(26, H-HDR+(HDR/2)+8, "MediCross", 22, true);
+
+ps.push(".055 .373 .659 rg");
+txt(26, H-HDR+(HDR/2)-10, "Productos Medicos Integrales", 7, false);
+
+ps.push("0 0 0 rg");
 
       // Línea azul inferior del header
       hln(0, H-HDR-1, W, .055, .373, .659, 2);
