@@ -220,7 +220,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       fill(0, H-HDR, W, HDR, 1, 1, 1);
 
       // Fondo azul oscuro solo en la zona del logo (izquierda)
-      fill(0, H-HDR, W, HDR, 1, 1, 1);
+      fill(0, H-HDR, 192, HDR, .06, .14, .27);
 
       // Logo textual blanco sobre fondo azul oscuro
       ps.push(".27 .59 .85 rg");
@@ -228,7 +228,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       ps.push("1 1 1 rg");
       txt(16+44, H-HDR+(HDR/2)+6, "Cross", 20, true);
       ps.push(".65 .80 .95 rg");
-      txt(16, H-HDR+(HDR/2)-10, "", 6.5, false);
+      txt(16, H-HDR+(HDR/2)-10, "Productos Medicos Integrales", 6.5, false);
       ps.push("0 0 0 rg");
 
       // Línea azul inferior del header
