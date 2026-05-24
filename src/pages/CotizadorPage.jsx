@@ -327,7 +327,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 fill(0, H-HDR, W, HDR, 1, 1, 1);
 // Fondo oscuro detrás del logo
 
-fill(0, H-HDR, 192, HDR, .055, .373, .659);
+fill(0, H-HDR, 192, HDR, 1, 1, 1);
 // Línea azul inferior del header
       hln(0, H-HDR-1, W, .055, .373, .659, 2);
 
