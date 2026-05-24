@@ -427,7 +427,7 @@ function Competitors({ tenderId }) {
   );
 }
 
-/* ─── RESULTADO BOX — fuera del componente para evitar re-mount ──────── */
+/* ─── RESULTADO BOX ──────────────────────────────────────────────────── */
 function ResultadoBox({ form, setForm }) {
   const estado = form.resultado;
   const cls    = estado==="ganada"?"ganada":estado==="perdida"?"perdida":"pendiente";
@@ -472,11 +472,13 @@ function ResultadoBox({ form, setForm }) {
     </div>
   );
 }
+
 /* ─── COMPARATIVA ────────────────────────────────────────────────────── */
-function Comparativa({ tenderId }) {
+function Comparativa({ tenderId, tenderInfo }) {
   const [rows, setRows]           = useState([]);
   const [loading, setLoading]     = useState(true);
   const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [draft, setDraft]         = useState(null);
   const fileRef = useRef(null);
 
@@ -521,7 +523,6 @@ function Comparativa({ tenderId }) {
       const empresaRowData = raw[headerRowIdx - 1];
       const headerRow      = raw[headerRowIdx];
 
-      // Detectar empresas dinámicamente
       const empresas = [];
       let currentEmpresa = "";
       for (let c = 0; c < headerRow.length; c++) {
@@ -645,6 +646,286 @@ function Comparativa({ tenderId }) {
     return precios.length ? Math.min(...precios) : null;
   }
 
+  // ── Exportador Excel profesional ─────────────────────────────────────
+  async function exportarExcel() {
+    if (!rows.length) return;
+    setExporting(true);
+    try {
+      const XLSX = await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm");
+      const wb   = XLSX.utils.book_new();
+
+      // Colores
+      const COLOR_NAVY    = "0F2444";
+      const COLOR_HEADER  = "1A3A6B";
+      const COLOR_NUESTRA = "DBEAFE";
+      const COLOR_ADJ     = "D4EDDA";
+      const COLOR_MIN     = "166534";
+      const COLOR_ALT     = "F8FAFC";
+      const COLOR_WHITE   = "FFFFFF";
+      const COLOR_WARN    = "FDE8E8";
+      const COLOR_GOLD    = "FEF3CD";
+
+      const fmtPeso = v => v ? Math.round(v).toLocaleString("es-AR") : "";
+      const fmtPct  = (v, min) => {
+        if (!v || !min) return "";
+        if (v === min)  return "PRECIO MÍNIMO";
+        return "+" + ((v - min) / min * 100).toFixed(1) + "%";
+      };
+
+      // ── HOJA 1: Detalle por empresa-renglón ──────────────────────────
+      const h1 = [
+        "Renglón", "Descripción", "Empresa", "Nuestra oferta",
+        "Precio unitario ($)", "Cantidad", "Total ARS ($)",
+        "Precio mínimo del renglón ($)", "Diferencia vs mínimo", "Adjudicado",
+      ];
+      const d1 = rows.map(r => {
+        const min = precioMin(r.renglon);
+        return [
+          r.renglon,
+          r.descripcion,
+          r.empresa,
+          r.es_nuestra_oferta ? "Sí" : "No",
+          r.precio_unitario,
+          r.cantidad,
+          r.total_ars,
+          min,
+          fmtPct(r.precio_unitario, min),
+          r.adjudicado ? "Adjudicado" : "",
+        ];
+      });
+
+      const ws1 = XLSX.utils.aoa_to_sheet([h1, ...d1]);
+
+      // Anchos
+      ws1["!cols"] = [
+        {wch:8},{wch:55},{wch:30},{wch:14},
+        {wch:22},{wch:10},{wch:22},{wch:28},{wch:22},{wch:14},
+      ];
+
+      // Estilos encabezado hoja 1
+      const rangoH1 = ["A1","B1","C1","D1","E1","F1","G1","H1","I1","J1"];
+      rangoH1.forEach(ref => {
+        if (!ws1[ref]) return;
+        ws1[ref].s = {
+          font:    { bold:true, color:{ rgb: COLOR_WHITE }, sz:11 },
+          fill:    { fgColor:{ rgb: COLOR_NAVY } },
+          alignment: { horizontal:"center", vertical:"center", wrapText:true },
+          border:  { bottom:{ style:"thin", color:{ rgb:"334155" } } },
+        };
+      });
+
+      // Estilos filas de datos hoja 1
+      d1.forEach((row, i) => {
+        const xlRow = i + 2;
+        const esNuestra = row[3] === "Sí";
+        const esAdj     = row[9] === "Adjudicado";
+        const esMenor   = row[8] === "PRECIO MÍNIMO";
+        const bgColor   = esNuestra ? COLOR_NUESTRA : esAdj ? COLOR_ADJ : i%2===0 ? COLOR_WHITE : COLOR_ALT;
+
+        ["A","B","C","D","E","F","G","H","I","J"].forEach((col, ci) => {
+          const ref = `${col}${xlRow}`;
+          if (!ws1[ref]) ws1[ref] = { v:"", t:"s" };
+          ws1[ref].s = {
+            fill: { fgColor:{ rgb: bgColor } },
+            font: {
+              bold: ci === 2 && esNuestra,
+              color: { rgb: esMenor && ci === 8 ? COLOR_MIN : ci === 8 && row[8].startsWith("+") ? "DC2626" : "0F172A" },
+              sz: 10,
+            },
+            alignment: { horizontal: ci >= 4 ? "right" : "left", vertical:"center" },
+            border: {
+              bottom: { style:"thin", color:{ rgb:"E2E8F0" } },
+              right:  { style:"thin", color:{ rgb:"E2E8F0" } },
+            },
+            numFmt: ci >= 4 && ci <= 7 ? '#,##0' : undefined,
+          };
+        });
+      });
+
+      XLSX.utils.book_append_sheet(wb, ws1, "Detalle por empresa");
+
+      // ── HOJA 2: Vista pivot (renglones × empresas) ───────────────────
+      const pivotHeader = ["Reng.", "Descripción", ...empresas];
+      const pivotData   = renglones.map(reng => {
+        const descRow = Object.values(matriz[reng]||{})[0];
+        const min     = precioMin(reng);
+        return [
+          reng,
+          descRow?.descripcion || "",
+          ...empresas.map(emp => {
+            const cell = matriz[reng]?.[emp];
+            return cell ? cell.precio_unitario : null;
+          }),
+        ];
+      });
+
+      const ws2 = XLSX.utils.aoa_to_sheet([pivotHeader, ...pivotData]);
+
+      // Anchos pivot
+      ws2["!cols"] = [
+        {wch:8}, {wch:55},
+        ...empresas.map(() => ({wch:24})),
+      ];
+
+      // Estilos encabezado pivot
+      pivotHeader.forEach((_, ci) => {
+        const ref = XLSX.utils.encode_cell({r:0, c:ci});
+        if (!ws2[ref]) return;
+        const esNuestra = ci >= 2 && empresas[ci-2]?.toUpperCase().includes(NUESTRA_EMPRESA);
+        ws2[ref].s = {
+          font:  { bold:true, color:{ rgb: COLOR_WHITE }, sz:11 },
+          fill:  { fgColor:{ rgb: esNuestra ? COLOR_HEADER : COLOR_NAVY } },
+          alignment: { horizontal:"center", vertical:"center", wrapText:true },
+        };
+      });
+
+      // Estilos celdas pivot
+      pivotData.forEach((row, ri) => {
+        const min = precioMin(renglones[ri]);
+        row.forEach((val, ci) => {
+          const ref = XLSX.utils.encode_cell({r: ri+1, c:ci});
+          if (!ws2[ref]) ws2[ref] = { v: val ?? "", t: val === null ? "s" : typeof val === "number" ? "n" : "s" };
+          const esNuestra = ci >= 2 && empresas[ci-2]?.toUpperCase().includes(NUESTRA_EMPRESA);
+          const esMenor   = ci >= 2 && val === min && val !== null;
+          const bgColor   = esNuestra ? COLOR_NUESTRA : ri%2===0 ? COLOR_WHITE : COLOR_ALT;
+          ws2[ref].s = {
+            fill:  { fgColor:{ rgb: esMenor ? COLOR_ADJ : bgColor } },
+            font:  { bold: esMenor, color:{ rgb: esMenor ? COLOR_MIN : "0F172A" }, sz:10 },
+            alignment: { horizontal: ci >= 2 ? "right" : ci===0 ? "center" : "left", vertical:"center" },
+            numFmt: ci >= 2 ? '#,##0' : undefined,
+            border: { bottom:{ style:"thin", color:{ rgb:"E2E8F0" } }, right:{ style:"thin", color:{ rgb:"E2E8F0" } } },
+          };
+        });
+      });
+
+      XLSX.utils.book_append_sheet(wb, ws2, "Comparativa pivot");
+
+      // ── HOJA 3: Resumen — nuestra posición ───────────────────────────
+      const h3 = ["Renglón","Descripción","Nuestro precio ($)","Precio mínimo ($)","Diferencia vs mínimo","Empresa ganadora (precio)","Adjudicado a"];
+      const d3 = renglones.map(reng => {
+        const nuestra  = rows.find(r => r.renglon === reng && r.es_nuestra_oferta);
+        const min      = precioMin(reng);
+        const ganador  = rows.find(r => r.renglon === reng && r.adjudicado);
+        const empMenor = rows.find(r => r.renglon === reng && r.precio_unitario === min);
+        const descRow  = Object.values(matriz[reng]||{})[0];
+        return [
+          reng,
+          descRow?.descripcion || "",
+          nuestra?.precio_unitario || null,
+          min || null,
+          nuestra ? fmtPct(nuestra.precio_unitario, min) : "Sin oferta",
+          empMenor?.empresa || "",
+          ganador?.empresa || "",
+        ];
+      });
+
+      const ws3 = XLSX.utils.aoa_to_sheet([h3, ...d3]);
+      ws3["!cols"] = [{wch:8},{wch:55},{wch:22},{wch:22},{wch:24},{wch:32},{wch:32}];
+
+      // Estilos encabezado hoja 3
+      ["A1","B1","C1","D1","E1","F1","G1"].forEach(ref => {
+        if (!ws3[ref]) return;
+        ws3[ref].s = {
+          font:  { bold:true, color:{ rgb:COLOR_WHITE }, sz:11 },
+          fill:  { fgColor:{ rgb: COLOR_NAVY } },
+          alignment: { horizontal:"center", vertical:"center", wrapText:true },
+        };
+      });
+
+      // Estilos filas resumen
+      d3.forEach((row, i) => {
+        const xlRow    = i + 2;
+        const esMenor  = row[4] === "PRECIO MÍNIMO";
+        const bgColor  = esMenor ? COLOR_ADJ : i%2===0 ? COLOR_WHITE : COLOR_ALT;
+        ["A","B","C","D","E","F","G"].forEach((col, ci) => {
+          const ref = `${col}${xlRow}`;
+          if (!ws3[ref]) ws3[ref] = { v:"", t:"s" };
+          ws3[ref].s = {
+            fill: { fgColor:{ rgb: bgColor } },
+            font: {
+              bold: esMenor && ci === 4,
+              color:{ rgb: esMenor && ci === 4 ? COLOR_MIN : row[4]?.startsWith("+") && ci === 4 ? "DC2626" : "0F172A" },
+              sz:10,
+            },
+            alignment: { horizontal: ci >= 2 ? "right" : "left", vertical:"center" },
+            numFmt: (ci === 2 || ci === 3) ? '#,##0' : undefined,
+            border: { bottom:{ style:"thin", color:{ rgb:"E2E8F0" } }, right:{ style:"thin", color:{ rgb:"E2E8F0" } } },
+          };
+        });
+      });
+
+      XLSX.utils.book_append_sheet(wb, ws3, "Resumen posicion");
+
+      // ── HOJA 4: Portada / Metadata ───────────────────────────────────
+      const fechaExport = new Date().toLocaleDateString("es-AR", {day:"2-digit",month:"2-digit",year:"numeric"});
+      const meta = [
+        ["ANÁLISIS COMPARATIVO DE LICITACIÓN"],
+        [""],
+        ["Generado por", "MediCross CRM"],
+        ["Fecha de exportación", fechaExport],
+        ["Licitación", tenderInfo?.process_number || "—"],
+        ["Hospital / Institución", tenderInfo?.institution || "—"],
+        ["Nombre del proceso", tenderInfo?.process_name || "—"],
+        ["Fecha de apertura", tenderInfo?.end_date ? fmtDate(tenderInfo.end_date) : "—"],
+        [""],
+        ["CONTENIDO DEL ARCHIVO"],
+        [""],
+        ["Hoja 1", "Detalle completo — una fila por empresa y renglón con todas las métricas"],
+        ["Hoja 2", "Vista pivot — renglones como filas y empresas como columnas"],
+        ["Hoja 3", "Resumen de posición — nuestra oferta vs precio mínimo por renglón"],
+        [""],
+        ["TOTALES"],
+        [""],
+        ["Total de renglones", renglones.length],
+        ["Total de empresas", empresas.length],
+        ["Total de ofertas", rows.length],
+        ["Renglones donde fuimos precio mínimo",
+          renglones.filter(reng => {
+            const nuestra = rows.find(r => r.renglon === reng && r.es_nuestra_oferta);
+            return nuestra && nuestra.precio_unitario === precioMin(reng);
+          }).length
+        ],
+      ];
+
+      const ws4 = XLSX.utils.aoa_to_sheet(meta);
+      ws4["!cols"] = [{wch:40},{wch:70}];
+
+      // Título portada
+      if (ws4["A1"]) {
+        ws4["A1"].s = {
+          font:  { bold:true, sz:16, color:{ rgb: COLOR_NAVY } },
+          fill:  { fgColor:{ rgb:"EFF6FF" } },
+        };
+        ws4["!merges"] = [{ s:{r:0,c:0}, e:{r:0,c:1} }];
+      }
+
+      // Subtítulos portada
+      [9, 15].forEach(r => {
+        const ref = `A${r+1}`;
+        if (ws4[ref]) {
+          ws4[ref].s = {
+            font: { bold:true, sz:12, color:{ rgb: COLOR_NAVY } },
+            fill: { fgColor:{ rgb:"F0F4F8" } },
+          };
+        }
+      });
+
+      XLSX.utils.book_append_sheet(wb, ws4, "Portada");
+
+      // Mover portada al inicio
+      wb.SheetNames = ["Portada", "Detalle por empresa", "Comparativa pivot", "Resumen posicion"];
+
+      // Generar y descargar
+      const nombre = `comparativa_${(tenderInfo?.process_number || tenderId).replace(/[^a-zA-Z0-9]/g,"_")}_${today()}.xlsx`;
+      XLSX.writeFile(wb, nombre);
+
+    } catch(err) {
+      console.error(err);
+      alert("Error al exportar: " + err.message);
+    }
+    setExporting(false);
+  }
+
   if (loading) return <div style={{fontSize:12,color:"#94a3b8",padding:"16px 0"}}>Cargando comparativa…</div>;
 
   return (
@@ -662,8 +943,14 @@ function Comparativa({ tenderId }) {
           onClick={() => setDraft({ renglon:"", descripcion:"", empresa:"", precio_unitario:"", cantidad:1, adjudicado:false })}>
           + Carga manual
         </button>
+        {rows.length > 0 && (
+          <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={exportarExcel} disabled={exporting}
+            style={{marginLeft:"auto"}}>
+            {exporting ? "⏳ Exportando…" : "⬇ Exportar análisis (.xlsx)"}
+          </button>
+        )}
         {rows.length > 0 &&
-          <span style={{fontSize:11,color:"#94a3b8",marginLeft:"auto"}}>
+          <span style={{fontSize:11,color:"#94a3b8"}}>
             {renglones.length} renglones · {empresas.length} empresas
           </span>
         }
@@ -734,7 +1021,7 @@ function Comparativa({ tenderId }) {
                       {descRow?.descripcion ? descRow.descripcion.slice(0,80) + (descRow.descripcion.length>80?"…":"") : "—"}
                     </td>
                     {empresas.map(emp => {
-                      const cell     = matriz[reng]?.[emp];
+                      const cell      = matriz[reng]?.[emp];
                       const esNuestra = emp.toUpperCase().includes(NUESTRA_EMPRESA);
                       const esMinimo  = cell && minPrecio && cell.precio_unitario === minPrecio;
                       const diff      = (cell && minPrecio && !esMinimo)
@@ -780,12 +1067,12 @@ function Comparativa({ tenderId }) {
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {renglones.map(reng => {
-              const nuestra  = rows.find(r => r.renglon === reng && r.es_nuestra_oferta);
+              const nuestra   = rows.find(r => r.renglon === reng && r.es_nuestra_oferta);
               const minPrecio = precioMin(reng);
-              const ganamos  = nuestra && nuestra.precio_unitario === minPrecio;
-              const diff     = (nuestra && minPrecio && !ganamos)
+              const ganamos   = nuestra && nuestra.precio_unitario === minPrecio;
+              const diff      = (nuestra && minPrecio && !ganamos)
                 ? ((nuestra.precio_unitario - minPrecio) / minPrecio * 100).toFixed(1) : null;
-              const ganador  = rows.find(r => r.renglon === reng && r.adjudicado);
+              const ganador   = rows.find(r => r.renglon === reng && r.adjudicado);
               return (
                 <div key={reng} style={{display:"flex",alignItems:"center",gap:10,fontSize:11.5}}>
                   <span style={{fontFamily:"DM Mono,monospace",fontWeight:700,color:"#0f2444",minWidth:28}}>R{reng}</span>
@@ -844,7 +1131,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         {editData && <span className={`tn-badge tn-badge--${statusBadge(form.operational_status)}`} style={{fontSize:11,padding:"3px 10px"}}>{form.operational_status}</span>}
         {editData && (
           <button type="button" className="tn-btn tn-btn--success tn-btn--sm"
-            onClick={e=>onCotizador(editData,e)} >
+            onClick={e=>onCotizador(editData,e)}>
             📊 Crear cotización
           </button>
         )}
@@ -859,9 +1146,9 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         {key:"resultado",   label:"🏆 Resultado"},
         {key:"competidores",label:"🔍 Competidores"},
         ...(editData?[
-        {key:"comparativa", label:"📊 Comparativa"},
-        {key:"historial",   label:"📜 Historial"},
-        {key:"adjuntos",    label:"📎 Adjuntos"},
+          {key:"comparativa", label:"📊 Comparativa"},
+          {key:"historial",   label:"📜 Historial"},
+          {key:"adjuntos",    label:"📎 Adjuntos"},
         ]:[]),
       ].map(tab => (
         <button key={tab.key} className={`tn-modal-tab ${activeTab===tab.key?"tn-modal-tab--active":""}`}
@@ -996,7 +1283,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         )}
       </div>
 
-      {/* TAB RESULTADO — display:none para preservar estado */}
+      {/* TAB RESULTADO */}
       <div style={{display:activeTab==="resultado"?"":"none"}}>
         <div className="tn-form-section">
           <p className="tn-form-section__title">🏆 Resultado de la licitación</p>
@@ -1015,7 +1302,17 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         </div>
       </div>
 
-      {/* TAB HISTORIAL — display:none para preservar el input de nota */}
+      {/* TAB COMPARATIVA */}
+      {editData && (
+        <div style={{display:activeTab==="comparativa"?"":"none"}}>
+          <div className="tn-form-section">
+            <p className="tn-form-section__title">📊 Comparativa de precios — apertura de licitación</p>
+            <Comparativa tenderId={editData.id} tenderInfo={editData}/>
+          </div>
+        </div>
+      )}
+
+      {/* TAB HISTORIAL */}
       {editData && (
         <div style={{display:activeTab==="historial"?"":"none"}}>
           <div className="tn-form-section">
@@ -1025,15 +1322,6 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         </div>
       )}
 
-      {/* TAB COMPARATIVA */}
-      {editData && (
-        <div style={{display:activeTab==="comparativa"?"":"none"}}>
-          <div className="tn-form-section">
-            <p className="tn-form-section__title">📊 Comparativa de precios — apertura de licitación</p>
-            <Comparativa tenderId={editData.id}/>
-          </div>
-        </div>
-      )}
       {/* TAB ADJUNTOS */}
       {editData && (
         <div style={{display:activeTab==="adjuntos"?"":"none"}}>
@@ -1082,7 +1370,6 @@ export default function TendersPage({ profile, onNavigate }) {
     try {
       const saved = JSON.parse(localStorage.getItem("tn_dismissed_alerts") || "{}");
       const now = Date.now();
-      // Filtrar solo los que no expiraron (TTL: 24 horas)
       const valid = new Set(Object.entries(saved)
         .filter(([, exp]) => exp > now)
         .map(([key]) => key));
@@ -1185,11 +1472,9 @@ export default function TendersPage({ profile, onNavigate }) {
   const dismissAlert = (key) => {
     setDismissedAlerts(prev => {
       const next = new Set([...prev, key]);
-      // Guardar en localStorage con TTL de 24 horas
       try {
         const saved = JSON.parse(localStorage.getItem("tn_dismissed_alerts") || "{}");
-        saved[key] = Date.now() + 24 * 60 * 60 * 1000; // expira en 24hs
-        // Limpiar expirados
+        saved[key] = Date.now() + 24 * 60 * 60 * 1000;
         const now = Date.now();
         Object.keys(saved).forEach(k => { if (saved[k] <= now) delete saved[k]; });
         localStorage.setItem("tn_dismissed_alerts", JSON.stringify(saved));
@@ -1249,8 +1534,6 @@ export default function TendersPage({ profile, onNavigate }) {
     setActiveTab("datos");
     setShowForm(true);
   }
-
-
 
   async function saveTender() {
     if (!form.institution?.trim()) { alert("Ingresá el hospital o institución."); return; }
@@ -1316,6 +1599,7 @@ export default function TendersPage({ profile, onNavigate }) {
     if (files?.length) await supabase.storage.from(BUCKET).remove(files.map(f=>`tender_${id}/${f.name}`));
     await supabase.from("tender_competitors").delete().eq("tender_id", id);
     await supabase.from("tender_logs").delete().eq("tender_id", id);
+    await supabase.from("tender_comparativas").delete().eq("tender_id", id);
     await supabase.from("tenders").delete().eq("id", id);
     setTenders(prev => prev.filter(t => t.id !== id));
     if (editData?.id === id) setShowForm(false);
