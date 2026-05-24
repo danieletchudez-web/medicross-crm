@@ -1763,14 +1763,17 @@ export default function TendersPage({ profile, onNavigate }) {
             <h2>Pipeline de Licitaciones</h2>
             <p>{kpis.activas} en seguimiento · {filtered.length} visible{filtered.length!==1?"s":""}{hasFilters?" (filtrado)":""}</p>
           </div>
-          <div className="tn-header__actions">
-            {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
-            {selected.size > 0 && <span style={{fontSize:12,fontWeight:700,color:"#0f2444"}}>{selected.size} selec.</span>}
-            <button className="tn-btn tn-btn--ghost" onClick={exportToExcel}>⬇ {selected.size>0?`Exportar (${selected.size})`:"Exportar"}</button>
-            <button className="tn-btn tn-btn--ghost" onClick={loadTenders} title="Actualizar">↻</button>
-            <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
-          </div>
-        </div>
+<div className="tn-header__actions">
+  {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
+  {selected.size > 0 && <span style={{fontSize:12,fontWeight:700,color:"#0f2444"}}>{selected.size} selec.</span>}
+  <button className="tn-btn tn-btn--ghost" onClick={exportToExcel}>⬇ {selected.size>0?`Exportar (${selected.size})`:"Exportar"}</button>
+  <button className="tn-btn tn-btn--ghost" onClick={loadTenders} title="Actualizar">↻</button>
+  <button className="tn-btn tn-btn--ghost" onClick={() => onNavigate("preciosHistoricos")}
+    style={{borderColor:"#bfdbfe",color:"#1e40af",background:"#eff6ff"}}>
+    🔍 Inteligencia de precios
+  </button>
+  <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
+</div>
 
         <div className="tn-kpis">
           <div className="tn-kpi tn-kpi--blue">

@@ -15,6 +15,7 @@ import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
 import ImporterPage        from "./pages/ImporterPage";
 import TendersPage         from "./pages/TendersPage";
 import CotizadorPage       from "./pages/CotizadorPage";
+import PreciosHistoricosPage from "./pages/PreciosHistoricosPage";
 import LoginPage           from "./pages/LoginPage";
 import CRMAssistant        from "./components/CRMAssistant";
 
@@ -31,7 +32,7 @@ export default function App() {
   const [session,      setSession]      = useState(null);
   const [profile,      setProfile]      = useState(null);
   const [page,         setPage]         = useState(() => localStorage.getItem("crm_current_page") || "managerDashboard");
-  const [navigateData, setNavigateData] = useState(null); // datos opcionales al navegar
+  const [navigateData, setNavigateData] = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [crmData,      setCrmData]      = useState(null);
 
@@ -151,6 +152,7 @@ export default function App() {
       `}</style>
     </div>
   );
+
   if (!session) return <LoginPage />;
 
   if (profile?.approved === false) {
@@ -169,7 +171,6 @@ export default function App() {
 
   const safeProfile = profile || FALLBACK_PROFILE;
 
-  // navigate acepta un segundo argumento opcional con datos para la página destino
   function navigate(p, data) {
     setNavigateData(data || null);
     setPage(p);
@@ -180,22 +181,22 @@ export default function App() {
 
   let CurrentPage;
   switch (page) {
-    case "managerDashboard": CurrentPage = <ManagerDashboard   {...pageProps} />; break;
-    case "sellerDashboard":  CurrentPage = <SellerDashboard    {...pageProps} />; break;
-    case "accounts":         CurrentPage = <AccountsPage       {...pageProps} />; break;
-    case "products":         CurrentPage = <ProductsPage       {...pageProps} />; break;
-    case "opportunities":    CurrentPage = <OpportunitiesPage  {...pageProps} />; break;
-    case "campaigns":        CurrentPage = <CampaignsPage      {...pageProps} />; break;
-    case "todayActions":     CurrentPage = <TodayActionsPage   {...pageProps} />; break;
-    case "visits":           CurrentPage = <VisitsPage         {...pageProps} />; break;
-    case "calendar":         CurrentPage = <CalendarPage       {...pageProps} />; break;
-    case "adminUsers":       CurrentPage = <AdminUsersPage     {...pageProps} />; break;
-    case "salesAnalytics":   CurrentPage = <SalesAnalyticsPage {...pageProps} />; break;
-    case "importer":         CurrentPage = <ImporterPage       {...pageProps} />; break;
-    case "tenders":          CurrentPage = <TendersPage        {...pageProps} />; break;
-    // El cotizador recibe initialData con los datos pre-cargados desde licitaciones
-    case "cotizador":        CurrentPage = <CotizadorPage      {...pageProps} initialData={navigateData} />; break;
-    default:                 CurrentPage = <ManagerDashboard   {...pageProps} />;
+    case "managerDashboard":   CurrentPage = <ManagerDashboard      {...pageProps} />; break;
+    case "sellerDashboard":    CurrentPage = <SellerDashboard       {...pageProps} />; break;
+    case "accounts":           CurrentPage = <AccountsPage          {...pageProps} />; break;
+    case "products":           CurrentPage = <ProductsPage          {...pageProps} />; break;
+    case "opportunities":      CurrentPage = <OpportunitiesPage     {...pageProps} />; break;
+    case "campaigns":          CurrentPage = <CampaignsPage         {...pageProps} />; break;
+    case "todayActions":       CurrentPage = <TodayActionsPage      {...pageProps} />; break;
+    case "visits":             CurrentPage = <VisitsPage            {...pageProps} />; break;
+    case "calendar":           CurrentPage = <CalendarPage          {...pageProps} />; break;
+    case "adminUsers":         CurrentPage = <AdminUsersPage        {...pageProps} />; break;
+    case "salesAnalytics":     CurrentPage = <SalesAnalyticsPage    {...pageProps} />; break;
+    case "importer":           CurrentPage = <ImporterPage          {...pageProps} />; break;
+    case "tenders":            CurrentPage = <TendersPage           {...pageProps} />; break;
+    case "preciosHistoricos":  CurrentPage = <PreciosHistoricosPage {...pageProps} />; break;
+    case "cotizador":          CurrentPage = <CotizadorPage         {...pageProps} initialData={navigateData} />; break;
+    default:                   CurrentPage = <ManagerDashboard      {...pageProps} />;
   }
 
   return (
