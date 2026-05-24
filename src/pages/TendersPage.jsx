@@ -472,6 +472,347 @@ function ResultadoBox({ form, setForm }) {
     </div>
   );
 }
+/* ─── COMPARATIVA ────────────────────────────────────────────────────── */
+function Comparativa({ tenderId }) {
+  const [rows, setRows]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [draft, setDraft]         = useState(null);
+  const fileRef = useRef(null);
+
+  const NUESTRA_EMPRESA = "MEDI-CROSS";
+
+  useEffect(() => { if (tenderId) load(); }, [tenderId]);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase
+      .from("tender_comparativas").select("*").eq("tender_id", tenderId)
+      .order("renglon").order("empresa");
+    setRows(data || []);
+    setLoading(false);
+  }
+
+  async function handleImportExcel(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const XLSX = await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm");
+      const buf  = await file.arrayBuffer();
+      const wb   = XLSX.read(buf, { type: "array" });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const raw  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+
+      let headerRowIdx = -1;
+      for (let i = 0; i < raw.length; i++) {
+        const rowStr = raw[i].join("|").toLowerCase();
+        if (rowStr.includes("renglón") && rowStr.includes("opción")) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+      if (headerRowIdx === -1) {
+        alert("No se pudo detectar el formato. Verificá que sea el cuadro comparativo oficial del GCABA.");
+        setImporting(false);
+        return;
+      }
+
+      const empresaRowData = raw[headerRowIdx - 1];
+      const headerRow      = raw[headerRowIdx];
+
+      // Detectar empresas dinámicamente
+      const empresas = [];
+      let currentEmpresa = "";
+      for (let c = 0; c < headerRow.length; c++) {
+        if (empresaRowData[c] && String(empresaRowData[c]).trim()) {
+          currentEmpresa = String(empresaRowData[c]).trim();
+        }
+        if (String(headerRow[c] || "").toLowerCase().includes("precio unitario")) {
+          empresas.push({ nombre: currentEmpresa, colPrecio: c });
+        }
+      }
+
+      const colRenglon = headerRow.findIndex(h => String(h).toLowerCase().trim() === "renglón");
+      const colDesc    = headerRow.findIndex(h => String(h).toLowerCase().includes("descripci"));
+      const colCant    = headerRow.findIndex(h => String(h).toLowerCase().includes("cantidad solicitada"));
+
+      if (!empresas.length) {
+        alert("No se detectaron empresas en el Excel.");
+        setImporting(false);
+        return;
+      }
+
+      const toInsert = [];
+      for (let i = headerRowIdx + 1; i < raw.length; i++) {
+        const row     = raw[i];
+        const renglon = parseInt(row[colRenglon]);
+        if (!renglon || isNaN(renglon)) continue;
+
+        const descripcion = String(row[colDesc] || "").slice(0, 300).trim();
+        const cantidad    = parseInt(row[colCant]) || 1;
+
+        for (const emp of empresas) {
+          const precioRaw = parseFloat(String(row[emp.colPrecio] || "").replace(/[^0-9.,]/g, "").replace(",", "."));
+          if (!precioRaw || isNaN(precioRaw)) continue;
+
+          const colTotalArs = emp.colPrecio + 4;
+          const totalRaw    = parseFloat(String(row[colTotalArs] || "").replace(/[^0-9.,]/g, "").replace(",", "."));
+
+          toInsert.push({
+            tender_id:         tenderId,
+            renglon,
+            descripcion,
+            empresa:           emp.nombre,
+            es_nuestra_oferta: emp.nombre.toUpperCase().includes(NUESTRA_EMPRESA),
+            moneda:            "ARS",
+            precio_unitario:   precioRaw,
+            cantidad,
+            total_ars:         (totalRaw && !isNaN(totalRaw)) ? totalRaw : precioRaw * cantidad,
+            adjudicado:        false,
+          });
+        }
+      }
+
+      if (!toInsert.length) {
+        alert("No se encontraron datos de precios en el archivo.");
+        setImporting(false);
+        return;
+      }
+
+      await supabase.from("tender_comparativas").delete().eq("tender_id", tenderId);
+      await supabase.from("tender_comparativas").insert(toInsert);
+      await load();
+      alert(`✅ Importados ${toInsert.length} registros de ${empresas.length} empresas.`);
+    } catch (err) {
+      console.error(err);
+      alert("Error al procesar el archivo: " + err.message);
+    }
+    setImporting(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    if (!draft.empresa?.trim()) { alert("Ingresá el nombre de la empresa."); return; }
+    const precio = parseFloat(draft.precio_unitario) || 0;
+    const cant   = parseInt(draft.cantidad) || 1;
+    const payload = {
+      tender_id:         tenderId,
+      renglon:           parseInt(draft.renglon) || 1,
+      descripcion:       draft.descripcion || "",
+      empresa:           draft.empresa,
+      es_nuestra_oferta: draft.empresa.toUpperCase().includes(NUESTRA_EMPRESA),
+      moneda:            "ARS",
+      precio_unitario:   precio,
+      cantidad:          cant,
+      total_ars:         precio * cant,
+      adjudicado:        draft.adjudicado || false,
+    };
+    if (draft.id) {
+      await supabase.from("tender_comparativas").update(payload).eq("id", draft.id);
+    } else {
+      await supabase.from("tender_comparativas").insert([payload]);
+    }
+    setDraft(null);
+    await load();
+  }
+
+  async function toggleAdjudicado(row) {
+    await supabase.from("tender_comparativas").update({ adjudicado: !row.adjudicado }).eq("id", row.id);
+    setRows(prev => prev.map(r => r.id === row.id ? { ...r, adjudicado: !r.adjudicado } : r));
+  }
+
+  async function removeRow(id) {
+    if (!confirm("¿Eliminar esta fila?")) return;
+    await supabase.from("tender_comparativas").delete().eq("id", id);
+    setRows(prev => prev.filter(r => r.id !== id));
+  }
+
+  const renglones = useMemo(() => [...new Set(rows.map(r => r.renglon))].sort((a,b) => a-b), [rows]);
+  const empresas  = useMemo(() => [...new Set(rows.map(r => r.empresa))].sort(), [rows]);
+  const matriz    = useMemo(() => {
+    const m = {};
+    rows.forEach(r => {
+      if (!m[r.renglon]) m[r.renglon] = {};
+      m[r.renglon][r.empresa] = r;
+    });
+    return m;
+  }, [rows]);
+
+  function precioMin(renglon) {
+    const precios = Object.values(matriz[renglon] || {}).map(r => r.precio_unitario).filter(Boolean);
+    return precios.length ? Math.min(...precios) : null;
+  }
+
+  if (loading) return <div style={{fontSize:12,color:"#94a3b8",padding:"16px 0"}}>Cargando comparativa…</div>;
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+      {/* Toolbar */}
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <button className="tn-btn tn-btn--primary tn-btn--sm"
+          onClick={() => fileRef.current?.click()} disabled={importing}>
+          {importing ? "⏳ Importando…" : "📊 Importar Excel de apertura"}
+        </button>
+        <input ref={fileRef} type="file" accept=".xlsx,.xls"
+          style={{display:"none"}} onChange={handleImportExcel}/>
+        <button className="tn-btn tn-btn--ghost tn-btn--sm"
+          onClick={() => setDraft({ renglon:"", descripcion:"", empresa:"", precio_unitario:"", cantidad:1, adjudicado:false })}>
+          + Carga manual
+        </button>
+        {rows.length > 0 &&
+          <span style={{fontSize:11,color:"#94a3b8",marginLeft:"auto"}}>
+            {renglones.length} renglones · {empresas.length} empresas
+          </span>
+        }
+      </div>
+
+      {/* Formulario carga manual */}
+      {draft && !draft.id && (
+        <div style={{background:"#eff6ff",border:"1px solid #93c5fd",borderRadius:8,padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#1e40af",marginBottom:2}}>Nueva fila manual</div>
+          <div style={{display:"grid",gridTemplateColumns:"80px 1fr 1fr 120px 80px",gap:8}}>
+            {[
+              {label:"Renglón", key:"renglon", type:"number", placeholder:"1"},
+              {label:"Descripción", key:"descripcion", type:"text", placeholder:"Producto…"},
+              {label:"Empresa", key:"empresa", type:"text", placeholder:"Nombre proveedor…"},
+              {label:"Precio unit.", key:"precio_unitario", type:"number", placeholder:"0"},
+              {label:"Cant.", key:"cantidad", type:"number", placeholder:"1"},
+            ].map(f => (
+              <div key={f.key} style={{display:"flex",flexDirection:"column",gap:3}}>
+                <label style={{fontSize:10.5,color:"#64748b",fontWeight:500}}>{f.label}</label>
+                <input type={f.type} placeholder={f.placeholder} value={draft[f.key]}
+                  onChange={e=>setDraft(d=>({...d,[f.key]:e.target.value}))}
+                  style={{padding:"6px 8px",border:"1px solid #e2e8f0",borderRadius:6,fontSize:12,fontFamily:"inherit",width:"100%",boxSizing:"border-box"}}/>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+            <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>setDraft(null)}>Cancelar</button>
+            <button className="tn-btn tn-btn--primary tn-btn--sm" onClick={saveDraft}>✓ Guardar fila</button>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla pivot */}
+      {rows.length === 0 ? (
+        <div style={{textAlign:"center",padding:"32px",color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0"}}>
+          <div style={{fontSize:28,marginBottom:8}}>📊</div>
+          <div style={{fontWeight:500}}>Sin comparativa cargada</div>
+          <div style={{fontSize:12,marginTop:4}}>Importá el Excel oficial de apertura o cargá manualmente</div>
+        </div>
+      ) : (
+        <div style={{overflowX:"auto",borderRadius:10,border:"1px solid #e2e8f0"}}>
+          <table style={{borderCollapse:"collapse",width:"100%",fontSize:11.5,fontFamily:"DM Sans,sans-serif"}}>
+            <thead>
+              <tr style={{background:"#0f2444"}}>
+                <th style={{padding:"9px 12px",textAlign:"left",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",minWidth:40}}>Reng.</th>
+                <th style={{padding:"9px 12px",textAlign:"left",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",minWidth:200}}>Descripción</th>
+                {empresas.map(emp => (
+                  <th key={emp} style={{
+                    padding:"9px 12px",textAlign:"right",fontSize:10,fontWeight:700,
+                    textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap",minWidth:130,
+                    color: emp.toUpperCase().includes(NUESTRA_EMPRESA) ? "#86efac" : "rgba(255,255,255,.75)",
+                    borderLeft:"1px solid rgba(255,255,255,.08)",
+                  }}>
+                    {emp.toUpperCase().includes(NUESTRA_EMPRESA) ? "★ " : ""}{emp}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {renglones.map((reng, idx) => {
+                const descRow   = Object.values(matriz[reng]||{})[0];
+                const minPrecio = precioMin(reng);
+                return (
+                  <tr key={reng} style={{background: idx%2===0 ? "#fff" : "#fafbfc"}}>
+                    <td style={{padding:"10px 12px",fontWeight:700,color:"#0f2444",fontFamily:"DM Mono,monospace"}}>{reng}</td>
+                    <td style={{padding:"10px 12px",color:"#334155",maxWidth:240,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}
+                      title={descRow?.descripcion||""}>
+                      {descRow?.descripcion ? descRow.descripcion.slice(0,80) + (descRow.descripcion.length>80?"…":"") : "—"}
+                    </td>
+                    {empresas.map(emp => {
+                      const cell     = matriz[reng]?.[emp];
+                      const esNuestra = emp.toUpperCase().includes(NUESTRA_EMPRESA);
+                      const esMinimo  = cell && minPrecio && cell.precio_unitario === minPrecio;
+                      const diff      = (cell && minPrecio && !esMinimo)
+                        ? ((cell.precio_unitario - minPrecio) / minPrecio * 100).toFixed(1) : null;
+                      return (
+                        <td key={emp} style={{
+                          padding:"10px 12px",textAlign:"right",
+                          borderLeft:"1px solid #f0f4f8",
+                          background: esNuestra ? "#f0f7ff" : cell?.adjudicado ? "#f0fdf4" : undefined,
+                        }}>
+                          {cell ? (
+                            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
+                              <div style={{fontFamily:"DM Mono,monospace",fontWeight:700,fontSize:12,color:esMinimo?"#166534":"#334155"}}>
+                                {esMinimo && <span style={{marginRight:4,fontSize:10}}>🏆</span>}
+                                {"$" + Math.round(cell.precio_unitario).toLocaleString("es-AR")}
+                              </div>
+                              {diff && <div style={{fontSize:9.5,color:"#f97316",fontWeight:600}}>+{diff}%</div>}
+                              {cell.adjudicado && <span style={{fontSize:9,background:"#d4edda",color:"#1a5c2f",borderRadius:4,padding:"1px 5px",fontWeight:700}}>ADJ</span>}
+                              <div style={{display:"flex",gap:3,marginTop:2}}>
+                                <button onClick={()=>toggleAdjudicado(cell)} title={cell.adjudicado?"Quitar adjudicación":"Marcar adjudicado"}
+                                  style={{background:"none",border:"none",cursor:"pointer",fontSize:11,opacity:.5,padding:"1px 3px"}}>🏅</button>
+                                <button onClick={()=>removeRow(cell.id)}
+                                  style={{background:"none",border:"none",cursor:"pointer",fontSize:11,opacity:.4,padding:"1px 3px",color:"#ef4444"}}>✕</button>
+                              </div>
+                            </div>
+                          ) : <span style={{color:"#e2e8f0"}}>—</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Resumen posición */}
+      {rows.length > 0 && (
+        <div style={{background:"#f8fafc",borderRadius:10,border:"1px solid #e8ecf2",padding:"12px 14px"}}>
+          <div style={{fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".6px",color:"#94a3b8",marginBottom:8}}>
+            Nuestra posición por renglón
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {renglones.map(reng => {
+              const nuestra  = rows.find(r => r.renglon === reng && r.es_nuestra_oferta);
+              const minPrecio = precioMin(reng);
+              const ganamos  = nuestra && nuestra.precio_unitario === minPrecio;
+              const diff     = (nuestra && minPrecio && !ganamos)
+                ? ((nuestra.precio_unitario - minPrecio) / minPrecio * 100).toFixed(1) : null;
+              const ganador  = rows.find(r => r.renglon === reng && r.adjudicado);
+              return (
+                <div key={reng} style={{display:"flex",alignItems:"center",gap:10,fontSize:11.5}}>
+                  <span style={{fontFamily:"DM Mono,monospace",fontWeight:700,color:"#0f2444",minWidth:28}}>R{reng}</span>
+                  {nuestra ? (
+                    <>
+                      <span style={{color:ganamos?"#166534":"#334155",fontWeight:600,fontFamily:"DM Mono,monospace"}}>
+                        {"$" + Math.round(nuestra.precio_unitario).toLocaleString("es-AR")}
+                      </span>
+                      {ganamos
+                        ? <span style={{background:"#d4edda",color:"#1a5c2f",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>✓ Precio mínimo</span>
+                        : <span style={{background:"#fde8e8",color:"#7f1d1d",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>+{diff}% sobre mínimo</span>
+                      }
+                      {ganador && !nuestra.adjudicado &&
+                        <span style={{fontSize:10,color:"#64748b"}}>Ganó: {ganador.empresa}</span>}
+                    </>
+                  ) : (
+                    <span style={{color:"#94a3b8",fontSize:11}}>Sin oferta nuestra registrada</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ─── MODAL LICITACIÓN ─────────────────────────────────────────────── */
 function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTab,
@@ -518,8 +859,9 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         {key:"resultado",   label:"🏆 Resultado"},
         {key:"competidores",label:"🔍 Competidores"},
         ...(editData?[
-          {key:"historial", label:"📜 Historial"},
-          {key:"adjuntos",  label:"📎 Adjuntos"},
+        {key:"comparativa", label:"📊 Comparativa"},
+        {key:"historial",   label:"📜 Historial"},
+        {key:"adjuntos",    label:"📎 Adjuntos"},
         ]:[]),
       ].map(tab => (
         <button key={tab.key} className={`tn-modal-tab ${activeTab===tab.key?"tn-modal-tab--active":""}`}
@@ -683,6 +1025,15 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         </div>
       )}
 
+      {/* TAB COMPARATIVA */}
+      {editData && (
+        <div style={{display:activeTab==="comparativa"?"":"none"}}>
+          <div className="tn-form-section">
+            <p className="tn-form-section__title">📊 Comparativa de precios — apertura de licitación</p>
+            <Comparativa tenderId={editData.id}/>
+          </div>
+        </div>
+      )}
       {/* TAB ADJUNTOS */}
       {editData && (
         <div style={{display:activeTab==="adjuntos"?"":"none"}}>
