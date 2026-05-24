@@ -4,22 +4,22 @@ import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
 import "./CotizadorPage.css";
 
-/* ─── Helpers numéricos ──────────────────────────────────────────────────── */
-const fARS  = (n) => "$ " + Number(n||0).toLocaleString("es-AR", { minimumFractionDigits:2, maximumFractionDigits:2 });
-const fUSD  = (n) => "U$D " + Number(n||0).toLocaleString("es-AR", { minimumFractionDigits:2, maximumFractionDigits:2 });
-const fPct  = (n) => Number(n||0).toFixed(1) + "%";
+/* ─── Helpers numéricos ─────────────────────────────────────────────── */
+const fARS   = (n) => "$ "   + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fUSD   = (n) => "U$D " + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fPct   = (n) => Number(n||0).toFixed(1) + "%";
 const parseN = (s) => parseFloat(String(s||"").replace(",",".")) || 0;
 
-/* ─── Cálculo de un renglón ─────────────────────────────────────────────── */
+/* ─── Cálculo de un renglón ─────────────────────────────────────────── */
 function calcR(r, tcGlobal) {
-  const tc    = parseN(r.tcInd) > 0 ? parseN(r.tcInd) : tcGlobal;
-  const iva   = parseN(r.iva) / 100;
-  const mult  = parseN(r.markup) || 1;
+  const tc   = parseN(r.tcInd) > 0 ? parseN(r.tcInd) : tcGlobal;
+  const iva  = parseN(r.iva) / 100;
+  const mult = parseN(r.markup) || 1;
   const costo = parseN(r.costo);
   if (costo <= 0 || tc <= 0) return null;
-  const cARS   = r.moneda === "ARS" ? costo : costo * tc;
-  const cIvaARS= cARS * (1 + iva);
-  const cIvaUSD= cIvaARS / tc;
+  const cARS    = r.moneda === "ARS" ? costo : costo * tc;
+  const cIvaARS = cARS * (1 + iva);
+  const cIvaUSD = cIvaARS / tc;
   let pvARSs, pvARSc;
   const pvMan = parseN(r.pvManual);
   if (r.modoManual === "manual" && pvMan > 0) {
@@ -27,8 +27,8 @@ function calcR(r, tcGlobal) {
   } else {
     pvARSs = cARS * mult; pvARSc = pvARSs * (1 + iva);
   }
-  const cant  = parseInt(r.cant) || 1;
-  const sub   = pvARSc * cant;
+  const cant = parseInt(r.cant) || 1;
+  const sub  = pvARSc * cant;
   const mkPct = cARS > 0 ? (pvARSs - cARS) / cARS * 100 : 0;
   const gm    = pvARSs > 0 ? (pvARSs - cARS) / pvARSs * 100 : 0;
   return {
@@ -39,12 +39,12 @@ function calcR(r, tcGlobal) {
   };
 }
 
-/* ─── Renglón vacío ──────────────────────────────────────────────────────── */
+/* ─── Renglón vacío ─────────────────────────────────────────────────── */
 const emptyR = () => ({
-  id:         Date.now() + Math.random(),
+  id: Date.now() + Math.random(),
   empresa:"", renglon:"", subitem:"", codigo:"", marca:"", descr:"",
-  costo:"",   cant:1,    moneda:"USD", iva:"10.5", markup:"2",
-  tcInd:"",   modoManual:"auto",       pvManual:"",
+  costo:"", cant:1, moneda:"USD", iva:"10.5", markup:"2",
+  tcInd:"", modoManual:"auto", pvManual:"",
 });
 
 const VENDEDORES = ["Monica Somosa","Daniel Etchudez","Soledad Cantero","Otros"];
@@ -55,15 +55,12 @@ const ESTADO_LABELS = {
   facturada:"Facturada", cobrada:"Cobrada",
 };
 
-/* ══════════════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
-   initialData: datos opcionales pre-cargados desde el módulo de Licitaciones
-   { institucion, nroLicit, fechaApert, vendedor }
-══════════════════════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════ */
 export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
-  /* ── Parámetros globales
-     Si initialData viene de Licitaciones, se usan como valores iniciales ── */
+  /* ── Parámetros globales ── */
   const [vendedor,    setVendedor]    = useState(initialData?.vendedor    || "");
   const [tc,          setTc]          = useState("1425");
   const [fechaApert,  setFechaApert]  = useState(initialData?.fechaApert  || "");
@@ -97,19 +94,15 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
   /* ── Init ── */
   useEffect(() => {
-    // Si no viene vendedor de initialData, intentar inferirlo del perfil
     if (!initialData?.vendedor) {
       const vMatch = VENDEDORES.find(v =>
         profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase())
       );
       if (vMatch) setVendedor(vMatch);
     }
-
-    // Mostrar banner si viene desde licitaciones
     if (initialData?.institucion || initialData?.nroLicit) {
       showToast(`Cotización pre-cargada desde Licitaciones: ${initialData.institucion || initialData.nroLicit}`);
     }
-
     try {
       import("../assets/logo.jpg").then(m => {
         fetch(m.default).then(r=>r.blob()).then(b=>{
@@ -164,28 +157,24 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   /* ── Snapshot para Supabase ── */
   function buildSnap(quoteNumber, quoteNumFormatted) {
     const snap = {
-      vendedor,
-      tc:           parseN(tc),
-      fecha_apert:  fechaApert || null,
-      nro_licit:    nroLicit   || null,
-      institucion:  institucion|| null,
-      plazo_venta:  plazoVenta || null,
-      mant_oferta:  mantOferta || null,
-      forma_cobro:  formaCobro || null,
-      renglones:    renglones.map(r => ({
+      vendedor, tc: parseN(tc),
+      fecha_apert: fechaApert || null, nro_licit: nroLicit || null,
+      institucion: institucion || null, plazo_venta: plazoVenta || null,
+      mant_oferta: mantOferta || null, forma_cobro: formaCobro || null,
+      renglones: renglones.map(r => ({
         empresa:r.empresa, renglon:r.renglon, subitem:r.subitem,
-        codigo:r.codigo,   marca:r.marca,     descr:r.descr,
-        costo:r.costo,     cant:r.cant,       moneda:r.moneda,
+        codigo:r.codigo, marca:r.marca, descr:r.descr,
+        costo:r.costo, cant:r.cant, moneda:r.moneda,
         iva:String(r.iva), markup:String(r.markup),
         tcInd:r.tcInd||"", modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
       })),
       total_general: totalGeneral,
-      updated_at:    new Date().toISOString(),
-      updated_by:    profile?.email || "desconocido",
-      owner_id:      profile?.id    || null,
+      updated_at: new Date().toISOString(),
+      updated_by: profile?.email || "desconocido",
+      owner_id: profile?.id || null,
     };
-    if (quoteNumber)       snap.quote_number        = quoteNumber;
-    if (quoteNumFormatted) snap.quote_num_formatted  = quoteNumFormatted;
+    if (quoteNumber)       snap.quote_number       = quoteNumber;
+    if (quoteNumFormatted) snap.quote_num_formatted = quoteNumFormatted;
     return snap;
   }
 
@@ -194,25 +183,22 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     setSaving(true);
     try {
       if (docId) {
-        const { error } = await supabase.from("cotizaciones")
-          .update(buildSnap())
-          .eq("id", docId);
+        const { error } = await supabase.from("cotizaciones").update(buildSnap()).eq("id", docId);
         if (error) throw error;
         showToast(`Cotización #${quoteNum} actualizada ✓`);
       } else {
         const { data: numData, error: numError } = await supabase.rpc("next_quote_number");
         if (numError) throw numError;
-        const qNum      = numData;
-        const qFormatted= String(qNum).padStart(6,"0");
+        const qNum       = numData;
+        const qFormatted = String(qNum).padStart(6,"0");
         const snap = {
           ...buildSnap(qNum, qFormatted),
           created_at: new Date().toISOString(),
           created_by: profile?.email || "desconocido",
-          estado:     "borrador",
-          deleted:    false,
+          estado: "borrador",
+          deleted: false,
         };
-        const { data: newRow, error } = await supabase
-          .from("cotizaciones").insert([snap]).select().single();
+        const { data: newRow, error } = await supabase.from("cotizaciones").insert([snap]).select().single();
         if (error) throw error;
         setDocId(newRow.id);
         setQuoteNum(qFormatted);
@@ -229,11 +215,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     setLoadingHist(true);
     setShowHistorial(true);
     const { data, error } = await supabase
-      .from("cotizaciones")
-      .select("*")
-      .eq("deleted", false)
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .from("cotizaciones").select("*").eq("deleted", false)
+      .order("created_at", { ascending: false }).limit(100);
     if (!error) setHistItems(data || []);
     else showToast("Error cargando historial: " + error.message, "err");
     setLoadingHist(false);
@@ -252,9 +235,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   async function softDelete(id, num) {
     if (!confirm(`¿Borrar cotización #${num}?`)) return;
     const { error } = await supabase.from("cotizaciones").update({
-      deleted:          true,
-      deleted_at:       new Date().toISOString(),
-      deleted_by_name:  profile?.full_name || profile?.email || "desconocido",
+      deleted: true,
+      deleted_at: new Date().toISOString(),
+      deleted_by_name: profile?.full_name || profile?.email || "desconocido",
     }).eq("id", id);
     if (!error) {
       setHistItems(prev => prev.filter(c => c.id !== id));
@@ -268,8 +251,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const { data, error } = await supabase
       .from("cotizaciones")
       .select("id,quote_num_formatted,vendedor,institucion,total_general,deleted_at,deleted_by_name")
-      .eq("deleted", true)
-      .order("deleted_at", { ascending: false });
+      .eq("deleted", true).order("deleted_at", { ascending: false });
     if (!error) setPapItems(data || []);
     else showToast("Error: " + error.message, "err");
   }
@@ -286,7 +268,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     } else showToast("Error: " + error.message, "err");
   }
 
-  /* ── Cargar cotización para editar ── */
+  /* ── Cargar cotización ── */
   async function loadCotizacion(id) {
     const { data, error } = await supabase.from("cotizaciones").select("*").eq("id", id).single();
     if (error || !data) { showToast("No encontrada", "err"); return; }
@@ -300,10 +282,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     setRenglones(raws.length > 0 ? raws.map(r => ({
       id: Date.now() + Math.random(),
       empresa:r.empresa||"", renglon:r.renglon||"", subitem:r.subitem||"",
-      codigo:r.codigo||"",   marca:r.marca||"",     descr:r.descr||"",
-      costo:r.costo||"",     cant:r.cant||1,        moneda:r.moneda||"USD",
+      codigo:r.codigo||"", marca:r.marca||"", descr:r.descr||"",
+      costo:r.costo||"", cant:r.cant||1, moneda:r.moneda||"USD",
       iva:String(r.iva||"10.5"), markup:String(r.markup||"2"),
-      tcInd:r.tcInd||"",     modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
+      tcInd:r.tcInd||"", modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
     })) : [emptyR()]);
     setShowHistorial(false);
     showToast(`Cotización #${data.quote_num_formatted||"?"} cargada`);
@@ -318,7 +300,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       ].join(" ").toLowerCase().includes(histSearch.toLowerCase()))
     : histItems;
 
-  /* ── Export PDF ── */
+  /* ── Export PDF (con logo en margen superior izquierdo) ── */
   async function exportPDF() {
     const hasData = renglones.some(r => parseN(r.costo) > 0);
     if (!hasData) { showToast("Ingresá el costo en al menos un renglón","err"); return; }
@@ -330,130 +312,177 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       .replace(/[^\x20-\x7E]/g,"").substring(0,110);
 
     const W=595.28, H=841.89;
-    const HDR = (nroLicit||institucion||fechaApert) ? 128 : 90;
+    // Header más alto para acomodar logo cómodamente
+    const HDR = (nroLicit||institucion||fechaApert) ? 136 : 100;
     let ps=[], pageY=H, pages=[];
 
     const txt  = (x,y,t,sz,b) => ps.push(`BT /${b?"F2":"F1"} ${sz} Tf ${x} ${y} Td (${esc(t)}) Tj ET`);
     const fill = (x,y,w,h,r,g,b) => ps.push(`${r} ${g} ${b} rg ${x} ${y} ${w} ${h} re f 0 0 0 rg`);
     const strk = (x,y,w,h,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x} ${y} ${w} ${h} re S 0 0 0 RG`);
     const hln  = (x1,y1,x2,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x1} ${y1} m ${x2} ${y1} l S 0 0 0 RG`);
+    const vln  = (x,y1,y2,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x} ${y1} m ${x} ${y2} l S 0 0 0 RG`);
 
     function drawHeader() {
-      fill(0,H-HDR,W,HDR,1,1,1);
-      hln(0,H-HDR-1,W,.055,.373,.659,2);
+      // Fondo blanco header
+      fill(0, H-HDR, W, HDR, 1, 1, 1);
+      // Línea azul inferior del header
+      hln(0, H-HDR-1, W, .055, .373, .659, 2);
+
+      // ── LOGO en margen superior izquierdo ──────────────────────────
       if (logoB64Ref.current) {
-        const LLW=175, LLH=Math.round(175*(logoHRef.current/logoWRef.current));
-        ps.push(`q ${LLW} 0 0 ${LLH} 18 ${H-HDR+(HDR-LLH)/2} cm /Img1 Do Q`);
+        const LLW = 160;
+        const LLH = Math.round(LLW * (logoHRef.current / logoWRef.current));
+        const logoY = H - HDR + (HDR - LLH) / 2;
+        ps.push(`q ${LLW} 0 0 ${LLH} 16 ${logoY} cm /Img1 Do Q`);
       }
-      ps.push(".055 .373 .659 rg"); txt(210,H-22,"ANALISIS DE PRECIOS",15,true);
-      ps.push(".28 .28 .28 rg");    txt(210,H-37,"Drogueria Medi-Cross S.R.L.",9,false);
+
+      // ── Separador vertical entre logo y texto ──────────────────────
+      vln(190, H-12, H-HDR+8, .82, .82, .82, .5);
+
+      // ── Texto central: título + datos cotización ───────────────────
+      const cx = 200;
+      ps.push(".055 .373 .659 rg");
+      txt(cx, H-22, "ANALISIS DE PRECIOS", 15, true);
+      ps.push(".30 .30 .30 rg");
+      txt(cx, H-36, "Drogueria Medi-Cross S.R.L.", 9, false);
       const numLabel = quoteNum ? "Cotizacion #"+quoteNum : "Sin guardar";
-      ps.push(".22 .22 .22 rg");    txt(210,H-50,numLabel+" | "+fecha,7.8,true);
-      ps.push(".45 .45 .45 rg");    txt(210,H-62,"TC: $"+tcN.toLocaleString("es-AR")+" ARS/USD",7.5,false);
+      ps.push(".20 .20 .20 rg");
+      txt(cx, H-48, numLabel+" | "+fecha, 7.8, true);
+      ps.push(".45 .45 .45 rg");
+      txt(cx, H-60, "TC: $"+tcN.toLocaleString("es-AR")+" ARS/USD", 7.5, false);
+
+      // Badge vendedor
       if (vendedor) {
-        fill(210,H-79,175,13,.91,.95,.99); strk(210,H-79,175,13,.055,.373,.659,.4);
-        ps.push(".055 .373 .659 rg"); txt(215,H-75,"Vendedor: "+vendedor,7.5,true);
+        fill(cx, H-79, 175, 13, .91, .95, .99);
+        strk(cx, H-79, 175, 13, .055, .373, .659, .4);
+        ps.push(".055 .373 .659 rg");
+        txt(cx+5, H-75, "Vendedor: "+vendedor, 7.5, true);
       }
-      if (nroLicit||institucion||fechaApert) {
-        ps.push(".85 .85 .85 RG .4 w 400 "+(H-HDR+8)+" m 400 "+(H-12)+" l S 0 0 0 RG");
-        ps.push(".055 .373 .659 rg"); txt(408,H-20,"LICITACION",6.5,true);
-        hln(408,H-23,W-12,.055,.373,.659,.25);
-        let ly=H-34;
-        [[nroLicit,"N.Licit."],[fechaApert,"Apertura"],[institucion,"Institucion"],
-         [plazoVenta,"Plazo"],[mantOferta,"Mant.Oferta"],[formaCobro,"Cobro"]
+
+      // ── Bloque licitación (derecha) ────────────────────────────────
+      if (nroLicit || institucion || fechaApert) {
+        vln(398, H-10, H-HDR+8, .82, .82, .82, .4);
+        ps.push(".055 .373 .659 rg");
+        txt(406, H-20, "LICITACION", 6.5, true);
+        hln(406, H-23, W-12, .055, .373, .659, .25);
+        let ly = H-34;
+        [
+          [nroLicit,"N.Licit."], [fechaApert,"Apertura"],
+          [institucion,"Institucion"], [plazoVenta,"Plazo"],
+          [mantOferta,"Mant.Oferta"], [formaCobro,"Cobro"],
         ].forEach(([val,lbl]) => {
           if (!val) return;
-          ps.push(".55 .55 .55 rg"); txt(408,ly,lbl+":",6.5,false);
-          ps.push(".10 .10 .10 rg"); txt(460,ly,String(val).substring(0,20),6.5,true);
-          ly-=10;
+          ps.push(".55 .55 .55 rg"); txt(406, ly, lbl+":", 6.5, false);
+          ps.push(".10 .10 .10 rg"); txt(456, ly, String(val).substring(0,20), 6.5, true);
+          ly -= 10;
         });
       }
+
       ps.push("0 0 0 rg");
-      pageY = H-HDR-16;
+      pageY = H - HDR - 16;
     }
 
     drawHeader();
 
+    // ── Tabla resumen ──────────────────────────────────────────────────
     const LX=20, CW=W-40;
-    const colDefs=[{l:"#",w:14},{l:"Empresa",w:52},{l:"Renglon",w:26},{l:"Descripcion",w:108},
-                   {l:"Marca",w:48},{l:"Costo ARS",w:58},{l:"PV USD s/IVA",w:60},
-                   {l:"PV ARS s/IVA",w:60},{l:"PV ARS c/IVA",w:60},{l:"Cant",w:16},{l:"Subtotal",w:70}];
+    const colDefs=[
+      {l:"#",w:14},{l:"Empresa",w:52},{l:"Renglon",w:26},{l:"Descripcion",w:108},
+      {l:"Marca",w:48},{l:"Costo ARS",w:58},{l:"PV USD s/IVA",w:60},
+      {l:"PV ARS s/IVA",w:60},{l:"PV ARS c/IVA",w:60},{l:"Cant",w:16},{l:"Subtotal",w:70},
+    ];
     const totW=colDefs.reduce((s,c)=>s+c.w,0), sc=CW/totW;
     const cw=colDefs.map(c=>({...c,w:Math.round(c.w*sc)}));
     let y=pageY;
-    fill(LX,y-14,CW,14,.055,.373,.659); ps.push("1 1 1 rg");
-    let cx_=LX; cw.forEach(c=>{txt(cx_+2,y-10,c.l,6,true);cx_+=c.w;});
+
+    fill(LX, y-14, CW, 14, .055, .373, .659);
+    ps.push("1 1 1 rg");
+    let cx_=LX;
+    cw.forEach(c=>{ txt(cx_+2, y-10, c.l, 6, true); cx_+=c.w; });
     ps.push("0 0 0 rg"); y-=14;
 
     renglones.forEach((r,idx)=>{
       const c=calcR(r,tcN); if(!c) return;
-      idx%2===0?fill(LX,y-12,CW,12,.97,.97,.97):fill(LX,y-12,CW,12,1,1,1);
-      hln(LX,y-12,LX+CW,.82,.82,.82,.3);
+      idx%2===0 ? fill(LX,y-12,CW,12,.97,.97,.97) : fill(LX,y-12,CW,12,1,1,1);
+      hln(LX, y-12, LX+CW, .82,.82,.82, .3);
       let cx2=LX;
-      [String(idx+1),(r.empresa||"-").substring(0,8),
+      [String(idx+1), (r.empresa||"-").substring(0,8),
        ((r.renglon||"-")+(r.subitem?"/"+r.subitem:"")).substring(0,6),
-       (r.descr||"-").substring(0,22),(r.marca||"-").substring(0,7),
-       fARS(c.cARS),fUSD(c.pvUSDs),fARS(c.pvARSs),fARS(c.pvARSc),
-       String(c.cant),fARS(c.sub)
+       (r.descr||"-").substring(0,22), (r.marca||"-").substring(0,7),
+       fARS(c.cARS), fUSD(c.pvUSDs), fARS(c.pvARSs), fARS(c.pvARSc),
+       String(c.cant), fARS(c.sub),
       ].forEach((v,i)=>{
-        const acc=i===8||i===10; ps.push(acc?".055 .373 .659 rg":"0 0 0 rg");
-        txt(cx2+2,y-8,v,6,acc); cx2+=cw[i].w;
+        const acc = i===8||i===10;
+        ps.push(acc ? ".055 .373 .659 rg" : "0 0 0 rg");
+        txt(cx2+2, y-8, v, 6, acc); cx2+=cw[i].w;
       });
       ps.push("0 0 0 rg"); y-=12;
     });
 
-    fill(LX,y-14,CW,14,.055,.373,.659); ps.push("1 1 1 rg");
-    txt(LX+4,y-10,"TOTAL GENERAL c/IVA (ARS)",8,true);
-    const ts=fARS(totalGeneral); txt(W-LX-4-ts.length*5.1,y-10,ts,9,true);
+    fill(LX, y-14, CW, 14, .055, .373, .659);
+    ps.push("1 1 1 rg");
+    txt(LX+4, y-10, "TOTAL GENERAL c/IVA (ARS)", 8, true);
+    const ts=fARS(totalGeneral);
+    txt(W-LX-4-ts.length*5.1, y-10, ts, 9, true);
     ps.push("0 0 0 rg"); y-=22; pageY=y;
 
+    // ── Detalle por renglón ────────────────────────────────────────────
     renglones.forEach((r,idx)=>{
       const c=calcR(r,tcN); if(!c) return;
       if(pageY-200 < 65){ pages.push([...ps]); ps=[]; drawHeader(); }
       y=pageY; y-=6;
-      ps.push(".055 .373 .659 rg");
-      txt(LX,y,`RENGLON ${idx+1}: ${(r.descr||r.codigo||"sin descripcion").substring(0,70)}`,8,true);
-      hln(LX,y-10,W-LX,.055,.373,.659,.3); ps.push("0 0 0 rg"); y-=16;
 
-      ps.push(".38 .38 .38 rg"); txt(LX,y,"Empresa:",8.5,false); ps.push("0 0 0 rg"); txt(LX+65,y,esc(r.empresa||"-"),8.5,false);
+      ps.push(".055 .373 .659 rg");
+      txt(LX, y, `RENGLON ${idx+1}: ${(r.descr||r.codigo||"sin descripcion").substring(0,70)}`, 8, true);
+      hln(LX, y-10, W-LX, .055,.373,.659, .3);
+      ps.push("0 0 0 rg"); y-=16;
+
+      ps.push(".38 .38 .38 rg"); txt(LX,y,"Empresa:",8.5,false);   ps.push("0 0 0 rg"); txt(LX+65,y,esc(r.empresa||"-"),8.5,false);
       ps.push(".38 .38 .38 rg"); txt(200,y,"Renglon/Sub:",8.5,false); ps.push("0 0 0 rg"); txt(270,y,(r.renglon||"-")+(r.subitem?"/"+r.subitem:""),8.5,false);
-      ps.push(".38 .38 .38 rg"); txt(340,y,"Codigo:",8.5,false); ps.push("0 0 0 rg"); txt(390,y,esc(r.codigo||"-"),8.5,false);
-      ps.push(".38 .38 .38 rg"); txt(450,y,"Marca:",8.5,false); ps.push("0 0 0 rg"); txt(490,y,esc(r.marca||"-"),8.5,false);
+      ps.push(".38 .38 .38 rg"); txt(340,y,"Codigo:",8.5,false);    ps.push("0 0 0 rg"); txt(390,y,esc(r.codigo||"-"),8.5,false);
+      ps.push(".38 .38 .38 rg"); txt(450,y,"Marca:",8.5,false);     ps.push("0 0 0 rg"); txt(490,y,esc(r.marca||"-"),8.5,false);
       y-=14;
 
-      fill(LX-2,y-26,CW+4,26,.91,.95,.99); strk(LX-2,y-26,CW+4,26,.055,.373,.659,.55);
-      ps.push(".055 .373 .659 rg"); txt(LX+4,y-10,"Costo en ARS:",8.5,true);
-      const ca=fARS(c.cARS); txt(W-LX-4-ca.length*5.5,y-10,ca,10,true);
+      fill(LX-2, y-26, CW+4, 26, .91,.95,.99);
+      strk(LX-2, y-26, CW+4, 26, .055,.373,.659, .55);
+      ps.push(".055 .373 .659 rg"); txt(LX+4, y-10, "Costo en ARS:", 8.5, true);
+      const ca=fARS(c.cARS); txt(W-LX-4-ca.length*5.5, y-10, ca, 10, true);
       ps.push("0 0 0 rg"); y-=32;
 
       const hW=(CW-8)/2;
-      fill(LX-2,y-26,hW,26,.94,.98,.94); strk(LX-2,y-26,hW,26,.2,.55,.1,.4);
-      ps.push(".15 .43 .08 rg"); txt(LX+4,y-8,"Markup x"+parseN(r.markup).toFixed(2),7.5,true); txt(LX+4,y-20,fPct(c.mkPct),12,true);
-      fill(LX-2+hW+8,y-26,hW,26,.91,.95,.99); strk(LX-2+hW+8,y-26,hW,26,.055,.373,.659,.4);
-      ps.push(".055 .373 .659 rg"); txt(LX-2+hW+14,y-8,"Gross Margin %",7.5,true); txt(LX-2+hW+14,y-20,fPct(c.gm),12,true);
+      fill(LX-2, y-26, hW, 26, .94,.98,.94); strk(LX-2, y-26, hW, 26, .2,.55,.1, .4);
+      ps.push(".15 .43 .08 rg"); txt(LX+4, y-8, "Markup x"+parseN(r.markup).toFixed(2), 7.5, true); txt(LX+4, y-20, fPct(c.mkPct), 12, true);
+      fill(LX-2+hW+8, y-26, hW, 26, .91,.95,.99); strk(LX-2+hW+8, y-26, hW, 26, .055,.373,.659, .4);
+      ps.push(".055 .373 .659 rg"); txt(LX-2+hW+14, y-8, "Gross Margin %", 7.5, true); txt(LX-2+hW+14, y-20, fPct(c.gm), 12, true);
       ps.push("0 0 0 rg"); y-=32;
 
       const cW2=(CW-8)/2, cH=36;
       [[fUSD(c.pvUSDs),"PV USD s/IVA"],[fUSD(c.pvUSDc),"PV USD c/IVA"]].forEach(([v,l],i)=>{
-        const x=LX-2+i*(cW2+8); fill(x,y-cH,cW2,cH,.91,.95,.99); strk(x,y-cH,cW2,cH,.055,.373,.659,.5);
-        ps.push(".055 .373 .659 rg"); txt(x+6,y-7,l,7,false); txt(x+6,y-cH+8,v,10,true);
+        const x=LX-2+i*(cW2+8);
+        fill(x, y-cH, cW2, cH, .91,.95,.99); strk(x, y-cH, cW2, cH, .055,.373,.659, .5);
+        ps.push(".055 .373 .659 rg"); txt(x+6, y-7, l, 7, false); txt(x+6, y-cH+8, v, 10, true);
       }); y-=cH+4;
       [[fARS(c.pvARSs),"PV ARS s/IVA"],[fARS(c.pvARSc),"PV ARS c/IVA"]].forEach(([v,l],i)=>{
-        const x=LX-2+i*(cW2+8); fill(x,y-cH,cW2,cH,.96,.96,.96); strk(x,y-cH,cW2,cH,.78,.78,.78,.4);
-        ps.push(".12 .12 .12 rg"); txt(x+6,y-7,l,7,false); txt(x+6,y-cH+8,v,10,true);
+        const x=LX-2+i*(cW2+8);
+        fill(x, y-cH, cW2, cH, .96,.96,.96); strk(x, y-cH, cW2, cH, .78,.78,.78, .4);
+        ps.push(".12 .12 .12 rg"); txt(x+6, y-7, l, 7, false); txt(x+6, y-cH+8, v, 10, true);
       }); y-=cH+8;
 
-      fill(LX-2,y-44,CW+4,44,.055,.373,.659);
-      ps.push("1 1 1 rg"); txt(LX+6,y-12,"SUBTOTAL C/IVA (ARS) | Cantidad: "+c.cant+" u.",8,false);
-      txt(LX+6,y-34,fARS(c.sub),14,true); ps.push("0 0 0 rg"); y-=56; pageY=y;
+      fill(LX-2, y-44, CW+4, 44, .055,.373,.659);
+      ps.push("1 1 1 rg"); txt(LX+6, y-12, "SUBTOTAL C/IVA (ARS) | Cantidad: "+c.cant+" u.", 8, false);
+      txt(LX+6, y-34, fARS(c.sub), 14, true); ps.push("0 0 0 rg"); y-=56; pageY=y;
     });
 
-    hln(LX,52,W-LX,.78,.78,.78,.4); ps.push(".62 .62 .62 rg");
-    txt(LX,42,"Analisis de Precios — Medi-Cross S.R.L.",7.5,false);
-    if(vendedor) txt(LX,31,"Cotizacion realizada por: "+vendedor,7.5,false);
-    txt(W-110,42,fecha,7.5,false); ps.push("0 0 0 rg");
+    // ── Footer ────────────────────────────────────────────────────────
+    hln(LX, 52, W-LX, .78,.78,.78, .4);
+    ps.push(".62 .62 .62 rg");
+    txt(LX, 42, "Analisis de Precios — Medi-Cross S.R.L.", 7.5, false);
+    if (vendedor) txt(LX, 31, "Cotizacion realizada por: "+vendedor, 7.5, false);
+    txt(W-110, 42, fecha, 7.5, false);
+    ps.push("0 0 0 rg");
     pages.push([...ps]);
 
+    // ── Generar PDF binario ────────────────────────────────────────────
     const s2u8 = s => { const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i)&0xFF; return u; };
     const offs={};
     let pdf="%PDF-1.4\n%\xFF\xFF\n";
@@ -502,8 +531,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     try {
       const file = new File([fin], fn, { type: "application/pdf" });
       const { error: upErr } = await supabase.storage
-        .from("cotizaciones-pdf")
-        .upload(`pdfs/${fn}`, file, { upsert: true });
+        .from("cotizaciones-pdf").upload(`pdfs/${fn}`, file, { upsert: true });
       if (upErr) showToast("PDF descargado (error al subir: "+upErr.message+")", "err");
       else showToast("PDF descargado y guardado en la nube ✓");
     } catch(e) {
@@ -511,9 +539,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     }
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ══════════════════════════════════════════════════
      RENDER
-  ══════════════════════════════════════════════════════ */
+  ══════════════════════════════════════════════════ */
   return (
     <Layout title="Cotizador" profile={profile} onNavigate={onNavigate}>
       <div className="cot-page">
@@ -521,7 +549,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         {/* Toast */}
         {toast && <div className={`cot-toast cot-toast--${toast.type}`}>{toast.msg}</div>}
 
-        {/* Banner cuando viene pre-cargado desde Licitaciones */}
+        {/* Banner pre-cargado */}
         {initialData?.institucion && !docId && (
           <div className="cot-banner-warn">
             📋 Cotización iniciada desde Licitaciones — <strong>{initialData.institucion}</strong>
@@ -532,14 +560,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
         {/* Header */}
         <div className="cot-header">
-          <div>
-            <h2>Cotizador MediCross</h2>
-            <p>
+          <div className="cot-header__left">
+            <h2>
+              Cotizador MediCross
               {quoteNum
-                ? <span className="cot-quote-badge cot-quote-badge--saved">Cotización #{quoteNum} — Guardada</span>
-                : <span className="cot-quote-badge cot-quote-badge--new">Nueva cotización</span>
+                ? <span className="cot-quote-badge cot-quote-badge--saved">#{quoteNum} · Guardada</span>
+                : <span className="cot-quote-badge cot-quote-badge--new">Nueva</span>
               }
-            </p>
+            </h2>
           </div>
           <div className="cot-header-actions">
             <button className="cot-btn cot-btn--ghost" onClick={()=>onNavigate("tenders")}>← Licitaciones</button>
@@ -553,12 +581,12 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
           </div>
         </div>
 
-        {/* ── DASHBOARD COMERCIAL COMPLETO ── */}
+        {/* Dashboard comercial */}
         <DashboardComercial />
 
         {/* Parámetros globales */}
         <div className="cot-card">
-          <h3 className="cot-section-title">Parámetros globales</h3>
+          <h3 className="cot-section-title">⚙️ Parámetros globales</h3>
           <div className="cot-grid-4">
             <div className="cot-field">
               <label>Vendedor</label>
@@ -599,7 +627,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         </div>
 
         {/* Renglones */}
-        <h3 className="cot-section-title" style={{marginTop:4}}>Renglones</h3>
+        <h3 className="cot-section-title" style={{marginTop:4}}>📦 Renglones</h3>
 
         {renglones.map((r, idx) => {
           const calc = calcR(r, parseN(tc));
@@ -607,72 +635,103 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
             <div key={r.id} className="cot-renglon">
               <div className="cot-renglon__header">
                 <span className="cot-renglon__num">Renglón {idx+1}</span>
-                <button className="cot-btn-del" onClick={()=>removeR(r.id)}>×</button>
+                <button className="cot-btn-del" onClick={()=>removeR(r.id)} title="Eliminar renglón">×</button>
               </div>
               <div className="cot-renglon__body">
+
+                {/* Columna izquierda: datos del producto */}
                 <div className="cot-renglon__left">
                   <div className="cot-grid-3">
-                    <div className="cot-field"><label>Empresa / Proveedor</label>
-                      <input value={r.empresa} onChange={e=>updateR(r.id,"empresa",e.target.value)} placeholder="Proveedor"/></div>
-                    <div className="cot-field"><label>Renglón N°</label>
-                      <input type="number" value={r.renglon} onChange={e=>updateR(r.id,"renglon",e.target.value)} placeholder="N°"/></div>
-                    <div className="cot-field"><label>Sub ítem</label>
-                      <input type="number" value={r.subitem} onChange={e=>updateR(r.id,"subitem",e.target.value)} placeholder="N°"/></div>
+                    <div className="cot-field">
+                      <label>Empresa / Proveedor</label>
+                      <input value={r.empresa} onChange={e=>updateR(r.id,"empresa",e.target.value)} placeholder="Proveedor"/>
+                    </div>
+                    <div className="cot-field">
+                      <label>Renglón N°</label>
+                      <input type="number" value={r.renglon} onChange={e=>updateR(r.id,"renglon",e.target.value)} placeholder="N°"/>
+                    </div>
+                    <div className="cot-field">
+                      <label>Sub ítem</label>
+                      <input type="number" value={r.subitem} onChange={e=>updateR(r.id,"subitem",e.target.value)} placeholder="N°"/>
+                    </div>
                   </div>
-                  <div className="cot-grid-2" style={{marginTop:8}}>
-                    <div className="cot-field"><label>Código</label>
-                      <input value={r.codigo} onChange={e=>updateR(r.id,"codigo",e.target.value)} placeholder="SKU"/></div>
-                    <div className="cot-field"><label>Marca</label>
-                      <input value={r.marca} onChange={e=>updateR(r.id,"marca",e.target.value)} placeholder="Marca"/></div>
+                  <div className="cot-grid-2" style={{marginTop:10}}>
+                    <div className="cot-field">
+                      <label>Código</label>
+                      <input value={r.codigo} onChange={e=>updateR(r.id,"codigo",e.target.value)} placeholder="SKU"/>
+                    </div>
+                    <div className="cot-field">
+                      <label>Marca</label>
+                      <input value={r.marca} onChange={e=>updateR(r.id,"marca",e.target.value)} placeholder="Marca"/>
+                    </div>
                   </div>
-                  <div className="cot-field" style={{marginTop:8}}>
-                    <label>Descripción</label>
-                    <textarea rows={3} value={r.descr} onChange={e=>updateR(r.id,"descr",e.target.value)}
+                  <div className="cot-field" style={{marginTop:10}}>
+                    <label>Descripción del producto</label>
+                    <textarea rows={3} value={r.descr}
+                      onChange={e=>updateR(r.id,"descr",e.target.value)}
                       placeholder="Descripción completa del producto"/>
                   </div>
+
                   <div className="cot-divider"/>
+
                   <div className="cot-grid-3">
-                    <div className="cot-field"><label>Moneda</label>
+                    <div className="cot-field">
+                      <label>Moneda</label>
                       <select value={r.moneda} onChange={e=>updateR(r.id,"moneda",e.target.value)}>
-                        <option value="USD">USD</option><option value="ARS">ARS</option>
-                      </select></div>
-                    <div className="cot-field"><label>% IVA</label>
+                        <option value="USD">USD</option>
+                        <option value="ARS">ARS</option>
+                      </select>
+                    </div>
+                    <div className="cot-field">
+                      <label>% IVA</label>
                       <select value={r.iva} onChange={e=>updateR(r.id,"iva",e.target.value)}>
-                        <option value="10.5">10,5%</option><option value="21">21%</option>
-                      </select></div>
-                    <div className="cot-field"><label>Multiplicador ×</label>
-                      <input value={r.markup} onChange={e=>updateR(r.id,"markup",e.target.value)} placeholder="2"/></div>
+                        <option value="10.5">10,5%</option>
+                        <option value="21">21%</option>
+                      </select>
+                    </div>
+                    <div className="cot-field">
+                      <label>Multiplicador ×</label>
+                      <input value={r.markup} onChange={e=>updateR(r.id,"markup",e.target.value)} placeholder="2"/>
+                    </div>
                   </div>
-                  <div className="cot-grid-2" style={{marginTop:8}}>
-                    <div className="cot-field"><label>Costo unitario</label>
-                      <input value={r.costo} onChange={e=>updateR(r.id,"costo",e.target.value)} placeholder="0,00"/></div>
-                    <div className="cot-field"><label>TC propio (vacío=global)</label>
-                      <input value={r.tcInd} onChange={e=>updateR(r.id,"tcInd",e.target.value)} placeholder="ej: 1500"/></div>
+                  <div className="cot-grid-2" style={{marginTop:10}}>
+                    <div className="cot-field">
+                      <label>Costo unitario</label>
+                      <input value={r.costo} onChange={e=>updateR(r.id,"costo",e.target.value)} placeholder="0,00"/>
+                    </div>
+                    <div className="cot-field">
+                      <label>TC propio (vacío = global)</label>
+                      <input value={r.tcInd} onChange={e=>updateR(r.id,"tcInd",e.target.value)} placeholder="ej: 1500"/>
+                    </div>
                   </div>
+
                   {calc && (
                     <div className="cot-costo-box">
                       <span>Costo ARS: <strong>{fARS(calc.cARS)}</strong></span>
                       <span style={{color:"#94a3b8",fontSize:11}}>+ IVA {r.iva}% = {fARS(calc.cIvaARS)}</span>
                     </div>
                   )}
-                  <div style={{marginTop:10,display:"flex",alignItems:"center",gap:10}}>
-                    <label style={{fontSize:12,fontWeight:600,color:"#64748b"}}>Modo precio:</label>
+
+                  <div style={{marginTop:12,display:"flex",alignItems:"center",gap:10}}>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748b"}}>Modo precio:</label>
                     <select value={r.modoManual} onChange={e=>updateR(r.id,"modoManual",e.target.value)}
-                      style={{height:32,border:"1px solid #e2e8f0",borderRadius:6,fontSize:12,fontFamily:"inherit",padding:"0 8px",background:"#fff"}}>
-                      <option value="auto">⚙ Automático</option>
-                      <option value="manual">✏ Manual</option>
+                      style={{height:34,border:"1px solid rgba(15,36,68,.14)",borderRadius:8,
+                        fontSize:12.5,fontFamily:"inherit",padding:"0 10px",background:"#f8fafc",outline:"none"}}>
+                      <option value="auto">⚙ Automático (markup)</option>
+                      <option value="manual">✏ Manual (precio fijo)</option>
                     </select>
                   </div>
                   {r.modoManual === "manual" && (
-                    <div className="cot-field" style={{marginTop:8}}>
+                    <div className="cot-field" style={{marginTop:10}}>
                       <label style={{color:"#0f2444",fontWeight:700}}>Precio venta manual (ARS c/IVA)</label>
                       <input value={r.pvManual} onChange={e=>updateR(r.id,"pvManual",e.target.value)}
                         placeholder="ej: 11001889"
-                        style={{borderColor:"#0f2444",background:"#eff6ff",fontWeight:700,fontSize:16}}/>
+                        style={{borderColor:"#185fa5",background:"#eff6ff",fontWeight:700,fontSize:16}}/>
                     </div>
                   )}
                 </div>
 
+                {/* Columna derecha: cálculos */}
                 <div className="cot-renglon__right">
                   {calc ? (
                     <>
@@ -693,16 +752,16 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                         <div className="cot-pv"><span>PV ARS c/IVA</span><strong>{fARS(calc.pvARSc)}</strong></div>
                       </div>
                       <div className="cot-divider"/>
-                      <div className="cot-field" style={{maxWidth:130}}>
+                      <div className="cot-field" style={{maxWidth:140}}>
                         <label>Cantidad</label>
                         <input type="number" value={r.cant} min={1}
                           onChange={e=>updateR(r.id,"cant",e.target.value)}
-                          style={{textAlign:"center",fontWeight:700,fontSize:18}}/>
+                          style={{textAlign:"center",fontWeight:700,fontSize:20}}/>
                       </div>
                       <div className="cot-subtotal">
                         <div>
-                          <div style={{fontSize:12,opacity:.8}}>Subtotal c/IVA</div>
-                          <div style={{fontSize:11,opacity:.6}}>{fARS(calc.pvARSc)} × {calc.cant} u.</div>
+                          <span>Subtotal c/IVA</span>
+                          <span style={{fontSize:10.5}}>{fARS(calc.pvARSc)} × {calc.cant} u.</span>
                         </div>
                         <strong>{fARS(calc.sub)}</strong>
                       </div>
@@ -723,7 +782,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         {/* Preview */}
         {renglones.some(r => calcR(r, parseN(tc))) && (
           <div className="cot-preview">
-            <h3 className="cot-section-title" style={{padding:"14px 16px 0",margin:0}}>Previsualización</h3>
+            <h3 className="cot-section-title" style={{padding:"16px 18px 0",margin:0}}>📋 Previsualización</h3>
             <div className="cot-table-wrap">
               <table className="cot-table">
                 <thead>
@@ -771,15 +830,15 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
       </div>
 
-      {/* ══ MODAL HISTORIAL ══ */}
+      {/* ── MODAL HISTORIAL ── */}
       {showHistorial && (
         <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowHistorial(false);}}>
           <div className="cot-modal">
             <div className="cot-modal__header">
-              <h3>Historial de cotizaciones</h3>
+              <h3>📋 Historial de cotizaciones</h3>
               <button className="cot-modal__close" onClick={()=>setShowHistorial(false)}>×</button>
             </div>
-            <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f4f8"}}>
+            <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(15,36,68,.07)"}}>
               <input className="cot-search" value={histSearch} onChange={e=>setHistSearch(e.target.value)}
                 placeholder="Buscar por N°, institución, descripción, vendedor…"/>
             </div>
@@ -825,7 +884,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         </div>
       )}
 
-      {/* ══ MODAL PAPELERA ══ */}
+      {/* ── MODAL PAPELERA ── */}
       {showPapelera && (
         <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowPapelera(false);}}>
           <div className="cot-modal">
@@ -850,7 +909,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                   </div>
                   <div className="cot-hist-actions">
                     <button className="cot-btn cot-btn--sm"
-                      style={{background:"#d1fae5",color:"#065f46",border:"1px solid #6ee7b7"}}
+                      style={{background:"#d4edda",color:"#166534",border:"1px solid #6ee7b7"}}
                       onClick={()=>restaurar(c.id,c.quote_num_formatted||"???")}>
                       ↩ Restaurar
                     </button>
