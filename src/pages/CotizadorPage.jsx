@@ -216,20 +216,20 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const vln  = (x,y1,y2,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x} ${y1} m ${x} ${y2} l S 0 0 0 RG`);
 
     function drawHeader() {
-      // Fondo blanco para todo el header
-      fill(0, H-HDR, W, HDR, 1, 1, 1);
+     // Fondo blanco para todo el header
+     fill(0, H-HDR, W, HDR, 1, 1, 1);
 
-// Fondo blanco en zona logo
-fill(0, H-HDR, 192, HDR, 1, 1, 1);
+     // Fondo blanco en zona logo
+     fill(0, H-HDR, 192, HDR, 1, 1, 1);
 
-// Logo textual en azul sobre fondo blanco
-ps.push(".055 .373 .659 rg");
-txt(26, H-HDR+(HDR/2)+8, "MediCross", 22, true);
+     // Logo textual en azul sobre fondo blanco
+     ps.push(".055 .373 .659 rg");
+     txt(26, H-HDR+(HDR/2)+8, "MediCross", 22, true);
 
-ps.push(".055 .373 .659 rg");
-txt(26, H-HDR+(HDR/2)-10, "Productos Medicos Integrales", 7, false);
+     ps.push(".055 .373 .659 rg");
+     txt(26, H-HDR+(HDR/2)-10, "Productos Medicos Integrales", 7, false);
 
-ps.push("0 0 0 rg");
+     ps.push("0 0 0 rg");
 
       // Línea azul inferior del header
       hln(0, H-HDR-1, W, .055, .373, .659, 2);
