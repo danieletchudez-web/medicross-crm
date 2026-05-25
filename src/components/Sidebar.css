@@ -97,57 +97,6 @@
   box-shadow: 0 8px 18px rgba(24,95,165,.18);
 }
 
-.sidebar-collapse-btn {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-  text-align: left;
-  font-family: "DM Sans", system-ui, sans-serif;
-  transition: background 0.15s, color 0.15s;
-  margin-bottom: 2px;
-}
-
-.sidebar-collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.sidebar-collapse-btn__icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255, 255, 255, 0.35);
-  transition: color 0.15s;
-}
-
-.sidebar-collapse-btn__icon svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 2.2;
-}
-
-.sidebar-collapse-btn:hover .sidebar-collapse-btn__icon {
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.sidebar-collapse-btn__label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.35);
-  transition: color 0.15s;
-}
-
-.sidebar-collapse-btn:hover .sidebar-collapse-btn__label {
-  color: rgba(255, 255, 255, 0.65);
-}
 
 /* ─── Body ───────────────────────────────────────────────────────────── */
 .sidebar-body {
@@ -605,25 +554,6 @@
 
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
-  .sidebar--collapsed .sidebar-collapse-btn {
-    width: 46px;
-    height: 42px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 14px;
-    margin-bottom: 0;
-  }
-
-  .sidebar--collapsed .sidebar-collapse-btn__icon {
-    width: 20px;
-    height: 20px;
-  }
-
-  .sidebar--collapsed .sidebar-collapse-btn__icon svg {
-    width: 19px;
-    height: 19px;
-  }
-
   .sidebar--collapsed .sidebar-body,
   .sidebar--collapsed .sidebar-section,
   .sidebar--collapsed .sidebar-nav__item-wrap {
@@ -736,8 +666,7 @@
   .sidebar--collapsed .sidebar-theme-toggle__label,
   .sidebar--collapsed .sidebar-theme-toggle__switch,
   .sidebar--collapsed .sidebar-logout__label,
-  .sidebar--collapsed .sidebar-quick button em,
-  .sidebar--collapsed .sidebar-collapse-btn__label {
+  .sidebar--collapsed .sidebar-quick button em {
     display: none;
   }
 
@@ -904,7 +833,6 @@
     min-width: 0;
   }
 
-  .sidebar-collapse-btn,
   .sidebar-brand__mark {
     display: none;
   }

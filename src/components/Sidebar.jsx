@@ -7,8 +7,6 @@ import {
   CalendarDays,
   CalendarPlus,
   ChartPie,
-  ChevronLeft,
-  ChevronRight,
   CircleDollarSign,
   Clock3,
   FileText,
@@ -103,12 +101,14 @@ export default function Sidebar({ profile, onNavigate }) {
   const [editing,    setEditing]    = useState(false);
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
   const [menuOpen,   setMenuOpen]   = useState(false);
-  const [collapsed,  setCollapsed]  = useState(() => localStorage.getItem("sidebar_collapsed") === "true");
+  const [collapsed,  setCollapsed]  = useState(true);
   const [favorites,  setFavorites]  = useState(() => {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
   });
-  const dragIdx = useRef(null);
+  const dragIdx        = useRef(null);
+  const expandTimer    = useRef(null);
+  const collapseTimer  = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
@@ -116,9 +116,24 @@ export default function Sidebar({ profile, onNavigate }) {
   }, [dark]);
 
   useEffect(() => {
-    localStorage.setItem("sidebar_collapsed", collapsed ? "true" : "false");
-    if (collapsed) setEditing(false);
-  }, [collapsed]);
+    return () => {
+      clearTimeout(expandTimer.current);
+      clearTimeout(collapseTimer.current);
+    };
+  }, []);
+
+  function handleMouseEnter() {
+    clearTimeout(collapseTimer.current);
+    expandTimer.current = setTimeout(() => setCollapsed(false), 120);
+  }
+
+  function handleMouseLeave() {
+    clearTimeout(expandTimer.current);
+    collapseTimer.current = setTimeout(() => {
+      setCollapsed(true);
+      setEditing(false);
+    }, 2000);
+  }
 
   // Bloquear scroll cuando el menú móvil está abierto
   useEffect(() => {
@@ -146,11 +161,11 @@ export default function Sidebar({ profile, onNavigate }) {
 
   function handleNavigate(id) {
     setMenuOpen(false);
+    clearTimeout(expandTimer.current);
+    clearTimeout(collapseTimer.current);
+    setCollapsed(true);
+    setEditing(false);
     onNavigate(id);
-  }
-
-  function toggleCollapsed() {
-    setCollapsed((c) => !c);
   }
 
   function onDragStart(id) { dragIdx.current = id; }
@@ -180,7 +195,11 @@ export default function Sidebar({ profile, onNavigate }) {
 
   return (
     <>
-      <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
+      <aside
+        className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
 
         {/* Brand / logo */}
         <div className="sidebar-brand" onClick={() => handleNavigate("managerDashboard")} style={{cursor:"pointer"}} aria-label="Dashboard">
@@ -298,20 +317,6 @@ export default function Sidebar({ profile, onNavigate }) {
           </nav>
 
           <div className="sidebar-footer">
-            <button
-              type="button"
-              className="sidebar-collapse-btn"
-              onClick={toggleCollapsed}
-              aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-              data-tooltip={collapsed ? "Expandir menú" : "Colapsar menú"}
-            >
-              <span className="sidebar-collapse-btn__icon">
-                {collapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}
-              </span>
-              <span className="sidebar-collapse-btn__label">
-                {collapsed ? "Expandir" : "Colapsar"}
-              </span>
-            </button>
             <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)} aria-label={dark ? "Modo claro" : "Modo oscuro"} data-tooltip={dark ? "Modo claro" : "Modo oscuro"}>
               <span className="sidebar-theme-toggle__icon">{dark ? <Sun aria-hidden="true"/> : <Moon aria-hidden="true"/>}</span>
               <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
