@@ -40,7 +40,11 @@
   box-sizing: border-box;
   overflow: visible;
   z-index: 100;
-  background: var(--sb-bg);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0 var(--sb-brand-height),
+    #162d50 var(--sb-brand-height) 100%
+  );
   border-right: 1px solid #e8ecf2;
   transition: width .28s cubic-bezier(.22, 1, .36, 1),
               min-width .28s cubic-bezier(.22, 1, .36, 1),
@@ -54,6 +58,10 @@
 
 /* ─── Brand ──────────────────────────────────────────────────────────── */
 .sidebar-brand {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   background: #ffffff;
   padding: 0 10px;
   height: var(--sb-brand-height);
@@ -64,7 +72,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  z-index: 3;
 }
 
 .sidebar-brand__img {
@@ -91,7 +99,7 @@
 
 .sidebar-collapse-btn {
   position: absolute;
-  top: calc(var(--sb-brand-height) + 24px);
+  top: calc(var(--sb-brand-height) + 22px);
   right: -12px;
   width: 24px;
   height: 38px;
@@ -143,6 +151,7 @@
   flex-direction: column;
   background: linear-gradient(180deg, #162d50 0%, #0d1e35 100%);
   overflow: hidden;
+  padding-top: var(--sb-brand-height);
   transition: filter .28s ease;
 }
 
@@ -671,6 +680,7 @@
 
   .sidebar--collapsed .sidebar-body {
     align-items: center;
+    padding-top: var(--sb-brand-height);
   }
 
   .sidebar--collapsed .sidebar-user {
@@ -870,6 +880,8 @@
 
   /* Logo en la topbar */
   .sidebar-brand {
+    position: relative;
+    inset: auto;
     height: var(--sb-brand-height);
     min-height: var(--sb-brand-height);
     max-height: var(--sb-brand-height);
@@ -933,6 +945,7 @@
     z-index: 199;
     flex-direction: column;
     will-change: left;
+    padding-top: 0;
   }
 
   /* Cuando el menú está abierto */
