@@ -46,10 +46,6 @@
               box-shadow .28s ease;
 }
 
-.sidebar--hover-open {
-  box-shadow: 18px 0 38px rgba(15, 23, 42, .12);
-}
-
 .sidebar--collapsed {
   width: 72px;
   min-width: 72px;
@@ -576,7 +572,7 @@
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
   .sidebar--collapsed .sidebar-collapse-btn {
-    display: none;
+    display: inline-flex;
   }
 
   .sidebar--collapsed .sidebar-body,
