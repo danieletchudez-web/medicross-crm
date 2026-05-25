@@ -37,7 +37,7 @@
   flex-direction: column;
   font-family: "DM Sans", system-ui, sans-serif;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   z-index: 100;
   background: var(--sb-bg);
   border-right: 1px solid #e8ecf2;
@@ -86,7 +86,7 @@
 
 .sidebar-collapse-btn {
   position: absolute;
-  top: 76px;
+  top: 19px;
   right: -13px;
   width: 26px;
   height: 26px;
@@ -563,6 +563,13 @@
 
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
+  .sidebar--collapsed .sidebar-body,
+  .sidebar--collapsed .sidebar-nav,
+  .sidebar--collapsed .sidebar-section,
+  .sidebar--collapsed .sidebar-nav__item-wrap {
+    overflow: visible;
+  }
+
   .sidebar--collapsed [data-tooltip]::before,
   .sidebar--collapsed [data-tooltip]::after {
     position: absolute;
