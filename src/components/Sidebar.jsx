@@ -210,7 +210,7 @@ export default function Sidebar({ profile, onNavigate }) {
       >
 
         {/* Brand / logo */}
-        <div className="sidebar-brand" onClick={() => handleNavigate("managerDashboard")} style={{cursor:"pointer"}} title="Dashboard">
+        <div className="sidebar-brand" onClick={() => handleNavigate("managerDashboard")} style={{cursor:"pointer"}} aria-label="Dashboard">
           <img src={logoImg} alt="MediCross Productos Médicos" className="sidebar-brand__img"/>
           <span className="sidebar-brand__mark">M</span>
         </div>
