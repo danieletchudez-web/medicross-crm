@@ -134,9 +134,9 @@ export default function Sidebar({ profile, onNavigate }) {
       <aside className="sidebar">
 
         {/* Brand / logo */}
-<div className="sidebar-brand" onClick={() => onNavigate("dashboard")} style={{cursor:"pointer"}}>
-  <img className="sidebar-brand__img" src={logo} alt="MediCross"/>
-</div>
+        <div className="sidebar-brand">
+          <img src={logoImg} alt="STORING Medical" className="sidebar-brand__img"/>
+        </div>
 
         {/* Botón hamburguesa — solo visible en móvil via CSS */}
         <button
