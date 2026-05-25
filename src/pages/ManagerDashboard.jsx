@@ -403,7 +403,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
         {/* HEADER */}
         <header className="dash-header">
           <div className="dash-header-left">
-            <div className="dash-wordmark"><span className="dash-wordmark-dot"/>STORING Medical</div>
+            <div className="dash-wordmark"><span className="dash-wordmark-dot"/>MEDICROSS SOLUCIONES MÉDICAS</div>
             <h1 className="dash-title">Sales Command Center</h1>
             <p className="dash-subtitle">Pipeline · Forecast ponderado · Campañas · Probabilidad de cierre</p>
           </div>
