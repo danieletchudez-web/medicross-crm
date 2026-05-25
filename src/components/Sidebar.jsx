@@ -1,4 +1,26 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  BarChart3,
+  BellRing,
+  Building2,
+  Calculator,
+  CalendarDays,
+  CalendarPlus,
+  ChartPie,
+  CircleDollarSign,
+  Clock3,
+  FileText,
+  Handshake,
+  LayoutDashboard,
+  LogOut,
+  Megaphone,
+  Moon,
+  PackageOpen,
+  Settings,
+  ShieldCheck,
+  Sun,
+  Target,
+} from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import "./Sidebar.css";
 import logoImg from "../assets/logo.jpg";
@@ -7,36 +29,36 @@ const MENU_SECTIONS = [
   {
     label: "ANÁLISIS",
     items: [
-      { id: "managerDashboard", label: "Dashboard",          icon: "▦" },
-      { id: "importer",         label: "BI Comercial",       icon: "📊" },
-      { id: "salesAnalytics",   label: "Análisis Comercial", icon: "◑" },
+      { id: "managerDashboard", label: "Dashboard",          icon: LayoutDashboard },
+      { id: "importer",         label: "BI Comercial",       icon: BarChart3 },
+      { id: "salesAnalytics",   label: "Análisis Comercial", icon: ChartPie },
     ],
   },
   {
     label: "COMERCIAL",
     items: [
-      { id: "accounts",      label: "Clientes / Cuentas",    icon: "◎" },
-      { id: "products",      label: "Productos / Share Kit", icon: "⬡" },
-      { id: "opportunities", label: "Oportunidades",         icon: "◇" },
-      { id: "campaigns",     label: "Campañas",              icon: "◉" },
+      { id: "accounts",      label: "Clientes / Cuentas",    icon: Building2 },
+      { id: "products",      label: "Productos / Share Kit", icon: PackageOpen },
+      { id: "opportunities", label: "Oportunidades",         icon: Target },
+      { id: "campaigns",     label: "Campañas",              icon: Megaphone },
     ],
   },
   {
     label: "COTIZACIONES",
     items: [
-      { id: "cotizador", label: "Cotizador",    icon: "🧮" },
-      { id: "tenders",   label: "Licitaciones", icon: "📄" },
+      { id: "cotizador", label: "Cotizador",    icon: Calculator },
+      { id: "tenders",   label: "Licitaciones", icon: FileText },
     ],
   },
   {
     label: "OPERACIONES",
     items: [
-      { id: "notifications", label: "Centro de Alertas", icon: "!" },
-      { id: "todayActions", label: "Acciones Hoy",  icon: "◷" },
-      { id: "visits",       label: "Visitas",        icon: "◌" },
-      { id: "calendar",     label: "Calendario",     icon: "▦" },
-      { id: "adminUsers",   label: "Administración", icon: "⊞" },
-      { id: "settings",     label: "Configuración",  icon: "⚙" },
+      { id: "notifications", label: "Centro de Alertas", icon: BellRing },
+      { id: "todayActions", label: "Acciones Hoy",  icon: Clock3 },
+      { id: "visits",       label: "Visitas",        icon: Handshake },
+      { id: "calendar",     label: "Calendario",     icon: CalendarDays },
+      { id: "adminUsers",   label: "Administración", icon: ShieldCheck },
+      { id: "settings",     label: "Configuración",  icon: Settings },
     ],
   },
 ];
@@ -55,6 +77,10 @@ function loadOrder() {
 }
 
 function saveOrder(ids) { localStorage.setItem("sidebar_order", JSON.stringify(ids)); }
+
+function SidebarIcon({ icon: Icon }) {
+  return <Icon aria-hidden="true" strokeWidth={2.15} />;
+}
 
 function buildSections(orderedIds) {
   return MENU_SECTIONS.map(section => ({
@@ -191,9 +217,9 @@ export default function Sidebar({ profile, onNavigate }) {
 
           <nav className="sidebar-nav">
             <div className="sidebar-quick">
-              <button onClick={() => handleNavigate("visits")} title="Nueva visita"><span>+</span><em>Visita</em></button>
-              <button onClick={() => handleNavigate("accounts")} title="Nuevo cliente"><span>+</span><em>Cliente</em></button>
-              <button onClick={() => handleNavigate("opportunities")} title="Nueva oportunidad"><span>+</span><em>Oportunidad</em></button>
+              <button onClick={() => handleNavigate("visits")} title="Nueva visita"><span><CalendarPlus aria-hidden="true"/></span><em>Visita</em></button>
+              <button onClick={() => handleNavigate("accounts")} title="Nuevo cliente"><span><Building2 aria-hidden="true"/></span><em>Cliente</em></button>
+              <button onClick={() => handleNavigate("opportunities")} title="Nueva oportunidad"><span><CircleDollarSign aria-hidden="true"/></span><em>Oportunidad</em></button>
             </div>
 
             <div className="sidebar-nav__group-row">
@@ -217,7 +243,7 @@ export default function Sidebar({ profile, onNavigate }) {
                   if (!item || !canSee(id)) return null;
                   return (
                     <button key={id} className="sidebar-nav__item sidebar-nav__item--fav" onClick={() => handleNavigate(id)} title={item.label}>
-                      <span className="sidebar-nav__icon">{item.icon}</span>
+                      <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                       <span className="sidebar-nav__label">{item.label}</span>
                     </button>
                   );
@@ -250,7 +276,7 @@ export default function Sidebar({ profile, onNavigate }) {
                         style={{ cursor: editing ? "grab" : "pointer" }}
                         title={item.label}
                       >
-                        <span className="sidebar-nav__icon">{item.icon}</span>
+                        <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                         <span className="sidebar-nav__label">{item.label}</span>
                       </button>
                       {editing && (
@@ -276,14 +302,14 @@ export default function Sidebar({ profile, onNavigate }) {
 
           <div className="sidebar-footer">
             <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)} title={dark ? "Modo claro" : "Modo oscuro"}>
-              <span className="sidebar-theme-toggle__icon">{dark ? "☀" : "☽"}</span>
+              <span className="sidebar-theme-toggle__icon">{dark ? <Sun aria-hidden="true"/> : <Moon aria-hidden="true"/>}</span>
               <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
               <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
                 <div className="sidebar-theme-toggle__knob"/>
               </div>
             </div>
             <button type="button" className="sidebar-logout" onClick={logout} title="Cerrar sesión">
-              <span className="sidebar-logout__icon">↪</span>
+              <span className="sidebar-logout__icon"><LogOut aria-hidden="true"/></span>
               <span className="sidebar-logout__label">Cerrar sesión</span>
             </button>
           </div>
