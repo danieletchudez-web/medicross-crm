@@ -219,17 +219,6 @@ export default function Sidebar({ profile, onNavigate }) {
         {/* Drawer / body */}
         <div className={`sidebar-body ${menuOpen ? "open" : ""}`}>
 
-          <div className="sidebar-user">
-            <div className="sidebar-user__row">
-              <div className="sidebar-user__avatar">{initials}</div>
-              <div className="sidebar-user__info">
-                <strong>{profile?.full_name || "Usuario"}</strong>
-                <small title={email}>{emailDisplay}</small>
-              </div>
-            </div>
-            <span className="sidebar-user__role">{roleLabel}</span>
-          </div>
-
           <nav className="sidebar-nav">
             <div className="sidebar-quick">
               <button onClick={() => handleNavigate("visits")} aria-label="Nueva visita" data-tooltip="Nueva visita"><span><CalendarPlus aria-hidden="true"/></span><em>Visita</em></button>
