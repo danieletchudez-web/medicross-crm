@@ -236,21 +236,21 @@ button, input, select, textarea { font-family: inherit; }
 
 /* ─── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .app-shell    { display: block; }
-  /* El contenido baja 56px para no quedar debajo de la topbar fija del Sidebar */
+  .app-shell { display: block; }
   .main-content {
     padding-top: 56px;
   }
   .page-header {
-    padding: 0 16px;
-    height: 52px;
+    padding: 4px 16px;
+    height: 36px;
+    margin-bottom: 0;
   }
   .page-header__left {
     position: static;
     transform: none;
     text-align: left;
   }
-  .page-header h1 { font-size: 16px; }
+  .page-header h1 { font-size: 14px; }
   .page-header p  { font-size: 10px; }
   .layout-clock   { display: none; }
 }
