@@ -24,6 +24,7 @@
   --sb-switch-bg:    rgba(255,255,255,0.15);
   --sb-switch-on:    #3b82f6;
   --sb-knob:         rgba(255,255,255,0.9);
+  --sb-brand-height: 52px;
 }
 
 /* ─── Shell ──────────────────────────────────────────────────────────── */
@@ -55,7 +56,7 @@
 .sidebar-brand {
   background: #ffffff;
   padding: 0 12px;
-  height: 58px;
+  height: var(--sb-brand-height);
   border-bottom: 1px solid #e8ecf2;
   flex-shrink: 0;
   display: flex;
@@ -65,7 +66,7 @@
 }
 
 .sidebar-brand__img {
-  width: 166px;
+  width: 158px;
   height: auto;
   display: block;
   object-fit: contain;
@@ -88,10 +89,10 @@
 
 .sidebar-collapse-btn {
   position: absolute;
-  top: 50%;
+  top: var(--sb-brand-height);
   right: -13px;
   width: 26px;
-  height: 58px;
+  height: 54px;
   border-radius: 999px;
   border: 1px solid rgba(191, 219, 254, .38);
   background: linear-gradient(180deg, rgba(24, 95, 165, .92), rgba(15, 36, 68, .98));
@@ -106,6 +107,7 @@
   z-index: 4;
   box-shadow: 0 12px 28px rgba(15,23,42,.22);
   transform: translateY(-50%);
+  animation: sidebarTogglePulse 2.8s ease-in-out infinite;
   transition: transform .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 
@@ -114,6 +116,21 @@
   border-color: rgba(147,197,253,.55);
   box-shadow: 0 16px 32px rgba(15,23,42,.28);
   transform: translateY(-50%) translateX(2px);
+}
+
+@keyframes sidebarTogglePulse {
+  0%, 100% {
+    box-shadow: 0 10px 24px rgba(15,23,42,.18), 0 0 0 0 rgba(59,130,246,0);
+  }
+  50% {
+    box-shadow: 0 12px 28px rgba(15,23,42,.24), 0 0 0 4px rgba(59,130,246,.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-collapse-btn {
+    animation: none;
+  }
 }
 
 /* ─── Body ───────────────────────────────────────────────────────────── */
@@ -812,12 +829,15 @@
    MOBILE  ≤ 768px  —  topbar fija + drawer lateral
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  :root {
+    --sb-brand-height: 48px;
+  }
 
   /* La sidebar se convierte en topbar fija */
   .sidebar {
     width: 100%;
     min-width: 0;
-    height: 56px;
+    height: var(--sb-brand-height);
     position: fixed;
     top: 0;
     left: 0;
@@ -845,7 +865,7 @@
 
   /* Logo en la topbar */
   .sidebar-brand {
-    height: 56px;
+    height: var(--sb-brand-height);
     border-bottom: none;
     padding: 0;
     flex: 1;
@@ -853,7 +873,7 @@
   }
 
   .sidebar-brand__img {
-    width: 130px;
+    width: 122px;
   }
 
   /* Botón hamburguesa visible */
@@ -863,8 +883,8 @@
     justify-content: center;
     align-items: center;
     gap: 5px;
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border: none;
     background: transparent;
     cursor: pointer;
@@ -895,10 +915,10 @@
   /* El body se convierte en drawer lateral */
   .sidebar-body {
     position: fixed;
-    top: 56px;
+    top: var(--sb-brand-height);
     left: -280px;
     width: 280px;
-    height: calc(100vh - 56px);
+    height: calc(100vh - var(--sb-brand-height));
     min-height: 0;
     background: linear-gradient(180deg, #162d50 0%, #0d1e35 100%);
     transition: left .3s cubic-bezier(.22, 1, .36, 1), box-shadow .3s ease;
@@ -918,7 +938,7 @@
   .sidebar-overlay {
     display: block;
     position: fixed;
-    inset: 56px 0 0 0;
+    inset: var(--sb-brand-height) 0 0 0;
     background: rgba(0,0,0,0.45);
     z-index: 198;
     opacity: 0;
