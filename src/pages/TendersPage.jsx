@@ -1406,6 +1406,49 @@ export default function TendersPage({ profile, onNavigate }) {
   const hasFilters    = globalQ || Object.values(colFilters).some(Boolean);
   const visibleAlerts = alerts.filter(a => !dismissedAlerts.has(a.key));
 
+  function MobileTenderCard({ tender }) {
+    const days = daysUntil(tender.end_date);
+    const color = progColor(days);
+    const status = tender.operational_status || "—";
+    const nextAction = tender.next_action || "Sin próxima acción";
+    const urgency = days === null ? "Sin vencimiento"
+      : days < 0 ? `Vencida ${Math.abs(days)}d`
+      : days === 0 ? "Vence hoy"
+      : days === 1 ? "Vence mañana"
+      : `${days}d restantes`;
+
+    return (
+      <article className="tn-mobile-card" onClick={() => openEdit(tender)}>
+        <div className="tn-mobile-card__top">
+          <span className={`tn-alert-indicator tn-alert-indicator--${dotColor(days)}`}>●</span>
+          <div className="tn-mobile-card__title">
+            <strong>{tender.institution || "Sin institución"}</strong>
+            <span>{tender.process_number || "Sin proceso"}{tender.jurisdiction ? ` · ${tender.jurisdiction}` : ""}</span>
+          </div>
+          <span className={`tn-prio tn-prio--${pClass(tender.priority)}`}>{pIcon(tender.priority)} {tender.priority || "—"}</span>
+        </div>
+
+        <p className="tn-mobile-card__process">{tender.process_name || "Sin nombre de proceso"}</p>
+
+        <div className="tn-mobile-card__meta">
+          <span style={{ color }}>{urgency}</span>
+          <span>{compactMoney(tender.purchase_order_amount)} potencial</span>
+          <span>{tender.internal_owner || "Sin responsable"}</span>
+        </div>
+
+        <div className="tn-mobile-card__footer">
+          <span className={`tn-badge tn-badge--${statusBadge(status)}`}>{status}</span>
+          <span className="tn-mobile-card__next">{nextAction}</span>
+        </div>
+
+        <div className="tn-mobile-card__actions" onClick={(e) => e.stopPropagation()}>
+          <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={(e) => openEdit(tender, e)}>Editar</button>
+          <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={(e) => abrirCotizador(tender, e)}>Cotizar</button>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <Layout title="Cotizaciones" profile={profile} onNavigate={onNavigate}>
       <div className="tn-page">
@@ -1476,6 +1519,14 @@ export default function TendersPage({ profile, onNavigate }) {
         <div className="tn-search-bar">
           <input className="tn-search-input" placeholder="🔍  Buscar hospital, proceso, expediente, sector, responsable…" value={globalQ} onChange={e=>setGlobalQ(e.target.value)}/>
           <span className="tn-search-count">{filtered.length} resultado{filtered.length!==1?"s":""}</span>
+        </div>
+
+        <div className="tn-mobile-list">
+          {loading ? (
+            <div className="tn-empty"><div className="tn-empty__icon">⏳</div><h3>Cargando…</h3></div>
+          ) : filtered.length === 0 ? (
+            <div className="tn-empty"><div className="tn-empty__icon">⌕</div><h3>{tenders.length===0?"Sin licitaciones.":"Sin resultados con los filtros aplicados."}</h3></div>
+          ) : filtered.map(t => <MobileTenderCard key={t.id} tender={t}/>)}
         </div>
 
         <div className="tn-grid-wrap">

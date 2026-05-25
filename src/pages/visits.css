@@ -136,6 +136,10 @@
   padding: 22px 24px;
   box-shadow: 0 1px 4px rgba(15,23,42,.06);
 }
+
+.visits-panel form {
+  max-width: 1320px;
+}
 .visits-panel__header {
   display: flex;
   justify-content: space-between;
@@ -183,8 +187,16 @@
 .visits-filter-tab:not(.active):hover { background: #f1f5f9; color: #334155; }
 
 /* ─── Visit Form ─────────────────────────────────────────────────────── */
-.vf-wrap { display: flex; flex-direction: column; gap: 20px; }
-.vf-section { display: flex; flex-direction: column; gap: 12px; }
+.vf-wrap { display: flex; flex-direction: column; gap: 18px; }
+.vf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid rgba(15,36,68,.07);
+  border-radius: 12px;
+  padding: 14px;
+}
 .vf-section__label {
   font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .6px;
@@ -482,7 +494,7 @@
   .visits-page { padding: 14px; gap: 12px; }
 }
 @media (max-width: 600px) {
-  .visits-page { padding: 0; gap: 0; background: #f1f5f9; }
+  .visits-page { padding: 0 0 96px; gap: 0; background: #f1f5f9; }
   .visits-header { border-bottom: 1px solid rgba(15,36,68,.09); padding: 14px 16px; }
   .visits-header__title { font-size: 18px; }
   .visits-header__sub { display: none; }
@@ -498,14 +510,17 @@
   .visits-filter-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; gap: 6px; }
   .visits-filter-tabs::-webkit-scrollbar { display: none; }
   .visits-filter-tab { white-space: nowrap; padding: 8px 12px; font-size: 12px; min-height: 36px; }
-  .vf-wrap { gap: 16px; }
+  .vf-wrap { gap: 14px; }
+  .vf-section { border: none; padding: 0; border-radius: 0; }
   .vf-grid { grid-template-columns: 1fr; gap: 10px; }
   .vf-field--wide, .vf-field--full { grid-column: 1; }
-  .vf-field input, .vf-field select, .vf-field textarea { padding: 13px 14px; font-size: 16px; border-radius: 12px; min-height: 48px; }
-  .vf-field textarea { min-height: 90px; font-size: 15px; }
-  .vf-material-btn { padding: 10px 14px; font-size: 13px; min-height: 44px; border-radius: 10px; }
+  .vf-field { gap: 4px; }
+  .vf-field label { font-size: 12px; }
+  .vf-field input, .vf-field select, .vf-field textarea { padding: 11px 13px; font-size: 15px; border-radius: 12px; min-height: 44px; }
+  .vf-field textarea { min-height: 82px; font-size: 14px; }
+  .vf-material-btn { padding: 9px 12px; font-size: 12px; min-height: 40px; border-radius: 10px; }
   .vf-actions { flex-direction: column-reverse; gap: 8px; padding-top: 8px; }
-  .vf-btn { width: 100%; text-align: center; padding: 15px; font-size: 15px; border-radius: 12px; min-height: 52px; }
+  .vf-btn { width: 100%; text-align: center; padding: 13px; font-size: 15px; border-radius: 12px; min-height: 48px; }
   .visits-item { border-radius: 14px; padding: 14px; gap: 8px; }
   .visits-item__top { gap: 10px; }
   .visits-item__avatar { width: 40px; height: 40px; font-size: 16px; }

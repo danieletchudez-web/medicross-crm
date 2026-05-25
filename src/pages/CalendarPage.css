@@ -464,15 +464,40 @@
   .cal-week__time-col { display: none; }
 }
 @media (max-width: 900px) {
-  .cal-page { padding: 14px; gap: 12px; }
+  .cal-page { padding: 14px 14px 88px; gap: 12px; }
   .cal-kpis { grid-template-columns: repeat(2, 1fr); }
-  .cal-toolbar { flex-direction: column; align-items: flex-start; }
+  .cal-toolbar { flex-direction: column; align-items: flex-start; position: sticky; top: 0; z-index: 12; }
   .cal-toolbar__right { width: 100%; justify-content: flex-start; }
   .cal-cell { min-height: 70px; padding: 4px; }
   .cal-week__body { grid-template-columns: repeat(7, 1fr); }
 }
 @media (max-width: 600px) {
   .cal-kpis { grid-template-columns: 1fr 1fr; }
+  .cal-kpi { padding: 12px 14px; border-radius: 14px; }
+  .cal-kpi__value { font-size: 24px; }
   .cal-filter-select { font-size: 11px; }
-  .cal-toolbar__title { min-width: 140px; font-size: 14px; }
+  .cal-toolbar { border-radius: 16px; padding: 14px; }
+  .cal-toolbar__left { width: 100%; display: grid; grid-template-columns: 44px 1fr 44px 72px; gap: 8px; }
+  .cal-toolbar__title { min-width: 0; font-size: 18px; align-self: center; }
+  .cal-nav-btn { width: 44px; height: 44px; border-radius: 12px; }
+  .cal-today-btn { min-height: 44px; border-radius: 12px; }
+  .cal-toolbar__right { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cal-filter-select { width: 100%; min-height: 44px; border-radius: 12px; }
+  .cal-view-tabs { grid-column: 1 / -1; width: 100%; }
+  .cal-view-tab { flex: 1; min-height: 38px; font-size: 13px; }
+  .cal-new-btn { grid-column: 1 / -1; min-height: 46px; border-radius: 13px; }
+  .cal-main { border-radius: 16px; }
+  .cal-cell { min-height: 76px; padding: 5px; overflow: hidden; }
+  .cal-cell__num { width: 26px; height: 26px; font-size: 13px; }
+  .cal-chip--compact { width: 100%; min-width: 0; padding: 3px 4px; border-radius: 7px; }
+  .cal-chip--compact .cal-chip__text { min-width: 0; max-width: 100%; }
+  .cal-list-item { align-items: flex-start; padding: 15px 16px; }
+  .cal-list-item__left { min-width: 0; }
+  .cal-list-item__left > div { min-width: 0; }
+  .cal-list-item__left strong,
+  .cal-list-item__left span,
+  .cal-list-item__left em { overflow: hidden; text-overflow: ellipsis; }
+  .cal-list-item__status { align-self: flex-start; }
+  .cal-legend { padding-bottom: 34px; gap: 12px; }
+  .cal-legend-item { font-size: 12px; }
 }

@@ -27,7 +27,7 @@ export default function CalendarPage({ profile, onNavigate }) {
   const today  = new Date();
   const [year,   setYear]   = useState(today.getFullYear());
   const [month,  setMonth]  = useState(today.getMonth());
-  const [view,   setView]   = useState("mes");
+  const [view,   setView]   = useState(() => window.innerWidth <= 600 ? "lista" : "mes");
   const [visits,   setVisits]   = useState([]);
   const [selected, setSelected] = useState(null);
   const [filterUnit,   setFilterUnit]   = useState("todas");
@@ -339,7 +339,16 @@ export default function CalendarPage({ profile, onNavigate }) {
                 : `${MONTHS[month]} ${year}`}
             </h2>
             <button className="cal-nav-btn" onClick={view==="semana"?nextWeek:nextMonth}>›</button>
-            <button className="cal-today-btn" onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }}>
+            <button className="cal-today-btn" onClick={() => {
+              setYear(today.getFullYear());
+              setMonth(today.getMonth());
+              const d = new Date();
+              const day = d.getDay();
+              const diff = day === 0 ? -6 : 1 - day;
+              d.setDate(d.getDate() + diff);
+              d.setHours(0,0,0,0);
+              setWeekStart(d);
+            }}>
               Hoy
             </button>
           </div>
