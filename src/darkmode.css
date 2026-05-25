@@ -576,6 +576,9 @@
 [data-theme="dark"] .dash-kpi,
 [data-theme="dark"] .dash-insight,
 [data-theme="dark"] .dash-panel,
+[data-theme="dark"] .dash-exec-strip,
+[data-theme="dark"] .dash-exec-pill,
+[data-theme="dark"] .dash-next-action,
 [data-theme="dark"] .dash-decisions__head,
 [data-theme="dark"] .dash-decision-card,
 [data-theme="dark"] .dash-hot-row,
@@ -692,7 +695,10 @@
 [data-theme="dark"] .dash-insight__value,
 [data-theme="dark"] .dash-decisions__head strong,
 [data-theme="dark"] .dash-decision-card strong,
+[data-theme="dark"] .dash-exec-pill strong,
+[data-theme="dark"] .dash-next-action strong,
 [data-theme="dark"] .dash-hot-row__main strong,
+[data-theme="dark"] .dash-hot-rank,
 [data-theme="dark"] .dash-hot-score div,
 [data-theme="dark"] .dash-list-row__main strong,
 [data-theme="dark"] .dash-donut-center strong,
@@ -758,7 +764,9 @@
 [data-theme="dark"] .dash-kpi__label,
 [data-theme="dark"] .dash-insight__sub,
 [data-theme="dark"] .dash-decision-card p,
+[data-theme="dark"] .dash-next-action p,
 [data-theme="dark"] .dash-hot-row__main small,
+[data-theme="dark"] .dash-hot-row__main p,
 [data-theme="dark"] .dash-hot-row__meta span,
 [data-theme="dark"] .dash-list-row__main small,
 [data-theme="dark"] .dash-list-row__meta span,
@@ -819,6 +827,8 @@
 [data-theme="dark"] .dash-primary-kpi__label,
 [data-theme="dark"] .dash-insight__label,
 [data-theme="dark"] .dash-decisions__head span,
+[data-theme="dark"] .dash-exec-pill span,
+[data-theme="dark"] .dash-next-action__label,
 [data-theme="dark"] .bi-kpi__label,
 [data-theme="dark"] .bi-decisions__head span,
 [data-theme="dark"] .bi-hero__eyebrow,
@@ -960,6 +970,8 @@
 }
 
 [data-theme="dark"] .dash-kpi-toggle,
+[data-theme="dark"] .dash-exec-action,
+[data-theme="dark"] .dash-next-action button,
 [data-theme="dark"] .bi-toggle button,
 [data-theme="dark"] .visits-tab,
 [data-theme="dark"] .visits-filter-tab,
@@ -1048,4 +1060,33 @@
 [data-theme="dark"] .crm-ai-input-wrap {
   background: #101722 !important;
   border-color: #273244 !important;
+}
+
+[data-theme="dark"] .dash-kpi-section {
+  background: rgba(21, 28, 37, 0.72) !important;
+  border-color: #273244 !important;
+}
+
+[data-theme="dark"] .dash-kpi-toggle span.is-active {
+  background: #185fa5 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .dash-exec-action,
+[data-theme="dark"] .dash-next-action button,
+[data-theme="dark"] .dash-hero-cta {
+  background: #185fa5 !important;
+  border-color: rgba(147, 197, 253, 0.28) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .dash-exec-action:hover,
+[data-theme="dark"] .dash-next-action button:hover,
+[data-theme="dark"] .dash-hero-cta:hover {
+  background: #1d6fb8 !important;
+}
+
+[data-theme="dark"] .dash-primary-kpi__progress,
+[data-theme="dark"] .dash-hot-score {
+  background: #273244 !important;
 }

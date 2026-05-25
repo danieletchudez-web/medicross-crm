@@ -82,12 +82,15 @@ function ForecastGauge({ forecast, target, coverage }) {
 }
 
 /* ── Probability panel ──────────────────────────────────────────────── */
-function ProbabilityPanel({ probabilityRef }) {
+function ProbabilityPanel({ probabilityRef, total }) {
   return (
     <article className="dash-panel">
       <header className="dash-panel__header">
-        <h3 className="dash-panel__title">Probabilidad de cierre</h3>
-        <p className="dash-panel__sub">Monto del pipeline agrupado por rango de probabilidad</p>
+        <div>
+          <h3 className="dash-panel__title">Probabilidad de cierre</h3>
+          <p className="dash-panel__sub">Monto del pipeline agrupado por rango de probabilidad</p>
+        </div>
+        <span className="dash-panel__metric">{total}</span>
       </header>
       <div className="dash-chart-box"><canvas ref={probabilityRef}/></div>
     </article>
@@ -268,7 +271,18 @@ export default function ManagerDashboard({ profile, onNavigate }) {
         score += daysToClose <= 30 ? 10 : daysToClose <= 60 ? 5 : 0;
         if (daysToClose < 0) score -= 25;
         score = Math.max(0, Math.min(100, Math.round(score)));
-        return { id: o.id, name: o.name || "Sin nombre", client: o.accounts?.name || "Sin cliente", stage: o.stage || "Sin etapa", amount, forecast: weighted, probability, score };
+        return {
+          id: o.id,
+          name: o.name || "Sin nombre",
+          client: o.accounts?.name || "Sin cliente",
+          stage: o.stage || "Sin etapa",
+          amount,
+          forecast: weighted,
+          probability,
+          score,
+          nextAction: o.next_action || "Definir próxima acción",
+          expectedClose: o.expected_close || null,
+        };
       })
       .sort((a, b) => b.score - a.score);
   }, [filteredOpps]);
@@ -316,6 +330,16 @@ export default function ManagerDashboard({ profile, onNavigate }) {
       return { id: c.id, name: c.name || "Sin nombre", forecast, target, coverage };
     });
   }, [filteredCampaigns, filteredOpps]);
+
+  const weeklyVisits = useMemo(() => (
+    visits.filter((v) => {
+      const d = new Date(v.visit_date);
+      return d >= new Date(new Date().getTime() - 7 * 86400000);
+    }).length
+  ), [visits]);
+
+  const executiveModeLabel = kpisCollapsed ? "Ejecutivo" : "Completo";
+  const updatedAt = new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 
   function pipelineByStage() {
     return STAGES.map((stage) => filteredOpps.filter((o) => o.stage === stage).reduce((s, o) => s + Number(o.amount || 0), 0));
@@ -447,8 +471,29 @@ export default function ManagerDashboard({ profile, onNavigate }) {
                 {productLines.map((line) => <option key={line}>{line}</option>)}
               </select>
             </div>
+            <button className="dash-hero-cta" onClick={() => onNavigate("opportunities")}>Ver pipeline</button>
           </div>
         </header>
+
+        <section className="dash-exec-strip">
+          <div className="dash-exec-pill">
+            <span>Vista</span>
+            <strong>{executiveModeLabel}</strong>
+          </div>
+          <div className="dash-exec-pill">
+            <span>Línea</span>
+            <strong>{selectedLine}</strong>
+          </div>
+          <div className="dash-exec-pill">
+            <span>Responsable</span>
+            <strong>{profile?.full_name || profile?.email || "Equipo comercial"}</strong>
+          </div>
+          <div className="dash-exec-pill">
+            <span>Última actualización</span>
+            <strong>{updatedAt}</strong>
+          </div>
+          <button className="dash-exec-action" onClick={() => onNavigate("visits")}>+ Registrar visita</button>
+        </section>
 
         {/* PRIMARY KPIs — fila 1 */}
         <section className="dash-primary-kpis">
@@ -457,6 +502,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             value={money(metrics.pipeline)}
             sub="Total oportunidades activas"
             accent="blue"
+            progress={metrics.target > 0 ? Math.min(100, Math.round((metrics.pipeline / metrics.target) * 100)) : 0}
+            meta={`${metrics.openOpps} oportunidades`}
             tooltip="Suma total del monto de todas las oportunidades abiertas (excluye Ganado y Perdido). Representa el potencial máximo de ventas en curso."
           />
           <PrimaryKpi
@@ -464,6 +511,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             value={money(metrics.forecast)}
             sub="Pipeline × probabilidad"
             accent="blue"
+            progress={metrics.coverage}
+            meta={`${metrics.forecastRatio}% con probabilidad`}
             tooltip="Cada oportunidad abierta multiplicada por su % de probabilidad de cierre. Ejemplo: $100M al 60% aporta $60M al forecast. Es la estimación realista de lo que se va a cobrar."
           />
           <PrimaryKpi
@@ -471,6 +520,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             value={money(metrics.target)}
             sub="Meta comercial definida"
             accent="slate"
+            progress={metrics.campaigns > 0 ? 100 : 0}
+            meta={`${metrics.campaigns} campañas activas`}
             tooltip="Suma de los objetivos económicos de todas las campañas activas. Es la meta que el equipo comercial debe alcanzar."
           />
           <PrimaryKpi
@@ -478,6 +529,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             value={`${metrics.coverage}%`}
             sub="Forecast ponderado vs objetivo"
             accent={metrics.coverage >= 80 ? "green" : metrics.coverage >= 50 ? "yellow" : "red"}
+            progress={metrics.coverage}
+            meta={metrics.coverage >= 80 ? "En zona saludable" : metrics.coverage >= 50 ? "Requiere atención" : "Riesgo comercial"}
             tooltip="Forecast ponderado ÷ Objetivo de campañas. Indica qué porcentaje del objetivo ya está cubierto con el pipeline actual. Verde ≥80%, amarillo ≥50%, rojo <50%."
           />
         </section>
@@ -486,6 +539,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
           <div className="dash-decisions__head">
             <span>Decisiones de hoy</span>
             <strong>Prioridad ejecutiva</strong>
+            <p>{decision.text}</p>
           </div>
           {todayDecisions.map((item, index) => (
             <article key={`${item.title}-${index}`} className={`dash-decision-card dash-decision-card--${item.tone}`}>
@@ -498,15 +552,36 @@ export default function ManagerDashboard({ profile, onNavigate }) {
           ))}
         </section>
 
+        <section className={`dash-next-action dash-next-action--${decision.tone}`}>
+          <div className="dash-next-action__label">Próxima mejor acción</div>
+          <div className="dash-next-action__body">
+            <span>{decision.icon}</span>
+            <div>
+              <strong>{decision.title}</strong>
+              <p>{decision.text}</p>
+            </div>
+          </div>
+          <button onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}>
+            Ejecutar acción
+          </button>
+        </section>
+
         {/* KPIs COLAPSABLES — fila 2 y 3 */}
         <div className="dash-kpi-section">
-          <button
-            className="dash-kpi-toggle"
-            onClick={() => setKpisCollapsed((c) => !c)}
-            title={kpisCollapsed ? "Expandir métricas" : "Contraer métricas"}
-          >
-            {kpisCollapsed ? "▼ Mostrar métricas" : "▲ Ocultar métricas"}
-          </button>
+          <div className="dash-kpi-section__head">
+            <div>
+              <span>Salud comercial</span>
+              <strong>Métricas operativas</strong>
+            </div>
+            <button
+              className="dash-kpi-toggle"
+              onClick={() => setKpisCollapsed((c) => !c)}
+              title={kpisCollapsed ? "Expandir métricas" : "Contraer métricas"}
+            >
+              <span className={kpisCollapsed ? "" : "is-active"}>Completo</span>
+              <span className={kpisCollapsed ? "is-active" : ""}>Ejecutivo</span>
+            </button>
+          </div>
 
           {!kpisCollapsed && (
             <>
@@ -547,7 +622,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
                 />
                 <InsightCard
                   label="Visitas esta semana"
-                  value={visits.filter((v) => { const d = new Date(v.visit_date); return d >= new Date(new Date().getTime() - 7 * 86400000); }).length}
+                  value={weeklyVisits}
                   sub="Últimos 7 días del equipo"
                   tone="blue"
                   tooltip="Total de visitas comerciales registradas en los últimos 7 días por todo el equipo. Refleja el nivel de actividad y presencia en el mercado."
@@ -559,7 +634,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 
         {/* MAIN PANELS */}
         <section className="dash-main-grid">
-          <ProbabilityPanel probabilityRef={probabilityRef}/>
+          <ProbabilityPanel probabilityRef={probabilityRef} total={compactMoney(metrics.pipeline)}/>
           <CampaignPanel rows={campaignRows}/>
           <HotProjects rows={projectTemperature}/>
         </section>
@@ -572,8 +647,11 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 
           <article className="dash-panel">
             <header className="dash-panel__header">
-              <h3 className="dash-panel__title">Cobertura de forecast</h3>
-              <p className="dash-panel__sub">Pipeline ponderado vs objetivo de campañas</p>
+              <div>
+                <h3 className="dash-panel__title">Cobertura de forecast</h3>
+                <p className="dash-panel__sub">Pipeline ponderado vs objetivo de campañas</p>
+              </div>
+              <span className="dash-panel__metric">{metrics.coverage}%</span>
             </header>
             <div className="dash-chart-box dash-chart-box--gauge">
               <ForecastGauge forecast={metrics.forecast} target={metrics.target} coverage={metrics.coverage}/>
@@ -603,7 +681,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 }
 
 /* ─── Sub-components ─────────────────────────────────────────────────── */
-function PrimaryKpi({ label, value, sub, accent = "blue", tooltip }) {
+function PrimaryKpi({ label, value, sub, accent = "blue", tooltip, progress = 0, meta }) {
+  const safeProgress = Math.max(0, Math.min(100, Number(progress || 0)));
   return (
     <article className={`dash-primary-kpi dash-primary-kpi--${accent}`}>
       <div className="dash-primary-kpi__header">
@@ -611,7 +690,13 @@ function PrimaryKpi({ label, value, sub, accent = "blue", tooltip }) {
         {tooltip && <Tooltip text={tooltip}/>}
       </div>
       <strong className="dash-primary-kpi__value" title={String(value)}>{value}</strong>
-      <span className="dash-primary-kpi__sub">{sub}</span>
+      <div className="dash-primary-kpi__progress" aria-hidden="true">
+        <span style={{ width: `${safeProgress}%` }} />
+      </div>
+      <div className="dash-primary-kpi__footer">
+        <span className="dash-primary-kpi__sub">{sub}</span>
+        {meta && <em>{meta}</em>}
+      </div>
     </article>
   );
 }
@@ -648,12 +733,15 @@ function InsightCard({ label, value, sub, tone = "blue", tooltip }) {
   );
 }
 
-function Panel({ title, subtitle, children }) {
+function Panel({ title, subtitle, metric, children }) {
   return (
     <article className="dash-panel">
       <header className="dash-panel__header">
-        <h3 className="dash-panel__title">{title}</h3>
-        {subtitle && <p className="dash-panel__sub">{subtitle}</p>}
+        <div>
+          <h3 className="dash-panel__title">{title}</h3>
+          {subtitle && <p className="dash-panel__sub">{subtitle}</p>}
+        </div>
+        {metric && <span className="dash-panel__metric">{metric}</span>}
       </header>
       <div className="dash-chart-box">{children}</div>
     </article>
@@ -664,8 +752,11 @@ function CampaignPanel({ rows }) {
   return (
     <article className="dash-panel">
       <header className="dash-panel__header">
-        <h3 className="dash-panel__title">Campañas vs objetivo</h3>
-        <p className="dash-panel__sub">Forecast ponderado por campaña</p>
+        <div>
+          <h3 className="dash-panel__title">Campañas vs objetivo</h3>
+          <p className="dash-panel__sub">Forecast ponderado por campaña</p>
+        </div>
+        <span className="dash-panel__metric">{rows.length}</span>
       </header>
       {rows.length === 0 ? <p className="dash-empty">No hay campañas cargadas.</p> : (
         <div className="dash-list">
@@ -693,16 +784,21 @@ function HotProjects({ rows }) {
   return (
     <article className="dash-panel">
       <header className="dash-panel__header">
-        <h3 className="dash-panel__title">Proyectos prioritarios</h3>
-        <p className="dash-panel__sub">Ordenados por score de temperatura</p>
+        <div>
+          <h3 className="dash-panel__title">Proyectos prioritarios</h3>
+          <p className="dash-panel__sub">Ordenados por score de temperatura</p>
+        </div>
+        <span className="dash-panel__metric">{rows[0]?.score || 0}</span>
       </header>
       {rows.length === 0 ? <p className="dash-empty">No hay oportunidades abiertas.</p> : (
         <div className="dash-hot-list">
-          {rows.slice(0, 5).map((p) => (
+          {rows.slice(0, 5).map((p, index) => (
             <div className="dash-hot-row" key={p.id}>
+              <span className="dash-hot-rank">{index + 1}</span>
               <div className="dash-hot-row__main">
                 <strong>{p.name}</strong>
                 <small>{p.client} · {p.stage}</small>
+                <p>{p.nextAction}</p>
                 <div className="dash-hot-score">
                   <div style={{ width: `${p.score}%` }} />
                 </div>
