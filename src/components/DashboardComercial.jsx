@@ -122,6 +122,14 @@ export default function DashboardComercial() {
     }
   }, [filtered, loading]);
 
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      if (!loading) setTimeout(() => renderCharts(), 80);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, [filtered, loading]);
+
   /* ── KPIs ── */
   const now       = new Date();
   const thisYear  = now.getFullYear();
@@ -168,7 +176,7 @@ export default function DashboardComercial() {
       });
     }
     const Chart = window.Chart;
-    const isDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const textC  = isDark ? '#8a9bb0' : '#6b6b6b';
     const gridC  = isDark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.07)';
 
