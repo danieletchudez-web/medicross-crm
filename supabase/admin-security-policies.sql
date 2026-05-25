@@ -32,7 +32,32 @@ create table if not exists public.admin_audit_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.crm_settings (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_by uuid,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.crm_tasks (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  status text not null default 'pendiente',
+  priority text not null default 'media',
+  due_date date,
+  account_id uuid,
+  opportunity_id uuid,
+  tender_id uuid,
+  owner_id uuid,
+  created_by uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.admin_audit_logs enable row level security;
+alter table public.crm_settings enable row level security;
+alter table public.crm_tasks enable row level security;
 
 create or replace function public.is_super_admin()
 returns boolean
@@ -74,3 +99,23 @@ create policy "admin_audit_logs_insert_super_admin_only"
 on public.admin_audit_logs
 for insert
 with check (public.is_super_admin());
+
+drop policy if exists "crm_settings_select_authenticated" on public.crm_settings;
+create policy "crm_settings_select_authenticated"
+on public.crm_settings
+for select
+using (auth.uid() is not null);
+
+drop policy if exists "crm_settings_write_super_admin_only" on public.crm_settings;
+create policy "crm_settings_write_super_admin_only"
+on public.crm_settings
+for all
+using (public.is_super_admin())
+with check (public.is_super_admin());
+
+drop policy if exists "crm_tasks_owner_or_super_admin" on public.crm_tasks;
+create policy "crm_tasks_owner_or_super_admin"
+on public.crm_tasks
+for all
+using (owner_id = auth.uid() or public.is_super_admin())
+with check (owner_id = auth.uid() or public.is_super_admin());

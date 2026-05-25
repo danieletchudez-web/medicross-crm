@@ -1,0 +1,127 @@
+.global-search-trigger {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.global-search-trigger strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.global-search-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(2px);
+  z-index: 2200;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 8vh 18px;
+}
+
+.global-search-panel {
+  width: min(760px, 100%);
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  overflow: hidden;
+}
+
+.global-search-box {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid #e8ecf2;
+}
+
+.global-search-box input {
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.global-search-box button {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #64748b;
+  border-radius: 9px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.global-search-results {
+  max-height: 60vh;
+  overflow: auto;
+  padding: 12px;
+}
+
+.global-search-empty {
+  margin: 0;
+  padding: 24px;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.global-search-group {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.global-search-group > span {
+  color: #94a3b8;
+  font-size: 10.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 4px;
+}
+
+.global-search-group button {
+  border: 1px solid #e8ecf2;
+  background: #ffffff;
+  border-radius: 11px;
+  padding: 10px 12px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.global-search-group button:hover {
+  background: #f8fbff;
+  border-color: #bfdbfe;
+}
+
+.global-search-group strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.global-search-group small {
+  display: block;
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 650;
+  margin-top: 3px;
+}

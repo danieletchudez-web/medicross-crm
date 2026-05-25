@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
+import GlobalSearch from "./GlobalSearch";
 
 function LiveClock() {
   const [now, setNow] = useState(new Date());
@@ -30,7 +31,10 @@ export default function Layout({ title, profile, onNavigate, children }) {
               <strong>{profile?.full_name || "Usuario"}</strong> · <strong>{profile?.role || "sin rol"}</strong>
             </p>
           </div>
-          <LiveClock />
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <GlobalSearch onNavigate={onNavigate} />
+            <LiveClock />
+          </div>
         </header>
 
         {children}

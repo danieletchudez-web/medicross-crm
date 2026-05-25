@@ -42,6 +42,7 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
   const [form, setForm]                   = useState(EMPTY_FORM);
   const [loading, setLoading]             = useState(false);
   const [filter, setFilter]               = useState("todas"); // ← default "todas"
+  const [viewMode, setViewMode]           = useState("table");
 
   useEffect(() => { loadData(); }, []);
 
@@ -250,6 +251,8 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
               <p>Todas las oportunidades — activas, ganadas y perdidas.</p>
             </div>
             <div className="opp-filter-tabs">
+              <button className={`opp-tab ${viewMode === "table" ? "opp-tab--active" : ""}`} onClick={() => setViewMode("table")}>Tabla</button>
+              <button className={`opp-tab ${viewMode === "kanban" ? "opp-tab--active" : ""}`} onClick={() => setViewMode("kanban")}>Kanban</button>
               {TABS.map((t) => (
                 <button
                   key={t.key}
@@ -262,7 +265,36 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
             </div>
           </div>
 
-          <div className="opp-table-wrap">
+          {viewMode === "kanban" && (
+            <div className="opp-kanban">
+              {STAGES.map(stage => {
+                const rows = filteredOpps.filter(o => o.stage === stage);
+                const totalStage = rows.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+                return (
+                  <section key={stage} className="opp-kanban-col">
+                    <header>
+                      <strong>{stage}</strong>
+                      <span>{rows.length} · {money(totalStage)}</span>
+                    </header>
+                    <div>
+                      {rows.length === 0 ? (
+                        <p className="opp-kanban-empty">Sin oportunidades</p>
+                      ) : rows.map(o => (
+                        <article key={o.id} className="opp-kanban-card">
+                          <strong>{o.name}</strong>
+                          <span>{o.accounts?.name || "Sin cliente"}</span>
+                          <small>{money(o.amount)} · {o.probability || 0}%</small>
+                          <button onClick={() => editOpportunity(o)}>Editar</button>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+
+          {viewMode === "table" && <div className="opp-table-wrap">
             <table className="opp-table">
               <thead>
                 <tr>
@@ -333,9 +365,9 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </div>}
 
-          <div className="opp-mobile-list">
+          {viewMode === "table" && <div className="opp-mobile-list">
             {filteredOpps.length === 0 ? (
               <EmptyState
                 title="Sin oportunidades para este filtro"
@@ -375,7 +407,7 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                 </article>
               );
             })}
-          </div>
+          </div>}
         </section>
 
         <footer className="opp-footer">

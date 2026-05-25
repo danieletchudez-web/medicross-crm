@@ -20,6 +20,8 @@ const ImporterPage          = lazy(() => import("./pages/ImporterPage"));
 const TendersPage           = lazy(() => import("./pages/TendersPage"));
 const CotizadorPage         = lazy(() => import("./pages/CotizadorPage"));
 const PreciosHistoricosPage = lazy(() => import("./pages/PreciosHistoricosPage"));
+const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
+const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
 
 const FALLBACK_PROFILE = {
   id: null,
@@ -190,6 +192,7 @@ export default function App() {
 
   function canOpenPage(pageId) {
     if (safeProfile.role === "super_admin") return true;
+    if (["notifications","settings"].includes(pageId)) return true;
     if (pageId === "adminUsers") return false;
     if (pageId === "managerDashboard") return true;
     return (safeProfile.allowed_modules || []).includes(pageId);
@@ -214,6 +217,8 @@ export default function App() {
     case "importer":           CurrentPage = <ImporterPage          {...pageProps} />; break;
     case "tenders":            CurrentPage = <TendersPage           {...pageProps} />; break;
     case "preciosHistoricos":  CurrentPage = <PreciosHistoricosPage {...pageProps} />; break;
+    case "notifications":      CurrentPage = <NotificationsPage     {...pageProps} />; break;
+    case "settings":           CurrentPage = <SettingsPage          {...pageProps} />; break;
     case "cotizador":          CurrentPage = <CotizadorPage         {...pageProps} initialData={navigateData} />; break;
     default:                   CurrentPage = <ManagerDashboard      {...pageProps} />;
   }

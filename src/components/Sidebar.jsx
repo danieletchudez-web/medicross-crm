@@ -31,10 +31,12 @@ const MENU_SECTIONS = [
   {
     label: "OPERACIONES",
     items: [
+      { id: "notifications", label: "Centro de Alertas", icon: "!" },
       { id: "todayActions", label: "Acciones Hoy",  icon: "◷" },
       { id: "visits",       label: "Visitas",        icon: "◌" },
       { id: "calendar",     label: "Calendario",     icon: "▦" },
       { id: "adminUsers",   label: "Administración", icon: "⊞" },
+      { id: "settings",     label: "Configuración",  icon: "⚙" },
     ],
   },
 ];
@@ -73,6 +75,10 @@ export default function Sidebar({ profile, onNavigate }) {
   const [editing,    setEditing]    = useState(false);
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
   const [menuOpen,   setMenuOpen]   = useState(false);
+  const [favorites,  setFavorites]  = useState(() => {
+    try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
+    catch { return []; }
+  });
   const dragIdx = useRef(null);
 
   useEffect(() => {
@@ -122,6 +128,11 @@ export default function Sidebar({ profile, onNavigate }) {
   }
   function onDragEnd() { saveOrder(orderedIds); dragIdx.current = null; }
   function resetOrder() { setOrderedIds(ALL_IDS); localStorage.removeItem("sidebar_order"); }
+  function toggleFavorite(id) {
+    const next = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id].slice(-4);
+    setFavorites(next);
+    localStorage.setItem("sidebar_favorites", JSON.stringify(next));
+  }
 
   const sections     = buildSections(orderedIds);
   const initials     = (profile?.full_name || profile?.email || "U").slice(0,1).toUpperCase();
@@ -162,6 +173,12 @@ export default function Sidebar({ profile, onNavigate }) {
           </div>
 
           <nav className="sidebar-nav">
+            <div className="sidebar-quick">
+              <button onClick={() => handleNavigate("visits")}>+ Visita</button>
+              <button onClick={() => handleNavigate("accounts")}>+ Cliente</button>
+              <button onClick={() => handleNavigate("opportunities")}>+ Oportunidad</button>
+            </div>
+
             <div className="sidebar-nav__group-row">
               <span className="sidebar-nav__group-label">MÓDULOS</span>
               <button
@@ -174,6 +191,22 @@ export default function Sidebar({ profile, onNavigate }) {
             </div>
 
             {editing && <p className="sidebar-edit-hint">Arrastrá para reordenar</p>}
+
+            {favorites.length > 0 && (
+              <div className="sidebar-section">
+                <span className="sidebar-section__label">FRECUENTES</span>
+                {favorites.map(id => {
+                  const item = MENU_SECTIONS.flatMap(s => s.items).find(i => i.id === id);
+                  if (!item || !canSee(id)) return null;
+                  return (
+                    <button key={id} className="sidebar-nav__item sidebar-nav__item--fav" onClick={() => handleNavigate(id)}>
+                      <span className="sidebar-nav__icon">{item.icon}</span>
+                      <span className="sidebar-nav__label">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {sections.map((section, si) => {
               const visible = section.items.filter(item => canSee(item.id));
@@ -202,6 +235,16 @@ export default function Sidebar({ profile, onNavigate }) {
                         <span className="sidebar-nav__icon">{item.icon}</span>
                         <span className="sidebar-nav__label">{item.label}</span>
                       </button>
+                      {editing && (
+                        <button
+                          type="button"
+                          className={`sidebar-fav-btn ${favorites.includes(item.id) ? "active" : ""}`}
+                          onClick={() => toggleFavorite(item.id)}
+                          title="Marcar como frecuente"
+                        >
+                          ★
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

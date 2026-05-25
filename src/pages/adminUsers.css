@@ -190,6 +190,65 @@
   box-shadow: 0 2px 8px rgba(15,23,42,0.04);
 }
 
+.admin-audit-card {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+}
+
+.admin-audit-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.admin-audit-card h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.admin-audit-card p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-audit-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-audit-list article {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #f0f4f8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+}
+
+.admin-audit-list strong {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-audit-list span,
+.admin-audit-list small {
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
 .admin-desktop-table { overflow-x: auto; }
 
 .admin-desktop-table table {

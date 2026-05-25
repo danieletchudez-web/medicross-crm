@@ -1,0 +1,83 @@
+.settings-page {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.settings-card {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15,23,42,.04);
+  overflow: hidden;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid #f0f4f8;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row span {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+.settings-row input,
+.settings-row select {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font: inherit;
+  outline: none;
+}
+
+.settings-note {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.settings-note strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.settings-note p {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+html[data-density="dense"] .main-content {
+  font-size: 92%;
+}
+
+html[data-density="dense"] table td,
+html[data-density="dense"] table th {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+@media (max-width: 700px) {
+  .settings-page { padding: 14px; }
+  .settings-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+}

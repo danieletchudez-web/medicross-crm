@@ -195,9 +195,10 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   const [loading,     setLoading]     = useState(true);
   const [userView,    setUserView]    = useState("pending");
   const [deleteTarget,setDeleteTarget]= useState(null);
+  const [auditLogs,   setAuditLogs]   = useState([]);
   const canAdminUsers = profile?.role === "super_admin";
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadUsers(); loadAuditLogs(); }, []);
 
   async function loadUsers() {
     setLoading(true);
@@ -206,6 +207,15 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     if (error) { alert("Error cargando usuarios: " + error.message); setUsers([]); }
     else setUsers(data || []);
     setLoading(false);
+  }
+
+  async function loadAuditLogs() {
+    const { data } = await supabase
+      .from("admin_audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(12);
+    setAuditLogs(data || []);
   }
 
   const activeUsers   = useMemo(() => users.filter(u => u.is_active !== false), [users]);
@@ -261,7 +271,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     const { error, applied } = await persistProfileUpdate(userId, changes);
     if (error) { alert("Error actualizando usuario: " + error.message); setSavingId(null); return; }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...applied, ...changes } : u));
-    logAdminEvent(event, userId, changes).catch(() => {});
+    logAdminEvent(event, userId, changes).then(loadAuditLogs).catch(() => {});
     setSavingId(null);
   }
 
@@ -485,6 +495,29 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                 ))}
               </div>
             </>
+          )}
+        </section>
+
+        <section className="admin-audit-card">
+          <div className="admin-audit-card__head">
+            <div>
+              <h3>Auditoría de administración</h3>
+              <p>Cambios recientes de roles, permisos, aprobaciones y archivado.</p>
+            </div>
+            <button className="admin-refresh-btn" onClick={loadAuditLogs}>Actualizar auditoría</button>
+          </div>
+          {auditLogs.length === 0 ? (
+            <p className="admin-empty">No hay eventos de auditoría visibles todavía.</p>
+          ) : (
+            <div className="admin-audit-list">
+              {auditLogs.map(log => (
+                <article key={log.id || `${log.event}-${log.created_at}`}>
+                  <strong>{log.event}</strong>
+                  <span>{log.actor_email || "Sistema"} · {formatDateTime(log.created_at)}</span>
+                  <small>{log.target_user_id || "Sin usuario objetivo"}</small>
+                </article>
+              ))}
+            </div>
           )}
         </section>
 
