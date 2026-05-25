@@ -187,7 +187,7 @@ export default function Sidebar({ profile, onNavigate }) {
           className="sidebar-collapse-btn"
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-          title={collapsed ? "Expandir menú" : "Colapsar menú"}
+          data-tooltip={collapsed ? "Expandir menú" : "Colapsar menú"}
         >
           {collapsed ? "›" : "‹"}
         </button>
@@ -217,9 +217,9 @@ export default function Sidebar({ profile, onNavigate }) {
 
           <nav className="sidebar-nav">
             <div className="sidebar-quick">
-              <button onClick={() => handleNavigate("visits")} title="Nueva visita"><span><CalendarPlus aria-hidden="true"/></span><em>Visita</em></button>
-              <button onClick={() => handleNavigate("accounts")} title="Nuevo cliente"><span><Building2 aria-hidden="true"/></span><em>Cliente</em></button>
-              <button onClick={() => handleNavigate("opportunities")} title="Nueva oportunidad"><span><CircleDollarSign aria-hidden="true"/></span><em>Oportunidad</em></button>
+              <button onClick={() => handleNavigate("visits")} aria-label="Nueva visita" data-tooltip="Nueva visita"><span><CalendarPlus aria-hidden="true"/></span><em>Visita</em></button>
+              <button onClick={() => handleNavigate("accounts")} aria-label="Nuevo cliente" data-tooltip="Nuevo cliente"><span><Building2 aria-hidden="true"/></span><em>Cliente</em></button>
+              <button onClick={() => handleNavigate("opportunities")} aria-label="Nueva oportunidad" data-tooltip="Nueva oportunidad"><span><CircleDollarSign aria-hidden="true"/></span><em>Oportunidad</em></button>
             </div>
 
             <div className="sidebar-nav__group-row">
@@ -242,7 +242,7 @@ export default function Sidebar({ profile, onNavigate }) {
                   const item = MENU_SECTIONS.flatMap(s => s.items).find(i => i.id === id);
                   if (!item || !canSee(id)) return null;
                   return (
-                    <button key={id} className="sidebar-nav__item sidebar-nav__item--fav" onClick={() => handleNavigate(id)} title={item.label}>
+                    <button key={id} className="sidebar-nav__item sidebar-nav__item--fav" onClick={() => handleNavigate(id)} aria-label={item.label} data-tooltip={item.label}>
                       <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                       <span className="sidebar-nav__label">{item.label}</span>
                     </button>
@@ -274,7 +274,8 @@ export default function Sidebar({ profile, onNavigate }) {
                         className="sidebar-nav__item"
                         onClick={() => { if (!editing) handleNavigate(item.id); }}
                         style={{ cursor: editing ? "grab" : "pointer" }}
-                        title={item.label}
+                        aria-label={item.label}
+                        data-tooltip={item.label}
                       >
                         <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                         <span className="sidebar-nav__label">{item.label}</span>
@@ -301,14 +302,14 @@ export default function Sidebar({ profile, onNavigate }) {
           </nav>
 
           <div className="sidebar-footer">
-            <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)} title={dark ? "Modo claro" : "Modo oscuro"}>
+            <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)} aria-label={dark ? "Modo claro" : "Modo oscuro"} data-tooltip={dark ? "Modo claro" : "Modo oscuro"}>
               <span className="sidebar-theme-toggle__icon">{dark ? <Sun aria-hidden="true"/> : <Moon aria-hidden="true"/>}</span>
               <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
               <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
                 <div className="sidebar-theme-toggle__knob"/>
               </div>
             </div>
-            <button type="button" className="sidebar-logout" onClick={logout} title="Cerrar sesión">
+            <button type="button" className="sidebar-logout" onClick={logout} aria-label="Cerrar sesión" data-tooltip="Cerrar sesión">
               <span className="sidebar-logout__icon"><LogOut aria-hidden="true"/></span>
               <span className="sidebar-logout__label">Cerrar sesión</span>
             </button>

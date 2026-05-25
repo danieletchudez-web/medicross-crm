@@ -319,6 +319,10 @@
   position: relative;
 }
 
+.sidebar [data-tooltip] {
+  position: relative;
+}
+
 .sidebar-nav__item:hover                     { background: var(--sb-nav-hover); }
 .sidebar-nav__item:hover .sidebar-nav__icon  { color: #93c5fd; }
 .sidebar-nav__item:hover .sidebar-nav__label { color: #f1f5f9; }
@@ -559,6 +563,59 @@
 
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
+  .sidebar--collapsed [data-tooltip]::before,
+  .sidebar--collapsed [data-tooltip]::after {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 12px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-4px, -50%);
+    transition: opacity .14s ease, transform .14s ease;
+    z-index: 300;
+  }
+
+  .sidebar--collapsed [data-tooltip]::before {
+    content: attr(data-tooltip);
+    min-width: max-content;
+    max-width: 220px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: rgba(15, 36, 68, .98);
+    border: 1px solid rgba(147, 197, 253, .18);
+    color: #f8fafc;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .22);
+    font-size: 11.5px;
+    font-weight: 750;
+    line-height: 1.1;
+    letter-spacing: .1px;
+    white-space: nowrap;
+  }
+
+  .sidebar--collapsed [data-tooltip]::after {
+    content: "";
+    left: calc(100% + 7px);
+    width: 9px;
+    height: 9px;
+    background: rgba(15, 36, 68, .98);
+    border-left: 1px solid rgba(147, 197, 253, .18);
+    border-bottom: 1px solid rgba(147, 197, 253, .18);
+    transform: translate(-4px, -50%) rotate(45deg);
+  }
+
+  .sidebar--collapsed [data-tooltip]:hover::before,
+  .sidebar--collapsed [data-tooltip]:hover::after,
+  .sidebar--collapsed [data-tooltip]:focus-visible::before,
+  .sidebar--collapsed [data-tooltip]:focus-visible::after {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+
+  .sidebar--collapsed [data-tooltip]:hover::after,
+  .sidebar--collapsed [data-tooltip]:focus-visible::after {
+    transform: translate(0, -50%) rotate(45deg);
+  }
+
   .sidebar--collapsed .sidebar-brand {
     padding: 0;
   }
