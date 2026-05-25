@@ -238,11 +238,11 @@ button, input, select, textarea { font-family: inherit; }
 @media (max-width: 768px) {
   .app-shell { display: block; }
   .main-content {
-    padding-top: 36px;
+    padding-top: 56px;
   }
   .page-header {
     padding: 4px 16px;
-    height: 28px;
+    height: 36px;
     margin-bottom: 0;
   }
   .page-header__left {
