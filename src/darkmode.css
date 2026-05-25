@@ -505,3 +505,511 @@
 [data-theme="dark"] .admin-empty        { color: #484f58 !important; }
 [data-theme="dark"] .admin-mobile-card  { background: #161b22 !important; border-color: #21262d !important; }
 [data-theme="dark"] .mobile-admin-row label { color: #484f58 !important; }
+
+/* ── Normalización final de modo oscuro ────────────────────────────────────
+   Capa de cierre para módulos nuevos y componentes compartidos. Mantiene
+   contraste alto sin cambiar estructura ni datos renderizados. */
+[data-theme="dark"] {
+  --bg: #0b1118;
+  --sidebar: #0b1118;
+  --card: #151c25;
+  --surface: #151c25;
+  --border: #273244;
+  --border-light: #202a3a;
+  --text: #edf5ff;
+  --muted: #a8b5c6;
+  --text-primary: #f3f8ff;
+  --text-secondary: #a8b5c6;
+  --text-tertiary: #8291a6;
+  --primary: #58a6ff;
+  --primary-soft: #10243a;
+  --blue: #58a6ff;
+  --blue-light: rgba(88, 166, 255, 0.12);
+  --blue-mid: rgba(88, 166, 255, 0.2);
+  --green: #34d399;
+  --green-light: rgba(52, 211, 153, 0.12);
+  --amber: #fbbf24;
+  --amber-light: rgba(251, 191, 36, 0.13);
+  --red: #fb7185;
+  --red-light: rgba(251, 113, 133, 0.13);
+  --slate-light: rgba(148, 163, 184, 0.14);
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.28);
+  --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 16px 36px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] #root,
+[data-theme="dark"] .app-shell,
+[data-theme="dark"] .main-content,
+[data-theme="dark"] .unified-dashboard,
+[data-theme="dark"] .bi-shell,
+[data-theme="dark"] .bi-main,
+[data-theme="dark"] .bi-content,
+[data-theme="dark"] .visits-page,
+[data-theme="dark"] .cal-page,
+[data-theme="dark"] .tn-page,
+[data-theme="dark"] .cot-page,
+[data-theme="dark"] .acc-page,
+[data-theme="dark"] .products-page,
+[data-theme="dark"] .opp-page,
+[data-theme="dark"] .campaigns-page,
+[data-theme="dark"] .ta-page,
+[data-theme="dark"] .admin-page,
+[data-theme="dark"] .settings-page,
+[data-theme="dark"] .notif-page,
+[data-theme="dark"] .sd {
+  background: #0b1118 !important;
+  color: #edf5ff !important;
+}
+
+[data-theme="dark"] .page-header,
+[data-theme="dark"] .bi-header,
+[data-theme="dark"] .crm-module-header,
+[data-theme="dark"] .dash-header:not(.dash-hero),
+[data-theme="dark"] .dash-primary-kpi,
+[data-theme="dark"] .dash-kpi,
+[data-theme="dark"] .dash-insight,
+[data-theme="dark"] .dash-panel,
+[data-theme="dark"] .dash-decisions__head,
+[data-theme="dark"] .dash-decision-card,
+[data-theme="dark"] .dash-hot-row,
+[data-theme="dark"] .bi-filters,
+[data-theme="dark"] .bi-kpi,
+[data-theme="dark"] .bi-panel,
+[data-theme="dark"] .bi-decisions__head,
+[data-theme="dark"] .bi-decision,
+[data-theme="dark"] .visits-header,
+[data-theme="dark"] .visits-kpi,
+[data-theme="dark"] .visits-panel,
+[data-theme="dark"] .visits-item,
+[data-theme="dark"] .cal-kpi,
+[data-theme="dark"] .cal-toolbar,
+[data-theme="dark"] .cal-month,
+[data-theme="dark"] .cal-week,
+[data-theme="dark"] .cal-list,
+[data-theme="dark"] .tn-kpi,
+[data-theme="dark"] .tn-toolbar,
+[data-theme="dark"] .tn-grid-wrap,
+[data-theme="dark"] .tn-modal,
+[data-theme="dark"] .tn-mobile-card,
+[data-theme="dark"] .cot-card,
+[data-theme="dark"] .cot-preview,
+[data-theme="dark"] .cot-modal,
+[data-theme="dark"] .acc-kpi,
+[data-theme="dark"] .acc-card,
+[data-theme="dark"] .acc-contact-card,
+[data-theme="dark"] .products-card,
+[data-theme="dark"] .product-kpi,
+[data-theme="dark"] .product-card,
+[data-theme="dark"] .opp-kpi,
+[data-theme="dark"] .opp-form-card,
+[data-theme="dark"] .opp-table-card,
+[data-theme="dark"] .opp-kanban-card,
+[data-theme="dark"] .opp-mobile-card,
+[data-theme="dark"] .campaign-hero,
+[data-theme="dark"] .campaign-kpi,
+[data-theme="dark"] .campaign-form-card,
+[data-theme="dark"] .campaign-list-card,
+[data-theme="dark"] .campaign-card,
+[data-theme="dark"] .ta-header,
+[data-theme="dark"] .ta-kpi,
+[data-theme="dark"] .ta-card,
+[data-theme="dark"] .admin-header-card,
+[data-theme="dark"] .admin-guard-card,
+[data-theme="dark"] .admin-kpi,
+[data-theme="dark"] .admin-toolbar,
+[data-theme="dark"] .admin-table-card,
+[data-theme="dark"] .admin-audit-card,
+[data-theme="dark"] .admin-mobile-card,
+[data-theme="dark"] .settings-card,
+[data-theme="dark"] .settings-note,
+[data-theme="dark"] .notif-item,
+[data-theme="dark"] .crm-kpi,
+[data-theme="dark"] .crm-empty-state,
+[data-theme="dark"] .crm-toast,
+[data-theme="dark"] .global-search-panel,
+[data-theme="dark"] .crm-ai-panel,
+[data-theme="dark"] .sd-hero,
+[data-theme="dark"] .sd-primary-kpi,
+[data-theme="dark"] .sd-kpi,
+[data-theme="dark"] .sd-panel,
+[data-theme="dark"] .sd-list-card,
+[data-theme="dark"] .sd-insight-card {
+  background: #151c25 !important;
+  border-color: #273244 !important;
+  color: #edf5ff !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22) !important;
+}
+
+[data-theme="dark"] .dash-hero,
+[data-theme="dark"] .bi-hero {
+  background:
+    radial-gradient(circle at 94% 0%, rgba(88, 166, 255, 0.24), transparent 34%),
+    linear-gradient(135deg, #101923 0%, #13263d 54%, #123f69 120%) !important;
+  border-color: rgba(147, 197, 253, 0.28) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .dash-primary-kpi::after,
+[data-theme="dark"] .sd-primary-kpi::after {
+  opacity: 0.7 !important;
+}
+
+[data-theme="dark"] .dash-primary-kpi--red,
+[data-theme="dark"] .dash-kpi--red,
+[data-theme="dark"] .dash-insight--red,
+[data-theme="dark"] .bi-kpi--danger {
+  background: #1d171d !important;
+}
+
+[data-theme="dark"] .dash-primary-kpi--green,
+[data-theme="dark"] .dash-insight--green {
+  background: #121f1d !important;
+}
+
+[data-theme="dark"] .dash-primary-kpi--amber,
+[data-theme="dark"] .dash-primary-kpi--yellow,
+[data-theme="dark"] .dash-kpi--amber {
+  background: #1f1b12 !important;
+}
+
+[data-theme="dark"] .dash-title,
+[data-theme="dark"] .dash-panel__title,
+[data-theme="dark"] .dash-primary-kpi__value,
+[data-theme="dark"] .dash-kpi__value,
+[data-theme="dark"] .dash-insight__value,
+[data-theme="dark"] .dash-decisions__head strong,
+[data-theme="dark"] .dash-decision-card strong,
+[data-theme="dark"] .dash-hot-row__main strong,
+[data-theme="dark"] .dash-hot-score div,
+[data-theme="dark"] .dash-list-row__main strong,
+[data-theme="dark"] .dash-donut-center strong,
+[data-theme="dark"] .bi-panel h3,
+[data-theme="dark"] .bi-kpi__val,
+[data-theme="dark"] .bi-kpi__stat strong,
+[data-theme="dark"] .bi-decisions__head strong,
+[data-theme="dark"] .bi-decision strong,
+[data-theme="dark"] .bi-top3__name,
+[data-theme="dark"] .bi-rank-name,
+[data-theme="dark"] .visits-header__title,
+[data-theme="dark"] .visits-panel__title,
+[data-theme="dark"] .visits-kpi__value,
+[data-theme="dark"] .visits-item__head strong,
+[data-theme="dark"] .cal-toolbar__title,
+[data-theme="dark"] .cal-kpi__value,
+[data-theme="dark"] .tn-header h2,
+[data-theme="dark"] .tn-kpi__val,
+[data-theme="dark"] .cot-header h2,
+[data-theme="dark"] .cot-kpi__val,
+[data-theme="dark"] .acc-card-head h2,
+[data-theme="dark"] .acc-kpi__value,
+[data-theme="dark"] .acc-td-name strong,
+[data-theme="dark"] .acc-contact-card__top strong,
+[data-theme="dark"] .products-head h2,
+[data-theme="dark"] .product-top h3,
+[data-theme="dark"] .opp-form-head h2,
+[data-theme="dark"] .opp-table-head h2,
+[data-theme="dark"] .opp-kanban-card strong,
+[data-theme="dark"] .campaign-hero h2,
+[data-theme="dark"] .campaign-card h4,
+[data-theme="dark"] .ta-header__title,
+[data-theme="dark"] .ta-card__name,
+[data-theme="dark"] .admin-header-card h2,
+[data-theme="dark"] .admin-toolbar h3,
+[data-theme="dark"] .admin-audit-card h3,
+[data-theme="dark"] .admin-audit-list strong,
+[data-theme="dark"] .admin-user-cell strong,
+[data-theme="dark"] .settings-note strong,
+[data-theme="dark"] .notif-item strong,
+[data-theme="dark"] .crm-module-header h2,
+[data-theme="dark"] .crm-kpi__value,
+[data-theme="dark"] .crm-empty-state strong,
+[data-theme="dark"] .global-search-title,
+[data-theme="dark"] .global-search-result strong,
+[data-theme="dark"] .sd-hero__title,
+[data-theme="dark"] .sd-panel__title,
+[data-theme="dark"] .sd-primary-kpi__value,
+[data-theme="dark"] .sd-kpi__value {
+  color: #f3f8ff !important;
+}
+
+[data-theme="dark"] .dash-subtitle,
+[data-theme="dark"] .dash-panel__sub,
+[data-theme="dark"] .dash-primary-kpi__sub,
+[data-theme="dark"] .dash-kpi__label,
+[data-theme="dark"] .dash-insight__sub,
+[data-theme="dark"] .dash-decision-card p,
+[data-theme="dark"] .dash-hot-row__main small,
+[data-theme="dark"] .dash-hot-row__meta span,
+[data-theme="dark"] .dash-list-row__main small,
+[data-theme="dark"] .dash-list-row__meta span,
+[data-theme="dark"] .bi-panel p,
+[data-theme="dark"] .bi-kpi__sub,
+[data-theme="dark"] .bi-decision p,
+[data-theme="dark"] .bi-top3__val,
+[data-theme="dark"] .visits-header__sub,
+[data-theme="dark"] .visits-panel__sub,
+[data-theme="dark"] .visits-kpi__sub,
+[data-theme="dark"] .visits-item__head span,
+[data-theme="dark"] .visits-item__head em,
+[data-theme="dark"] .cal-kpi__label,
+[data-theme="dark"] .tn-header p,
+[data-theme="dark"] .tn-kpi__sub,
+[data-theme="dark"] .cot-kpi__sub,
+[data-theme="dark"] .acc-card-head p,
+[data-theme="dark"] .acc-kpi__label,
+[data-theme="dark"] .acc-td-name small,
+[data-theme="dark"] .products-head p,
+[data-theme="dark"] .product-card p,
+[data-theme="dark"] .opp-form-head p,
+[data-theme="dark"] .opp-table-head p,
+[data-theme="dark"] .campaign-hero p,
+[data-theme="dark"] .campaign-objective,
+[data-theme="dark"] .ta-header__sub,
+[data-theme="dark"] .ta-card__location,
+[data-theme="dark"] .admin-header-card p,
+[data-theme="dark"] .admin-toolbar span,
+[data-theme="dark"] .admin-audit-card p,
+[data-theme="dark"] .admin-audit-list span,
+[data-theme="dark"] .admin-audit-list small,
+[data-theme="dark"] .admin-user-cell span,
+[data-theme="dark"] .settings-note p,
+[data-theme="dark"] .notif-item small,
+[data-theme="dark"] .crm-module-header p,
+[data-theme="dark"] .crm-kpi__sub,
+[data-theme="dark"] .crm-empty-state p,
+[data-theme="dark"] .global-search-subtitle,
+[data-theme="dark"] .global-search-result span,
+[data-theme="dark"] .sd-hero__sub,
+[data-theme="dark"] .sd-panel__sub,
+[data-theme="dark"] .sd-primary-kpi__sub {
+  color: #a8b5c6 !important;
+}
+
+[data-theme="dark"] .dash-wordmark,
+[data-theme="dark"] .dash-filter-label,
+[data-theme="dark"] .dash-primary-kpi__label,
+[data-theme="dark"] .dash-insight__label,
+[data-theme="dark"] .dash-decisions__head span,
+[data-theme="dark"] .bi-kpi__label,
+[data-theme="dark"] .bi-decisions__head span,
+[data-theme="dark"] .bi-hero__eyebrow,
+[data-theme="dark"] .bi-fg label,
+[data-theme="dark"] .visits-header__eyebrow,
+[data-theme="dark"] .tn-kpi__label,
+[data-theme="dark"] .cot-kpi__label,
+[data-theme="dark"] .acc-form-section__label,
+[data-theme="dark"] .product-kpi span,
+[data-theme="dark"] .campaign-kpi span,
+[data-theme="dark"] .admin-kpi span,
+[data-theme="dark"] .crm-kpi__label,
+[data-theme="dark"] .sd-hero__eyebrow,
+[data-theme="dark"] .sd-primary-kpi__label,
+[data-theme="dark"] .sd-kpi__label {
+  color: #8291a6 !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .dash-filter-select,
+[data-theme="dark"] .bi-fg select,
+[data-theme="dark"] .bi-forecast-input,
+[data-theme="dark"] .bi-forecast-select,
+[data-theme="dark"] .tn-search,
+[data-theme="dark"] .tn-grid__filter-input,
+[data-theme="dark"] .admin-select,
+[data-theme="dark"] .global-search-input,
+[data-theme="dark"] .crm-ai-input {
+  background: #0f1722 !important;
+  border-color: #303c50 !important;
+  color: #f3f8ff !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .tn-grid__filter-input::placeholder,
+[data-theme="dark"] .global-search-input::placeholder,
+[data-theme="dark"] .crm-ai-input::placeholder {
+  color: #718096 !important;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  background: #111c2a !important;
+  border-color: #58a6ff !important;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.14) !important;
+}
+
+[data-theme="dark"] table,
+[data-theme="dark"] .acc-table,
+[data-theme="dark"] .opp-table,
+[data-theme="dark"] .cot-table,
+[data-theme="dark"] .bi-tbl,
+[data-theme="dark"] .tn-grid {
+  background: #151c25 !important;
+  color: #edf5ff !important;
+}
+
+[data-theme="dark"] table th,
+[data-theme="dark"] .acc-table th,
+[data-theme="dark"] .opp-table th,
+[data-theme="dark"] .cot-table th,
+[data-theme="dark"] .bi-tbl th,
+[data-theme="dark"] .tn-grid__th {
+  background: #101a2a !important;
+  border-color: #273244 !important;
+  color: #c8d6e6 !important;
+}
+
+[data-theme="dark"] table td,
+[data-theme="dark"] .acc-table td,
+[data-theme="dark"] .opp-table td,
+[data-theme="dark"] .cot-table td,
+[data-theme="dark"] .bi-tbl td,
+[data-theme="dark"] .tn-grid__td {
+  background: #151c25 !important;
+  border-color: #273244 !important;
+  color: #dbe7f5 !important;
+}
+
+[data-theme="dark"] table tbody tr:hover td,
+[data-theme="dark"] .acc-table tbody tr:hover td,
+[data-theme="dark"] .opp-table tbody tr:hover td,
+[data-theme="dark"] .cot-table tbody tr:hover td,
+[data-theme="dark"] .bi-tbl tr:hover td,
+[data-theme="dark"] .tn-grid tbody tr:hover .tn-grid__td {
+  background: #1b2635 !important;
+}
+
+[data-theme="dark"] .tn-grid__filter-cell,
+[data-theme="dark"] .admin-desktop-table thead,
+[data-theme="dark"] .admin-desktop-table th,
+[data-theme="dark"] .admin-desktop-table td {
+  background: #111926 !important;
+  border-color: #273244 !important;
+  color: #dbe7f5 !important;
+}
+
+[data-theme="dark"] .acc-row--expanded td,
+[data-theme="dark"] .acc-row--contacts td,
+[data-theme="dark"] .visits-item--overdue,
+[data-theme="dark"] .visits-item--today,
+[data-theme="dark"] .visits-objective,
+[data-theme="dark"] .visits-result,
+[data-theme="dark"] .campaign-data-grid div,
+[data-theme="dark"] .cot-mk-card,
+[data-theme="dark"] .cot-pv,
+[data-theme="dark"] .bi-kpi__stat,
+[data-theme="dark"] .settings-row,
+[data-theme="dark"] .crm-ai-msg--assistant .crm-ai-msg__bubble,
+[data-theme="dark"] .crm-ai-suggestion {
+  background: #0f1722 !important;
+  border-color: #273244 !important;
+  color: #dbe7f5 !important;
+}
+
+[data-theme="dark"] .dash-decision-card > span,
+[data-theme="dark"] .bi-decision > span,
+[data-theme="dark"] .adm-info-box__icon {
+  background: #10243a !important;
+  color: #93c5fd !important;
+}
+
+[data-theme="dark"] .dash-progress-track,
+[data-theme="dark"] .bi-kpi__bar-bg,
+[data-theme="dark"] .bi-rank-bar-bg,
+[data-theme="dark"] .campaign-progress,
+[data-theme="dark"] .visits-timeline__track,
+[data-theme="dark"] .stage-dist__bar-wrap {
+  background: #273244 !important;
+}
+
+[data-theme="dark"] .dash-kpi-toggle,
+[data-theme="dark"] .bi-toggle button,
+[data-theme="dark"] .visits-tab,
+[data-theme="dark"] .visits-filter-tab,
+[data-theme="dark"] .acc-ghost-btn,
+[data-theme="dark"] .acc-btn,
+[data-theme="dark"] .products-head button,
+[data-theme="dark"] .ghost-btn,
+[data-theme="dark"] .adm-tab-btn,
+[data-theme="dark"] .quick-actions button,
+[data-theme="dark"] .settings-row button,
+[data-theme="dark"] .notif-refresh {
+  background: #0f1722 !important;
+  border-color: #303c50 !important;
+  color: #c8d6e6 !important;
+}
+
+[data-theme="dark"] .dash-kpi-toggle:hover,
+[data-theme="dark"] .bi-toggle button:hover,
+[data-theme="dark"] .visits-tab:not(.active):hover,
+[data-theme="dark"] .visits-filter-tab:not(.active):hover,
+[data-theme="dark"] .acc-ghost-btn:hover,
+[data-theme="dark"] .acc-btn:hover,
+[data-theme="dark"] .ghost-btn:hover,
+[data-theme="dark"] .quick-actions button:hover:not(:disabled),
+[data-theme="dark"] .settings-row button:hover,
+[data-theme="dark"] .notif-refresh:hover {
+  background: #1b2635 !important;
+  color: #f3f8ff !important;
+}
+
+[data-theme="dark"] .bi-header__tab:not(.active),
+[data-theme="dark"] .adm-tab-btn:not(.active),
+[data-theme="dark"] .visits-tab:not(.active),
+[data-theme="dark"] .visits-filter-tab:not(.active) {
+  color: #a8b5c6 !important;
+}
+
+[data-theme="dark"] .bi-header__tab.active,
+[data-theme="dark"] .bi-toggle button.active,
+[data-theme="dark"] .adm-tab-btn.active,
+[data-theme="dark"] .visits-tab.active,
+[data-theme="dark"] .visits-filter-tab.active {
+  background: #185fa5 !important;
+  border-color: #185fa5 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .acc-badge--alto,
+[data-theme="dark"] .acc-badge--verde,
+[data-theme="dark"] .crm-kpi--green .crm-kpi__value,
+[data-theme="dark"] .admin-kpi--green strong {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .acc-badge--medio,
+[data-theme="dark"] .acc-badge--amarillo,
+[data-theme="dark"] .admin-kpi--amber strong {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .acc-badge--rojo,
+[data-theme="dark"] .acc-btn--del,
+[data-theme="dark"] .crm-kpi--red .crm-kpi__value {
+  color: #fb7185 !important;
+}
+
+[data-theme="dark"] .acc-badge,
+[data-theme="dark"] .visits-badge,
+[data-theme="dark"] .visits-meta-chip,
+[data-theme="dark"] .campaign-dates span,
+[data-theme="dark"] .bi-badge,
+[data-theme="dark"] .tn-status-pill,
+[data-theme="dark"] .crm-toast {
+  border-color: #303c50 !important;
+}
+
+[data-theme="dark"] .crm-ai-header {
+  background: linear-gradient(135deg, #0f2444, #185fa5) !important;
+}
+
+[data-theme="dark"] .crm-ai-messages,
+[data-theme="dark"] .crm-ai-input-wrap {
+  background: #101722 !important;
+  border-color: #273244 !important;
+}
