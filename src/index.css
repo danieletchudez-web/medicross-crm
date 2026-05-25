@@ -238,7 +238,7 @@ button, input, select, textarea { font-family: inherit; }
 @media (max-width: 768px) {
   .app-shell { display: block; }
   .main-content {
-    padding-top: 56px;
+    padding-top: 36px;
   }
   .page-header {
     padding: 4px 16px;
