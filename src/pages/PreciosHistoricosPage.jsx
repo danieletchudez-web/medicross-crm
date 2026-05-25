@@ -22,8 +22,6 @@ function compactMoney(v) {
   return `$${n.toLocaleString("es-AR")}`;
 }
 
-const NUESTRA_EMPRESA = "MEDI-CROSS";
-
 const SUGERENCIAS = [
   "cateter","filtro","dialisis","ablacion","introductor",
   "aguja","set","bandeja","apheresis","nefrologia",
@@ -37,7 +35,7 @@ function saveBusqueda(q) {
   try {
     const prev = getBusquedasRecientes().filter(b => b.toLowerCase() !== q.toLowerCase());
     localStorage.setItem(STORAGE_KEY, JSON.stringify([q, ...prev].slice(0, 8)));
-  } catch {}
+  } catch { /* recent searches are optional */ }
 }
 
 function Sparkline({ datos, color = "#185fa5" }) {

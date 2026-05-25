@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
@@ -73,10 +73,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       showToast(`Cotización pre-cargada desde Licitaciones: ${initialData.institucion || initialData.nroLicit}`);
   }, []);
 
-  const showToast = useCallback((msg, type = "ok") => {
+  function showToast(msg, type = "ok") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
-  }, []);
+  }
 
   const totalGeneral = renglones.reduce((s, r) => s + (calcR(r, parseN(tc))?.sub || 0), 0);
 

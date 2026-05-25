@@ -3,10 +3,6 @@ import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./SalesAnalytics.css";
 
-/* ─── Helpers ────────────────────────────────────────────────────────── */
-function money(v) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(Number(v || 0));
-}
 function compactMoney(v) {
   const n = Number(v || 0);
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;

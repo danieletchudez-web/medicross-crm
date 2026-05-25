@@ -20,13 +20,27 @@ import LoginPage           from "./pages/LoginPage";
 import CRMAssistant        from "./components/CRMAssistant";
 
 const FALLBACK_PROFILE = {
-  id: null, full_name: "Usuario", email: "", role: "super_admin", approved: true,
-  allowed_modules: [
-    "managerDashboard","sellerDashboard","accounts","products",
-    "opportunities","campaigns","todayActions","visits",
-    "calendar","adminUsers","salesAnalytics","importer",
-  ],
+  id: null,
+  full_name: "Usuario",
+  email: "",
+  role: "pending",
+  approved: false,
+  is_active: false,
+  allowed_modules: [],
 };
+
+function buildPendingProfile(user, reason = "profile_missing") {
+  return {
+    id: user?.id || null,
+    email: user?.email || "",
+    full_name: user?.email || "Usuario pendiente",
+    role: "pending",
+    approved: false,
+    is_active: false,
+    allowed_modules: [],
+    access_reason: reason,
+  };
+}
 
 export default function App() {
   const [session,      setSession]      = useState(null);
@@ -67,27 +81,11 @@ export default function App() {
         setTimeout(async () => {
           const { data: retry } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
           if (retry) { setProfile(retry); return; }
-          setProfile({
-            id: user.id, email: user.email, full_name: user.email,
-            role: "seller", approved: true,
-            allowed_modules: [
-              "managerDashboard","importer","salesAnalytics",
-              "accounts","products","opportunities","campaigns",
-              "todayActions","visits","calendar","tenders","cotizador",
-            ],
-          });
+          setProfile(buildPendingProfile(user));
         }, 1000);
       }
     } catch {
-      setProfile({
-        id: user.id, email: user.email, full_name: user.email,
-        role: "seller", approved: true,
-        allowed_modules: [
-          "managerDashboard","importer","salesAnalytics",
-          "accounts","products","opportunities","campaigns",
-          "todayActions","visits","calendar","tenders","cotizador",
-        ],
-      });
+      setProfile(buildPendingProfile(user, "profile_error"));
     }
   }
 
@@ -155,12 +153,21 @@ export default function App() {
 
   if (!session) return <LoginPage />;
 
-  if (profile?.approved === false) {
+  const safeProfile = profile || FALLBACK_PROFILE;
+  const accessBlocked = !safeProfile.approved || safeProfile.is_active === false;
+
+  if (accessBlocked) {
+    const title = safeProfile.is_active === false
+      ? "Acceso pendiente de revisión"
+      : "Usuario pendiente de aprobación";
+    const detail = safeProfile.access_reason === "profile_error"
+      ? "No pudimos validar tu perfil. Cerrá sesión e intentá nuevamente, o pedile a un administrador que revise tu usuario."
+      : "Tu cuenta debe existir en Administración y ser aprobada antes de entrar al CRM.";
     return (
       <div style={st.pending}>
         <div style={st.card}>
-          <h2>Usuario pendiente de aprobación</h2>
-          <p>Tu acceso debe ser aprobado por un administrador.</p>
+          <h2>{title}</h2>
+          <p>{detail}</p>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }} style={st.btn}>
             Cerrar sesión
           </button>
@@ -169,18 +176,24 @@ export default function App() {
     );
   }
 
-  const safeProfile = profile || FALLBACK_PROFILE;
-
   function navigate(p, data) {
     setNavigateData(data || null);
     setPage(p);
     localStorage.setItem("crm_current_page", p);
   }
 
+  function canOpenPage(pageId) {
+    if (safeProfile.role === "super_admin") return true;
+    if (pageId === "adminUsers") return false;
+    if (pageId === "managerDashboard") return true;
+    return (safeProfile.allowed_modules || []).includes(pageId);
+  }
+
+  const currentPage = canOpenPage(page) ? page : "managerDashboard";
   const pageProps = { profile: safeProfile, onNavigate: navigate };
 
   let CurrentPage;
-  switch (page) {
+  switch (currentPage) {
     case "managerDashboard":   CurrentPage = <ManagerDashboard      {...pageProps} />; break;
     case "sellerDashboard":    CurrentPage = <SellerDashboard       {...pageProps} />; break;
     case "accounts":           CurrentPage = <AccountsPage          {...pageProps} />; break;
@@ -202,7 +215,7 @@ export default function App() {
   return (
     <>
       {CurrentPage}
-      <CRMAssistant profile={safeProfile} currentPage={page} crmData={crmData} />
+      <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
     </>
   );
 }

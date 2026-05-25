@@ -149,11 +149,11 @@ export default function DashboardComercial() {
 
   /* ── Charts ── */
   function destroyAllCharts() {
-    Object.values(charts.current).forEach(c => { try { c.destroy(); } catch(_) {} });
+    Object.values(charts.current).forEach(c => { try { c.destroy(); } catch { /* ignore chart cleanup */ } });
     charts.current = {};
   }
   function destroyChart(key) {
-    if (charts.current[key]) { try { charts.current[key].destroy(); } catch(_) {} delete charts.current[key]; }
+    if (charts.current[key]) { try { charts.current[key].destroy(); } catch { /* ignore chart cleanup */ } delete charts.current[key]; }
   }
 
   async function renderCharts() {

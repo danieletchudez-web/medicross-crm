@@ -37,6 +37,30 @@
   font-weight: 500;
 }
 
+.admin-guard-card {
+  background: #fff;
+  border: 1px solid #e8ecf2;
+  border-left: 4px solid #2563eb;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+  max-width: 680px;
+}
+
+.admin-guard-card h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.admin-guard-card p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .admin-refresh-btn {
   border: 1px solid #e8ecf2;
   background: #f8fafc;
@@ -258,6 +282,55 @@
 
 .admin-select:focus { border-color: #3b82f6; }
 
+.admin-preset-select {
+  min-width: 150px;
+}
+
+.adm-preset-help {
+  max-width: 220px;
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.adm-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 230px;
+}
+
+.adm-action-chip {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #94a3b8;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.adm-action-chip.on {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.adm-meta-list {
+  display: grid;
+  gap: 3px;
+  min-width: 170px;
+}
+
+.adm-meta-list span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 /* ─── Status pill ────────────────────────────────────────────────────── */
 .status-pill {
   display: inline-flex;
@@ -389,6 +462,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.mobile-admin-row--stack {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 7px;
 }
 
 .mobile-admin-row label {

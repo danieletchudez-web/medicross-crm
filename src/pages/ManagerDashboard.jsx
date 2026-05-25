@@ -82,7 +82,7 @@ function ForecastGauge({ forecast, target, coverage }) {
 }
 
 /* ── Probability panel ──────────────────────────────────────────────── */
-function ProbabilityPanel({ opps, probabilityRef }) {
+function ProbabilityPanel({ probabilityRef }) {
   return (
     <article className="dash-panel">
       <header className="dash-panel__header">
@@ -161,7 +161,6 @@ function RecentVisitsPanel({ visits }) {
 
 export default function ManagerDashboard({ profile, onNavigate }) {
   const [selectedLine, setSelectedLine]   = useState("Todas");
-  const [accounts, setAccounts]           = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [visits, setVisits]               = useState([]);
   const [products, setProducts]           = useState([]);
@@ -178,14 +177,12 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 
   async function loadData() {
     setLoading(true);
-    const [accRes, oppRes, visitRes, prodRes, campRes] = await Promise.all([
-      supabase.from("accounts").select("*"),
+    const [oppRes, visitRes, prodRes, campRes] = await Promise.all([
       supabase.from("opportunities").select("*, accounts(name), products(name, line), campaigns(name)").order("created_at", { ascending: false }),
       supabase.from("visits").select("*, accounts(name), products(name, line)").order("visit_date", { ascending: false }),
       supabase.from("products").select("*").order("name"),
       supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
     ]);
-    setAccounts(accRes.data || []);
     setOpportunities(oppRes.data || []);
     setVisits(visitRes.data || []);
     setProducts(prodRes.data || []);
@@ -516,7 +513,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 
         {/* MAIN PANELS */}
         <section className="dash-main-grid">
-          <ProbabilityPanel opps={filteredOpps} probabilityRef={probabilityRef}/>
+          <ProbabilityPanel probabilityRef={probabilityRef}/>
           <CampaignPanel rows={campaignRows}/>
           <HotProjects rows={projectTemperature}/>
         </section>

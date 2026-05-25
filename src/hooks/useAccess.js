@@ -53,11 +53,11 @@ export function useAccess() {
   const access = useMemo(() => {
     if (!currentSeller) {
       return {
-        role: "admin",
-        active: true,
-        allowedViews: ALL_VIEWS,
-        isAdmin: true,
-        isReadOnly: false,
+        role: "sin_acceso",
+        active: false,
+        allowedViews: [],
+        isAdmin: false,
+        isReadOnly: true,
       };
     }
 
@@ -81,7 +81,7 @@ export function useAccess() {
   }, [currentSeller]);
 
   function canAccess(view) {
-    if (loadingAccess) return true;
+    if (loadingAccess) return false;
     if (!access.active) return false;
     if (access.isAdmin) return true;
     return access.allowedViews.includes(view);

@@ -95,7 +95,7 @@ export default function Sidebar({ profile, onNavigate }) {
 
   const canSee = module => {
     if (profile?.role === "super_admin") return true;
-    if (module === "adminUsers") return profile?.role === "manager";
+    if (module === "adminUsers") return false;
     return profile?.allowed_modules?.includes(module);
   };
 

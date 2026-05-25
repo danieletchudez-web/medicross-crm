@@ -39,6 +39,105 @@ const MANAGER_MODULES = [
 
 const FULL_MODULES = MODULES.map(m => m.id);
 
+const READ_ONLY_MODULES = [
+  "managerDashboard","salesAnalytics","accounts","products","opportunities",
+  "campaigns","todayActions","visits","calendar","tenders","cotizador",
+];
+
+const QUOTES_MODULES = ["accounts","products","opportunities","tenders","cotizador","preciosHistoricos"];
+const BI_MODULES = ["managerDashboard","importer","salesAnalytics"];
+
+const ACTIONS = [
+  { id: "view",          label: "Ver"              },
+  { id: "create",        label: "Crear"            },
+  { id: "edit",          label: "Editar"           },
+  { id: "delete",        label: "Borrar/archivar"  },
+  { id: "export",        label: "Exportar"         },
+  { id: "approve_users", label: "Aprobar usuarios" },
+];
+
+const PRESETS = [
+  {
+    id: "read_only",
+    label: "Solo lectura",
+    role: "seller",
+    modules: READ_ONLY_MODULES,
+    actions: ["view"],
+    description: "Consulta CRM sin crear, editar, borrar ni exportar.",
+  },
+  {
+    id: "seller",
+    label: "Vendedor",
+    role: "seller",
+    modules: SELLER_MODULES,
+    actions: ["view","create","edit"],
+    description: "Carga visitas, clientes y oportunidades del circuito comercial.",
+  },
+  {
+    id: "manager",
+    label: "Gerente",
+    role: "manager",
+    modules: MANAGER_MODULES.filter(m => m !== "adminUsers"),
+    actions: ["view","create","edit","export"],
+    description: "Supervisa operación, tableros y exportaciones sin administrar usuarios.",
+  },
+  {
+    id: "quotes",
+    label: "Cotizaciones",
+    role: "seller",
+    modules: QUOTES_MODULES,
+    actions: ["view","create","edit","export"],
+    description: "Foco en licitaciones, cotizador, precios y cuentas relacionadas.",
+  },
+  {
+    id: "bi",
+    label: "BI",
+    role: "manager",
+    modules: BI_MODULES,
+    actions: ["view","export"],
+    description: "Acceso a análisis comercial, importación e indicadores ejecutivos.",
+  },
+  {
+    id: "admin",
+    label: "Admin",
+    role: "super_admin",
+    modules: FULL_MODULES,
+    actions: ACTIONS.map(a => a.id),
+    description: "Control total de módulos, roles, permisos y aprobaciones.",
+  },
+];
+
+const OPTIONAL_PROFILE_FIELDS = [
+  "allowed_actions",
+  "permission_preset",
+  "approved_at",
+  "approved_by",
+  "deleted_at",
+  "deleted_by",
+];
+
+function optionalColumnError(error) {
+  return /column|schema cache|could not find|does not exist/i.test(error?.message || "");
+}
+
+function inferActions(user) {
+  if (Array.isArray(user.allowed_actions) && user.allowed_actions.length) return user.allowed_actions;
+  if (user.role === "super_admin") return ACTIONS.map(a => a.id);
+  if (user.role === "manager") return ["view","create","edit","export"];
+  return user.approved ? ["view","create","edit"] : ["view"];
+}
+
+function formatDateTime(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /* ─── Modal de confirmación para eliminar ────────────────────────────── */
 function DeleteConfirmModal({ user, onConfirm, onCancel }) {
   const [input, setInput] = useState("");
@@ -94,8 +193,9 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   const [search,      setSearch]      = useState("");
   const [savingId,    setSavingId]    = useState(null);
   const [loading,     setLoading]     = useState(true);
-  const [showArchived,setShowArchived]= useState(false);
+  const [userView,    setUserView]    = useState("pending");
   const [deleteTarget,setDeleteTarget]= useState(null);
+  const canAdminUsers = profile?.role === "super_admin";
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -110,9 +210,11 @@ export default function AdminUsersPage({ profile, onNavigate }) {
 
   const activeUsers   = useMemo(() => users.filter(u => u.is_active !== false), [users]);
   const archivedUsers = useMemo(() => users.filter(u => u.is_active === false),  [users]);
+  const pendingUsers  = useMemo(() => activeUsers.filter(u => !u.approved), [activeUsers]);
+  const approvedUsers = useMemo(() => activeUsers.filter(u => u.approved),  [activeUsers]);
 
   const filteredUsers = useMemo(() => {
-    const source = showArchived ? archivedUsers : activeUsers;
+    const source = userView === "archived" ? archivedUsers : userView === "pending" ? pendingUsers : approvedUsers;
     const q = search.toLowerCase().trim();
     if (!q) return source;
     return source.filter(u =>
@@ -120,7 +222,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
       (u.email     || "").toLowerCase().includes(q) ||
       (u.role      || "").toLowerCase().includes(q)
     );
-  }, [search, showArchived, activeUsers, archivedUsers]);
+  }, [search, userView, pendingUsers, approvedUsers, archivedUsers]);
 
   const stats = useMemo(() => ({
     total:    activeUsers.length,
@@ -130,14 +232,36 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     archived: archivedUsers.length,
   }), [activeUsers, archivedUsers]);
 
-  async function updateUser(userId, changes) {
+  async function logAdminEvent(event, targetUserId, changes) {
+    await supabase.from("admin_audit_logs").insert([{
+      event,
+      target_user_id: targetUserId,
+      actor_id: profile?.id || null,
+      actor_email: profile?.email || null,
+      changes,
+      created_at: new Date().toISOString(),
+    }]);
+  }
+
+  async function persistProfileUpdate(userId, payload) {
+    const withUpdatedAt = { ...payload, updated_at: new Date().toISOString() };
+    let { error } = await supabase.from("profiles").update(withUpdatedAt).eq("id", userId);
+    if (error && optionalColumnError(error)) {
+      const fallback = { ...withUpdatedAt };
+      OPTIONAL_PROFILE_FIELDS.forEach(field => delete fallback[field]);
+      ({ error } = await supabase.from("profiles").update(fallback).eq("id", userId));
+      return { error, applied: fallback };
+    }
+    return { error, applied: withUpdatedAt };
+  }
+
+  async function updateUser(userId, changes, event = "profile_update") {
+    if (!canAdminUsers) return;
     setSavingId(userId);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ ...changes, updated_at: new Date().toISOString() })
-      .eq("id", userId);
+    const { error, applied } = await persistProfileUpdate(userId, changes);
     if (error) { alert("Error actualizando usuario: " + error.message); setSavingId(null); return; }
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...changes } : u));
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...applied, ...changes } : u));
+    logAdminEvent(event, userId, changes).catch(() => {});
     setSavingId(null);
   }
 
@@ -146,26 +270,48 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     const next = current.includes(moduleId)
       ? current.filter(m => m !== moduleId)
       : [...current, moduleId];
-    updateUser(user.id, { allowed_modules: next });
+    updateUser(user.id, { allowed_modules: next }, "module_toggle");
   }
 
-  function approveUser(user)  { updateUser(user.id, { approved: true  }); }
-  function blockUser(user)    { updateUser(user.id, { approved: false }); }
+  function approveUser(user)  {
+    updateUser(user.id, {
+      approved: true,
+      is_active: true,
+      approved_at: new Date().toISOString(),
+      approved_by: profile?.id || null,
+    }, "user_approved");
+  }
 
-  function setFullAccess(user)    { updateUser(user.id, { approved: true, allowed_modules: FULL_MODULES }); }
-  function setSellerAccess(user)  { updateUser(user.id, { approved: true, role: "seller",  allowed_modules: SELLER_MODULES  }); }
-  function setManagerAccess(user) { updateUser(user.id, { approved: true, role: "manager", allowed_modules: MANAGER_MODULES }); }
+  function blockUser(user) {
+    updateUser(user.id, {
+      approved: false,
+      is_active: false,
+    }, "login_temporarily_blocked");
+  }
+
+  function applyPreset(user, presetId) {
+    const preset = PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+    updateUser(user.id, {
+      approved: true,
+      is_active: true,
+      role: preset.role,
+      allowed_modules: preset.modules,
+      allowed_actions: preset.actions,
+      permission_preset: preset.id,
+      approved_at: new Date().toISOString(),
+      approved_by: profile?.id || null,
+    }, `preset_${preset.id}`);
+  }
 
   async function archiveUser(user) {
-    setSavingId(user.id);
     await updateUser(user.id, {
       is_active:  false,
       approved:   false,
       deleted_at: new Date().toISOString(),
       deleted_by: profile?.id || null,
-    });
+    }, "user_archived");
     setDeleteTarget(null);
-    setSavingId(null);
   }
 
   async function restoreUser(user) {
@@ -175,7 +321,22 @@ export default function AdminUsersPage({ profile, onNavigate }) {
       approved:   true,
       deleted_at: null,
       deleted_by: null,
-    });
+      approved_at: new Date().toISOString(),
+      approved_by: profile?.id || null,
+    }, "user_restored");
+  }
+
+  if (!canAdminUsers) {
+    return (
+      <Layout title="Administración de Usuarios" profile={profile} onNavigate={onNavigate}>
+        <div className="admin-page">
+          <section className="admin-guard-card">
+            <h2>Administración restringida</h2>
+            <p>Esta sección solo está disponible para perfiles Super Admin. Podés seguir usando los módulos habilitados desde el menú lateral.</p>
+          </section>
+        </div>
+      </Layout>
+    );
   }
 
   return (
@@ -205,7 +366,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
         {/* Toolbar */}
         <section className="admin-toolbar">
           <div>
-            <h3>{showArchived ? "Usuarios archivados" : "Usuarios registrados"}</h3>
+            <h3>{userView === "pending" ? "Pendientes de aprobación" : userView === "archived" ? "Usuarios archivados" : "Usuarios aprobados"}</h3>
             <span>{filteredUsers.length} usuarios visibles</span>
           </div>
           <div className="admin-toolbar-actions">
@@ -215,14 +376,20 @@ export default function AdminUsersPage({ profile, onNavigate }) {
               placeholder="Buscar por nombre, email o rol..."
             />
             <button
-              className={`adm-tab-btn ${!showArchived?"active":""}`}
-              onClick={() => setShowArchived(false)}
+              className={`adm-tab-btn ${userView === "pending" ? "active" : ""}`}
+              onClick={() => setUserView("pending")}
             >
-              Activos ({stats.total})
+              Pendientes ({stats.pending})
             </button>
             <button
-              className={`adm-tab-btn ${showArchived?"active":""}`}
-              onClick={() => setShowArchived(true)}
+              className={`adm-tab-btn ${userView === "approved" ? "active" : ""}`}
+              onClick={() => setUserView("approved")}
+            >
+              Aprobados ({stats.approved})
+            </button>
+            <button
+              className={`adm-tab-btn ${userView === "archived" ? "active" : ""}`}
+              onClick={() => setUserView("archived")}
             >
               Archivados ({stats.archived})
             </button>
@@ -235,14 +402,14 @@ export default function AdminUsersPage({ profile, onNavigate }) {
             <p className="admin-empty">Cargando usuarios...</p>
           ) : filteredUsers.length === 0 ? (
             <p className="admin-empty">
-              {showArchived ? "No hay usuarios archivados." : "No hay usuarios para mostrar."}
+              {userView === "pending" ? "No hay usuarios pendientes." : userView === "archived" ? "No hay usuarios archivados." : "No hay usuarios aprobados para mostrar."}
             </p>
           ) : (
             <>
               <div className="admin-desktop-table">
                 <table>
                   <thead>
-                    {showArchived ? (
+                    {userView === "archived" ? (
                       <tr>
                         <th>Usuario</th>
                         <th>Rol</th>
@@ -255,15 +422,17 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                         <th>Usuario</th>
                         <th>Rol</th>
                         <th>Estado</th>
+                        <th>Preset</th>
+                        <th>Permisos</th>
                         <th>Módulos</th>
-                        <th>Acciones rápidas</th>
+                        <th>Auditoría</th>
                         <th>Archivar</th>
                       </tr>
                     )}
                   </thead>
                   <tbody>
                     {filteredUsers.map(user => (
-                      showArchived ? (
+                      userView === "archived" ? (
                         <ArchivedRow
                           key={user.id}
                           user={user}
@@ -276,13 +445,11 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                           user={user}
                           saving={savingId === user.id}
                           currentProfile={profile}
-                          onRoleChange={role => updateUser(user.id, { role })}
+                          onRoleChange={role => updateUser(user.id, { role }, "role_change")}
                           onApprove={() => approveUser(user)}
                           onBlock={() => blockUser(user)}
                           onToggleModule={moduleId => toggleModule(user, moduleId)}
-                          onFullAccess={() => setFullAccess(user)}
-                          onSellerAccess={() => setSellerAccess(user)}
-                          onManagerAccess={() => setManagerAccess(user)}
+                          onApplyPreset={presetId => applyPreset(user, presetId)}
                           onArchive={() => setDeleteTarget(user)}
                         />
                       )
@@ -294,7 +461,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
               {/* Mobile */}
               <div className="admin-mobile-list">
                 {filteredUsers.map(user => (
-                  showArchived ? (
+                  userView === "archived" ? (
                     <ArchivedMobileCard
                       key={user.id}
                       user={user}
@@ -307,13 +474,11 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                       user={user}
                       saving={savingId === user.id}
                       currentProfile={profile}
-                      onRoleChange={role => updateUser(user.id, { role })}
+                      onRoleChange={role => updateUser(user.id, { role }, "role_change")}
                       onApprove={() => approveUser(user)}
                       onBlock={() => blockUser(user)}
                       onToggleModule={moduleId => toggleModule(user, moduleId)}
-                      onFullAccess={() => setFullAccess(user)}
-                      onSellerAccess={() => setSellerAccess(user)}
-                      onManagerAccess={() => setManagerAccess(user)}
+                      onApplyPreset={presetId => applyPreset(user, presetId)}
                       onArchive={() => setDeleteTarget(user)}
                     />
                   )
@@ -361,9 +526,10 @@ function Kpi({ title, value, accent }) {
 }
 
 /* ─── Fila usuario activo ────────────────────────────────────────────── */
-function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onToggleModule, onFullAccess, onSellerAccess, onManagerAccess, onArchive }) {
+function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onToggleModule, onApplyPreset, onArchive }) {
   const isSelf = user.id === currentProfile?.id;
   const isSuperAdmin = user.role === "super_admin";
+  const userActions = inferActions(user);
 
   return (
     <tr>
@@ -389,6 +555,29 @@ function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBloc
         </button>
       </td>
       <td>
+        <select
+          className="admin-select admin-preset-select"
+          value={user.permission_preset || ""}
+          onChange={e => onApplyPreset(e.target.value)}
+          disabled={saving||isSelf}
+        >
+          <option value="">Elegir preset</option>
+          {PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+        <p className="adm-preset-help">
+          {PRESETS.find(p => p.id === user.permission_preset)?.description || "Aplicá un preset para ordenar módulos y acciones."}
+        </p>
+      </td>
+      <td>
+        <div className="adm-action-grid">
+          {ACTIONS.map(action => (
+            <span key={action.id} className={`adm-action-chip ${userActions.includes(action.id) ? "on" : ""}`}>
+              {action.label}
+            </span>
+          ))}
+        </div>
+      </td>
+      <td>
         <div className="module-grid">
           {MODULES.map(m => (
             <label key={m.id} className="module-check">
@@ -403,10 +592,11 @@ function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBloc
         </div>
       </td>
       <td>
-        <div className="quick-actions">
-          <button onClick={onSellerAccess}  disabled={saving}>Vendedor</button>
-          <button onClick={onManagerAccess} disabled={saving}>Gerente</button>
-          <button onClick={onFullAccess}    disabled={saving}>Full</button>
+        <div className="adm-meta-list">
+          <span>Último acceso: {formatDateTime(user.last_sign_in_at || user.last_access_at)}</span>
+          <span>Creado: {formatDateTime(user.created_at)}</span>
+          <span>Aprobado: {formatDateTime(user.approved_at)}</span>
+          <span>Por: {user.approved_by || user.created_by || "—"}</span>
         </div>
       </td>
       <td>
@@ -461,9 +651,10 @@ function ArchivedRow({ user, saving, onRestore }) {
 }
 
 /* ─── Mobile usuario activo ──────────────────────────────────────────── */
-function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onToggleModule, onFullAccess, onSellerAccess, onManagerAccess, onArchive }) {
+function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onToggleModule, onApplyPreset, onArchive }) {
   const isSelf = user.id === currentProfile?.id;
   const isSuperAdmin = user.role === "super_admin";
+  const userActions = inferActions(user);
 
   return (
     <article className="admin-mobile-card">
@@ -485,6 +676,28 @@ function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove,
         onClick={user.approved ? onBlock : onApprove} disabled={saving||isSelf}>
         {user.approved ? "Aprobado" : "Pendiente"}
       </button>
+      <div className="mobile-admin-row mobile-admin-row--stack">
+        <label>Preset</label>
+        <select
+          className="admin-select"
+          value={user.permission_preset || ""}
+          onChange={e => onApplyPreset(e.target.value)}
+          disabled={saving||isSelf}
+        >
+          <option value="">Elegir preset</option>
+          {PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+        <p className="adm-preset-help">
+          {PRESETS.find(p => p.id === user.permission_preset)?.description || "Aplicá un preset para ordenar módulos y acciones."}
+        </p>
+      </div>
+      <div className="adm-action-grid">
+        {ACTIONS.map(action => (
+          <span key={action.id} className={`adm-action-chip ${userActions.includes(action.id) ? "on" : ""}`}>
+            {action.label}
+          </span>
+        ))}
+      </div>
       <div className="module-grid">
         {MODULES.map(m => (
           <label key={m.id} className="module-check">
@@ -497,10 +710,12 @@ function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove,
           </label>
         ))}
       </div>
+      <div className="adm-meta-list">
+        <span>Último acceso: {formatDateTime(user.last_sign_in_at || user.last_access_at)}</span>
+        <span>Creado: {formatDateTime(user.created_at)}</span>
+        <span>Aprobado: {formatDateTime(user.approved_at)}</span>
+      </div>
       <div className="quick-actions">
-        <button onClick={onSellerAccess}  disabled={saving}>Vendedor</button>
-        <button onClick={onManagerAccess} disabled={saving}>Gerente</button>
-        <button onClick={onFullAccess}    disabled={saving}>Full</button>
         {!isSelf && !isSuperAdmin && (
           <button className="adm-archive-btn" onClick={onArchive} disabled={saving}>
             Archivar

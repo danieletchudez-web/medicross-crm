@@ -39,7 +39,7 @@ export default function TodayActionsPage({ profile, onNavigate }) {
     setLoading(false);
   }
 
-  function shareProduct(product, accountName) {
+  function shareProduct(product) {
     if (!product) {
       alert("Este cliente todavía no tiene producto sugerido.");
       return;

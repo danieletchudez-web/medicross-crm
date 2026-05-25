@@ -48,19 +48,6 @@ function compact(v) {
   return fmtARS(n);
 }
 
-/* Versión con 2 decimales para valores más precisos */
-function compactPrecise(v) {
-  const n = Number(v || 0);
-  if (isNaN(n) || !isFinite(n)) return "$ 0";
-  const neg = n < 0 ? "-" : "";
-  const abs = Math.abs(n);
-  const f   = (x, d = 2) => x.toFixed(d).replace(".", ",");
-  if (abs >= 1_000_000_000) return `${neg}$${f(abs / 1_000_000_000)} MM`;
-  if (abs >= 1_000_000)     return `${neg}$${f(abs / 1_000_000)} M`;
-  if (abs >= 1_000)         return `${neg}$${f(abs / 1_000)} K`;
-  return fmtARS(n);
-}
-
 function safePct(a, b) {
   const na = Number(a || 0), nb = Number(b || 0);
   if (!isFinite(na) || !isFinite(nb) || nb === 0) return 0;
@@ -87,7 +74,7 @@ function parseDate(v) {
   if (v instanceof Date) return isNaN(v) ? null : v;
   if (typeof v === "number") { const d = new Date((v - 25569) * 86400000); return isNaN(d) ? null : d; }
   const s = String(v).trim();
-  const p = s.split(/[/\-\.]/);
+  const p = s.split(new RegExp("[/.-]"));
   if (p.length === 3) {
     const [a, b, c] = p.map(Number);
     if (a <= 31 && b <= 12 && c > 31) return new Date(c, b - 1, a);
@@ -157,19 +144,6 @@ function validateRow(row, comp) {
   return e;
 }
 
-function Sparkline({ data, color = "#10b981", w = 90, h = 30 }) {
-  if (!data || data.length < 2) return null;
-  const valid = data.filter(n => typeof n === "number" && isFinite(n));
-  if (valid.length < 2) return null;
-  const max = Math.max(...valid, 1), min = Math.min(...valid, 0), range = max - min || 1;
-  const pts = valid.map((v, i) => `${(i / (valid.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ");
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: "visible" }}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 const PAL  = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#84cc16","#f97316","#6366f1"];
 const EPAL = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444","#06b6d4"];
 
@@ -232,8 +206,8 @@ export default function ImporterPage({ profile, onNavigate }) {
     try {
       localStorage.setItem("bi_cache_sales", JSON.stringify(salesData));
       localStorage.setItem("bi_cache_imports", JSON.stringify(importsData));
-    } catch {}
-    try { const s = localStorage.getItem("bi_forecast_monthly"); if (s) setForecastInputs(JSON.parse(s)); } catch {}
+    } catch { /* cache is optional */ }
+    try { const s = localStorage.getItem("bi_forecast_monthly"); if (s) setForecastInputs(JSON.parse(s)); } catch { /* forecast cache is optional */ }
     setLoadingBI(false);
   }
 
@@ -436,10 +410,22 @@ export default function ImporterPage({ profile, onNavigate }) {
 
   const insights = useMemo(() => {
     const list = [];
-    if (kpis.mejorUnit) list.push({ icon: "🏆", text: `La unidad <strong>${kpis.mejorUnit[0]}</strong> representa el ${safePct(kpis.mejorUnit[1], kpis.total)}% del total (${compact(kpis.mejorUnit[1])}).` });
-    if (kpis.mejorVend) list.push({ icon: "⭐", text: `Mejor vendedor: <strong>${kpis.mejorVend[0]}</strong> con ${compact(kpis.mejorVend[1])} facturados.` });
-    if (kpis.momChange !== null) list.push({ icon: kpis.momChange >= 0 ? "📈" : "📉", text: `Variación mensual: <strong>${kpis.momChange >= 0 ? "+" : ""}${kpis.momChange.toFixed(1).replace(".", ",")}%</strong> vs. mes anterior.` });
-    if (kpis.mejorMes) list.push({ icon: "📅", text: `Mejor mes: <strong>${kpis.mejorMes.mes}</strong> con ${compact(kpis.mejorMes.valor)}.` });
+    if (kpis.mejorUnit) list.push({
+      icon: "🏆",
+      parts: ["La unidad ", { strong: kpis.mejorUnit[0] }, ` representa el ${safePct(kpis.mejorUnit[1], kpis.total)}% del total (${compact(kpis.mejorUnit[1])}).`],
+    });
+    if (kpis.mejorVend) list.push({
+      icon: "⭐",
+      parts: ["Mejor vendedor: ", { strong: kpis.mejorVend[0] }, ` con ${compact(kpis.mejorVend[1])} facturados.`],
+    });
+    if (kpis.momChange !== null) list.push({
+      icon: kpis.momChange >= 0 ? "📈" : "📉",
+      parts: ["Variación mensual: ", { strong: `${kpis.momChange >= 0 ? "+" : ""}${kpis.momChange.toFixed(1).replace(".", ",")}%` }, " vs. mes anterior."],
+    });
+    if (kpis.mejorMes) list.push({
+      icon: "📅",
+      parts: ["Mejor mes: ", { strong: kpis.mejorMes.mes }, ` con ${compact(kpis.mejorMes.valor)}.`],
+    });
     return list;
   }, [kpis]);
 
@@ -469,9 +455,6 @@ export default function ImporterPage({ profile, onNavigate }) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: sX, y: sY } },
       });
     }
-    const byUnit = {};
-    filteredSales.forEach(s => { const k = s.unidad_negocio || "Sin unidad"; const v = Number(s.total_venta); byUnit[k] = (byUnit[k] || 0) + (isFinite(v) ? v : 0); });
-    const uE = Object.entries(byUnit).sort((a, b) => b[1] - a[1]).slice(0, 7);
     if (lineMonthRef.current && mKeys.length > 0) {
       const monthlyData = mKeys.map(k => byMonth[k]);
       const maxVal = Math.max(...monthlyData, 1);
@@ -886,7 +869,13 @@ export default function ImporterPage({ profile, onNavigate }) {
                         {insights.map((ins, i) => (
                           <div key={i} className="bi-insight">
                             <span className="bi-insight__ico">{ins.icon}</span>
-                            <p dangerouslySetInnerHTML={{ __html: ins.text }}/>
+                            <p>
+                              {ins.parts.map((part, idx) => (
+                                typeof part === "string"
+                                  ? <span key={idx}>{part}</span>
+                                  : <strong key={idx}>{part.strong}</strong>
+                              ))}
+                            </p>
                           </div>
                         ))}
                       </div>

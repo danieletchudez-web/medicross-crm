@@ -36,7 +36,6 @@ export default function ProductLineDashboard({ profile, onNavigate }) {
   const [opportunities, setOpportunities] = useState([]);
   const [visits, setVisits] = useState([]);
   const [products, setProducts] = useState([]);
-  const [accounts, setAccounts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +55,7 @@ export default function ProductLineDashboard({ profile, onNavigate }) {
   async function loadData() {
     setLoading(true);
 
-    const [oppsRes, visitsRes, productsRes, accountsRes, campaignsRes] =
+    const [oppsRes, visitsRes, productsRes, campaignsRes] =
       await Promise.all([
         supabase
           .from("opportunities")
@@ -70,15 +69,12 @@ export default function ProductLineDashboard({ profile, onNavigate }) {
 
         supabase.from("products").select("*").order("name"),
 
-        supabase.from("accounts").select("*").order("name"),
-
         supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
       ]);
 
     setOpportunities(oppsRes.data || []);
     setVisits(visitsRes.data || []);
     setProducts(productsRes.data || []);
-    setAccounts(accountsRes.data || []);
     setCampaigns(campaignsRes.data || []);
     setLoading(false);
   }
