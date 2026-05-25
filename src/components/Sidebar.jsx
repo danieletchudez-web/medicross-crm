@@ -102,11 +102,13 @@ export default function Sidebar({ profile, onNavigate }) {
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [collapsed,  setCollapsed]  = useState(() => localStorage.getItem("sidebar_collapsed") === "true");
+  const [hoverOpen,  setHoverOpen]  = useState(false);
   const [favorites,  setFavorites]  = useState(() => {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
   });
   const dragIdx = useRef(null);
+  const hoverTimer = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
@@ -116,7 +118,12 @@ export default function Sidebar({ profile, onNavigate }) {
   useEffect(() => {
     localStorage.setItem("sidebar_collapsed", collapsed ? "true" : "false");
     if (collapsed) setEditing(false);
+    if (!collapsed) setHoverOpen(false);
   }, [collapsed]);
+
+  useEffect(() => () => {
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+  }, []);
 
   // Bloquear scroll cuando el menú móvil está abierto
   useEffect(() => {
@@ -147,6 +154,26 @@ export default function Sidebar({ profile, onNavigate }) {
     onNavigate(id);
   }
 
+  function handleSidebarMouseEnter() {
+    if (!collapsed) return;
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(() => setHoverOpen(true), 1000);
+  }
+
+  function handleSidebarMouseLeave() {
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+    if (collapsed) setHoverOpen(false);
+  }
+
+  function toggleCollapsed() {
+    if (collapsed && hoverOpen) {
+      setCollapsed(false);
+      setHoverOpen(false);
+      return;
+    }
+    setCollapsed((c) => !c);
+  }
+
   function onDragStart(id) { dragIdx.current = id; }
   function onDragEnter(id) {
     if (dragIdx.current === id) return;
@@ -171,10 +198,16 @@ export default function Sidebar({ profile, onNavigate }) {
   const roleLabel    = {super_admin:"Super Admin",manager:"Manager",seller:"Vendedor"}[profile?.role] || profile?.role || "Usuario";
   const email        = profile?.email || "";
   const emailDisplay = email.length > 24 ? email.slice(0,22)+"…" : email;
+  const isPreviewOpen = collapsed && hoverOpen;
+  const isCollapsedView = collapsed && !hoverOpen;
 
   return (
     <>
-      <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
+      <aside
+        className={`sidebar ${isCollapsedView ? "sidebar--collapsed" : ""} ${isPreviewOpen ? "sidebar--hover-open" : ""}`}
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
+      >
 
         {/* Brand / logo */}
         <div className="sidebar-brand" onClick={() => handleNavigate("managerDashboard")} style={{cursor:"pointer"}} title="Dashboard">
@@ -185,11 +218,11 @@ export default function Sidebar({ profile, onNavigate }) {
         <button
           type="button"
           className="sidebar-collapse-btn"
-          onClick={() => setCollapsed((c) => !c)}
-          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-          data-tooltip={collapsed ? "Expandir menú" : "Colapsar menú"}
+          onClick={toggleCollapsed}
+          aria-label={isPreviewOpen ? "Fijar menú abierto" : "Colapsar menú"}
+          data-tooltip={isPreviewOpen ? "Fijar menú abierto" : "Colapsar menú"}
         >
-          {collapsed ? "›" : "‹"}
+          {isPreviewOpen ? "›" : "‹"}
         </button>
 
         {/* Botón hamburguesa — solo visible en móvil via CSS */}

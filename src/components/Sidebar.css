@@ -566,8 +566,7 @@
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
   .sidebar--collapsed .sidebar-collapse-btn {
-    top: 86px;
-    right: -10px;
+    display: none;
   }
 
   .sidebar--collapsed .sidebar-body,
