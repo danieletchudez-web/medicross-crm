@@ -18,6 +18,7 @@ import CotizadorPage       from "./pages/CotizadorPage";
 import PreciosHistoricosPage from "./pages/PreciosHistoricosPage";
 import LoginPage           from "./pages/LoginPage";
 import CRMAssistant        from "./components/CRMAssistant";
+import DialogSystem        from "./components/DialogSystem";
 
 const FALLBACK_PROFILE = {
   id: null,
@@ -216,6 +217,7 @@ export default function App() {
     <>
       {CurrentPage}
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
+      <DialogSystem />
     </>
   );
 }

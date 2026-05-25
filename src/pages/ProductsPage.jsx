@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
+import { EmptyState, MetricKpi, ModuleHeader } from "../components/CRMUI";
 import { supabase } from "../lib/supabaseClient";
 import "./products.css";
 
@@ -117,10 +118,15 @@ Quedo atento para coordinar una presentación.`;
   return (
     <Layout title="Productos / Share Kit" profile={profile} onNavigate={onNavigate}>
       <div className="products-page">
+        <ModuleHeader
+          title="Productos / Share Kit"
+          subtitle="Material comercial listo para compartir en visitas, WhatsApp o email."
+        />
+
         <section className="products-kpis">
-          <MiniKpi title="Productos totales" value={total} />
-          <MiniKpi title="EchoLaser" value={echoLaser} />
-          <MiniKpi title="Con brochure" value={withBrochure} />
+          <MetricKpi label="Productos totales" value={total} />
+          <MetricKpi label="EchoLaser" value={echoLaser} accent="green" />
+          <MetricKpi label="Con brochure" value={withBrochure} accent="amber" />
         </section>
 
         <section className="products-card">
@@ -229,7 +235,10 @@ Quedo atento para coordinar una presentación.`;
 
           <div className="products-grid">
             {products.length === 0 ? (
-              <div className="empty-products">No hay productos cargados todavía.</div>
+              <EmptyState
+                title="No hay productos cargados"
+                text="Creá el primer producto para que el equipo pueda compartir speech, brochure y ficha técnica desde el CRM."
+              />
             ) : (
               products.map((p) => (
                 <article className="product-card" key={p.id}>
@@ -281,14 +290,5 @@ Quedo atento para coordinar una presentación.`;
         </section>
       </div>
     </Layout>
-  );
-}
-
-function MiniKpi({ title, value }) {
-  return (
-    <div className="product-kpi">
-      <span>{title}</span>
-      <strong>{value}</strong>
-    </div>
   );
 }

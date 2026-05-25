@@ -3,6 +3,25 @@
 
 alter table public.profiles enable row level security;
 
+alter table public.profiles
+  add column if not exists allowed_actions text[] default array['view']::text[],
+  add column if not exists permission_preset text,
+  add column if not exists approved_at timestamptz,
+  add column if not exists approved_by uuid,
+  add column if not exists last_access_at timestamptz,
+  add column if not exists created_by uuid,
+  add column if not exists deleted_at timestamptz,
+  add column if not exists deleted_by uuid,
+  add column if not exists is_active boolean not null default false;
+
+update public.profiles
+set allowed_actions = case
+  when role = 'super_admin' then array['view','create','edit','delete','export','approve_users']::text[]
+  when role = 'manager' then array['view','create','edit','export']::text[]
+  else coalesce(allowed_actions, array['view','create','edit']::text[])
+end
+where allowed_actions is null;
+
 create table if not exists public.admin_audit_logs (
   id uuid primary key default gen_random_uuid(),
   event text not null,

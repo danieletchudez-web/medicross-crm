@@ -8,48 +8,10 @@
   font-family: "DM Sans", system-ui, sans-serif;
 }
 
-/* ─── KPIs ───────────────────────────────────────────────────────────── */
 .opp-kpis {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 12px;
-}
-
-.opp-kpi {
-  background: #ffffff;
-  border: 1px solid #e8ecf2;
-  border-top: 2px solid #3b82f6;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.opp-kpi__label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #94a3b8;
-}
-
-.opp-kpi__value {
-  font-size: 22px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.4px;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.opp-kpi__sub {
-  font-size: 10px;
-  color: #94a3b8;
-  font-weight: 500;
 }
 
 /* ─── Form card ──────────────────────────────────────────────────────── */
@@ -336,11 +298,65 @@
 }
 
 /* Empty */
-.opp-empty {
-  text-align: center;
-  color: #94a3b8;
-  padding: 28px;
-  font-weight: 500;
+.opp-empty { padding: 16px; }
+
+.opp-mobile-list {
+  display: none;
+}
+
+.opp-mobile-card {
+  border: 1px solid #e8ecf2;
+  border-radius: 14px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+}
+
+.opp-mobile-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.opp-mobile-card__top strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.opp-mobile-card__top span:not(.opp-stage-pill) {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.opp-mobile-card__meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.opp-mobile-card__meta span {
+  background: #f8fafc;
+  border: 1px solid #e8ecf2;
+  border-radius: 9px;
+  padding: 7px 8px;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.opp-mobile-card p {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.45;
 }
 
 /* Footer */
@@ -377,6 +393,15 @@
   .opp-form  { grid-template-columns: 1fr; }
   .opp-form__wide { grid-column: 1; }
   .opp-submit { grid-column: 1; }
+  .opp-table-wrap { display: none; }
+  .opp-mobile-list { display: grid; gap: 10px; }
+  .opp-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .opp-btn {
+    min-height: 38px;
+  }
 }
 
 /* ─── Filas por resultado ────────────────────────────────────────────── */

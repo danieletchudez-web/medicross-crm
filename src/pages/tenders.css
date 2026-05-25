@@ -280,6 +280,50 @@
 .tn-grid__td { padding: 12px 10px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
 .tn-grid__empty { padding: 48px; text-align: center; color: var(--tn-text3); font-size: 13px; }
 
+@media (min-width: 901px) {
+  .tn-grid__th:nth-child(4),
+  .tn-grid__td:nth-child(4) {
+    position: sticky;
+    left: 73px;
+    z-index: 2;
+    min-width: 220px;
+    max-width: 260px;
+    box-shadow: 8px 0 14px rgba(15, 23, 42, 0.05);
+  }
+
+  .tn-grid__th:nth-child(4) {
+    z-index: 5;
+  }
+
+  .tn-grid__td:nth-child(4) {
+    background: #ffffff;
+  }
+
+  .tn-grid__row--alt .tn-grid__td:nth-child(4) {
+    background: #fafbfc;
+  }
+
+  .tn-grid__th:last-child,
+  .tn-grid__td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    box-shadow: -8px 0 14px rgba(15, 23, 42, 0.05);
+  }
+
+  .tn-grid__th:last-child {
+    z-index: 5;
+  }
+
+  .tn-grid__td:last-child {
+    background: #ffffff;
+  }
+
+  .tn-grid__row--alt .tn-grid__td:last-child {
+    background: #fafbfc;
+  }
+}
+
 /* ─── ALERTA COLUMNA — un solo indicador compacto ───────────────────── */
 .tn-alert-indicator {
   display: inline-flex; align-items: center; justify-content: center;

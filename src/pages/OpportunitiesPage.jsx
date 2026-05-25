@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "../components/Layout";
+import { EmptyState, MetricKpi, ModuleHeader } from "../components/CRMUI";
 import { supabase } from "../lib/supabaseClient";
 import "./opportunities.css";
 
@@ -150,16 +151,20 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
   return (
     <Layout title="Oportunidades" profile={profile} onNavigate={onNavigate}>
       <div className="opp-page">
+        <ModuleHeader
+          title="Oportunidades"
+          subtitle="Pipeline comercial con forecast, probabilidad y próximas acciones."
+        />
 
         {/* KPIs */}
         <section className="opp-kpis">
-          <OppKpi label="Pipeline abierto"   value={money(metrics.pipeline)} />
-          <OppKpi label="Forecast ponderado" value={money(metrics.forecast)} sub="Monto × probabilidad" />
-          <OppKpi label="Opps. abiertas"     value={metrics.open} />
-          <OppKpi label="Sin próxima acción" value={metrics.noAction} accent="red" />
-          <OppKpi label="Ganadas"            value={metrics.won}  accent="green" sub={metrics.won > 0 ? money(metrics.wonAmount) : undefined} />
-          <OppKpi label="Perdidas"           value={metrics.lost} accent="slate" />
-          <OppKpi
+          <MetricKpi label="Pipeline abierto"   value={money(metrics.pipeline)} />
+          <MetricKpi label="Forecast ponderado" value={money(metrics.forecast)} sub="Monto x probabilidad" />
+          <MetricKpi label="Opps. abiertas"     value={metrics.open} />
+          <MetricKpi label="Sin próxima acción" value={metrics.noAction} accent="red" />
+          <MetricKpi label="Ganadas"            value={metrics.won}  accent="green" sub={metrics.won > 0 ? money(metrics.wonAmount) : undefined} />
+          <MetricKpi label="Perdidas"           value={metrics.lost} accent="slate" />
+          <MetricKpi
             label="Win rate"
             value={metrics.winRate !== null ? `${metrics.winRate}%` : "—"}
             accent={metrics.winRate >= 50 ? "green" : metrics.winRate !== null ? "amber" : undefined}
@@ -274,7 +279,14 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
               </thead>
               <tbody>
                 {filteredOpps.length === 0 ? (
-                  <tr><td colSpan="9" className="opp-empty">No hay oportunidades en esta categoría.</td></tr>
+                  <tr>
+                    <td colSpan="9" className="opp-empty">
+                      <EmptyState
+                        title="Sin oportunidades para este filtro"
+                        text="Cambiá el filtro o cargá una nueva oportunidad desde el formulario superior."
+                      />
+                    </td>
+                  </tr>
                 ) : filteredOpps.map((o) => {
                   const isOpen   = !["Ganado","Perdido"].includes(o.stage);
                   const isWon    = o.stage === "Ganado";
@@ -322,6 +334,48 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
               </tbody>
             </table>
           </div>
+
+          <div className="opp-mobile-list">
+            {filteredOpps.length === 0 ? (
+              <EmptyState
+                title="Sin oportunidades para este filtro"
+                text="Cambiá el filtro o cargá una nueva oportunidad desde el formulario superior."
+              />
+            ) : filteredOpps.map((o) => {
+              const isOpen   = !["Ganado","Perdido"].includes(o.stage);
+              const weighted = (Number(o.amount || 0) * Number(o.probability || 0)) / 100;
+              return (
+                <article key={o.id} className="opp-mobile-card">
+                  <div className="opp-mobile-card__top">
+                    <div>
+                      <strong>{o.name}</strong>
+                      <span>{o.accounts?.name || "Sin cliente"}</span>
+                    </div>
+                    <span
+                      className="opp-stage-pill"
+                      style={{ background: `${STAGE_COLOR[o.stage]}18`, color: STAGE_COLOR[o.stage], borderColor: `${STAGE_COLOR[o.stage]}40` }}
+                    >
+                      {o.stage}
+                    </span>
+                  </div>
+                  <div className="opp-mobile-card__meta">
+                    <span>Monto: {money(o.amount)}</span>
+                    <span>Prob.: {o.probability ? `${o.probability}%` : "—"}</span>
+                    <span>Forecast: {isOpen ? money(weighted) : "—"}</span>
+                    <span>Cierre: {o.expected_close ? new Date(o.expected_close).toLocaleDateString("es-AR") : "—"}</span>
+                  </div>
+                  <p>{o.next_action || "Sin próxima acción"}</p>
+                  <div className="opp-actions">
+                    {isOpen && <button className="opp-btn opp-btn--edit" onClick={() => editOpportunity(o)}>Editar</button>}
+                    {isOpen && <button className="opp-btn opp-btn--won" onClick={() => quickClose(o.id, "Ganado")}>Ganado</button>}
+                    {isOpen && <button className="opp-btn opp-btn--lost" onClick={() => quickClose(o.id, "Perdido")}>Perdido</button>}
+                    {!isOpen && <button className="opp-btn opp-btn--reopen" onClick={() => reopen(o.id)}>Reabrir</button>}
+                    <button className="opp-btn opp-btn--del" onClick={() => deleteOpportunity(o.id)}>Borrar</button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </section>
 
         <footer className="opp-footer">
@@ -330,22 +384,5 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
 
       </div>
     </Layout>
-  );
-}
-
-function OppKpi({ label, value, sub, accent }) {
-  const accents = {
-    red:   { border: "#ef4444", text: "#dc2626" },
-    green: { border: "#10b981", text: "#059669" },
-    amber: { border: "#f59e0b", text: "#d97706" },
-    slate: { border: "#94a3b8", text: "#64748b" },
-  };
-  const c = accents[accent] || {};
-  return (
-    <article className="opp-kpi" style={c.border ? { borderTopColor: c.border } : {}}>
-      <span className="opp-kpi__label">{label}</span>
-      <strong className="opp-kpi__value" style={c.text ? { color: c.text } : {}}>{value}</strong>
-      {sub && <small className="opp-kpi__sub">{sub}</small>}
-    </article>
   );
 }
