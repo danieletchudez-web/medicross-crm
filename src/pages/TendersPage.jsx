@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./tenders.css";
@@ -1219,7 +1219,7 @@ export default function TendersPage({ profile, onNavigate }) {
   const dismissAlert = (key) => {
     setDismissedAlerts(prev=>{
       const next=new Set([...prev,key]);
-      try{const saved=JSON.parse(localStorage.getItem("tn_dismissed_alerts")||"{}");saved[key]=Date.now()+24*60*60*1000;const now=Date.now();Object.keys(saved).forEach(k=>{if(saved[k]<=now)delete saved[k];});localStorage.setItem("tn_dismissed_alerts",JSON.stringify(saved));}catch{}
+      try{const saved=JSON.parse(localStorage.getItem("tn_dismissed_alerts")||"{}");saved[key]=Date.now()+24*60*60*1000;const now=Date.now();Object.keys(saved).forEach(k=>{if(saved[k]<=now)delete saved[k];});localStorage.setItem("tn_dismissed_alerts",JSON.stringify(saved));}catch{ /* localStorage best effort */ }
       return next;
     });
   };
