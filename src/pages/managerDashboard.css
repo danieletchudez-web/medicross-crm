@@ -258,7 +258,7 @@
 }
 
 @media (max-width: 480px) {
-  .unified-dashboard { padding: 10px; gap: 10px; padding-top: 66px; }
+.unified-dashboard { padding: 10px; gap: 10px; }
   .dash-title    { font-size: 18px; }
   .dash-subtitle { font-size: 11px; }
   .dash-header   { padding: 14px 16px; }
