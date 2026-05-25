@@ -86,8 +86,8 @@
 
 .sidebar-collapse-btn {
   position: absolute;
-  top: 47px;
-  right: 10px;
+  top: 82px;
+  right: -13px;
   width: 24px;
   height: 24px;
   border-radius: 999px;
@@ -564,8 +564,8 @@
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
   .sidebar--collapsed .sidebar-collapse-btn {
-    top: 48px;
-    right: 8px;
+    top: 92px;
+    right: -13px;
   }
 
   .sidebar--collapsed .sidebar-body,
