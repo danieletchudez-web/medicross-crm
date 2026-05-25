@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./visits.css";
@@ -193,7 +193,7 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
 }
 
 /* ── VisitFormMobile ───────────────────────────────────────────────── */
-function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial}) {
+function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,loading,onToggleMaterial}) {
   const [step, setStep] = useState(1);
   const stepLabels = ["¿Con quién?","¿Qué pasó?","¿Qué sigue?"];
   return (

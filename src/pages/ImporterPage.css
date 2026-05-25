@@ -47,7 +47,11 @@
   font-size: 12.5px; font-weight: 600; font-family: inherit;
   cursor: pointer; border-radius: 8px; transition: all .15s; white-space: nowrap;
 }
-.bi-header__tab.active { background: #0f2444; color: #fff; }
+.bi-header__tab.active {
+  background: #185fa5;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(24,95,165,.18);
+}
 .bi-header__tab:not(.active):hover { background: #f1f5f9; }
 .bi-header__right { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
 .bi-header__sync {
