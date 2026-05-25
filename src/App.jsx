@@ -1,24 +1,25 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 
-import ManagerDashboard    from "./pages/ManagerDashboard";
-import SellerDashboard     from "./pages/SellerDashboard";
-import AccountsPage        from "./pages/AccountsPage";
-import ProductsPage        from "./pages/ProductsPage";
-import OpportunitiesPage   from "./pages/OpportunitiesPage";
-import CampaignsPage       from "./pages/CampaignsPage";
-import TodayActionsPage    from "./pages/TodayActionsPage";
-import VisitsPage          from "./pages/VisitsPage";
-import CalendarPage        from "./pages/CalendarPage";
-import AdminUsersPage      from "./pages/AdminUsersPage";
-import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
-import ImporterPage        from "./pages/ImporterPage";
-import TendersPage         from "./pages/TendersPage";
-import CotizadorPage       from "./pages/CotizadorPage";
-import PreciosHistoricosPage from "./pages/PreciosHistoricosPage";
 import LoginPage           from "./pages/LoginPage";
 import CRMAssistant        from "./components/CRMAssistant";
 import DialogSystem        from "./components/DialogSystem";
+
+const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
+const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
+const AccountsPage          = lazy(() => import("./pages/AccountsPage"));
+const ProductsPage          = lazy(() => import("./pages/ProductsPage"));
+const OpportunitiesPage     = lazy(() => import("./pages/OpportunitiesPage"));
+const CampaignsPage         = lazy(() => import("./pages/CampaignsPage"));
+const TodayActionsPage      = lazy(() => import("./pages/TodayActionsPage"));
+const VisitsPage            = lazy(() => import("./pages/VisitsPage"));
+const CalendarPage          = lazy(() => import("./pages/CalendarPage"));
+const AdminUsersPage        = lazy(() => import("./pages/AdminUsersPage"));
+const SalesAnalyticsPage    = lazy(() => import("./pages/SalesAnalyticsPage"));
+const ImporterPage          = lazy(() => import("./pages/ImporterPage"));
+const TendersPage           = lazy(() => import("./pages/TendersPage"));
+const CotizadorPage         = lazy(() => import("./pages/CotizadorPage"));
+const PreciosHistoricosPage = lazy(() => import("./pages/PreciosHistoricosPage"));
 
 const FALLBACK_PROFILE = {
   id: null,
@@ -41,6 +42,34 @@ function buildPendingProfile(user, reason = "profile_missing") {
     allowed_modules: [],
     access_reason: reason,
   };
+}
+
+function FullPageLoader({ label = "Cargando módulo…" }) {
+  return (
+    <div style={{
+      minHeight:"100vh", display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center",
+      background:"#f0f2f5", gap:16,
+      fontFamily:"DM Sans, system-ui, sans-serif"
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:9}}>
+        <div style={{width:9,height:9,borderRadius:"50%",background:"#4da3f0",animation:"crmPulse 1.2s ease-in-out infinite"}}/>
+        <span style={{fontSize:16,fontWeight:600,color:"#0f2444",letterSpacing:"-0.3px"}}>MediCross CRM</span>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+        <div style={{display:"flex",gap:5}}>
+          {[0,1,2].map(i=>(
+            <div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#0f2444",animation:`crmBounce 1.2s ease-in-out ${i*0.18}s infinite`}}/>
+          ))}
+        </div>
+        <span style={{fontSize:12,color:"#94a3b8",fontWeight:500,letterSpacing:"0.5px"}}>{label}</span>
+      </div>
+      <style>{`
+        @keyframes crmPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.35);opacity:.65} }
+        @keyframes crmBounce { 0%,80%,100%{transform:translateY(0);opacity:.18} 40%{transform:translateY(-7px);opacity:.85} }
+      `}</style>
+    </div>
+  );
 }
 
 export default function App() {
@@ -126,31 +155,7 @@ export default function App() {
     } catch { /* silent */ }
   }
 
-  if (loading) return (
-    <div style={{
-      minHeight:"100vh", display:"flex", flexDirection:"column",
-      alignItems:"center", justifyContent:"center",
-      background:"#f0f2f5", gap:16,
-      fontFamily:"DM Sans, system-ui, sans-serif"
-    }}>
-      <div style={{display:"flex",alignItems:"center",gap:9}}>
-        <div style={{width:9,height:9,borderRadius:"50%",background:"#4da3f0",animation:"crmPulse 1.2s ease-in-out infinite"}}/>
-        <span style={{fontSize:16,fontWeight:600,color:"#0f2444",letterSpacing:"-0.3px"}}>MediCross CRM</span>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-        <div style={{display:"flex",gap:5}}>
-          {[0,1,2].map(i=>(
-            <div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#0f2444",animation:`crmBounce 1.2s ease-in-out ${i*0.18}s infinite`}}/>
-          ))}
-        </div>
-        <span style={{fontSize:12,color:"#94a3b8",fontWeight:500,letterSpacing:"0.5px"}}>Trabajando…</span>
-      </div>
-      <style>{`
-        @keyframes crmPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.35);opacity:.65} }
-        @keyframes crmBounce { 0%,80%,100%{transform:translateY(0);opacity:.18} 40%{transform:translateY(-7px);opacity:.85} }
-      `}</style>
-    </div>
-  );
+  if (loading) return <FullPageLoader label="Trabajando…" />;
 
   if (!session) return <LoginPage />;
 
@@ -215,7 +220,9 @@ export default function App() {
 
   return (
     <>
-      {CurrentPage}
+      <Suspense fallback={<FullPageLoader />}>
+        {CurrentPage}
+      </Suspense>
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
       <DialogSystem />
     </>
