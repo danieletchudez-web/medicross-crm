@@ -280,6 +280,32 @@ export default function ManagerDashboard({ profile, onNavigate }) {
     return                             { tone:"neutral", icon:"●", title:"Operación estable",     text:"Pipeline activo. Mantener ritmo de visitas, seguimiento y forecast." };
   }, [metrics]);
 
+  const todayDecisions = useMemo(() => {
+    const rows = [];
+    rows.push({
+      tone: metrics.coverage < 50 ? "danger" : metrics.coverage < 80 ? "warning" : "success",
+      title: `Cobertura ${metrics.coverage}%`,
+      text: metrics.coverage < 50 ? "Aumentar pipeline o ajustar campañas para cubrir objetivo." : "Mantener seguimiento de forecast contra objetivo.",
+    });
+    if (metrics.noAction > 0) rows.push({
+      tone: "warning",
+      title: `${metrics.noAction} sin próxima acción`,
+      text: "Definir dueño, fecha y siguiente paso antes de cerrar el día.",
+    });
+    const top = projectTemperature[0];
+    if (top) rows.push({
+      tone: top.score >= 75 ? "danger" : "success",
+      title: top.name,
+      text: `${top.client} · ${top.stage} · score ${top.score}`,
+    });
+    if (metrics.hotDeals > 0) rows.push({
+      tone: "success",
+      title: `${metrics.hotDeals} hot deals`,
+      text: "Priorizar cierre comercial y confirmar fecha de decisión.",
+    });
+    return rows.slice(0, 3);
+  }, [metrics, projectTemperature]);
+
   const campaignRows = useMemo(() => {
     return filteredCampaigns.map((c) => {
       const forecast = filteredOpps
@@ -398,11 +424,21 @@ export default function ManagerDashboard({ profile, onNavigate }) {
       <div className="unified-dashboard">
 
         {/* HEADER */}
-        <header className="dash-header">
+        <header className="dash-header dash-hero">
           <div className="dash-header-left">
             <div className="dash-wordmark"><span className="dash-wordmark-dot"/>Soluciones Médicas</div>
             <h1 className="dash-title">Centro de Ventas</h1>
             <p className="dash-subtitle">Pipeline · Forecast ponderado · Campañas · Probabilidad de cierre</p>
+            <div className={`dash-hero-status dash-hero-status--${decision.tone}`}>
+              <span>{decision.icon}</span>
+              <strong>{decision.title}</strong>
+              <small>{decision.text}</small>
+            </div>
+          </div>
+          <div className="dash-hero-metrics">
+            <div><span>Pipeline</span><strong>{compactMoney(metrics.pipeline)}</strong></div>
+            <div><span>Forecast</span><strong>{compactMoney(metrics.forecast)}</strong></div>
+            <div><span>Cobertura</span><strong>{metrics.coverage}%</strong></div>
           </div>
           <div className="dash-header-right">
             <div className="dash-filter-wrap">
@@ -413,12 +449,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             </div>
           </div>
         </header>
-
-        {/* DECISION BANNER */}
-        <div className={`dash-banner dash-banner--${decision.tone}`}>
-          <span className="dash-banner-icon">{decision.icon}</span>
-          <div><strong>{decision.title}</strong><span>{decision.text}</span></div>
-        </div>
 
         {/* PRIMARY KPIs — fila 1 */}
         <section className="dash-primary-kpis">
@@ -450,6 +480,22 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             accent={metrics.coverage >= 80 ? "green" : metrics.coverage >= 50 ? "yellow" : "red"}
             tooltip="Forecast ponderado ÷ Objetivo de campañas. Indica qué porcentaje del objetivo ya está cubierto con el pipeline actual. Verde ≥80%, amarillo ≥50%, rojo <50%."
           />
+        </section>
+
+        <section className="dash-decisions">
+          <div className="dash-decisions__head">
+            <span>Decisiones de hoy</span>
+            <strong>Prioridad ejecutiva</strong>
+          </div>
+          {todayDecisions.map((item, index) => (
+            <article key={`${item.title}-${index}`} className={`dash-decision-card dash-decision-card--${item.tone}`}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <div>
+                <strong>{item.title}</strong>
+                <p>{item.text}</p>
+              </div>
+            </article>
+          ))}
         </section>
 
         {/* KPIs COLAPSABLES — fila 2 y 3 */}
@@ -651,14 +697,17 @@ function HotProjects({ rows }) {
         <p className="dash-panel__sub">Ordenados por score de temperatura</p>
       </header>
       {rows.length === 0 ? <p className="dash-empty">No hay oportunidades abiertas.</p> : (
-        <div className="dash-list">
+        <div className="dash-hot-list">
           {rows.slice(0, 5).map((p) => (
-            <div className="dash-list-row" key={p.id}>
-              <div className="dash-list-row__main">
+            <div className="dash-hot-row" key={p.id}>
+              <div className="dash-hot-row__main">
                 <strong>{p.name}</strong>
                 <small>{p.client} · {p.stage}</small>
+                <div className="dash-hot-score">
+                  <div style={{ width: `${p.score}%` }} />
+                </div>
               </div>
-              <div className="dash-list-row__meta">
+              <div className="dash-hot-row__meta">
                 <span>{money(p.forecast)}</span>
                 <em className={p.score>=75?"badge badge--red":p.score>=50?"badge badge--amber":"badge badge--green"}>{p.score}</em>
               </div>
