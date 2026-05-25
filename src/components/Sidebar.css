@@ -435,7 +435,7 @@
 /* ─── Botón hamburguesa (solo mobile) ────────────────────────────────── */
 .sidebar-hamburger {
   display: none;
-  animation: hamburguerPulse 2.5s ease-in-out infinite;
+  animation: hamburguerPulse 2s ease-in-out infinite;
 }
 
 .sidebar-hamburger.open {
@@ -443,13 +443,8 @@
 }
 
 @keyframes hamburguerPulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: .45; }
-}
-
-/* ─── Overlay oscuro detrás del menú en mobile ───────────────────────── */
-.sidebar-overlay {
-  display: none;
+  0%, 100% { opacity: 1; box-shadow: none; }
+  50%       { opacity: .6; box-shadow: 0 0 0 4px rgba(24,95,165,.25); border-radius: 8px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
