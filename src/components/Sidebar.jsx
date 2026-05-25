@@ -7,6 +7,8 @@ import {
   CalendarDays,
   CalendarPlus,
   ChartPie,
+  ChevronLeft,
+  ChevronRight,
   CircleDollarSign,
   Clock3,
   FileText,
@@ -186,16 +188,6 @@ export default function Sidebar({ profile, onNavigate }) {
           <span className="sidebar-brand__mark">M</span>
         </div>
 
-        <button
-          type="button"
-          className="sidebar-collapse-btn"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-          data-tooltip={collapsed ? "Expandir menú" : "Colapsar menú"}
-        >
-          {collapsed ? "›" : "‹"}
-        </button>
-
         {/* Botón hamburguesa — solo visible en móvil via CSS */}
         <button
           className={`sidebar-hamburger ${menuOpen ? "open" : ""}`}
@@ -306,6 +298,20 @@ export default function Sidebar({ profile, onNavigate }) {
           </nav>
 
           <div className="sidebar-footer">
+            <button
+              type="button"
+              className="sidebar-collapse-btn"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+              data-tooltip={collapsed ? "Expandir menú" : "Colapsar menú"}
+            >
+              <span className="sidebar-collapse-btn__icon">
+                {collapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}
+              </span>
+              <span className="sidebar-collapse-btn__label">
+                {collapsed ? "Expandir" : "Colapsar"}
+              </span>
+            </button>
             <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)} aria-label={dark ? "Modo claro" : "Modo oscuro"} data-tooltip={dark ? "Modo claro" : "Modo oscuro"}>
               <span className="sidebar-theme-toggle__icon">{dark ? <Sun aria-hidden="true"/> : <Moon aria-hidden="true"/>}</span>
               <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>

@@ -54,6 +54,8 @@
 .sidebar--collapsed {
   width: 72px;
   min-width: 72px;
+  background: linear-gradient(180deg, #162d50 0%, #0d1e35 100%);
+  border-right-color: rgba(255, 255, 255, 0.07);
 }
 
 /* ─── Brand ──────────────────────────────────────────────────────────── */
@@ -96,49 +98,55 @@
 }
 
 .sidebar-collapse-btn {
-  position: absolute;
-  top: calc(var(--sb-brand-height) + 18px);
-  right: -11px;
-  width: 24px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid rgba(191, 219, 254, .38);
-  background: linear-gradient(180deg, rgba(24, 95, 165, .92), rgba(15, 36, 68, .98));
-  color: #dbeafe;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 900;
-  line-height: 1;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
-  z-index: 4;
-  box-shadow: 0 12px 28px rgba(15,23,42,.22);
-  transform: translateY(-50%);
-  animation: sidebarTogglePulse 2.8s ease-in-out infinite;
-  transition: transform .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+  text-align: left;
+  font-family: "DM Sans", system-ui, sans-serif;
+  transition: background 0.15s, color 0.15s;
+  margin-bottom: 2px;
 }
 
 .sidebar-collapse-btn:hover {
-  color: #ffffff;
-  border-color: rgba(147,197,253,.55);
-  box-shadow: 0 16px 32px rgba(15,23,42,.28);
-  transform: translateY(-50%) translateX(2px);
+  background: rgba(255, 255, 255, 0.09);
 }
 
-@keyframes sidebarTogglePulse {
-  0%, 100% {
-    box-shadow: 0 10px 24px rgba(15,23,42,.18), 0 0 0 0 rgba(59,130,246,0);
-  }
-  50% {
-    box-shadow: 0 12px 28px rgba(15,23,42,.24), 0 0 0 4px rgba(59,130,246,.12);
-  }
+.sidebar-collapse-btn__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.15s;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-collapse-btn {
-    animation: none;
-  }
+.sidebar-collapse-btn__icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+.sidebar-collapse-btn:hover .sidebar-collapse-btn__icon {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.sidebar-collapse-btn__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.15s;
+}
+
+.sidebar-collapse-btn:hover .sidebar-collapse-btn__label {
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* ─── Body ───────────────────────────────────────────────────────────── */
@@ -598,7 +606,22 @@
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
   .sidebar--collapsed .sidebar-collapse-btn {
-    display: inline-flex;
+    width: 46px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 14px;
+    margin-bottom: 0;
+  }
+
+  .sidebar--collapsed .sidebar-collapse-btn__icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebar--collapsed .sidebar-collapse-btn__icon svg {
+    width: 19px;
+    height: 19px;
   }
 
   .sidebar--collapsed .sidebar-body,
@@ -665,6 +688,13 @@
     height: var(--sb-brand-height);
     min-height: var(--sb-brand-height);
     max-height: var(--sb-brand-height);
+    background: transparent;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .sidebar--collapsed .sidebar-brand__mark {
+    background: linear-gradient(135deg, #1e3a6e, #2563eb);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
   }
 
   .sidebar--collapsed .sidebar-brand__img {
@@ -706,7 +736,8 @@
   .sidebar--collapsed .sidebar-theme-toggle__label,
   .sidebar--collapsed .sidebar-theme-toggle__switch,
   .sidebar--collapsed .sidebar-logout__label,
-  .sidebar--collapsed .sidebar-quick button em {
+  .sidebar--collapsed .sidebar-quick button em,
+  .sidebar--collapsed .sidebar-collapse-btn__label {
     display: none;
   }
 
@@ -1053,9 +1084,5 @@
 
   .sidebar-body {
     padding-top: 0 !important;
-  }
-
-  .sidebar-collapse-btn {
-    top: calc(var(--sb-brand-height) + 18px) !important;
   }
 }
