@@ -429,6 +429,31 @@ export default function ImporterPage({ profile, onNavigate }) {
     return list;
   }, [kpis]);
 
+  const biDecisions = useMemo(() => {
+    const rows = [];
+    rows.push({
+      tone: kpis.fcastPct !== null && kpis.fcastPct < 70 ? "danger" : kpis.fcastPct !== null && kpis.fcastPct < 95 ? "warning" : "success",
+      title: kpis.fcastPct !== null ? `Forecast ${kpis.fcastPct}%` : "Forecast pendiente",
+      text: kpis.fcastPct !== null ? `Mes actual contra forecast: ${compact(kpis.fcast)}.` : "Cargá forecast mensual para medir cobertura.",
+    });
+    if (kpis.pendienteCount > 0) rows.push({
+      tone: "danger",
+      title: `${kpis.pendienteCount} pendientes de cobro`,
+      text: `${compact(kpis.pendienteCobro)} pendientes. Priorizar seguimiento administrativo.`,
+    });
+    if (kpis.mejorUnit) rows.push({
+      tone: "success",
+      title: kpis.mejorUnit[0],
+      text: `Unidad líder con ${compact(kpis.mejorUnit[1])} facturados.`,
+    });
+    if (kpis.momChange !== null) rows.push({
+      tone: kpis.momChange >= 0 ? "success" : "warning",
+      title: `${kpis.momChange >= 0 ? "+" : ""}${kpis.momChange.toFixed(1).replace(".", ",")}% mensual`,
+      text: "Variación contra el mes anterior.",
+    });
+    return rows.slice(0, 3);
+  }, [kpis]);
+
   function renderCharts() {
     const Chart = window.Chart; if (!Chart) return;
     [lineRef, lineMonthRef, ticketRef, donutRef].forEach(r => { if (r.current?.chartInstance) r.current.chartInstance.destroy(); });
@@ -569,26 +594,6 @@ export default function ImporterPage({ profile, onNavigate }) {
                 </div>
               ) : (
                 <>
-                  {/* Filtros */}
-                  <div className="bi-filters">
-                    <FilterGroup label="Período" value={filterMes} onChange={setFilterMes}>
-                      <option value="todos">Todo el período</option>
-                      {meses.map(m => <option key={m} value={m}>{m}</option>)}
-                    </FilterGroup>
-                    <FilterGroup label="Vendedores" value={filterVendedor} onChange={setFilterVendedor}>
-                      <option value="todos">Todos los vendedores</option>
-                      {vendedores.map(v => <option key={v} value={v}>{v}</option>)}
-                    </FilterGroup>
-                    <FilterGroup label="Unidades" value={filterUnidad} onChange={setFilterUnidad}>
-                      <option value="todas">Todas las unidades</option>
-                      {unidades.map(u => <option key={u} value={u}>{u}</option>)}
-                    </FilterGroup>
-                    <FilterGroup label="Importación" value={filterImport} onChange={setFilterImport}>
-                      <option value="todos">Todas</option>
-                      {imports.map(i => <option key={i.id} value={i.id}>{i.filename}</option>)}
-                    </FilterGroup>
-                  </div>
-
                   {/* HERO — formato numérico mejorado */}
                   <div className="bi-hero">
                     {/* Bloque principal */}
@@ -667,6 +672,42 @@ export default function ImporterPage({ profile, onNavigate }) {
                       </div>
                       <div className="bi-hero__stat"><strong>{kpis.productos}</strong><span>PRODUCTOS</span></div>
                     </div>
+                  </div>
+
+                  <section className="bi-decisions">
+                    <div className="bi-decisions__head">
+                      <span>Decisiones de BI</span>
+                      <strong>Lectura ejecutiva</strong>
+                    </div>
+                    {biDecisions.map((item, index) => (
+                      <article key={`${item.title}-${index}`} className={`bi-decision bi-decision--${item.tone}`}>
+                        <span>{String(index + 1).padStart(2, "0")}</span>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <p>{item.text}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </section>
+
+                  {/* Filtros */}
+                  <div className="bi-filters bi-filters--compact">
+                    <FilterGroup label="Período" value={filterMes} onChange={setFilterMes}>
+                      <option value="todos">Todo el período</option>
+                      {meses.map(m => <option key={m} value={m}>{m}</option>)}
+                    </FilterGroup>
+                    <FilterGroup label="Vendedores" value={filterVendedor} onChange={setFilterVendedor}>
+                      <option value="todos">Todos los vendedores</option>
+                      {vendedores.map(v => <option key={v} value={v}>{v}</option>)}
+                    </FilterGroup>
+                    <FilterGroup label="Unidades" value={filterUnidad} onChange={setFilterUnidad}>
+                      <option value="todas">Todas las unidades</option>
+                      {unidades.map(u => <option key={u} value={u}>{u}</option>)}
+                    </FilterGroup>
+                    <FilterGroup label="Importación" value={filterImport} onChange={setFilterImport}>
+                      <option value="todos">Todas</option>
+                      {imports.map(i => <option key={i.id} value={i.id}>{i.filename}</option>)}
+                    </FilterGroup>
                   </div>
 
                   {/* KPI CARDS */}
