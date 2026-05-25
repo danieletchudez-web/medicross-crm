@@ -43,6 +43,9 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
   const [loading, setLoading]             = useState(false);
   const [filter, setFilter]               = useState("todas"); // ← default "todas"
   const [viewMode, setViewMode]           = useState("table");
+  const [draggingId, setDraggingId]       = useState(null);
+  const [dragOverStage, setDragOverStage] = useState(null);
+  const [movingId, setMovingId]           = useState(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -117,6 +120,54 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
     if (!confirm("¿Reabrir esta oportunidad?")) return;
     await supabase.from("opportunities").update({ stage: "Cotización", updated_at: new Date().toISOString() }).eq("id", id);
     loadData();
+  }
+
+  async function moveOpportunityToStage(id, nextStage) {
+    const current = opportunities.find((o) => o.id === id);
+    if (!current || current.stage === nextStage || movingId === id) return;
+
+    const previous = opportunities;
+    const updatedAt = new Date().toISOString();
+    setMovingId(id);
+    setOpportunities((items) =>
+      items.map((o) => o.id === id ? { ...o, stage: nextStage, updated_at: updatedAt } : o)
+    );
+
+    const { error } = await supabase
+      .from("opportunities")
+      .update({ stage: nextStage, updated_at: updatedAt })
+      .eq("id", id);
+
+    setMovingId(null);
+    if (error) {
+      setOpportunities(previous);
+      alert("Error moviendo oportunidad: " + error.message);
+    }
+  }
+
+  function handleKanbanDragStart(e, id) {
+    setDraggingId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(id));
+  }
+
+  function handleKanbanDragEnd() {
+    setDraggingId(null);
+    setDragOverStage(null);
+  }
+
+  function handleKanbanDragOver(e, stage) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverStage(stage);
+  }
+
+  function handleKanbanDrop(e, stage) {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain") || draggingId;
+    setDraggingId(null);
+    setDragOverStage(null);
+    if (id) moveOpportunityToStage(id, stage);
   }
 
   function editOpportunity(o) {
@@ -271,7 +322,13 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                 const rows = filteredOpps.filter(o => o.stage === stage);
                 const totalStage = rows.reduce((sum, o) => sum + Number(o.amount || 0), 0);
                 return (
-                  <section key={stage} className="opp-kanban-col">
+                  <section
+                    key={stage}
+                    className={`opp-kanban-col ${dragOverStage === stage ? "opp-kanban-col--over" : ""}`}
+                    onDragOver={(e) => handleKanbanDragOver(e, stage)}
+                    onDragLeave={() => setDragOverStage((current) => current === stage ? null : current)}
+                    onDrop={(e) => handleKanbanDrop(e, stage)}
+                  >
                     <header>
                       <strong>{stage}</strong>
                       <span>{rows.length} · {money(totalStage)}</span>
@@ -280,11 +337,20 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                       {rows.length === 0 ? (
                         <p className="opp-kanban-empty">Sin oportunidades</p>
                       ) : rows.map(o => (
-                        <article key={o.id} className="opp-kanban-card">
+                        <article
+                          key={o.id}
+                          className={`opp-kanban-card ${draggingId === o.id ? "opp-kanban-card--dragging" : ""} ${movingId === o.id ? "opp-kanban-card--moving" : ""}`}
+                          draggable
+                          onDragStart={(e) => handleKanbanDragStart(e, o.id)}
+                          onDragEnd={handleKanbanDragEnd}
+                        >
                           <strong>{o.name}</strong>
                           <span>{o.accounts?.name || "Sin cliente"}</span>
                           <small>{money(o.amount)} · {o.probability || 0}%</small>
-                          <button onClick={() => editOpportunity(o)}>Editar</button>
+                          <div className="opp-kanban-card__actions">
+                            <span className="opp-kanban-card__hint">Arrastrar</span>
+                            <button onClick={() => editOpportunity(o)}>Editar</button>
+                          </div>
                         </article>
                       ))}
                     </div>
