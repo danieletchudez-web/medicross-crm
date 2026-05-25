@@ -75,6 +75,7 @@ export default function Sidebar({ profile, onNavigate }) {
   const [editing,    setEditing]    = useState(false);
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
   const [menuOpen,   setMenuOpen]   = useState(false);
+  const [collapsed,  setCollapsed]  = useState(() => localStorage.getItem("sidebar_collapsed") === "true");
   const [favorites,  setFavorites]  = useState(() => {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
@@ -85,6 +86,11 @@ export default function Sidebar({ profile, onNavigate }) {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
+
+  useEffect(() => {
+    localStorage.setItem("sidebar_collapsed", collapsed ? "true" : "false");
+    if (collapsed) setEditing(false);
+  }, [collapsed]);
 
   // Bloquear scroll cuando el menú móvil está abierto
   useEffect(() => {
@@ -142,12 +148,23 @@ export default function Sidebar({ profile, onNavigate }) {
 
   return (
     <>
-      <aside className="sidebar">
+      <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
 
         {/* Brand / logo */}
-      <div className="sidebar-brand" onClick={() => handleNavigate("managerDashboard")} style={{cursor:"pointer"}}>
-  <img src={logoImg} alt="MediCross Productos Médicos" className="sidebar-brand__img"/>
-</div>
+        <div className="sidebar-brand" onClick={() => handleNavigate("managerDashboard")} style={{cursor:"pointer"}} title="Dashboard">
+          <img src={logoImg} alt="MediCross Productos Médicos" className="sidebar-brand__img"/>
+          <span className="sidebar-brand__mark">M</span>
+        </div>
+
+        <button
+          type="button"
+          className="sidebar-collapse-btn"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+          title={collapsed ? "Expandir menú" : "Colapsar menú"}
+        >
+          {collapsed ? "›" : "‹"}
+        </button>
 
         {/* Botón hamburguesa — solo visible en móvil via CSS */}
         <button
@@ -174,9 +191,9 @@ export default function Sidebar({ profile, onNavigate }) {
 
           <nav className="sidebar-nav">
             <div className="sidebar-quick">
-              <button onClick={() => handleNavigate("visits")}>+ Visita</button>
-              <button onClick={() => handleNavigate("accounts")}>+ Cliente</button>
-              <button onClick={() => handleNavigate("opportunities")}>+ Oportunidad</button>
+              <button onClick={() => handleNavigate("visits")} title="Nueva visita"><span>+</span><em>Visita</em></button>
+              <button onClick={() => handleNavigate("accounts")} title="Nuevo cliente"><span>+</span><em>Cliente</em></button>
+              <button onClick={() => handleNavigate("opportunities")} title="Nueva oportunidad"><span>+</span><em>Oportunidad</em></button>
             </div>
 
             <div className="sidebar-nav__group-row">
@@ -199,7 +216,7 @@ export default function Sidebar({ profile, onNavigate }) {
                   const item = MENU_SECTIONS.flatMap(s => s.items).find(i => i.id === id);
                   if (!item || !canSee(id)) return null;
                   return (
-                    <button key={id} className="sidebar-nav__item sidebar-nav__item--fav" onClick={() => handleNavigate(id)}>
+                    <button key={id} className="sidebar-nav__item sidebar-nav__item--fav" onClick={() => handleNavigate(id)} title={item.label}>
                       <span className="sidebar-nav__icon">{item.icon}</span>
                       <span className="sidebar-nav__label">{item.label}</span>
                     </button>
@@ -231,6 +248,7 @@ export default function Sidebar({ profile, onNavigate }) {
                         className="sidebar-nav__item"
                         onClick={() => { if (!editing) handleNavigate(item.id); }}
                         style={{ cursor: editing ? "grab" : "pointer" }}
+                        title={item.label}
                       >
                         <span className="sidebar-nav__icon">{item.icon}</span>
                         <span className="sidebar-nav__label">{item.label}</span>
@@ -257,16 +275,16 @@ export default function Sidebar({ profile, onNavigate }) {
           </nav>
 
           <div className="sidebar-footer">
-            <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)}>
+            <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)} title={dark ? "Modo claro" : "Modo oscuro"}>
               <span className="sidebar-theme-toggle__icon">{dark ? "☀" : "☽"}</span>
               <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
               <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
                 <div className="sidebar-theme-toggle__knob"/>
               </div>
             </div>
-            <button type="button" className="sidebar-logout" onClick={logout}>
+            <button type="button" className="sidebar-logout" onClick={logout} title="Cerrar sesión">
               <span className="sidebar-logout__icon">↪</span>
-              Cerrar sesión
+              <span className="sidebar-logout__label">Cerrar sesión</span>
             </button>
           </div>
 

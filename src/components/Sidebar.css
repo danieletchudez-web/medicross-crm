@@ -41,6 +41,12 @@
   z-index: 100;
   background: var(--sb-bg);
   border-right: 1px solid #e8ecf2;
+  transition: width .22s ease, min-width .22s ease;
+}
+
+.sidebar--collapsed {
+  width: 72px;
+  min-width: 72px;
 }
 
 /* ─── Brand ──────────────────────────────────────────────────────────── */
@@ -53,6 +59,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .sidebar-brand__img {
@@ -60,6 +67,49 @@
   height: auto;
   display: block;
   object-fit: contain;
+}
+
+.sidebar-brand__mark {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f2444, #185fa5);
+  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  box-shadow: 0 8px 18px rgba(24,95,165,.18);
+}
+
+.sidebar-collapse-btn {
+  position: absolute;
+  top: 76px;
+  right: -13px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(226,232,240,.9);
+  background: #ffffff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 4;
+  box-shadow: 0 6px 16px rgba(15,23,42,.12);
+  transition: transform .15s, color .15s, border-color .15s;
+}
+
+.sidebar-collapse-btn:hover {
+  color: #185fa5;
+  border-color: #bfdbfe;
+  transform: scale(1.04);
 }
 
 /* ─── Body ───────────────────────────────────────────────────────────── */
@@ -216,7 +266,13 @@
   font-weight: 800;
   text-align: left;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+
+.sidebar-quick button span { font-weight: 900; }
+.sidebar-quick button em { font-style: normal; }
 
 .sidebar-nav__item-wrap {
   display: flex;
@@ -246,6 +302,7 @@
   cursor: pointer;
   text-align: left;
   transition: background 0.15s;
+  position: relative;
 }
 
 .sidebar-nav__item:hover                     { background: var(--sb-nav-hover); }
@@ -468,6 +525,141 @@
 
 .sidebar-logout:hover .sidebar-logout__icon { color: #fca5a5; }
 
+/* ─── Collapsed desktop rail ─────────────────────────────────────────── */
+@media (min-width: 769px) {
+  .sidebar--collapsed .sidebar-brand {
+    padding: 0;
+  }
+
+  .sidebar--collapsed .sidebar-brand__img {
+    display: none;
+  }
+
+  .sidebar--collapsed .sidebar-brand__mark {
+    display: inline-flex;
+  }
+
+  .sidebar--collapsed .sidebar-body {
+    align-items: center;
+  }
+
+  .sidebar--collapsed .sidebar-user {
+    width: 48px;
+    margin: 14px 0 8px;
+    padding: 7px;
+    align-items: center;
+    border-radius: 14px;
+  }
+
+  .sidebar--collapsed .sidebar-user__row {
+    justify-content: center;
+    gap: 0;
+  }
+
+  .sidebar--collapsed .sidebar-user__info,
+  .sidebar--collapsed .sidebar-user__role,
+  .sidebar--collapsed .sidebar-nav__group-row,
+  .sidebar--collapsed .sidebar-section__label,
+  .sidebar--collapsed .sidebar-section__divider,
+  .sidebar--collapsed .sidebar-nav__label,
+  .sidebar--collapsed .sidebar-edit-hint,
+  .sidebar--collapsed .sidebar-reset-btn,
+  .sidebar--collapsed .sidebar-drag-handle,
+  .sidebar--collapsed .sidebar-fav-btn,
+  .sidebar--collapsed .sidebar-theme-toggle__label,
+  .sidebar--collapsed .sidebar-theme-toggle__switch,
+  .sidebar--collapsed .sidebar-logout__label,
+  .sidebar--collapsed .sidebar-quick button em {
+    display: none;
+  }
+
+  .sidebar--collapsed .sidebar-nav {
+    width: 100%;
+    padding: 10px 10px 8px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar--collapsed .sidebar-section {
+    width: 100%;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .sidebar--collapsed .sidebar-quick {
+    width: 100%;
+    margin: 0 0 6px;
+    gap: 7px;
+  }
+
+  .sidebar--collapsed .sidebar-quick button {
+    width: 46px;
+    height: 38px;
+    padding: 0;
+    justify-content: center;
+    text-align: center;
+    border-radius: 13px;
+    font-size: 17px;
+  }
+
+  .sidebar--collapsed .sidebar-nav__item-wrap {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sidebar--collapsed .sidebar-nav__item {
+    width: 46px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    border-radius: 14px;
+  }
+
+  .sidebar--collapsed .sidebar-nav__item:hover {
+    background: rgba(59,130,246,.18);
+  }
+
+  .sidebar--collapsed .sidebar-nav__icon {
+    width: auto;
+    font-size: 17px;
+    color: rgba(255,255,255,.52);
+  }
+
+  .sidebar--collapsed .sidebar-footer {
+    width: 100%;
+    padding: 10px 10px 14px;
+    align-items: center;
+  }
+
+  .sidebar--collapsed .sidebar-theme-toggle {
+    width: 46px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+    margin: 0;
+    border-radius: 14px;
+  }
+
+  .sidebar--collapsed .sidebar-theme-toggle__icon {
+    width: auto;
+    font-size: 15px;
+  }
+
+  .sidebar--collapsed .sidebar-logout {
+    width: 46px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 14px;
+  }
+
+  .sidebar--collapsed .sidebar-logout__icon {
+    width: auto;
+    font-size: 16px;
+  }
+}
+
 /* ─── Botón hamburguesa (solo mobile) ────────────────────────────────── */
 .sidebar-hamburger {
   display: none;
@@ -506,6 +698,16 @@
     z-index: 200;
     padding: 0 16px;
     background: #ffffff;
+  }
+
+  .sidebar--collapsed {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sidebar-collapse-btn,
+  .sidebar-brand__mark {
+    display: none;
   }
 
   /* Logo en la topbar */
@@ -634,6 +836,11 @@
   .sidebar {
     width: 200px;
     min-width: 200px;
+  }
+
+  .sidebar.sidebar--collapsed {
+    width: 72px;
+    min-width: 72px;
   }
 
   .sidebar-brand__img {
