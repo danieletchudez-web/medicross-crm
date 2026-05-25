@@ -10,7 +10,7 @@ import CampaignsPage       from "./pages/CampaignsPage";
 import TodayActionsPage    from "./pages/TodayActionsPage";
 import VisitsPage          from "./pages/VisitsPage";
 import CalendarPage        from "./pages/CalendarPage";
-import AdminUsersPage      from "./pages/adminUsersPages";
+import AdminUsersPage      from "./pages/AdminUsersPage";
 import SalesAnalyticsPage  from "./pages/SalesAnalyticsPage";
 import ImporterPage        from "./pages/ImporterPage";
 import TendersPage         from "./pages/TendersPage";

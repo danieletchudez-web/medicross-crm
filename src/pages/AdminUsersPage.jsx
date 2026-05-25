@@ -120,7 +120,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
       (u.email     || "").toLowerCase().includes(q) ||
       (u.role      || "").toLowerCase().includes(q)
     );
-  }, [users, search, showArchived, activeUsers, archivedUsers]);
+  }, [search, showArchived, activeUsers, archivedUsers]);
 
   const stats = useMemo(() => ({
     total:    activeUsers.length,
@@ -182,22 +182,24 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     <Layout title="Administración de Usuarios" profile={profile} onNavigate={onNavigate}>
       <div className="admin-page">
 
-        {/* Hero */}
-        <section className="admin-hero">
+        {/* Header */}
+        <section className="admin-header-card">
           <div>
             <h2>Usuarios y permisos</h2>
             <p>Aprobá accesos, definí roles y habilitá módulos visibles para cada usuario.</p>
           </div>
-          <button onClick={loadUsers}>Actualizar</button>
+          <button className="admin-refresh-btn" onClick={loadUsers} disabled={loading}>
+            {loading ? "Actualizando..." : "Actualizar"}
+          </button>
         </section>
 
         {/* KPIs */}
         <section className="admin-kpi-grid">
-          <Kpi title="Usuarios activos"  value={stats.total}    />
-          <Kpi title="Aprobados"         value={stats.approved} />
-          <Kpi title="Pendientes"        value={stats.pending}  danger={stats.pending > 0} />
-          <Kpi title="Super Admin"       value={stats.admins}   />
-          <Kpi title="Archivados"        value={stats.archived} warn={stats.archived > 0} />
+          <Kpi title="Usuarios activos" value={stats.total} accent="blue" />
+          <Kpi title="Aprobados" value={stats.approved} accent="green" />
+          <Kpi title="Pendientes" value={stats.pending} accent="amber" />
+          <Kpi title="Super Admin" value={stats.admins} accent="violet" />
+          <Kpi title="Archivados" value={stats.archived} accent="slate" />
         </section>
 
         {/* Toolbar */}
@@ -206,7 +208,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
             <h3>{showArchived ? "Usuarios archivados" : "Usuarios registrados"}</h3>
             <span>{filteredUsers.length} usuarios visibles</span>
           </div>
-          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <div className="admin-toolbar-actions">
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -240,14 +242,24 @@ export default function AdminUsersPage({ profile, onNavigate }) {
               <div className="admin-desktop-table">
                 <table>
                   <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Rol</th>
-                      <th>Estado</th>
-                      {!showArchived && <th>Módulos</th>}
-                      {!showArchived && <th>Acciones rápidas</th>}
-                      <th>{showArchived ? "Archivado" : "Archivar"}</th>
-                    </tr>
+                    {showArchived ? (
+                      <tr>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Fecha de archivo</th>
+                        <th>Acción</th>
+                      </tr>
+                    ) : (
+                      <tr>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Módulos</th>
+                        <th>Acciones rápidas</th>
+                        <th>Archivar</th>
+                      </tr>
+                    )}
                   </thead>
                   <tbody>
                     {filteredUsers.map(user => (
@@ -313,7 +325,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
 
         {/* Nota informativa */}
         <div className="adm-info-box">
-          <span style={{fontSize:16}}>🔒</span>
+          <span className="adm-info-box__icon">Seguro</span>
           <div>
             <strong>Seguridad de datos</strong>
             <p>
@@ -339,9 +351,9 @@ export default function AdminUsersPage({ profile, onNavigate }) {
 }
 
 /* ─── KPI ────────────────────────────────────────────────────────────── */
-function Kpi({ title, value, danger, warn }) {
+function Kpi({ title, value, accent }) {
   return (
-    <article className={`admin-kpi ${danger?"danger":""} ${warn?"warn":""}`}>
+    <article className={`admin-kpi admin-kpi--${accent || "blue"}`}>
       <span>{title}</span>
       <strong>{value}</strong>
     </article>
@@ -373,7 +385,7 @@ function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBloc
       <td>
         <button className={`status-pill ${user.approved?"approved":"pending"}`}
           onClick={user.approved ? onBlock : onApprove} disabled={saving||isSelf}>
-          {user.approved ? "✓ Aprobado" : "⏳ Pendiente"}
+          {user.approved ? "Aprobado" : "Pendiente"}
         </button>
       </td>
       <td>
@@ -405,7 +417,7 @@ function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBloc
             disabled={saving}
             title="Archivar usuario (no borra datos)"
           >
-            📦 Archivar
+            Archivar
           </button>
         ) : (
           <span style={{fontSize:11,color:"#94a3b8"}}>
@@ -441,7 +453,7 @@ function ArchivedRow({ user, saving, onRestore }) {
       </td>
       <td>
         <button className="adm-restore-btn" onClick={onRestore} disabled={saving}>
-          ↩ Restaurar
+          Restaurar
         </button>
       </td>
     </tr>
@@ -471,7 +483,7 @@ function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove,
       </div>
       <button className={`status-pill ${user.approved?"approved":"pending"}`}
         onClick={user.approved ? onBlock : onApprove} disabled={saving||isSelf}>
-        {user.approved ? "✓ Aprobado" : "⏳ Pendiente"}
+        {user.approved ? "Aprobado" : "Pendiente"}
       </button>
       <div className="module-grid">
         {MODULES.map(m => (
@@ -491,7 +503,7 @@ function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove,
         <button onClick={onFullAccess}    disabled={saving}>Full</button>
         {!isSelf && !isSuperAdmin && (
           <button className="adm-archive-btn" onClick={onArchive} disabled={saving}>
-            📦 Archivar
+            Archivar
           </button>
         )}
       </div>
@@ -517,7 +529,7 @@ function ArchivedMobileCard({ user, saving, onRestore }) {
           Archivado: {user.deleted_at ? new Date(user.deleted_at).toLocaleDateString("es-AR") : "—"}
         </span>
         <button className="adm-restore-btn" onClick={onRestore} disabled={saving}>
-          ↩ Restaurar
+          Restaurar
         </button>
       </div>
     </article>
