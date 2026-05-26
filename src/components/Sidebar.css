@@ -46,9 +46,13 @@
     #162d50 var(--sb-brand-height) 100%
   );
   border-right: 1px solid #e8ecf2;
-  transition: width .28s cubic-bezier(.22, 1, .36, 1),
-              min-width .28s cubic-bezier(.22, 1, .36, 1),
-              box-shadow .28s ease;
+  transition: width .38s cubic-bezier(0.4, 0, 0.2, 1),
+              min-width .38s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow .38s ease;
+}
+
+.sidebar:not(.sidebar--collapsed) {
+  box-shadow: 6px 0 28px rgba(0, 0, 0, 0.22);
 }
 
 .sidebar--collapsed {
@@ -61,7 +65,8 @@
 /* ─── Pin button ─────────────────────────────────────────────────────── */
 .sidebar-pin-btn {
   position: absolute;
-  top: 72px;
+  top: var(--sb-brand-height);
+  transform: translateY(-50%);
   right: -13px;
   width: 26px;
   height: 26px;
@@ -320,7 +325,15 @@
   stroke-width: 2.2;
 }
 
-.sidebar-quick button em { font-style: normal; }
+.sidebar-quick button em {
+  font-style: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 120px;
+  opacity: 1;
+  transition: opacity 0.22s ease 0.18s,
+              max-width 0.38s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+}
 
 .sidebar-nav__item-wrap {
   display: flex;
@@ -388,10 +401,14 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--sb-text-sub);
-  transition: color 0.15s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 180px;
+  opacity: 1;
+  transition: color 0.15s,
+              opacity 0.22s ease 0.18s,
+              max-width 0.38s cubic-bezier(0.4, 0, 0.2, 1) 0s;
 }
 
 /* ─── Edit mode ──────────────────────────────────────────────────────── */
@@ -524,6 +541,12 @@
   color: var(--sb-toggle-color);
   flex: 1;
   font-family: "DM Sans", system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 180px;
+  opacity: 1;
+  transition: opacity 0.22s ease 0.18s,
+              max-width 0.38s cubic-bezier(0.4, 0, 0.2, 1) 0s;
 }
 
 .sidebar-theme-toggle__switch {
@@ -595,6 +618,15 @@
 }
 
 .sidebar-logout:hover .sidebar-logout__icon { color: #fca5a5; }
+
+.sidebar-logout__label {
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 180px;
+  opacity: 1;
+  transition: opacity 0.22s ease 0.18s,
+              max-width 0.38s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+}
 
 /* ─── Collapsed desktop rail ─────────────────────────────────────────── */
 @media (min-width: 769px) {
@@ -702,16 +734,23 @@
   .sidebar--collapsed .sidebar-nav__group-row,
   .sidebar--collapsed .sidebar-section__label,
   .sidebar--collapsed .sidebar-section__divider,
-  .sidebar--collapsed .sidebar-nav__label,
   .sidebar--collapsed .sidebar-edit-hint,
   .sidebar--collapsed .sidebar-reset-btn,
   .sidebar--collapsed .sidebar-drag-handle,
   .sidebar--collapsed .sidebar-fav-btn,
+  .sidebar--collapsed .sidebar-theme-toggle__switch {
+    display: none;
+  }
+
+  .sidebar--collapsed .sidebar-nav__label,
   .sidebar--collapsed .sidebar-theme-toggle__label,
-  .sidebar--collapsed .sidebar-theme-toggle__switch,
   .sidebar--collapsed .sidebar-logout__label,
   .sidebar--collapsed .sidebar-quick button em {
-    display: none;
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease 0s,
+                max-width 0.38s cubic-bezier(0.4, 0, 0.2, 1) 0s;
   }
 
   .sidebar--collapsed .sidebar-nav {
