@@ -1,127 +1,257 @@
+/* ─── Trigger button ─────────────────────────────────────────────────── */
 .global-search-trigger {
-  border: 1px solid #e8ecf2;
+  border: 1px solid #e2e8f0;
   background: #f8fafc;
-  color: #334155;
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 7px 10px 7px 10px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-family: inherit;
+  font-family: "DM Sans", system-ui, sans-serif;
   cursor: pointer;
+  min-width: 200px;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.18s;
 }
 
-.global-search-trigger strong {
+.global-search-trigger:hover {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.07);
+}
+
+.global-search-trigger__icon {
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.global-search-trigger:hover .global-search-trigger__icon {
+  color: #64748b;
+}
+
+.global-search-trigger__text {
+  flex: 1;
+  text-align: left;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
+  color: #94a3b8;
+  transition: color 0.15s;
 }
 
+.global-search-trigger:hover .global-search-trigger__text {
+  color: #64748b;
+}
+
+.global-search-trigger__kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #b0bbc9;
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: "DM Mono", monospace;
+  white-space: nowrap;
+  line-height: 1.5;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+}
+
+/* ─── Dark mode trigger ──────────────────────────────────────────────── */
+[data-theme="dark"] .global-search-trigger {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] .global-search-trigger:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .global-search-trigger__text { color: #484f58; }
+[data-theme="dark"] .global-search-trigger:hover .global-search-trigger__text { color: #8b949e; }
+[data-theme="dark"] .global-search-trigger__icon { color: #484f58; }
+[data-theme="dark"] .global-search-trigger:hover .global-search-trigger__icon { color: #8b949e; }
+[data-theme="dark"] .global-search-trigger__kbd {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.07);
+  color: #484f58;
+}
+
+/* ─── Overlay ────────────────────────────────────────────────────────── */
 .global-search-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.36);
-  backdrop-filter: blur(2px);
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   z-index: 2200;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 8vh 18px;
+  padding: 10vh 18px 18px;
+  animation: gsOverlayIn .15s ease both;
 }
 
+@keyframes gsOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Panel ──────────────────────────────────────────────────────────── */
 .global-search-panel {
-  width: min(760px, 100%);
+  width: min(720px, 100%);
   background: #ffffff;
   border: 1px solid #e8ecf2;
   border-radius: 18px;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22),
+              0 4px 24px rgba(15, 23, 42, 0.10);
   overflow: hidden;
+  animation: gsPanelIn .18s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes gsPanelIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Search box ─────────────────────────────────────────────────────── */
 .global-search-box {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
-  padding: 14px;
-  border-bottom: 1px solid #e8ecf2;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .global-search-box input {
   border: none;
   outline: none;
   font-size: 15px;
+  font-weight: 500;
   color: #0f172a;
-  font-family: inherit;
+  background: transparent;
+  font-family: "DM Sans", system-ui, sans-serif;
+  width: 100%;
 }
+
+.global-search-box input::placeholder { color: #94a3b8; }
 
 .global-search-box button {
-  border: 1px solid #e8ecf2;
+  border: 1px solid #e2e8f0;
   background: #f8fafc;
   color: #64748b;
-  border-radius: 9px;
-  padding: 7px 10px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
 }
 
-.global-search-results {
-  max-height: 60vh;
-  overflow: auto;
-  padding: 12px;
+.global-search-box button:hover {
+  background: #f1f5f9;
+  color: #334155;
 }
+
+/* ─── Results ────────────────────────────────────────────────────────── */
+.global-search-results {
+  max-height: 58vh;
+  overflow-y: auto;
+  padding: 10px 12px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+
+.global-search-results::-webkit-scrollbar { width: 4px; }
+.global-search-results::-webkit-scrollbar-track { background: transparent; }
+.global-search-results::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
 
 .global-search-empty {
   margin: 0;
-  padding: 24px;
+  padding: 28px 24px;
   color: #94a3b8;
   text-align: center;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
+  font-family: "DM Sans", system-ui, sans-serif;
 }
 
 .global-search-group {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
 }
+
+.global-search-group:last-child { margin-bottom: 0; }
 
 .global-search-group > span {
   color: #94a3b8;
-  font-size: 10.5px;
-  font-weight: 900;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 0 4px;
+  letter-spacing: 0.7px;
+  padding: 2px 6px 6px;
+  font-family: "DM Sans", system-ui, sans-serif;
 }
 
 .global-search-group button {
-  border: 1px solid #e8ecf2;
-  background: #ffffff;
-  border-radius: 11px;
-  padding: 10px 12px;
+  border: 1px solid #f1f5f9;
+  background: #fafbfc;
+  border-radius: 10px;
+  padding: 10px 13px;
   text-align: left;
-  font-family: inherit;
+  font-family: "DM Sans", system-ui, sans-serif;
   cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
 .global-search-group button:hover {
-  background: #f8fbff;
+  background: #f0f7ff;
   border-color: #bfdbfe;
+  box-shadow: 0 1px 4px rgba(59,130,246,0.08);
 }
 
 .global-search-group strong {
   display: block;
   color: #0f172a;
   font-size: 13px;
-  font-weight: 850;
+  font-weight: 700;
+  font-family: "DM Sans", system-ui, sans-serif;
 }
 
 .global-search-group small {
   display: block;
   color: #64748b;
   font-size: 11.5px;
-  font-weight: 650;
+  font-weight: 500;
   margin-top: 3px;
+  font-family: "DM Sans", system-ui, sans-serif;
 }
+
+/* ─── Dark mode panel ────────────────────────────────────────────────── */
+[data-theme="dark"] .global-search-panel {
+  background: #161b22;
+  border-color: #21262d;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .global-search-box { border-color: #21262d; }
+[data-theme="dark"] .global-search-box input { color: #e2e8f0; }
+[data-theme="dark"] .global-search-box input::placeholder { color: #484f58; }
+[data-theme="dark"] .global-search-box button { background: #0d1117; border-color: #21262d; color: #8b949e; }
+[data-theme="dark"] .global-search-box button:hover { background: #161b22; color: #c9d1d9; }
+
+[data-theme="dark"] .global-search-group > span { color: #484f58; }
+[data-theme="dark"] .global-search-group button { background: #0d1117; border-color: #21262d; }
+[data-theme="dark"] .global-search-group button:hover { background: #161b22; border-color: #30363d; box-shadow: none; }
+[data-theme="dark"] .global-search-group strong { color: #c9d1d9; }
+[data-theme="dark"] .global-search-group small  { color: #8b949e; }
