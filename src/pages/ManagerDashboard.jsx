@@ -47,7 +47,7 @@ function Tooltip({ text }) {
         className="kpi-tooltip-trigger"
         onMouseEnter={show}
         onMouseLeave={hide}
-        onClick={() => (pos ? hide() : show())}
+        onClick={show}
       >?</span>
       {pos && (
         <span
