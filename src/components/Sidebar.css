@@ -379,6 +379,27 @@
 .sidebar-nav__item:hover .sidebar-nav__label { color: #f1f5f9; }
 .sidebar-nav__item:active                    { background: rgba(59,130,246,0.15); }
 
+/* Marcador chevron en hover — mismo tono que el texto, muy sutil */
+.sidebar-nav__item::after {
+  content: '';
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-top:   1.5px solid rgba(241, 245, 249, 0.45);
+  border-right: 1.5px solid rgba(241, 245, 249, 0.45);
+  transform: translateY(-50%) rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, right 0.18s ease;
+}
+.sidebar-nav__item:hover::after {
+  opacity: 1;
+  right: 11px;
+}
+.sidebar--collapsed .sidebar-nav__item::after { display: none; }
+
 .sidebar-nav__item--fav {
   margin: 2px 0;
   background: rgba(255,255,255,.04);
