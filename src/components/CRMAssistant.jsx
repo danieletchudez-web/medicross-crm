@@ -1,9 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import "./CRMAssistant.css";
 
-const CLAUDE_API_KEY = import.meta.env.VITE_ANTHROPIC_KEY;
-const CLAUDE_MODEL   = "claude-haiku-4-5-20251001";
-
 function buildSystemPrompt(crmData, currentPage, profile) {
   const d   = crmData || {};
   const fmt = (n) => new Intl.NumberFormat("es-AR", { style:"currency", currency:"ARS", maximumFractionDigits:0 }).format(Number(n||0));
@@ -49,19 +46,14 @@ INSTRUCCIONES:
 }
 
 async function callClaude(messages, systemPrompt) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("/api/assistant", {
     method: "POST",
     headers: {
-      "Content-Type":            "application/json",
-      "x-api-key":               CLAUDE_API_KEY,
-      "anthropic-version":       "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model:      CLAUDE_MODEL,
-      max_tokens: 400,
-      system:     systemPrompt,
-      messages:   messages.map(m => ({ role: m.role, content: m.content })),
+      system: systemPrompt,
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
     }),
   });
 
