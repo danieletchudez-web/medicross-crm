@@ -620,7 +620,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
               <h3>📋 Historial de cotizaciones</h3>
               <button className="cot-modal__close" onClick={()=>setShowHistorial(false)}>×</button>
             </div>
-            <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(15,36,68,.07)"}}>
+            <div className="cot-modal__search">
               <input className="cot-search" value={histSearch} onChange={e=>setHistSearch(e.target.value)} placeholder="Buscar por N°, institución, descripción, vendedor…"/>
             </div>
             <div className="cot-modal__body">
