@@ -103,7 +103,7 @@ export default function Sidebar({ profile, onNavigate }) {
   const [editing,    setEditing]    = useState(false);
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
   const [menuOpen,   setMenuOpen]   = useState(false);
-  const [collapsed,  setCollapsed]  = useState(true);
+  const [collapsed,  setCollapsed]  = useState(() => localStorage.getItem("sidebar_collapsed") !== "false");
   const [favorites,  setFavorites]  = useState(() => {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
@@ -148,7 +148,6 @@ export default function Sidebar({ profile, onNavigate }) {
 
   function handleNavigate(id) {
     setMenuOpen(false);
-    setCollapsed(true);
     setEditing(false);
     setTooltip(null);
     onNavigate(id);
@@ -157,8 +156,9 @@ export default function Sidebar({ profile, onNavigate }) {
   function handleToggle() {
     const next = !collapsed;
     setCollapsed(next);
+    localStorage.setItem("sidebar_collapsed", String(next));
     setTooltip(null);
-    if (next) setEditing(false); // closing
+    if (next) setEditing(false);
   }
 
   function onDragStart(id) { dragIdx.current = id; }
