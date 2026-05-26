@@ -1,5 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home12/drogueri/public_html/
+    - export DEPLOYPATH=/home12/drogueri/public_html/sales.medicross.com.ar/
     - /bin/cp -rf /home12/drogueri/repositories/medicross-crm/dist/. $DEPLOYPATH
