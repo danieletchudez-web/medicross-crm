@@ -29,17 +29,33 @@ function compactMoney(v) {
 
 /* ── Tooltip ────────────────────────────────────────────────────────── */
 function Tooltip({ text }) {
-  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState(null);
+  const triggerRef = useRef(null);
+
+  function show() {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+  }
+
+  function hide() { setPos(null); }
+
   return (
     <span className="kpi-tooltip-wrap">
       <span
+        ref={triggerRef}
         className="kpi-tooltip-trigger"
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
-        onClick={() => setVisible((v) => !v)}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onClick={() => (pos ? hide() : show())}
       >?</span>
-      {visible && (
-        <span className="kpi-tooltip-box">{text}</span>
+      {pos && (
+        <span
+          className="kpi-tooltip-box"
+          style={{ position: "fixed", top: pos.top, right: pos.right, left: "auto" }}
+        >
+          {text}
+        </span>
       )}
     </span>
   );
