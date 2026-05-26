@@ -104,54 +104,16 @@ export default function Sidebar({ profile, onNavigate }) {
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [collapsed,  setCollapsed]  = useState(true);
-  const [pinned,     setPinned]     = useState(false);
   const [favorites,  setFavorites]  = useState(() => {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
   });
-  const dragIdx        = useRef(null);
-  const expandTimer    = useRef(null);
-  const collapseTimer  = useRef(null);
+  const dragIdx = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(expandTimer.current);
-      clearTimeout(collapseTimer.current);
-    };
-  }, []);
-
-  function handleMouseEnter() {
-    if (pinned) return;
-    clearTimeout(collapseTimer.current);
-    expandTimer.current = setTimeout(() => setCollapsed(false), 120);
-  }
-
-  function handleMouseLeave() {
-    if (pinned) return;
-    clearTimeout(expandTimer.current);
-    collapseTimer.current = setTimeout(() => {
-      setCollapsed(true);
-      setEditing(false);
-    }, 2000);
-  }
-
-  function handlePin() {
-    if (pinned) {
-      setPinned(false);
-      setCollapsed(true);
-      setEditing(false);
-    } else {
-      setPinned(true);
-      setCollapsed(false);
-      clearTimeout(expandTimer.current);
-      clearTimeout(collapseTimer.current);
-    }
-  }
 
   // Bloquear scroll cuando el menú móvil está abierto
   useEffect(() => {
@@ -179,9 +141,6 @@ export default function Sidebar({ profile, onNavigate }) {
 
   function handleNavigate(id) {
     setMenuOpen(false);
-    setPinned(false);
-    clearTimeout(expandTimer.current);
-    clearTimeout(collapseTimer.current);
     setCollapsed(true);
     setEditing(false);
     onNavigate(id);
@@ -216,17 +175,15 @@ export default function Sidebar({ profile, onNavigate }) {
     <>
       <aside
         className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
       >
 
         <button
           type="button"
-          className={`sidebar-pin-btn ${pinned ? "pinned" : ""}`}
-          onClick={handlePin}
-          aria-label={pinned ? "Liberar sidebar" : "Fijar sidebar abierto"}
+          className={`sidebar-pin-btn ${!collapsed ? "pinned" : ""}`}
+          onClick={() => { setCollapsed(c => !c); if (!collapsed) setEditing(false); }}
+          aria-label={collapsed ? "Abrir sidebar" : "Cerrar sidebar"}
         >
-          {pinned || !collapsed ? <ChevronLeft aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+          {collapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}
         </button>
 
         {/* Brand / logo */}
