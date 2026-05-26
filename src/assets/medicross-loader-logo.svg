@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="172" viewBox="0 0 720 172" fill="none">
+  <defs>
+    <linearGradient id="mcMark" x1="30" y1="24" x2="190" y2="148" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20B5E4"/>
+      <stop offset="1" stop-color="#064A84"/>
+    </linearGradient>
+  </defs>
+  <path d="M34 23h58c9 0 16 5 20 13l31 62 31-62c4-8 11-13 20-13h58v126h-44V69l-39 80h-52L78 69v80H34V23Z" fill="url(#mcMark)"/>
+  <path d="M78 149 34 123v26h44Zm130 0 44-26v26h-44Z" fill="#0A4D83"/>
+  <text x="285" y="88" fill="#075083" font-family="Inter, Arial, Helvetica, sans-serif" font-size="72" font-weight="900" letter-spacing="-4">
+    MediCross
+  </text>
+  <text x="287" y="126" fill="#075083" font-family="Inter, Arial, Helvetica, sans-serif" font-size="30" font-weight="750" letter-spacing="-0.8">
+    Productos Médicos Integrales
+  </text>
+</svg>
