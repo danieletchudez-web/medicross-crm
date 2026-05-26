@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
@@ -613,7 +614,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         </div>
       </div>
 
-      {showHistorial && (
+      {showHistorial && createPortal((
         <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowHistorial(false);}}>
           <div className="cot-modal">
             <div className="cot-modal__header">
@@ -652,9 +653,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
-      {showPapelera && (
+      {showPapelera && createPortal((
         <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowPapelera(false);}}>
           <div className="cot-modal">
             <div className="cot-modal__header">
@@ -683,7 +684,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </Layout>
   );
 }
