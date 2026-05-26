@@ -56,11 +56,11 @@ const MENU_SECTIONS = [
     label: "OPERACIONES",
     items: [
       { id: "notifications", label: "Centro de Alertas", icon: BellRing },
-      { id: "todayActions", label: "Acciones Hoy",  icon: Clock3 },
-      { id: "visits",       label: "Visitas",        icon: Handshake },
-      { id: "calendar",     label: "Calendario",     icon: CalendarDays },
-      { id: "adminUsers",   label: "Administración", icon: ShieldCheck },
-      { id: "settings",     label: "Configuración",  icon: Settings },
+      { id: "todayActions",  label: "Acciones Hoy",      icon: Clock3 },
+      { id: "visits",        label: "Visitas",            icon: Handshake },
+      { id: "calendar",      label: "Calendario",         icon: CalendarDays },
+      { id: "adminUsers",    label: "Administración",     icon: ShieldCheck },
+      { id: "settings",      label: "Configuración",      icon: Settings },
     ],
   },
 ];
@@ -108,6 +108,7 @@ export default function Sidebar({ profile, onNavigate }) {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
   });
+  const [tooltip, setTooltip] = useState(null); // { label, y }
   const dragIdx = useRef(null);
 
   useEffect(() => {
@@ -115,18 +116,24 @@ export default function Sidebar({ profile, onNavigate }) {
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
-  // Bloquear scroll cuando el menú móvil está abierto
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  // Cerrar al rotar pantalla
   useEffect(() => {
     const fn = () => { if (window.innerWidth > 768) setMenuOpen(false); };
     window.addEventListener("resize", fn);
     return () => window.removeEventListener("resize", fn);
   }, []);
+
+  function showTooltip(e, label) {
+    if (!collapsed) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setTooltip({ label, y: r.top + r.height / 2 });
+  }
+
+  function hideTooltip() { setTooltip(null); }
 
   const canSee = module => {
     if (profile?.role === "super_admin") return true;
@@ -143,7 +150,15 @@ export default function Sidebar({ profile, onNavigate }) {
     setMenuOpen(false);
     setCollapsed(true);
     setEditing(false);
+    setTooltip(null);
     onNavigate(id);
+  }
+
+  function handleToggle() {
+    const next = !collapsed;
+    setCollapsed(next);
+    setTooltip(null);
+    if (next) setEditing(false); // closing
   }
 
   function onDragStart(id) { dragIdx.current = id; }
@@ -165,30 +180,29 @@ export default function Sidebar({ profile, onNavigate }) {
     localStorage.setItem("sidebar_favorites", JSON.stringify(next));
   }
 
-  const sections     = buildSections(orderedIds);
-  const initials     = (profile?.full_name || profile?.email || "U").slice(0,1).toUpperCase();
-  const roleLabel    = {super_admin:"Super Admin",manager:"Manager",seller:"Vendedor"}[profile?.role] || profile?.role || "Usuario";
-  const email        = profile?.email || "";
-  const emailDisplay = email.length > 24 ? email.slice(0,22)+"…" : email;
+  const sections = buildSections(orderedIds);
 
   return (
     <>
-      <aside
-        className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}
-      >
+      <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
 
         <button
           type="button"
           className={`sidebar-pin-btn ${!collapsed ? "pinned" : ""}`}
-          onClick={() => { setCollapsed(c => !c); if (!collapsed) setEditing(false); }}
+          onClick={handleToggle}
           aria-label={collapsed ? "Abrir sidebar" : "Cerrar sidebar"}
         >
           {collapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}
         </button>
 
         {/* Brand / logo */}
-        <div className="sidebar-brand" onClick={() => handleNavigate("managerDashboard")} style={{cursor:"pointer"}} aria-label="Dashboard">
-          <img src={logoImg} alt="MediCross Productos Médicos" className="sidebar-brand__img"/>
+        <div
+          className="sidebar-brand"
+          onClick={() => handleNavigate("managerDashboard")}
+          style={{ cursor: "pointer" }}
+          aria-label="Dashboard"
+        >
+          <img src={logoImg} alt="MediCross Productos Médicos" className="sidebar-brand__img" />
           <span className="sidebar-brand__mark">M</span>
         </div>
 
@@ -206,9 +220,33 @@ export default function Sidebar({ profile, onNavigate }) {
 
           <nav className="sidebar-nav">
             <div className="sidebar-quick">
-              <button onClick={() => handleNavigate("visits")} aria-label="Nueva visita" data-tooltip="Nueva visita"><span><CalendarPlus aria-hidden="true"/></span><em>Visita</em></button>
-              <button onClick={() => handleNavigate("accounts")} aria-label="Nuevo cliente" data-tooltip="Nuevo cliente"><span><Building2 aria-hidden="true"/></span><em>Cliente</em></button>
-              <button onClick={() => handleNavigate("opportunities")} aria-label="Nueva oportunidad" data-tooltip="Nueva oportunidad"><span><CircleDollarSign aria-hidden="true"/></span><em>Oportunidad</em></button>
+              <button
+                onClick={() => handleNavigate("visits")}
+                aria-label="Nueva visita"
+                onMouseEnter={(e) => showTooltip(e, "Nueva visita")}
+                onMouseLeave={hideTooltip}
+              >
+                <span><CalendarPlus aria-hidden="true"/></span>
+                <em>Visita</em>
+              </button>
+              <button
+                onClick={() => handleNavigate("accounts")}
+                aria-label="Nuevo cliente"
+                onMouseEnter={(e) => showTooltip(e, "Nuevo cliente")}
+                onMouseLeave={hideTooltip}
+              >
+                <span><Building2 aria-hidden="true"/></span>
+                <em>Cliente</em>
+              </button>
+              <button
+                onClick={() => handleNavigate("opportunities")}
+                aria-label="Nueva oportunidad"
+                onMouseEnter={(e) => showTooltip(e, "Nueva oportunidad")}
+                onMouseLeave={hideTooltip}
+              >
+                <span><CircleDollarSign aria-hidden="true"/></span>
+                <em>Oportunidad</em>
+              </button>
             </div>
 
             <div className="sidebar-nav__group-row">
@@ -231,7 +269,14 @@ export default function Sidebar({ profile, onNavigate }) {
                   const item = MENU_SECTIONS.flatMap(s => s.items).find(i => i.id === id);
                   if (!item || !canSee(id)) return null;
                   return (
-                    <button key={id} className="sidebar-nav__item sidebar-nav__item--fav" onClick={() => handleNavigate(id)} aria-label={item.label} data-tooltip={item.label}>
+                    <button
+                      key={id}
+                      className="sidebar-nav__item sidebar-nav__item--fav"
+                      onClick={() => handleNavigate(id)}
+                      aria-label={item.label}
+                      onMouseEnter={(e) => showTooltip(e, item.label)}
+                      onMouseLeave={hideTooltip}
+                    >
                       <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                       <span className="sidebar-nav__label">{item.label}</span>
                     </button>
@@ -264,7 +309,8 @@ export default function Sidebar({ profile, onNavigate }) {
                         onClick={() => { if (!editing) handleNavigate(item.id); }}
                         style={{ cursor: editing ? "grab" : "pointer" }}
                         aria-label={item.label}
-                        data-tooltip={item.label}
+                        onMouseEnter={(e) => showTooltip(e, item.label)}
+                        onMouseLeave={hideTooltip}
                       >
                         <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                         <span className="sidebar-nav__label">{item.label}</span>
@@ -291,14 +337,27 @@ export default function Sidebar({ profile, onNavigate }) {
           </nav>
 
           <div className="sidebar-footer">
-            <div className="sidebar-theme-toggle" onClick={() => setDark(d => !d)} aria-label={dark ? "Modo claro" : "Modo oscuro"} data-tooltip={dark ? "Modo claro" : "Modo oscuro"}>
+            <div
+              className="sidebar-theme-toggle"
+              onClick={() => setDark(d => !d)}
+              aria-label={dark ? "Modo claro" : "Modo oscuro"}
+              onMouseEnter={(e) => showTooltip(e, dark ? "Modo claro" : "Modo oscuro")}
+              onMouseLeave={hideTooltip}
+            >
               <span className="sidebar-theme-toggle__icon">{dark ? <Sun aria-hidden="true"/> : <Moon aria-hidden="true"/>}</span>
               <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
               <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
                 <div className="sidebar-theme-toggle__knob"/>
               </div>
             </div>
-            <button type="button" className="sidebar-logout" onClick={logout} aria-label="Cerrar sesión" data-tooltip="Cerrar sesión">
+            <button
+              type="button"
+              className="sidebar-logout"
+              onClick={logout}
+              aria-label="Cerrar sesión"
+              onMouseEnter={(e) => showTooltip(e, "Cerrar sesión")}
+              onMouseLeave={hideTooltip}
+            >
               <span className="sidebar-logout__icon"><LogOut aria-hidden="true"/></span>
               <span className="sidebar-logout__label">Cerrar sesión</span>
             </button>
@@ -306,6 +365,17 @@ export default function Sidebar({ profile, onNavigate }) {
 
         </div>
       </aside>
+
+      {/* Tooltip flotante — position:fixed escapa cualquier overflow:hidden */}
+      {tooltip && collapsed && (
+        <div
+          className="sidebar-tooltip"
+          style={{ top: tooltip.y, left: 80 }}
+          aria-hidden="true"
+        >
+          {tooltip.label}
+        </div>
+      )}
 
       {/* Overlay oscuro detrás del drawer */}
       <div
