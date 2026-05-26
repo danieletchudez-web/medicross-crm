@@ -14,6 +14,8 @@
   --text-primary: #0f172a;
   --text-secondary: #64748b;
   --text-tertiary: #94a3b8;
+  --page-enter-duration: 260ms;
+  --page-enter-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ─── Dark mode ──────────────────────────────────────────────────────── */
@@ -342,27 +344,42 @@ button, input, select, textarea { font-family: inherit; }
   pointer-events: auto;
 }
 
-/*
- * Only the .main-content area (header + page body) animates on every
- * navigation. The .sidebar is a sibling element and stays completely stable.
- */
 .page-keepalive--active .main-content {
-  animation: nav-enter 0.21s cubic-bezier(0.22, 1, 0.36, 1) both;
+  opacity: 0;
+  animation: crm-fade-slide-up var(--page-enter-duration) var(--page-enter-ease) both;
   will-change: opacity, transform;
+  transform: translate3d(0, 10px, 0);
+  backface-visibility: hidden;
 }
 
-@keyframes nav-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
+@keyframes crm-fade-slide-up {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
 }
 
-/* ─── Page transition (legacy, kept for compatibility) ──────────────── */
-@keyframes pageEnter {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
-}
 .page-enter {
-  animation: pageEnter 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+  opacity: 0;
+  animation: crm-fade-slide-up var(--page-enter-duration) var(--page-enter-ease) both;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-keepalive--active .main-content,
+  .page-enter {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    animation: none;
+  }
 }
 
 /* ─── Skeleton shimmer ───────────────────────────────────────────────── */

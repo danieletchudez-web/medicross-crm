@@ -101,6 +101,7 @@ export default function App() {
   const [navigateData, setNavigateData] = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [crmData,      setCrmData]      = useState(null);
+  const [transitionKey, setTransitionKey] = useState(0);
   // Pages that have been visited at least once (stay mounted forever after)
   const [mounted,      setMounted]      = useState(() => new Set([localStorage.getItem("crm_current_page") || "managerDashboard"]));
 
@@ -217,6 +218,7 @@ export default function App() {
   function navigate(p, data) {
     setNavigateData(data || null);
     setPage(p);
+    setTransitionKey((key) => key + 1);
     localStorage.setItem("crm_current_page", p);
     // Add to mounted set so the page stays alive after first visit
     setMounted(prev => {
@@ -236,7 +238,7 @@ export default function App() {
   }
 
   const currentPage = canOpenPage(page) ? page : "managerDashboard";
-  const pageProps   = { profile: safeProfile, onNavigate: navigate };
+  const pageProps   = { profile: safeProfile, onNavigate: navigate, pageKey: transitionKey };
 
   // A page should be in the DOM if it's the current page OR was previously visited
   const shouldMount = (id) => id === currentPage || mounted.has(id);
