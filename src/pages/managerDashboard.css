@@ -275,14 +275,14 @@
 
 /* ─── Primary KPIs ───────────────────────────────────────────────────── */
 .dash-primary-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.dash-primary-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px 22px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 9px; transition: box-shadow 0.2s, transform .2s; min-height: 142px; }
+.dash-primary-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 18px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 6px; transition: box-shadow 0.2s, transform .2s; min-height: 118px; }
 .dash-primary-kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.dash-primary-kpi--blue   { border-top: 4px solid var(--blue); }
-.dash-primary-kpi--green  { border-top: 4px solid var(--green); }
-.dash-primary-kpi--amber  { border-top: 4px solid var(--amber); }
-.dash-primary-kpi--red    { border-top: 4px solid var(--red); }
-.dash-primary-kpi--slate  { border-top: 4px solid #64748b; }
-.dash-primary-kpi--yellow { border-top: 4px solid var(--amber); }
+.dash-primary-kpi--blue   { border-top: 3px solid var(--blue); }
+.dash-primary-kpi--green  { border-top: 3px solid var(--green); }
+.dash-primary-kpi--amber  { border-top: 3px solid var(--amber); }
+.dash-primary-kpi--red    { border-top: 3px solid var(--red); }
+.dash-primary-kpi--slate  { border-top: 3px solid #64748b; }
+.dash-primary-kpi--yellow { border-top: 3px solid var(--amber); }
 .dash-primary-kpi--blue::after   { content:""; position:absolute; inset:0; background:var(--blue-light);  pointer-events:none; border-radius:var(--radius-md); z-index:0; }
 .dash-primary-kpi--green::after  { content:""; position:absolute; inset:0; background:var(--green-light); pointer-events:none; border-radius:var(--radius-md); z-index:0; }
 .dash-primary-kpi--amber::after  { content:""; position:absolute; inset:0; background:var(--amber-light); pointer-events:none; border-radius:var(--radius-md); z-index:0; }
@@ -292,8 +292,8 @@
 .dash-primary-kpi__header { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 3; }
 .dash-kpi__header    { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 3; }
 .dash-insight__header { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 3; }
-.dash-primary-kpi__label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); }
-.dash-primary-kpi__value { font-size: clamp(22px, 1.9vw, 34px); font-weight: 900; color: var(--text-primary); letter-spacing: 0; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 1; }
+.dash-primary-kpi__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-tertiary); }
+.dash-primary-kpi__value { font-size: clamp(18px, 1.55vw, 26px); font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 1; }
 .dash-primary-kpi__sub   { font-size: 11px; font-weight: 650; color: var(--text-secondary); position: relative; z-index: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dash-primary-kpi__progress {
   height: 5px;
