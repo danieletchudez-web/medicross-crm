@@ -63,7 +63,7 @@ async function callClaude(messages, systemPrompt) {
   }
 
   const data = await response.json();
-  return data.content?.[0]?.text || "No pude generar una respuesta.";
+  return data.content || "No pude generar una respuesta.";
 }
 
 const QUICK_SUGGESTIONS = [
