@@ -4,7 +4,7 @@ import { supabase } from "./lib/supabaseClient";
 import LoginPage    from "./pages/LoginPage";
 import CRMAssistant from "./components/CRMAssistant";
 import DialogSystem from "./components/DialogSystem";
-import loaderLogo from "./assets/medicross-loader-logo.svg";
+import loaderLogo from "./assets/medicross-loader-logo.png";
 import {
   Activity,
   Bandage,
