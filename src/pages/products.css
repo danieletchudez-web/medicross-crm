@@ -101,13 +101,24 @@
 
 .products-form button {
   grid-column: 1 / -1;
-  background: #253494;
+  justify-self: end;
+  min-width: 220px;
+  width: min(100%, 280px);
+  background: #1d4ed8;
   color: white;
   border: none;
-  padding: 14px 18px;
+  padding: 12px 18px;
   border-radius: 12px;
   font-weight: 950;
   cursor: pointer;
+  box-shadow: 0 10px 22px rgba(29, 78, 216, 0.18);
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.products-form button:hover:not(:disabled) {
+  background: #1e40af;
+  box-shadow: 0 12px 26px rgba(29, 78, 216, 0.24);
+  transform: translateY(-1px);
 }
 
 .products-form button:disabled {
@@ -231,5 +242,12 @@
 
   .product-actions button {
     min-height: 42px;
+  }
+
+  .products-form button {
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
   }
 }

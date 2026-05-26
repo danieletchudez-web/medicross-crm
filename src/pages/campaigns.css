@@ -148,14 +148,25 @@
 
 .campaign-form button {
   grid-column: 1 / -1;
+  justify-self: end;
+  min-width: 220px;
+  width: min(100%, 280px);
   border: none;
-  background: #1677ff;
+  background: #1d4ed8;
   color: white;
   border-radius: 12px;
-  padding: 13px 16px;
+  padding: 12px 18px;
   font-size: 13px;
   font-weight: 900;
   cursor: pointer;
+  box-shadow: 0 10px 22px rgba(29, 78, 216, 0.18);
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.campaign-form button:hover:not(:disabled) {
+  background: #1e40af;
+  box-shadow: 0 12px 26px rgba(29, 78, 216, 0.24);
+  transform: translateY(-1px);
 }
 
 .campaign-form button:disabled {
@@ -384,5 +395,12 @@
 
   .ghost-btn {
     width: 100%;
+  }
+
+  .campaign-form button {
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
   }
 }
