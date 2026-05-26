@@ -102,10 +102,10 @@
 }
 
 .sidebar-pin-btn.pinned {
-  background: #2563eb;
+  background: #162d50;
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
 @media (max-width: 768px) {
