@@ -1,9 +1,19 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 
 import LoginPage    from "./pages/LoginPage";
 import CRMAssistant from "./components/CRMAssistant";
 import DialogSystem from "./components/DialogSystem";
+import {
+  Activity,
+  Bandage,
+  BriefcaseMedical,
+  ClipboardPlus,
+  HeartPulse,
+  Pill,
+  Stethoscope,
+  Syringe,
+} from "lucide-react";
 
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
@@ -66,30 +76,50 @@ function buildPendingProfile(user, reason = "profile_missing") {
   };
 }
 
-function FullPageLoader({ label = "Cargando módulo…" }) {
+function FullPageLoader({ label = "Cargando módulo…", overlay = false }) {
+  const medicalIcons = [
+    Syringe,
+    BriefcaseMedical,
+    Pill,
+    HeartPulse,
+    Stethoscope,
+    Bandage,
+    ClipboardPlus,
+    Activity,
+  ];
+
   return (
-    <div style={{
-      minHeight:"100vh", display:"flex", flexDirection:"column",
-      alignItems:"center", justifyContent:"center",
-      background:"#f0f2f5", gap:16,
-      fontFamily:"DM Sans, system-ui, sans-serif"
-    }}>
-      <div style={{display:"flex",alignItems:"center",gap:9}}>
-        <div style={{width:9,height:9,borderRadius:"50%",background:"#4da3f0",animation:"crmPulse 1.2s ease-in-out infinite"}}/>
-        <span style={{fontSize:16,fontWeight:600,color:"#0f2444",letterSpacing:"-0.3px"}}>MediCross CRM</span>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-        <div style={{display:"flex",gap:5}}>
-          {[0,1,2].map(i=>(
-            <div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#0f2444",animation:`crmBounce 1.2s ease-in-out ${i*0.18}s infinite`}}/>
-          ))}
+    <div className={`crm-loader${overlay ? " crm-loader--overlay" : ""}`} role="status" aria-live="polite">
+      <div className="crm-loader__card">
+        <div className="crm-loader__brand">
+          <span className="crm-loader__mark">M</span>
+          <div>
+            <strong>MediCross CRM</strong>
+            <small>Productos Médicos Integrales</small>
+          </div>
         </div>
-        <span style={{fontSize:12,color:"#94a3b8",fontWeight:500,letterSpacing:"0.5px"}}>{label}</span>
+
+        <div className="crm-loader__rail" aria-hidden="true">
+          <div className="crm-loader__track">
+            {[...medicalIcons, ...medicalIcons].map((Icon, index) => (
+              <span className="crm-loader__icon" key={index}>
+                <Icon size={22} strokeWidth={1.9} />
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="crm-loader__progress" aria-hidden="true">
+          <span />
+        </div>
+
+        <div className="crm-loader__status">
+          <span>{label}</span>
+          <i />
+          <i />
+          <i />
+        </div>
       </div>
-      <style>{`
-        @keyframes crmPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.35);opacity:.65} }
-        @keyframes crmBounce { 0%,80%,100%{transform:translateY(0);opacity:.18} 40%{transform:translateY(-7px);opacity:.85} }
-      `}</style>
     </div>
   );
 }
@@ -102,6 +132,8 @@ export default function App() {
   const [loading,      setLoading]      = useState(true);
   const [crmData,      setCrmData]      = useState(null);
   const [transitionKey, setTransitionKey] = useState(0);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const routeLoadingTimer = useRef(null);
   // Pages that have been visited at least once (stay mounted forever after)
   const [mounted,      setMounted]      = useState(() => new Set([localStorage.getItem("crm_current_page") || "managerDashboard"]));
 
@@ -110,7 +142,10 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, s) => { setSession(s); if (s?.user) loadProfile(s.user); else setProfile(null); }
     );
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (routeLoadingTimer.current) clearTimeout(routeLoadingTimer.current);
+    };
   }, []);
 
   useEffect(() => { if (session) loadCrmData(); }, [page, session]);
@@ -217,6 +252,14 @@ export default function App() {
 
   function navigate(p, data) {
     setNavigateData(data || null);
+    if (p !== page) {
+      setRouteLoading(true);
+      if (routeLoadingTimer.current) clearTimeout(routeLoadingTimer.current);
+      routeLoadingTimer.current = setTimeout(() => {
+        setRouteLoading(false);
+        routeLoadingTimer.current = null;
+      }, 520);
+    }
     setPage(p);
     setTransitionKey((key) => key + 1);
     localStorage.setItem("crm_current_page", p);
@@ -262,6 +305,7 @@ export default function App() {
           </div>
         );
       })}
+      {routeLoading && <FullPageLoader label="Preparando módulo…" overlay />}
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
       <DialogSystem />
     </>
