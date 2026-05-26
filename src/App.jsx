@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 
-import LoginPage           from "./pages/LoginPage";
-import CRMAssistant        from "./components/CRMAssistant";
-import DialogSystem        from "./components/DialogSystem";
+import LoginPage    from "./pages/LoginPage";
+import CRMAssistant from "./components/CRMAssistant";
+import DialogSystem from "./components/DialogSystem";
 
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
@@ -22,6 +22,26 @@ const CotizadorPage         = lazy(() => import("./pages/CotizadorPage"));
 const PreciosHistoricosPage = lazy(() => import("./pages/PreciosHistoricosPage"));
 const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
+
+const ALL_PAGES = [
+  { id: "managerDashboard",  Component: ManagerDashboard },
+  { id: "sellerDashboard",   Component: SellerDashboard },
+  { id: "accounts",          Component: AccountsPage },
+  { id: "products",          Component: ProductsPage },
+  { id: "opportunities",     Component: OpportunitiesPage },
+  { id: "campaigns",         Component: CampaignsPage },
+  { id: "todayActions",      Component: TodayActionsPage },
+  { id: "visits",            Component: VisitsPage },
+  { id: "calendar",          Component: CalendarPage },
+  { id: "adminUsers",        Component: AdminUsersPage },
+  { id: "salesAnalytics",    Component: SalesAnalyticsPage },
+  { id: "importer",          Component: ImporterPage },
+  { id: "tenders",           Component: TendersPage },
+  { id: "cotizador",         Component: CotizadorPage },
+  { id: "preciosHistoricos", Component: PreciosHistoricosPage },
+  { id: "notifications",     Component: NotificationsPage },
+  { id: "settings",          Component: SettingsPage },
+];
 
 const FALLBACK_PROFILE = {
   id: null,
@@ -81,6 +101,8 @@ export default function App() {
   const [navigateData, setNavigateData] = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [crmData,      setCrmData]      = useState(null);
+  // Pages that have been visited at least once (stay mounted forever after)
+  const [mounted,      setMounted]      = useState(() => new Set([localStorage.getItem("crm_current_page") || "managerDashboard"]));
 
   useEffect(() => {
     init();
@@ -91,6 +113,14 @@ export default function App() {
   }, []);
 
   useEffect(() => { if (session) loadCrmData(); }, [page, session]);
+
+  // Silently preload the most visited modules after auth resolves
+  useEffect(() => {
+    if (!session || loading) return;
+    import("./pages/AccountsPage");
+    import("./pages/OpportunitiesPage");
+    import("./pages/VisitsPage");
+  }, [session, loading]);
 
   async function init() {
     setLoading(true);
@@ -188,6 +218,13 @@ export default function App() {
     setNavigateData(data || null);
     setPage(p);
     localStorage.setItem("crm_current_page", p);
+    // Add to mounted set so the page stays alive after first visit
+    setMounted(prev => {
+      if (prev.has(p)) return prev;
+      const next = new Set(prev);
+      next.add(p);
+      return next;
+    });
   }
 
   function canOpenPage(pageId) {
@@ -199,35 +236,29 @@ export default function App() {
   }
 
   const currentPage = canOpenPage(page) ? page : "managerDashboard";
-  const pageProps = { profile: safeProfile, onNavigate: navigate, pageKey: currentPage };
+  const pageProps   = { profile: safeProfile, onNavigate: navigate };
 
-  let CurrentPage;
-  switch (currentPage) {
-    case "managerDashboard":   CurrentPage = <ManagerDashboard      {...pageProps} />; break;
-    case "sellerDashboard":    CurrentPage = <SellerDashboard       {...pageProps} />; break;
-    case "accounts":           CurrentPage = <AccountsPage          {...pageProps} />; break;
-    case "products":           CurrentPage = <ProductsPage          {...pageProps} />; break;
-    case "opportunities":      CurrentPage = <OpportunitiesPage     {...pageProps} />; break;
-    case "campaigns":          CurrentPage = <CampaignsPage         {...pageProps} />; break;
-    case "todayActions":       CurrentPage = <TodayActionsPage      {...pageProps} />; break;
-    case "visits":             CurrentPage = <VisitsPage            {...pageProps} />; break;
-    case "calendar":           CurrentPage = <CalendarPage          {...pageProps} />; break;
-    case "adminUsers":         CurrentPage = <AdminUsersPage        {...pageProps} />; break;
-    case "salesAnalytics":     CurrentPage = <SalesAnalyticsPage    {...pageProps} />; break;
-    case "importer":           CurrentPage = <ImporterPage          {...pageProps} />; break;
-    case "tenders":            CurrentPage = <TendersPage           {...pageProps} />; break;
-    case "preciosHistoricos":  CurrentPage = <PreciosHistoricosPage {...pageProps} />; break;
-    case "notifications":      CurrentPage = <NotificationsPage     {...pageProps} />; break;
-    case "settings":           CurrentPage = <SettingsPage          {...pageProps} />; break;
-    case "cotizador":          CurrentPage = <CotizadorPage         {...pageProps} initialData={navigateData} />; break;
-    default:                   CurrentPage = <ManagerDashboard      {...pageProps} />;
-  }
+  // A page should be in the DOM if it's the current page OR was previously visited
+  const shouldMount = (id) => id === currentPage || mounted.has(id);
 
   return (
     <>
-      <Suspense fallback={<FullPageLoader />}>
-        {CurrentPage}
-      </Suspense>
+      {ALL_PAGES.map(({ id, Component }) => {
+        if (!shouldMount(id)) return null;
+        const isActive   = id === currentPage;
+        const extraProps = id === "cotizador" ? { initialData: navigateData } : {};
+        return (
+          <div
+            key={id}
+            className={`page-keepalive${isActive ? " page-keepalive--active" : ""}`}
+            aria-hidden={!isActive}
+          >
+            <Suspense fallback={isActive ? <FullPageLoader /> : <></>}>
+              <Component {...pageProps} {...extraProps} />
+            </Suspense>
+          </div>
+        );
+      })}
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
       <DialogSystem />
     </>

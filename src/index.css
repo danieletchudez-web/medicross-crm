@@ -327,11 +327,26 @@ button, input, select, textarea { font-family: inherit; }
   .global-search-trigger  { min-width: 160px; }
 }
 
-/* ─── Page transition ────────────────────────────────────────────────── */
+/* ─── Keep-alive page slots ──────────────────────────────────────────── */
+/*
+ * Each page renders its own Layout+Sidebar. We mount all visited pages and
+ * use display:none/block to switch between them — zero re-mount, zero chart
+ * resets, zero data loss between navigations.
+ */
+.page-keepalive {
+  display: none;
+  pointer-events: none;
+}
+.page-keepalive--active {
+  display: block;
+  pointer-events: auto;
+}
+
+/* ─── Page transition (first visit only) ────────────────────────────── */
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -340,6 +355,30 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .page-enter {
-  animation: pageEnter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform;
+  animation: pageEnter 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  display: block;
+  background: linear-gradient(90deg, #f0f4f8 25%, #e4eaf1 50%, #f0f4f8 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.skeleton--text  { height: 13px; border-radius: 4px; }
+.skeleton--title { height: 20px; border-radius: 5px; }
+.skeleton--card  { height: 100px; border-radius: 12px; }
+.skeleton--chart { height: 200px; border-radius: 12px; }
+
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, #1c2128 25%, #252b33 50%, #1c2128 75%);
+  background-size: 200% 100%;
 }

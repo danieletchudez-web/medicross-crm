@@ -127,6 +127,16 @@ export default function Sidebar({ profile, onNavigate }) {
     return () => window.removeEventListener("resize", fn);
   }, []);
 
+  // Sync collapsed state across all mounted Sidebar instances (keep-alive)
+  useEffect(() => {
+    function onSync(e) {
+      setCollapsed(e.detail.collapsed);
+      if (e.detail.collapsed) { setEditing(false); setTooltip(null); }
+    }
+    window.addEventListener("sidebar:collapsed", onSync);
+    return () => window.removeEventListener("sidebar:collapsed", onSync);
+  }, []);
+
   function showTooltip(e, label) {
     if (!collapsed) return;
     const r = e.currentTarget.getBoundingClientRect();
@@ -157,6 +167,7 @@ export default function Sidebar({ profile, onNavigate }) {
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem("sidebar_collapsed", String(next));
+    window.dispatchEvent(new CustomEvent("sidebar:collapsed", { detail: { collapsed: next } }));
     setTooltip(null);
     if (next) setEditing(false);
   }
