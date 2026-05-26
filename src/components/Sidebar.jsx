@@ -32,7 +32,7 @@ const MENU_SECTIONS = [
     label: "ANÁLISIS",
     items: [
       { id: "managerDashboard", label: "Dashboard",          icon: LayoutDashboard },
-      { id: "importer",         label: "BI Comercialyl",       icon: BarChart3 },
+      { id: "importer",         label: "BI Comercial",       icon: BarChart3 },
       { id: "salesAnalytics",   label: "Análisis Comercial", icon: ChartPie },
     ],
   },
