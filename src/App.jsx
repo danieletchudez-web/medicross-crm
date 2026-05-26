@@ -199,7 +199,7 @@ export default function App() {
   }
 
   const currentPage = canOpenPage(page) ? page : "managerDashboard";
-  const pageProps = { profile: safeProfile, onNavigate: navigate };
+  const pageProps = { profile: safeProfile, onNavigate: navigate, pageKey: currentPage };
 
   let CurrentPage;
   switch (currentPage) {

@@ -18,7 +18,7 @@ function LiveClock() {
   );
 }
 
-export default function Layout({ title, profile, onNavigate, children }) {
+export default function Layout({ title, profile, onNavigate, pageKey, children }) {
   return (
     <div className="app-shell">
       <Sidebar profile={profile} onNavigate={onNavigate} />
@@ -37,7 +37,9 @@ export default function Layout({ title, profile, onNavigate, children }) {
           </div>
         </header>
 
-        {children}
+        <div key={pageKey} className="page-enter">
+          {children}
+        </div>
       </main>
     </div>
   );
