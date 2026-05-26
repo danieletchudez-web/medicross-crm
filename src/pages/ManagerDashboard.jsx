@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./managerDashboard.css";
@@ -49,13 +50,14 @@ function Tooltip({ text }) {
         onMouseLeave={hide}
         onClick={show}
       >?</span>
-      {pos && (
+      {pos && createPortal(
         <span
           className="kpi-tooltip-box"
           style={{ position: "fixed", top: pos.top, right: pos.right, left: "auto" }}
         >
           {text}
-        </span>
+        </span>,
+        document.body
       )}
     </span>
   );
