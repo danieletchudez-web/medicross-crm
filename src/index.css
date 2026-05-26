@@ -14,7 +14,7 @@
   --text-primary: #0f172a;
   --text-secondary: #64748b;
   --text-tertiary: #94a3b8;
-  --page-enter-duration: 260ms;
+  --page-enter-duration: 340ms;
   --page-enter-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -346,17 +346,30 @@ button, input, select, textarea { font-family: inherit; }
 
 .page-keepalive--active .main-content {
   opacity: 0;
-  animation: crm-fade-slide-up var(--page-enter-duration) var(--page-enter-ease) both;
+  animation: var(--crm-enter-name, crm-fade-slide-up-a) var(--page-enter-duration) var(--page-enter-ease) both;
   will-change: opacity, transform;
-  transform: translate3d(0, 10px, 0);
+  transform: translate3d(0, 16px, 0);
   backface-visibility: hidden;
 }
 
-@keyframes crm-fade-slide-up {
+@keyframes crm-fade-slide-up-a {
   0% {
     opacity: 0;
-    transform: translate3d(0, 10px, 0);
-    filter: blur(1px);
+    transform: translate3d(0, 16px, 0);
+    filter: blur(1.5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+@keyframes crm-fade-slide-up-b {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+    filter: blur(1.5px);
   }
   100% {
     opacity: 1;
@@ -367,7 +380,7 @@ button, input, select, textarea { font-family: inherit; }
 
 .page-enter {
   opacity: 0;
-  animation: crm-fade-slide-up var(--page-enter-duration) var(--page-enter-ease) both;
+  animation: crm-fade-slide-up-a var(--page-enter-duration) var(--page-enter-ease) both;
   will-change: opacity, transform;
   backface-visibility: hidden;
 }

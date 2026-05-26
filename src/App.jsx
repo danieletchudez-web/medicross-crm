@@ -253,6 +253,7 @@ export default function App() {
           <div
             key={id}
             className={`page-keepalive${isActive ? " page-keepalive--active" : ""}`}
+            style={isActive ? { "--crm-enter-name": transitionKey % 2 === 0 ? "crm-fade-slide-up-a" : "crm-fade-slide-up-b" } : undefined}
             aria-hidden={!isActive}
           >
             <Suspense fallback={isActive ? <FullPageLoader /> : <></>}>
