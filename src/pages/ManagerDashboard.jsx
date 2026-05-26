@@ -356,9 +356,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
     }).length
   ), [visits]);
 
-  const executiveModeLabel = kpisCollapsed ? "Ejecutivo" : "Completo";
-  const updatedAt = new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
-
   function pipelineByStage() {
     return STAGES.map((stage) => filteredOpps.filter((o) => o.stage === stage).reduce((s, o) => s + Number(o.amount || 0), 0));
   }
@@ -492,26 +489,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             <button className="dash-hero-cta" onClick={() => onNavigate("opportunities")}>Ver pipeline</button>
           </div>
         </header>
-
-        <section className="dash-exec-strip">
-          <div className="dash-exec-pill">
-            <span>Vista</span>
-            <strong>{executiveModeLabel}</strong>
-          </div>
-          <div className="dash-exec-pill">
-            <span>Línea</span>
-            <strong>{selectedLine}</strong>
-          </div>
-          <div className="dash-exec-pill">
-            <span>Responsable</span>
-            <strong>{profile?.full_name || profile?.email || "Equipo comercial"}</strong>
-          </div>
-          <div className="dash-exec-pill">
-            <span>Última actualización</span>
-            <strong>{updatedAt}</strong>
-          </div>
-          <button className="dash-exec-action" onClick={() => onNavigate("visits")}>+ Registrar visita</button>
-        </section>
 
         {/* PRIMARY KPIs — fila 1 */}
         <section className="dash-primary-kpis">
