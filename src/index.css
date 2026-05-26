@@ -342,18 +342,25 @@ button, input, select, textarea { font-family: inherit; }
   pointer-events: auto;
 }
 
-/* ─── Page transition (first visit only) ────────────────────────────── */
-@keyframes pageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/*
+ * Only the .main-content area (header + page body) animates on every
+ * navigation. The .sidebar is a sibling element and stays completely stable.
+ */
+.page-keepalive--active .main-content {
+  animation: nav-enter 0.21s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
 }
 
+@keyframes nav-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ─── Page transition (legacy, kept for compatibility) ──────────────── */
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
 .page-enter {
   animation: pageEnter 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
