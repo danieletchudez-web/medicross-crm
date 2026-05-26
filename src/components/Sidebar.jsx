@@ -37,7 +37,7 @@ const MENU_SECTIONS = [
     ],
   },
   {
-    label: "COMERCIAL",
+    label: "COMERCIALX",
     items: [
       { id: "accounts",      label: "Clientes / Cuentas",    icon: Building2 },
       { id: "products",      label: "Productos / Share Kit", icon: PackageOpen },
