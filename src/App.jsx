@@ -4,6 +4,7 @@ import { supabase } from "./lib/supabaseClient";
 import LoginPage    from "./pages/LoginPage";
 import CRMAssistant from "./components/CRMAssistant";
 import DialogSystem from "./components/DialogSystem";
+import logoImg from "./assets/logo.jpg";
 import {
   Activity,
   Bandage,
@@ -92,11 +93,8 @@ function FullPageLoader({ label = "Cargando módulo…", overlay = false }) {
     <div className={`crm-loader${overlay ? " crm-loader--overlay" : ""}`} role="status" aria-live="polite">
       <div className="crm-loader__card">
         <div className="crm-loader__brand">
-          <span className="crm-loader__mark">M</span>
-          <div>
-            <strong>MediCross CRM</strong>
-            <small>Productos Médicos Integrales</small>
-          </div>
+          <img className="crm-loader__logo" src={logoImg} alt="MediCross" />
+          <span className="crm-loader__product">CRM</span>
         </div>
 
         <div className="crm-loader__rail" aria-hidden="true">
