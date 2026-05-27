@@ -4,17 +4,6 @@ import { supabase } from "./lib/supabaseClient";
 import LoginPage    from "./pages/LoginPage";
 import CRMAssistant from "./components/CRMAssistant";
 import DialogSystem from "./components/DialogSystem";
-import loaderLogo from "./assets/medicross-loader-logo.png";
-import {
-  Activity,
-  Bandage,
-  BriefcaseMedical,
-  ClipboardPlus,
-  HeartPulse,
-  Pill,
-  Stethoscope,
-  Syringe,
-} from "lucide-react";
 
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
@@ -78,35 +67,18 @@ function buildPendingProfile(user, reason = "profile_missing") {
 }
 
 function FullPageLoader({ label = "Cargando módulo…", overlay = false }) {
-  const medicalIcons = [
-    Syringe,
-    BriefcaseMedical,
-    Pill,
-    HeartPulse,
-    Stethoscope,
-    Bandage,
-    ClipboardPlus,
-    Activity,
-  ];
+  const wave = [12, 22, 34, 48, 64, 52, 38, 26, 18, 30, 46, 58, 72, 60, 42, 28, 16, 24, 40, 54, 66, 50, 36, 22, 12];
 
   return (
     <div className={`crm-loader${overlay ? " crm-loader--overlay" : ""}`} role="status" aria-live="polite">
       <div className="crm-loader__card">
-        <div className="crm-loader__brand">
-          <img className="crm-loader__logo" src={loaderLogo} alt="MediCross" />
+        <div className="crm-loader__signal" aria-hidden="true">
+          {wave.map((height, index) => (
+            <span key={index} style={{ "--h": `${height}px`, "--i": index }} />
+          ))}
         </div>
 
-        <div className="crm-loader__rail" aria-hidden="true">
-          <div className="crm-loader__track">
-            {[...medicalIcons, ...medicalIcons].map((Icon, index) => (
-              <span className="crm-loader__icon" key={index}>
-                <Icon size={22} strokeWidth={1.9} />
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="crm-loader__progress" aria-hidden="true">
+        <div className="crm-loader__sweep" aria-hidden="true">
           <span />
         </div>
 
