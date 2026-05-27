@@ -486,7 +486,7 @@
   font-family: var(--font);
   cursor: pointer;
   white-space: nowrap;
-  align-self: flex-start;
+  align-self: center;
   width: fit-content;
   margin-top: auto;
   letter-spacing: 0.3px;
