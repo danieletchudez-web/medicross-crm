@@ -70,14 +70,24 @@ function FullPageLoader({ label = "Cargando módulo…", overlay = false }) {
   return (
     <div className={`crm-loader${overlay ? " crm-loader--overlay" : ""}`} role="status" aria-live="polite">
       <div className="crm-loader__card">
-        <div className="crm-loader__signal" aria-hidden="true">
-          <span className="crm-loader__signal-line" />
-          <span className="crm-loader__signal-dot" />
-        </div>
-
-        <div className="crm-loader__sweep" aria-hidden="true">
-          <span />
-        </div>
+        <svg className="crm-loader__pulse" viewBox="0 0 320 70" aria-hidden="true">
+          <defs>
+            <linearGradient id="crmLoaderPulse" x1="0" y1="0" x2="320" y2="0" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#0f4e89" stopOpacity="0" />
+              <stop offset="0.32" stopColor="#1d9bd7" />
+              <stop offset="0.68" stopColor="#0f4e89" />
+              <stop offset="1" stopColor="#1d9bd7" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path
+            className="crm-loader__pulse-base"
+            d="M10 38 H88 C96 38 98 18 106 18 C115 18 116 54 126 54 C134 54 137 38 146 38 H310"
+          />
+          <path
+            className="crm-loader__pulse-live"
+            d="M10 38 H88 C96 38 98 18 106 18 C115 18 116 54 126 54 C134 54 137 38 146 38 H310"
+          />
+        </svg>
 
         <div className="crm-loader__status">
           <span>{label}</span>
