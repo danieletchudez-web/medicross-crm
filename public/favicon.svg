@@ -1,14 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="crmFav" x1="14" y1="12" x2="51" y2="53" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#E12E2E"/>
-      <stop offset="0.58" stop-color="#F26811"/>
-      <stop offset="1" stop-color="#FF8A00"/>
-    </linearGradient>
-  </defs>
-  <circle cx="32" cy="32" r="28" fill="none" stroke="url(#crmFav)" stroke-width="4"/>
-  <path fill="url(#crmFav)" d="M16 18h32a5 5 0 0 1 5 5v20a5 5 0 0 1-5 5H16a5 5 0 0 1-5-5V23a5 5 0 0 1 5-5Z"/>
-  <path fill="#fff" d="M25.3 29.4c-1.2 1.1-2.7 1.6-4.4 1.6-4 0-6.8-2.8-6.8-6.6s2.8-6.6 6.8-6.6c1.8 0 3.4.6 4.6 1.8l-1.7 1.9c-.8-.8-1.8-1.2-2.8-1.2-2.4 0-4 1.7-4 4.1s1.7 4.1 4 4.1c1.1 0 2-.4 2.8-1.1l1.5 2Zm3.7 1.4h-2.8V18h5.4c2.9 0 4.7 1.6 4.7 4.1 0 1.8-.9 3.1-2.4 3.7l2.9 5h-3.2l-2.5-4.5H29v4.5Zm0-7h2.5c1.3 0 2-.6 2-1.7s-.7-1.7-2-1.7H29v3.4Zm22.2 7h-2.7v-8l-3 5h-1.3l-3-5v8h-2.7V18h2.4l4 6.7 4-6.7h2.4v12.8Z"/>
-  <path stroke="#fff" stroke-linecap="round" stroke-width="3.2" d="M17 36.5h30M17 42h30"/>
-  <path fill="url(#crmFav)" d="M27 48h10l3 6H24l3-6Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <path
+    d="M4 55.2V47.1C13.8 40 22.2 29.8 29.5 15.9L33 5.5v42.8C22.6 50.5 12.9 52.9 4 55.2Z"
+    stroke="#147FF2"
+    stroke-width="4.8"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+  <path
+    d="M33 34.8c7.2-5.9 13.2-12.5 18.1-20.1v35.1C34.8 49.9 19.1 51.6 4 55.2"
+    stroke="#147FF2"
+    stroke-width="4.8"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+  <path
+    d="M51.1 37.4c4.1-3 7.1-6 8.9-8.9v26.7C42.1 49.4 23.7 49.4 4 55.2"
+    stroke="#147FF2"
+    stroke-width="4.8"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
 </svg>
