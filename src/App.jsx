@@ -70,13 +70,9 @@ function FullPageLoader({ label = "Cargando módulo…", overlay = false }) {
   return (
     <div className={`crm-loader${overlay ? " crm-loader--overlay" : ""}`} role="status" aria-live="polite">
       <div className="crm-loader__card">
-        <div className="crm-loader__planet" aria-hidden="true">
-          <span className="crm-loader__planet-glow" />
-          <span className="crm-loader__planet-core" />
-          <span className="crm-loader__planet-axis crm-loader__planet-axis--a" />
-          <span className="crm-loader__planet-axis crm-loader__planet-axis--b" />
-          <span className="crm-loader__planet-axis crm-loader__planet-axis--c" />
-          <span className="crm-loader__planet-equator" />
+        <div className="crm-loader__signal" aria-hidden="true">
+          <span className="crm-loader__signal-line" />
+          <span className="crm-loader__signal-dot" />
         </div>
 
         <div className="crm-loader__sweep" aria-hidden="true">
