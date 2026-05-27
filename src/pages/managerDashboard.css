@@ -389,71 +389,105 @@
 .dash-decision-card--danger::before { background: var(--red); }
 .dash-decision-card--danger > span { background: var(--red-light); color: #dc2626; }
 
+/* ─── Próxima mejor acción — compacta, siempre roja, con latido ──────── */
 .dash-next-action {
-  display: grid;
-  grid-template-columns: 170px 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 16px;
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--blue);
-  border-radius: var(--radius-md);
+  gap: 14px;
+  width: fit-content;
+  max-width: 580px;
+  border: 1px solid #fecaca;
+  border-left: 3px solid #ef4444;
+  border-radius: 13px;
   background: #ffffff;
-  padding: 14px 18px;
-  box-shadow: var(--shadow-sm);
+  padding: 11px 15px;
+  animation: nba-breathe 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
-.dash-next-action--danger { border-left-color: var(--red); }
-.dash-next-action--warning { border-left-color: var(--amber); }
-.dash-next-action--success { border-left-color: var(--green); }
+
+/* Mismo color rojo en todos los tonos */
+.dash-next-action--danger,
+.dash-next-action--warning,
+.dash-next-action--success { border-color: #fecaca; border-left-color: #ef4444; }
+
+/* Latido sutil: el card respira con una sombra roja */
+@keyframes nba-breathe {
+  0%, 100% { box-shadow: 0 1px 4px rgba(220,38,38,0.06), 0 0 0 0   rgba(239,68,68,0.09); }
+  50%       { box-shadow: 0 2px 10px rgba(220,38,38,0.12), 0 0 0 5px rgba(239,68,68,0.04); }
+}
+
+/* Label con punto pulsante tipo "en vivo" */
 .dash-next-action__label {
-  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #dc2626;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: .6px;
+  letter-spacing: .7px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.dash-next-action__body { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.dash-next-action__label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  animation: nba-dot 2s ease-in-out infinite;
+}
+@keyframes nba-dot {
+  0%, 100% { opacity: 1;    transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.72); }
+}
+
+.dash-next-action__body { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .dash-next-action__body > span {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  background: var(--blue-light);
-  color: #2563eb;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #fee2e2;
+  color: #dc2626;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  font-weight: 900;
+  font-size: 14px;
   flex-shrink: 0;
 }
-.dash-next-action--danger .dash-next-action__body > span { background: var(--red-light); color: #dc2626; }
-.dash-next-action--warning .dash-next-action__body > span { background: var(--amber-light); color: #d97706; }
-.dash-next-action--success .dash-next-action__body > span { background: var(--green-light); color: #059669; }
+/* Todos los tonos usan el ícono rojo */
+.dash-next-action--danger .dash-next-action__body > span,
+.dash-next-action--warning .dash-next-action__body > span,
+.dash-next-action--success .dash-next-action__body > span { background: #fee2e2; color: #dc2626; }
+
 .dash-next-action strong {
   display: block;
   color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 800;
 }
 .dash-next-action p {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 11.5px;
+  font-weight: 600;
   line-height: 1.35;
 }
 .dash-next-action button {
   border: none;
-  background: #0f2444;
+  background: #dc2626;
   color: #ffffff;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 12px;
-  font-weight: 850;
+  border-radius: 9px;
+  padding: 8px 14px;
+  font-size: 11.5px;
+  font-weight: 800;
   font-family: var(--font);
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
 }
-.dash-next-action button:hover { background: #185fa5; }
+.dash-next-action button:hover { background: #b91c1c; }
 
 /* ─── Panels ─────────────────────────────────────────────────────────── */
 .dash-main-grid  { display: grid; grid-template-columns: 1.25fr 1fr 1.05fr; gap: 14px; }
