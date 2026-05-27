@@ -545,20 +545,19 @@ export default function ManagerDashboard({ profile, onNavigate }) {
               </div>
             </article>
           ))}
-        </section>
-
-        <section className={`dash-next-action dash-next-action--${decision.tone}`}>
-          <div className="dash-next-action__label">Próxima mejor acción</div>
-          <div className="dash-next-action__body">
-            <span>{decision.icon}</span>
-            <div>
-              <strong>{decision.title}</strong>
-              <p>{decision.text}</p>
+          <div className={`dash-next-action dash-next-action--${decision.tone}`}>
+            <div className="dash-next-action__label">Próxima mejor acción</div>
+            <div className="dash-next-action__body">
+              <span>{decision.icon}</span>
+              <div>
+                <strong>{decision.title}</strong>
+                <p>{decision.text}</p>
+              </div>
             </div>
+            <button onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}>
+              Ejecutar acción
+            </button>
           </div>
-          <button onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}>
-            Ejecutar acción
-          </button>
         </section>
 
         {/* KPIs COLAPSABLES — fila 2 y 3 */}

@@ -389,29 +389,28 @@
 .dash-decision-card--danger::before { background: var(--red); }
 .dash-decision-card--danger > span { background: var(--red-light); color: #dc2626; }
 
-/* ─── Próxima mejor acción — compacta, siempre roja, con latido ──────── */
+/* ─── Próxima mejor acción — celda dentro del grid de decisiones ─────── */
 .dash-next-action {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  width: fit-content;
-  max-width: 580px;
+  flex-direction: column;
+  gap: 10px;
   border: 1px solid #fecaca;
-  border-left: 3px solid #ef4444;
-  border-radius: 13px;
+  border-top: 3px solid #ef4444;
+  border-radius: var(--radius-md);
   background: #ffffff;
-  padding: 11px 15px;
+  padding: 14px 16px;
+  min-width: 0;
   animation: nba-breathe 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Mismo color rojo en todos los tonos */
+/* Mismo tono rojo en todos los estados */
 .dash-next-action--danger,
 .dash-next-action--warning,
-.dash-next-action--success { border-color: #fecaca; border-left-color: #ef4444; }
+.dash-next-action--success { border-color: #fecaca; border-top-color: #ef4444; }
 
-/* Latido sutil: el card respira con una sombra roja */
+/* Latido sutil: sombra roja que respira */
 @keyframes nba-breathe {
-  0%, 100% { box-shadow: 0 1px 4px rgba(220,38,38,0.06), 0 0 0 0   rgba(239,68,68,0.09); }
+  0%, 100% { box-shadow: 0 1px 4px rgba(220,38,38,0.06), 0 0 0 0   rgba(239,68,68,0.08); }
   50%       { box-shadow: 0 2px 10px rgba(220,38,38,0.12), 0 0 0 5px rgba(239,68,68,0.04); }
 }
 
@@ -425,8 +424,6 @@
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .7px;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 .dash-next-action__label::before {
   content: '';
@@ -442,20 +439,25 @@
   50%       { opacity: 0.4; transform: scale(0.72); }
 }
 
-.dash-next-action__body { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.dash-next-action__body {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
 .dash-next-action__body > span {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   background: #fee2e2;
   color: #dc2626;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   flex-shrink: 0;
 }
-/* Todos los tonos usan el ícono rojo */
 .dash-next-action--danger .dash-next-action__body > span,
 .dash-next-action--warning .dash-next-action__body > span,
 .dash-next-action--success .dash-next-action__body > span { background: #fee2e2; color: #dc2626; }
@@ -467,7 +469,7 @@
   font-weight: 800;
 }
 .dash-next-action p {
-  margin: 1px 0 0;
+  margin: 2px 0 0;
   color: var(--text-secondary);
   font-size: 11.5px;
   font-weight: 600;
@@ -477,14 +479,15 @@
   border: none;
   background: #dc2626;
   color: #ffffff;
-  border-radius: 9px;
-  padding: 8px 14px;
+  border-radius: 8px;
+  padding: 8px 13px;
   font-size: 11.5px;
   font-weight: 800;
   font-family: var(--font);
   cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: auto;
   transition: background 0.15s;
 }
 .dash-next-action button:hover { background: #b91c1c; }
