@@ -479,25 +479,26 @@
   border: none;
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #ffffff;
-  border-radius: 10px;
-  padding: 10px 0;
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
   font-family: var(--font);
   cursor: pointer;
   white-space: nowrap;
-  width: 100%;
+  align-self: flex-start;
+  width: fit-content;
   margin-top: auto;
-  letter-spacing: 0.2px;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 5px rgba(220, 38, 38, 0.25);
   transition: background 0.15s, box-shadow 0.15s, transform 0.12s;
 }
 .dash-next-action button:hover {
   background: linear-gradient(135deg, #dc2626, #b91c1c);
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
+  box-shadow: 0 3px 10px rgba(220, 38, 38, 0.35);
   transform: translateY(-1px);
 }
-.dash-next-action button:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(220,38,38,0.3); }
+.dash-next-action button:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(220,38,38,0.2); }
 
 /* ─── Panels ─────────────────────────────────────────────────────────── */
 .dash-main-grid  { display: grid; grid-template-columns: 1.25fr 1fr 1.05fr; gap: 14px; }
