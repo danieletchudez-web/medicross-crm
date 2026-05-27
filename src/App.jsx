@@ -67,15 +67,14 @@ function buildPendingProfile(user, reason = "profile_missing") {
 }
 
 function FullPageLoader({ label = "Cargando módulo…", overlay = false }) {
-  const wave = [12, 22, 34, 48, 64, 52, 38, 26, 18, 30, 46, 58, 72, 60, 42, 28, 16, 24, 40, 54, 66, 50, 36, 22, 12];
-
   return (
     <div className={`crm-loader${overlay ? " crm-loader--overlay" : ""}`} role="status" aria-live="polite">
       <div className="crm-loader__card">
-        <div className="crm-loader__signal" aria-hidden="true">
-          {wave.map((height, index) => (
-            <span key={index} style={{ "--h": `${height}px`, "--i": index }} />
-          ))}
+        <div className="crm-loader__planet" aria-hidden="true">
+          <span className="crm-loader__planet-core" />
+          <span className="crm-loader__planet-ring crm-loader__planet-ring--front" />
+          <span className="crm-loader__planet-ring crm-loader__planet-ring--back" />
+          <span className="crm-loader__planet-dot" />
         </div>
 
         <div className="crm-loader__sweep" aria-hidden="true">
