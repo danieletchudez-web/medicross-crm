@@ -294,11 +294,14 @@
 .sidebar-quick {
   display: grid;
   grid-template-columns: 1fr;
+  justify-items: stretch;
   gap: 6px;
   margin: 0 8px 10px;
 }
 
 .sidebar-quick button {
+  position: relative;
+  overflow: hidden;
   border: 1px solid rgba(59,130,246,.26);
   background: rgba(59,130,246,.12);
   color: #dbeafe;
@@ -312,6 +315,32 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  transition: background 0.2s var(--sb-ease),
+              border-color 0.2s var(--sb-ease),
+              box-shadow 0.28s var(--sb-ease),
+              transform 0.28s var(--sb-ease);
+}
+
+.sidebar-quick button::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.18), transparent 46%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s var(--sb-ease);
+}
+
+.sidebar-quick button:hover {
+  background: rgba(59,130,246,.18);
+  border-color: rgba(96,165,250,.42);
+  box-shadow: 0 10px 24px rgba(37,99,235,.14);
+  transform: translateY(-1px);
+}
+
+.sidebar-quick button:hover::after {
+  opacity: 1;
 }
 
 .sidebar-quick button span {
@@ -819,15 +848,33 @@
     width: 100%;
     margin: 0 0 6px;
     gap: 7px;
+    justify-items: center;
   }
 
   .sidebar--collapsed .sidebar-quick button {
     width: 46px;
-    height: 38px;
+    height: 42px;
     padding: 0;
     justify-content: center;
     text-align: center;
     border-radius: 13px;
+    background: rgba(59,130,246,.13);
+    border-color: rgba(59,130,246,.28);
+    animation: sb-quick-breathe 4.8s var(--sb-ease) infinite;
+  }
+
+  .sidebar--collapsed .sidebar-quick button:nth-child(2) { animation-delay: .16s; }
+  .sidebar--collapsed .sidebar-quick button:nth-child(3) { animation-delay: .32s; }
+
+  .sidebar--collapsed .sidebar-quick button:hover {
+    background: rgba(59,130,246,.2);
+    border-color: rgba(147,197,253,.5);
+    box-shadow: 0 12px 28px rgba(37,99,235,.22);
+    transform: translateY(-1px) scale(1.04);
+  }
+
+  .sidebar--collapsed .sidebar-quick button:active {
+    transform: scale(0.96);
   }
 
   .sidebar--collapsed .sidebar-quick button span {
@@ -935,6 +982,18 @@
   .sidebar--collapsed .sidebar-logout__icon svg {
     width: 18px;
     height: 18px;
+  }
+}
+
+@keyframes sb-quick-breathe {
+  0%, 74%, 100% {
+    box-shadow: 0 0 0 rgba(59,130,246,0);
+    border-color: rgba(59,130,246,.28);
+  }
+  82% {
+    box-shadow: 0 0 0 3px rgba(59,130,246,.08),
+                0 10px 22px rgba(37,99,235,.12);
+    border-color: rgba(147,197,253,.42);
   }
 }
 
