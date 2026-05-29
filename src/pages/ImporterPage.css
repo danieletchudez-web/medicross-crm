@@ -147,6 +147,7 @@
 }
 .bi-hero__badge.up   { background: rgba(16,185,129,.2); color: #6ee7b7; }
 .bi-hero__badge.down { background: rgba(239,68,68,.2);  color: #fca5a5; }
+.bi-hero__badge.neutral { background: rgba(219,234,254,.12); color: rgba(219,234,254,.82); }
 .bi-hero__val  { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 0; line-height: 1; }
 .bi-hero__meta { font-size: 10px; color: rgba(219,234,254,.5); font-weight: 650; }
 .bi-hero__bar  { height: 3px; background: rgba(255,255,255,.1); border-radius: 999px; overflow: hidden; width: 100%; max-width: 120px; margin: 3px 0 1px; }

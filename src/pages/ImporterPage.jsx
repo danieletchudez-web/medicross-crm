@@ -176,6 +176,16 @@ function scaleLabel(n) {
   return "";
 }
 
+function monthLabel(date) {
+  return new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" })
+    .format(date)
+    .replace(/^\w/, c => c.toUpperCase());
+}
+
+function plural(n, one, many) {
+  return Number(n) === 1 ? one : many;
+}
+
 /* ══════════════════════════════════════════════════════════════════════ */
 export default function ImporterPage({ profile, onNavigate }) {
   const [tab,            setTab]            = useState("dashboard");
@@ -350,6 +360,10 @@ export default function ImporterPage({ profile, onNavigate }) {
     const thisMonth = filteredSales
       .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === nowM && d.getFullYear() === nowY; })
       .reduce((s, r) => s + safeN(r.total_venta), 0);
+    const thisMonthRows = filteredSales
+      .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === nowM && d.getFullYear() === nowY; });
+    const thisMonthComprobantes = new Set(thisMonthRows.map(r => r.comprobante).filter(Boolean)).size;
+    const thisMonthTickets = thisMonthComprobantes || thisMonthRows.filter(r => safeN(r.total_venta) > 0).length;
     const prevMonth = filteredSales
       .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === prevM && d.getFullYear() === prevY; })
       .reduce((s, r) => s + safeN(r.total_venta), 0);
@@ -389,7 +403,7 @@ export default function ImporterPage({ profile, onNavigate }) {
     return {
       total, hasCosto, costoTotal, margenTotal, ventasConCosto,
       tickets, clientes, productos, avgTicket,
-      mejorVend, mejorUnit, momChange, thisMonth, prevMonth,
+      mejorVend, mejorUnit, momChange, thisMonth, thisMonthTickets, prevMonth,
       sparkData, fcast, fcastPct,
       mejorMes, cantMeses, promedioMensual,
       pendienteCobro, pendienteCount, cobrada,
@@ -622,11 +636,9 @@ export default function ImporterPage({ profile, onNavigate }) {
                       <strong className="bi-hero__big">{compact(kpis.total)}</strong>
                       <span className="bi-hero__scale">{scaleLabel(kpis.total)} de pesos</span>
                       <span className="bi-hero__sub">{fmtARS(kpis.total)}</span>
-                      {kpis.momChange !== null && (
-                        <span className={`bi-hero__badge ${kpis.momChange >= 0 ? "up" : "down"}`}>
-                          {kpis.momChange >= 0 ? "▲" : "▼"} {Math.abs(kpis.momChange).toFixed(1).replace(".", ",")}% vs. mes anterior
-                        </span>
-                      )}
+                      <span className="bi-hero__badge neutral">
+                        {kpis.tickets} {plural(kpis.tickets, "factura", "facturas")} · {kpis.clientes} {plural(kpis.clientes, "cliente", "clientes")}
+                      </span>
                     </div>
 
                     <div className="bi-hero__sep"/>
@@ -635,9 +647,7 @@ export default function ImporterPage({ profile, onNavigate }) {
                       <strong className="bi-hero__val">{compact(kpis.thisMonth)}</strong>
                       <span className="bi-hero__scale">{scaleLabel(kpis.thisMonth)}</span>
                       <span className="bi-hero__meta">
-                        {kpis.momChange !== null
-                          ? `${kpis.momChange >= 0 ? "▲" : "▼"} ${Math.abs(kpis.momChange).toFixed(1).replace(".",",")}% vs. mes ant.`
-                          : "—"}
+                        {monthLabel(new Date())} · {kpis.thisMonthTickets} {plural(kpis.thisMonthTickets, "factura", "facturas")}
                       </span>
                     </div>
 
