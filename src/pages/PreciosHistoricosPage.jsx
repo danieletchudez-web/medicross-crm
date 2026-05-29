@@ -31,6 +31,27 @@ function pctVsMin(value, min) {
   return ((price - min) / min * 100).toFixed(1);
 }
 
+function rowDate(row) {
+  return row?.tenders?.end_date || "";
+}
+
+function newestRow(rowsList) {
+  return [...rowsList].sort((a, b) => rowDate(b).localeCompare(rowDate(a)))[0] || null;
+}
+
+function daysSince(dateValue) {
+  if (!dateValue) return null;
+  const dt = new Date(`${String(dateValue).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((now - dt) / 86400000));
+}
+
+function avg(values) {
+  return values.length ? values.reduce((s, v) => s + v, 0) / values.length : null;
+}
+
 function compactMoney(v) {
   const n = Number(v || 0); if (!n) return "—";
   if (n >= 1_000_000_000) return `$${(n/1_000_000_000).toFixed(1).replace(".",",")} MM`;
@@ -87,6 +108,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [searched, setSearched] = useState(false);
   const [recientes, setRecientes] = useState([]);
   const [showSug,  setShowSug]  = useState(false);
+  const [institutionFilter, setInstitutionFilter] = useState("");
+  const [jurisdictionFilter, setJurisdictionFilter] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("");
   const inputRef   = useRef(null);
   const debounceRef = useRef(null);
 
@@ -131,15 +155,30 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
   const limpiar = () => {
     setQuery(""); setDesde(""); setHasta("");
+    setInstitutionFilter(""); setJurisdictionFilter(""); setCompanyFilter("");
     setRows([]); setSearched(false); setShowSug(false);
     inputRef.current?.focus();
   };
 
   const elegirSugerencia = (s) => { setQuery(s); buscar(s); };
 
+  const filterOptions = useMemo(() => {
+    const institutions = [...new Set(rows.map(r => r.tenders?.institution).filter(Boolean))].sort();
+    const jurisdictions = [...new Set(rows.map(r => r.tenders?.jurisdiction).filter(Boolean))].sort();
+    const companies = [...new Set(rows.map(r => r.empresa).filter(Boolean))].sort();
+    return { institutions, jurisdictions, companies };
+  }, [rows]);
+
+  const filteredRows = useMemo(() => rows.filter(row => {
+    if (institutionFilter && row.tenders?.institution !== institutionFilter) return false;
+    if (jurisdictionFilter && row.tenders?.jurisdiction !== jurisdictionFilter) return false;
+    if (companyFilter && row.empresa !== companyFilter) return false;
+    return true;
+  }), [rows, institutionFilter, jurisdictionFilter, companyFilter]);
+
   const agrupado = useMemo(() => {
     const map = {};
-    rows.forEach(r => {
+    filteredRows.forEach(r => {
       const tid = r.tender_id;
       if (!map[tid]) map[tid] = { tender: r.tenders, renglones: {} };
       const reng = r.renglon;
@@ -149,15 +188,15 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     return Object.values(map).sort((a, b) =>
       (b.tender?.end_date || "").localeCompare(a.tender?.end_date || "")
     );
-  }, [rows]);
+  }, [filteredRows]);
 
   const metricas = useMemo(() => {
-    if (!rows.length) return null;
-    const nuestras     = rows.filter(r => r.es_nuestra_oferta);
-    const licitaciones = new Set(rows.map(r => r.tender_id)).size;
-    const empresas     = new Set(rows.map(r => r.empresa)).size;
+    if (!filteredRows.length) return null;
+    const nuestras     = filteredRows.filter(r => r.es_nuestra_oferta);
+    const licitaciones = new Set(filteredRows.map(r => r.tender_id)).size;
+    const empresas     = new Set(filteredRows.map(r => r.empresa)).size;
     const byTenderReng = {};
-    rows.forEach(r => {
+    filteredRows.forEach(r => {
       const key = `${r.tender_id}_${r.renglon}`;
       if (!byTenderReng[key]) byTenderReng[key] = [];
       byTenderReng[key].push(r);
@@ -190,14 +229,14 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       tendencia  = { pct: Number(pct), subiendo: Number(pct) > 0 };
     }
     const conteoEmpresas = {};
-    rows.filter(r => !r.es_nuestra_oferta).forEach(r => {
+    filteredRows.filter(r => !r.es_nuestra_oferta).forEach(r => {
       conteoEmpresas[r.empresa] = (conteoEmpresas[r.empresa] || 0) + 1;
     });
     const topCompetidores = Object.entries(conteoEmpresas)
       .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([nombre, veces]) => ({ nombre, veces }));
     return { licitaciones, empresas, nuestras: nuestras.length, avgNuestro,
       preciosNuestros, minimoCount, totalRenglones, tendencia, topCompetidores };
-  }, [rows]);
+  }, [filteredRows]);
 
   function precioMinRenglon(filas) {
     const precios = filas.map(comparablePrice).filter(p => p !== null);
@@ -206,6 +245,86 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
   const pctMinimo = metricas && metricas.totalRenglones
     ? Math.round(metricas.minimoCount / metricas.totalRenglones * 100) : 0;
+
+  const decision = useMemo(() => {
+    const validRows = filteredRows
+      .map(r => ({ ...r, precioComparable: comparablePrice(r) }))
+      .filter(r => r.precioComparable !== null);
+    if (!validRows.length) return null;
+
+    const propias = validRows.filter(r => r.es_nuestra_oferta);
+    const competencia = validRows.filter(r => !r.es_nuestra_oferta);
+    const ultimaPropia = newestRow(propias);
+    const ultimaCompetencia = newestRow(competencia);
+    const adjudicadas = validRows.filter(r => r.adjudicado);
+    const ultimaAdjudicada = newestRow(adjudicadas);
+    const preciosCompetencia = competencia.map(r => r.precioComparable);
+    const preciosTodos = validRows.map(r => r.precioComparable);
+    const minimoMercado = preciosCompetencia.length ? Math.min(...preciosCompetencia) : Math.min(...preciosTodos);
+    const minimoRow = (preciosCompetencia.length ? competencia : validRows)
+      .find(r => r.precioComparable === minimoMercado) || null;
+    const promedioMercado = preciosCompetencia.length ? avg(preciosCompetencia) : avg(preciosTodos);
+    const ultimoDato = newestRow(validRows);
+    const antiguedad = daysSince(rowDate(ultimoDato));
+
+    const competidores = Object.values(competencia.reduce((acc, row) => {
+      const key = row.empresa || "Sin empresa";
+      const current = acc[key];
+      if (!current || rowDate(row) > rowDate(current)) acc[key] = row;
+      return acc;
+    }, {})).sort((a, b) => rowDate(b).localeCompare(rowDate(a))).slice(0, 5);
+
+    const refs = validRows.length;
+    const confianza = refs >= 8 && (antiguedad === null || antiguedad <= 180)
+      ? { level: "Alta", color: "#059669", bg: "#dcfce7" }
+      : refs >= 3 && (antiguedad === null || antiguedad <= 365)
+        ? { level: "Media", color: "#d97706", bg: "#fef3c7" }
+        : { level: "Baja", color: "#dc2626", bg: "#fee2e2" };
+
+    const ownPrice = ultimaPropia?.precioComparable ?? null;
+    const diffMercado = ownPrice !== null && minimoMercado
+      ? Number(((ownPrice - minimoMercado) / minimoMercado * 100).toFixed(1))
+      : null;
+
+    let estado = { label: "Datos insuficientes", color: "#64748b", bg: "#f1f5f9" };
+    if (ownPrice !== null && minimoMercado) {
+      if (ownPrice <= minimoMercado) estado = { label: "Competitivo", color: "#059669", bg: "#dcfce7" };
+      else if (diffMercado <= 8) estado = { label: "Cerca del mercado", color: "#d97706", bg: "#fef3c7" };
+      else estado = { label: "Riesgo por precio", color: "#dc2626", bg: "#fee2e2" };
+    } else if (!ultimaPropia && competencia.length) {
+      estado = { label: "Sin referencia propia", color: "#d97706", bg: "#fef3c7" };
+    }
+
+    const base = ultimaAdjudicada?.precioComparable || minimoMercado || promedioMercado || ownPrice;
+    const sugerido = base ? Math.round(base * 1.02) : null;
+    const motivo = ultimaAdjudicada
+      ? "Basado en la última adjudicación registrada, con 2% de colchón operativo."
+      : minimoMercado
+        ? "Basado en el menor precio comparable del mercado, con 2% de colchón operativo."
+        : ownPrice
+          ? "Basado en nuestra última cotización comparable."
+          : "No hay suficientes referencias para sugerir precio.";
+
+    return {
+      validRows,
+      refs,
+      propias,
+      competencia,
+      competidores,
+      ultimaPropia,
+      ultimaCompetencia,
+      ultimaAdjudicada,
+      minimoRow,
+      minimoMercado,
+      promedioMercado,
+      sugerido,
+      motivo,
+      confianza,
+      estado,
+      diffMercado,
+      antiguedad,
+    };
+  }, [filteredRows]);
 
   return (
     <Layout title="Inteligencia de Precios" profile={profile} onNavigate={onNavigate}>
@@ -353,6 +472,66 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               ))}
             </div>
           )}
+
+          {searched && rows.length > 0 && (
+            <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #eef2f7",
+              display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",
+              gap:10,alignItems:"end"}}>
+              {[
+                {
+                  label:"Institución",
+                  value:institutionFilter,
+                  onChange:setInstitutionFilter,
+                  options:filterOptions.institutions,
+                  all:"Todas las instituciones",
+                },
+                {
+                  label:"Jurisdicción",
+                  value:jurisdictionFilter,
+                  onChange:setJurisdictionFilter,
+                  options:filterOptions.jurisdictions,
+                  all:"Todas las jurisdicciones",
+                },
+                {
+                  label:"Empresa",
+                  value:companyFilter,
+                  onChange:setCompanyFilter,
+                  options:filterOptions.companies,
+                  all:"Todas las empresas",
+                },
+              ].map(filter => (
+                <div key={filter.label} style={{display:"flex",flexDirection:"column",gap:5}}>
+                  <label style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",
+                    textTransform:"uppercase",letterSpacing:".6px"}}>{filter.label}</label>
+                  <select value={filter.value} onChange={e => filter.onChange(e.target.value)}
+                    style={{padding:"9px 11px",border:"1px solid #e2e8f0",borderRadius:9,
+                      fontSize:12.5,fontFamily:"inherit",outline:"none",color:"#0f172a",
+                      background:"#f8fafc"}}>
+                    <option value="">{filter.all}</option>
+                    {filter.options.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+              {(institutionFilter || jurisdictionFilter || companyFilter) && (
+                <button onClick={() => {
+                  setInstitutionFilter("");
+                  setJurisdictionFilter("");
+                  setCompanyFilter("");
+                }}
+                  style={{padding:"9px 12px",borderRadius:9,border:"1px solid #e2e8f0",
+                    background:"#fff",fontSize:12.5,fontWeight:700,cursor:"pointer",
+                    color:"#64748b",fontFamily:"inherit",height:38}}>
+                  Limpiar filtros
+                </button>
+              )}
+              <div style={{fontSize:11.5,color:"#94a3b8",fontWeight:700,
+                alignSelf:"center",justifySelf:"end"}}>
+                {filteredRows.length} de {rows.length} referencias
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ESTADO VACÍO INICIAL */}
@@ -410,6 +589,181 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                   {s}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {searched && !loading && rows.length > 0 && filteredRows.length === 0 && (
+          <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
+            padding:"28px",textAlign:"center",boxShadow:"0 1px 3px rgba(15,23,42,.04)"}}>
+            <div style={{fontSize:15,fontWeight:800,color:"#0f2444",marginBottom:6}}>
+              Sin coincidencias con los filtros aplicados
+            </div>
+            <div style={{fontSize:12.5,color:"#94a3b8",marginBottom:14}}>
+              La búsqueda encontró referencias, pero ninguna coincide con institución, jurisdicción o empresa seleccionada.
+            </div>
+            <button onClick={() => {
+              setInstitutionFilter("");
+              setJurisdictionFilter("");
+              setCompanyFilter("");
+            }}
+              style={{padding:"8px 13px",borderRadius:9,border:"1px solid #bfdbfe",
+                background:"#eff6ff",fontSize:12.5,fontWeight:800,cursor:"pointer",
+                color:"#185fa5",fontFamily:"inherit"}}>
+              Ver todas las referencias
+            </button>
+          </div>
+        )}
+
+        {/* RESUMEN DE DECISIÓN */}
+        {decision && !loading && (
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",
+            gap:12,alignItems:"stretch"}}>
+            <div style={{background:"linear-gradient(135deg,#0f2444 0%,#185fa5 100%)",
+              borderRadius:14,border:"1px solid rgba(255,255,255,.18)",
+              boxShadow:"0 12px 28px rgba(15,36,68,.18)",padding:"18px 20px",
+              color:"#fff",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",right:-40,top:-70,width:210,height:210,
+                borderRadius:"50%",background:"rgba(255,255,255,.08)",pointerEvents:"none"}}/>
+              <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",
+                position:"relative",zIndex:1,flexWrap:"wrap"}}>
+                <div>
+                  <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",
+                    letterSpacing:".8px",color:"rgba(255,255,255,.62)",marginBottom:5}}>
+                    Resumen de decisión
+                  </div>
+                  <h3 style={{margin:"0 0 4px",fontSize:24,lineHeight:1.1,letterSpacing:"-.6px"}}>
+                    {decision.estado.label}
+                  </h3>
+                  <p style={{margin:0,fontSize:12.5,lineHeight:1.5,color:"rgba(255,255,255,.72)",
+                    maxWidth:680}}>
+                    {decision.diffMercado !== null
+                      ? decision.diffMercado <= 0
+                        ? `Nuestra última referencia está ${Math.abs(decision.diffMercado)}% por debajo o al nivel del mínimo comparable.`
+                        : `Nuestra última referencia está ${decision.diffMercado}% sobre el mínimo comparable.`
+                      : "El sistema encontró referencias, pero falta una cotización propia comparable para contrastar posición."}
+                  </p>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                  <span style={{background:decision.estado.bg,color:decision.estado.color,
+                    borderRadius:999,padding:"6px 11px",fontWeight:800,fontSize:11}}>
+                    {decision.estado.label}
+                  </span>
+                  <span style={{background:decision.confianza.bg,color:decision.confianza.color,
+                    borderRadius:999,padding:"6px 11px",fontWeight:800,fontSize:11}}>
+                    Confianza {decision.confianza.level}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",
+                gap:10,marginTop:18,position:"relative",zIndex:1}}>
+                {[
+                  {
+                    label:"Precio sugerido",
+                    value:decision.sugerido ? fullMoney(decision.sugerido) : "—",
+                    sub:decision.motivo,
+                  },
+                  {
+                    label:"Última MediCross",
+                    value:decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—",
+                    sub:decision.ultimaPropia
+                      ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}`
+                      : "Sin cotización propia comparable.",
+                  },
+                  {
+                    label:"Mínimo mercado",
+                    value:decision.minimoMercado ? fullMoney(decision.minimoMercado) : "—",
+                    sub:decision.minimoRow
+                      ? `${decision.minimoRow.empresa} · ${fmtDate(rowDate(decision.minimoRow))}`
+                      : "Sin competidores comparables.",
+                  },
+                  {
+                    label:"Última adjudicación",
+                    value:decision.ultimaAdjudicada ? comparableMoney(decision.ultimaAdjudicada) : "—",
+                    sub:decision.ultimaAdjudicada
+                      ? `${decision.ultimaAdjudicada.empresa} · ${fmtDate(rowDate(decision.ultimaAdjudicada))}`
+                      : "No hay adjudicación cargada.",
+                  },
+                ].map(item => (
+                  <div key={item.label} style={{background:"rgba(255,255,255,.1)",
+                    border:"1px solid rgba(255,255,255,.16)",borderRadius:11,
+                    padding:"12px 13px",minHeight:86,backdropFilter:"blur(8px)"}}>
+                    <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",
+                      letterSpacing:".7px",color:"rgba(255,255,255,.58)",marginBottom:5}}>
+                      {item.label}
+                    </div>
+                    <div style={{fontFamily:"DM Mono,monospace",fontWeight:800,
+                      fontSize:19,lineHeight:1.15,color:"#fff",marginBottom:5}}>
+                      {item.value}
+                    </div>
+                    <div style={{fontSize:10.5,lineHeight:1.35,color:"rgba(255,255,255,.66)"}}>
+                      {item.sub}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
+              boxShadow:"0 2px 8px rgba(15,23,42,.06)",padding:"16px 18px",
+              display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center"}}>
+                <div>
+                  <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",
+                    letterSpacing:".7px",color:"#94a3b8"}}>
+                    Últimos competidores
+                  </div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
+                    Referencia rápida por empresa
+                  </div>
+                </div>
+                <span style={{fontSize:11,fontWeight:800,color:"#185fa5",
+                  background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:999,
+                  padding:"5px 9px"}}>
+                  {decision.refs} refs.
+                </span>
+              </div>
+              {decision.competidores.length > 0 ? (
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {decision.competidores.map(row => (
+                    <div key={`${row.empresa}-${row.id}`} style={{display:"grid",
+                      gridTemplateColumns:"minmax(0,1fr) auto",gap:10,alignItems:"center",
+                      padding:"10px 0",borderTop:"1px solid #f0f4f8"}}>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontSize:12.5,fontWeight:800,color:"#0f2444",
+                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {row.empresa}
+                        </div>
+                        <div style={{fontSize:10.5,color:"#94a3b8",overflow:"hidden",
+                          textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {fmtDate(rowDate(row))} · {row.tenders?.institution || "Sin institución"}
+                        </div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"DM Mono,monospace",fontWeight:800,
+                          color:"#0f172a",fontSize:13}}>
+                          {comparableMoney(row)}
+                        </div>
+                        {decision.ultimaPropia && comparablePrice(decision.ultimaPropia) && (
+                          <div style={{fontSize:10,fontWeight:700,
+                            color:comparablePrice(row) < comparablePrice(decision.ultimaPropia)
+                              ? "#dc2626" : "#059669"}}>
+                            {comparablePrice(row) < comparablePrice(decision.ultimaPropia)
+                              ? `${Math.abs(Number(((comparablePrice(row) - comparablePrice(decision.ultimaPropia)) / comparablePrice(decision.ultimaPropia) * 100).toFixed(1)))}% menor`
+                              : `${Number(((comparablePrice(row) - comparablePrice(decision.ultimaPropia)) / comparablePrice(decision.ultimaPropia) * 100).toFixed(1))}% mayor`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{padding:"18px",borderRadius:10,background:"#f8fafc",
+                  border:"1px solid #e2e8f0",fontSize:12,color:"#64748b"}}>
+                  No hay referencias de competidores para esta búsqueda.
+                </div>
+              )}
             </div>
           </div>
         )}
