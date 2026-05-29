@@ -38,6 +38,10 @@ const MANAGER_MODULES = [
 ];
 
 const FULL_MODULES = MODULES.map(m => m.id);
+const MOBILE_CORE_MODULES = ["todayActions","visits","calendar","accounts","opportunities"];
+const MOBILE_MANAGER_MODULES = ["managerDashboard","todayActions","visits","calendar","accounts","opportunities","cotizador","tenders"];
+const MOBILE_QUOTES_MODULES = ["accounts","opportunities","tenders","cotizador"];
+const MOBILE_BI_MODULES = ["managerDashboard","importer","salesAnalytics"];
 
 const READ_ONLY_MODULES = [
   "managerDashboard","salesAnalytics","accounts","products","opportunities",
@@ -62,6 +66,7 @@ const PRESETS = [
     label: "Solo lectura",
     role: "seller",
     modules: READ_ONLY_MODULES,
+    mobileModules: ["managerDashboard","accounts","products","todayActions","calendar"],
     actions: ["view"],
     description: "Consulta CRM sin crear, editar, borrar ni exportar.",
   },
@@ -70,6 +75,7 @@ const PRESETS = [
     label: "Vendedor",
     role: "seller",
     modules: SELLER_MODULES,
+    mobileModules: MOBILE_CORE_MODULES,
     actions: ["view","create","edit"],
     description: "Carga visitas, clientes y oportunidades del circuito comercial.",
   },
@@ -78,6 +84,7 @@ const PRESETS = [
     label: "Gerente",
     role: "manager",
     modules: MANAGER_MODULES.filter(m => m !== "adminUsers"),
+    mobileModules: MOBILE_MANAGER_MODULES,
     actions: ["view","create","edit","export"],
     description: "Supervisa operación, tableros y exportaciones sin administrar usuarios.",
   },
@@ -86,6 +93,7 @@ const PRESETS = [
     label: "Cotizaciones",
     role: "seller",
     modules: QUOTES_MODULES,
+    mobileModules: MOBILE_QUOTES_MODULES,
     actions: ["view","create","edit","export"],
     description: "Foco en licitaciones, cotizador, precios y cuentas relacionadas.",
   },
@@ -94,6 +102,7 @@ const PRESETS = [
     label: "BI",
     role: "manager",
     modules: BI_MODULES,
+    mobileModules: MOBILE_BI_MODULES,
     actions: ["view","export"],
     description: "Acceso a análisis comercial, importación e indicadores ejecutivos.",
   },
@@ -102,6 +111,7 @@ const PRESETS = [
     label: "Admin",
     role: "super_admin",
     modules: FULL_MODULES,
+    mobileModules: MOBILE_MANAGER_MODULES,
     actions: ACTIONS.map(a => a.id),
     description: "Control total de módulos, roles, permisos y aprobaciones.",
   },
@@ -109,6 +119,7 @@ const PRESETS = [
 
 const OPTIONAL_PROFILE_FIELDS = [
   "allowed_actions",
+  "mobile_allowed_modules",
   "permission_preset",
   "approved_at",
   "approved_by",
@@ -125,6 +136,18 @@ function inferActions(user) {
   if (user.role === "super_admin") return ACTIONS.map(a => a.id);
   if (user.role === "manager") return ["view","create","edit","export"];
   return user.approved ? ["view","create","edit"] : ["view"];
+}
+
+function mobileModulesForUser(user) {
+  return Array.isArray(user.mobile_allowed_modules) ? user.mobile_allowed_modules : null;
+}
+
+function moduleEnabled(user, moduleId) {
+  return (user.allowed_modules || []).includes(moduleId);
+}
+
+function mobileModuleEnabled(user, moduleId) {
+  return (mobileModulesForUser(user) || []).includes(moduleId);
 }
 
 function formatDateTime(value) {
@@ -270,17 +293,41 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     setSavingId(userId);
     const { error, applied } = await persistProfileUpdate(userId, changes);
     if (error) { alert("Error actualizando usuario: " + error.message); setSavingId(null); return; }
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...applied, ...changes } : u));
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...applied } : u));
     logAdminEvent(event, userId, changes).then(loadAuditLogs).catch(() => {});
     setSavingId(null);
   }
 
   function toggleModule(user, moduleId) {
     const current = user.allowed_modules || [];
+    const currentMobile = mobileModulesForUser(user);
+    const removing = current.includes(moduleId);
     const next = current.includes(moduleId)
       ? current.filter(m => m !== moduleId)
       : [...current, moduleId];
-    updateUser(user.id, { allowed_modules: next }, "module_toggle");
+    const changes = { allowed_modules: next };
+    if (currentMobile) changes.mobile_allowed_modules = currentMobile.filter(m => next.includes(m));
+    if (removing && currentMobile?.includes(moduleId)) changes.mobile_allowed_modules = currentMobile.filter(m => m !== moduleId);
+    updateUser(user.id, changes, "module_toggle");
+  }
+
+  function toggleMobileModule(user, moduleId) {
+    if (!moduleEnabled(user, moduleId)) return;
+    const current = mobileModulesForUser(user) || [];
+    const next = current.includes(moduleId)
+      ? current.filter(m => m !== moduleId)
+      : [...current, moduleId];
+    updateUser(user.id, { mobile_allowed_modules: next }, "mobile_module_toggle");
+  }
+
+  function copyDesktopToMobile(user) {
+    updateUser(user.id, { mobile_allowed_modules: user.allowed_modules || [] }, "mobile_modules_copy_desktop");
+  }
+
+  function applyMobilePreset(user) {
+    const desktop = new Set(user.allowed_modules || []);
+    const next = MOBILE_CORE_MODULES.filter(moduleId => desktop.has(moduleId));
+    updateUser(user.id, { mobile_allowed_modules: next }, "mobile_modules_preset");
   }
 
   function approveUser(user)  {
@@ -307,6 +354,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
       is_active: true,
       role: preset.role,
       allowed_modules: preset.modules,
+      mobile_allowed_modules: (preset.mobileModules || []).filter(m => preset.modules.includes(m)),
       allowed_actions: preset.actions,
       permission_preset: preset.id,
       approved_at: new Date().toISOString(),
@@ -434,7 +482,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                         <th>Estado</th>
                         <th>Preset</th>
                         <th>Permisos</th>
-                        <th>Módulos</th>
+                        <th>Módulos PC / móvil</th>
                         <th>Auditoría</th>
                         <th>Archivar</th>
                       </tr>
@@ -459,6 +507,9 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                           onApprove={() => approveUser(user)}
                           onBlock={() => blockUser(user)}
                           onToggleModule={moduleId => toggleModule(user, moduleId)}
+                          onToggleMobileModule={moduleId => toggleMobileModule(user, moduleId)}
+                          onCopyDesktopToMobile={() => copyDesktopToMobile(user)}
+                          onApplyMobilePreset={() => applyMobilePreset(user)}
                           onApplyPreset={presetId => applyPreset(user, presetId)}
                           onArchive={() => setDeleteTarget(user)}
                         />
@@ -488,6 +539,9 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                       onApprove={() => approveUser(user)}
                       onBlock={() => blockUser(user)}
                       onToggleModule={moduleId => toggleModule(user, moduleId)}
+                      onToggleMobileModule={moduleId => toggleMobileModule(user, moduleId)}
+                      onCopyDesktopToMobile={() => copyDesktopToMobile(user)}
+                      onApplyMobilePreset={() => applyMobilePreset(user)}
                       onApplyPreset={presetId => applyPreset(user, presetId)}
                       onArchive={() => setDeleteTarget(user)}
                     />
@@ -559,7 +613,20 @@ function Kpi({ title, value, accent }) {
 }
 
 /* ─── Fila usuario activo ────────────────────────────────────────────── */
-function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onToggleModule, onApplyPreset, onArchive }) {
+function UserRow({
+  user,
+  saving,
+  currentProfile,
+  onRoleChange,
+  onApprove,
+  onBlock,
+  onToggleModule,
+  onToggleMobileModule,
+  onCopyDesktopToMobile,
+  onApplyMobilePreset,
+  onApplyPreset,
+  onArchive,
+}) {
   const isSelf = user.id === currentProfile?.id;
   const isSuperAdmin = user.role === "super_admin";
   const userActions = inferActions(user);
@@ -611,18 +678,14 @@ function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBloc
         </div>
       </td>
       <td>
-        <div className="module-grid">
-          {MODULES.map(m => (
-            <label key={m.id} className="module-check">
-              <input type="checkbox"
-                checked={(user.allowed_modules||[]).includes(m.id)}
-                onChange={() => onToggleModule(m.id)}
-                disabled={saving}
-              />
-              <span>{m.label}</span>
-            </label>
-          ))}
-        </div>
+        <ModuleScopeGrid
+          user={user}
+          saving={saving}
+          onToggleModule={onToggleModule}
+          onToggleMobileModule={onToggleMobileModule}
+          onCopyDesktopToMobile={onCopyDesktopToMobile}
+          onApplyMobilePreset={onApplyMobilePreset}
+        />
       </td>
       <td>
         <div className="adm-meta-list">
@@ -649,6 +712,68 @@ function UserRow({ user, saving, currentProfile, onRoleChange, onApprove, onBloc
         )}
       </td>
     </tr>
+  );
+}
+
+function ModuleScopeGrid({
+  user,
+  saving,
+  onToggleModule,
+  onToggleMobileModule,
+  onCopyDesktopToMobile,
+  onApplyMobilePreset,
+}) {
+  const hasMobileConfig = Array.isArray(user.mobile_allowed_modules);
+
+  return (
+    <div className="adm-module-scope">
+      <div className="adm-module-scope__head">
+        <span>PC</span>
+        <small>Permisos completos</small>
+      </div>
+      <div className="module-grid">
+        {MODULES.map(m => (
+          <label key={m.id} className="module-check">
+            <input
+              type="checkbox"
+              checked={moduleEnabled(user, m.id)}
+              onChange={() => onToggleModule(m.id)}
+              disabled={saving}
+            />
+            <span>{m.label}</span>
+          </label>
+        ))}
+      </div>
+
+      <div className="adm-module-scope__head adm-module-scope__head--mobile">
+        <span>Móvil</span>
+        <small>{hasMobileConfig ? "Menú reducido en teléfono/PWA" : "Sin filtro: usa módulos PC"}</small>
+      </div>
+      <div className="adm-module-tools">
+        <button type="button" onClick={onApplyMobilePreset} disabled={saving}>
+          Operativo móvil
+        </button>
+        <button type="button" onClick={onCopyDesktopToMobile} disabled={saving}>
+          Copiar PC
+        </button>
+      </div>
+      <div className="module-grid module-grid--mobile">
+        {MODULES.map(m => {
+          const desktopEnabled = moduleEnabled(user, m.id);
+          return (
+            <label key={m.id} className={`module-check ${!desktopEnabled ? "disabled" : ""}`}>
+              <input
+                type="checkbox"
+                checked={mobileModuleEnabled(user, m.id)}
+                onChange={() => onToggleMobileModule(m.id)}
+                disabled={saving || !desktopEnabled}
+              />
+              <span>{m.label}</span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -684,7 +809,20 @@ function ArchivedRow({ user, saving, onRestore }) {
 }
 
 /* ─── Mobile usuario activo ──────────────────────────────────────────── */
-function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove, onBlock, onToggleModule, onApplyPreset, onArchive }) {
+function UserMobileCard({
+  user,
+  saving,
+  currentProfile,
+  onRoleChange,
+  onApprove,
+  onBlock,
+  onToggleModule,
+  onToggleMobileModule,
+  onCopyDesktopToMobile,
+  onApplyMobilePreset,
+  onApplyPreset,
+  onArchive,
+}) {
   const isSelf = user.id === currentProfile?.id;
   const isSuperAdmin = user.role === "super_admin";
   const userActions = inferActions(user);
@@ -731,18 +869,14 @@ function UserMobileCard({ user, saving, currentProfile, onRoleChange, onApprove,
           </span>
         ))}
       </div>
-      <div className="module-grid">
-        {MODULES.map(m => (
-          <label key={m.id} className="module-check">
-            <input type="checkbox"
-              checked={(user.allowed_modules||[]).includes(m.id)}
-              onChange={() => onToggleModule(m.id)}
-              disabled={saving}
-            />
-            <span>{m.label}</span>
-          </label>
-        ))}
-      </div>
+      <ModuleScopeGrid
+        user={user}
+        saving={saving}
+        onToggleModule={onToggleModule}
+        onToggleMobileModule={onToggleMobileModule}
+        onCopyDesktopToMobile={onCopyDesktopToMobile}
+        onApplyMobilePreset={onApplyMobilePreset}
+      />
       <div className="adm-meta-list">
         <span>Último acceso: {formatDateTime(user.last_sign_in_at || user.last_access_at)}</span>
         <span>Creado: {formatDateTime(user.created_at)}</span>

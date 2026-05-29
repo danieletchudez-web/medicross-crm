@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
+import { canOpenModule } from "./lib/moduleAccess";
 
 import LoginPage    from "./pages/LoginPage";
 import CRMAssistant from "./components/CRMAssistant";
@@ -109,6 +110,7 @@ export default function App() {
   const [crmData,      setCrmData]      = useState(null);
   const [transitionKey, setTransitionKey] = useState(0);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const routeLoadingTimer = useRef(null);
   // Pages that have been visited at least once (stay mounted forever after)
   const [mounted,      setMounted]      = useState(() => new Set([localStorage.getItem("crm_current_page") || "managerDashboard"]));
@@ -125,6 +127,15 @@ export default function App() {
   }, []);
 
   useEffect(() => { if (session) loadCrmData(); }, [page, session]);
+
+  useEffect(() => {
+    const media = window.matchMedia?.("(max-width: 768px)");
+    if (!media) return;
+    const onChange = e => setIsMobileViewport(e.matches);
+    setIsMobileViewport(media.matches);
+    media.addEventListener?.("change", onChange);
+    return () => media.removeEventListener?.("change", onChange);
+  }, []);
 
   // Silently preload the most visited modules after auth resolves
   useEffect(() => {
@@ -249,11 +260,8 @@ export default function App() {
   }
 
   function canOpenPage(pageId) {
-    if (safeProfile.role === "super_admin") return true;
     if (["notifications","settings"].includes(pageId)) return true;
-    if (pageId === "adminUsers") return false;
-    if (pageId === "managerDashboard") return true;
-    return (safeProfile.allowed_modules || []).includes(pageId);
+    return canOpenModule(safeProfile, pageId, isMobileViewport);
   }
 
   const currentPage = canOpenPage(page) ? page : "managerDashboard";

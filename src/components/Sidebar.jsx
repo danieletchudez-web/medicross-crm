@@ -24,6 +24,7 @@ import {
   Target,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import { canOpenModule } from "../lib/moduleAccess";
 import "./Sidebar.css";
 import logoImg from "../assets/logo.jpg";
 
@@ -109,6 +110,7 @@ export default function Sidebar({ profile, onNavigate }) {
     catch { return []; }
   });
   const [tooltip, setTooltip] = useState(null); // { label, y }
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const dragIdx = useRef(null);
 
   useEffect(() => {
@@ -125,6 +127,15 @@ export default function Sidebar({ profile, onNavigate }) {
     const fn = () => { if (window.innerWidth > 768) setMenuOpen(false); };
     window.addEventListener("resize", fn);
     return () => window.removeEventListener("resize", fn);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia?.("(max-width: 768px)");
+    if (!media) return;
+    const onChange = e => setIsMobileViewport(e.matches);
+    setIsMobileViewport(media.matches);
+    media.addEventListener?.("change", onChange);
+    return () => media.removeEventListener?.("change", onChange);
   }, []);
 
   // Sync collapsed state across all mounted Sidebar instances (keep-alive)
@@ -146,9 +157,7 @@ export default function Sidebar({ profile, onNavigate }) {
   function hideTooltip() { setTooltip(null); }
 
   const canSee = module => {
-    if (profile?.role === "super_admin") return true;
-    if (module === "adminUsers") return false;
-    return profile?.allowed_modules?.includes(module);
+    return canOpenModule(profile, module, isMobileViewport);
   };
 
   async function logout() {
@@ -231,33 +240,39 @@ export default function Sidebar({ profile, onNavigate }) {
 
           <nav className="sidebar-nav">
             <div className="sidebar-quick">
-              <button
-                onClick={() => handleNavigate("visits")}
-                aria-label="Nueva visita"
-                onMouseEnter={(e) => showTooltip(e, "Nueva visita")}
-                onMouseLeave={hideTooltip}
-              >
-                <span><CalendarPlus aria-hidden="true"/></span>
-                <em>Visita</em>
-              </button>
-              <button
-                onClick={() => handleNavigate("accounts")}
-                aria-label="Nuevo cliente"
-                onMouseEnter={(e) => showTooltip(e, "Nuevo cliente")}
-                onMouseLeave={hideTooltip}
-              >
-                <span><Building2 aria-hidden="true"/></span>
-                <em>Cliente</em>
-              </button>
-              <button
-                onClick={() => handleNavigate("opportunities")}
-                aria-label="Nueva oportunidad"
-                onMouseEnter={(e) => showTooltip(e, "Nueva oportunidad")}
-                onMouseLeave={hideTooltip}
-              >
-                <span><CircleDollarSign aria-hidden="true"/></span>
-                <em>Oportunidad</em>
-              </button>
+              {canSee("visits") && (
+                <button
+                  onClick={() => handleNavigate("visits")}
+                  aria-label="Nueva visita"
+                  onMouseEnter={(e) => showTooltip(e, "Nueva visita")}
+                  onMouseLeave={hideTooltip}
+                >
+                  <span><CalendarPlus aria-hidden="true"/></span>
+                  <em>Visita</em>
+                </button>
+              )}
+              {canSee("accounts") && (
+                <button
+                  onClick={() => handleNavigate("accounts")}
+                  aria-label="Nuevo cliente"
+                  onMouseEnter={(e) => showTooltip(e, "Nuevo cliente")}
+                  onMouseLeave={hideTooltip}
+                >
+                  <span><Building2 aria-hidden="true"/></span>
+                  <em>Cliente</em>
+                </button>
+              )}
+              {canSee("opportunities") && (
+                <button
+                  onClick={() => handleNavigate("opportunities")}
+                  aria-label="Nueva oportunidad"
+                  onMouseEnter={(e) => showTooltip(e, "Nueva oportunidad")}
+                  onMouseLeave={hideTooltip}
+                >
+                  <span><CircleDollarSign aria-hidden="true"/></span>
+                  <em>Oportunidad</em>
+                </button>
+              )}
             </div>
 
             <div className="sidebar-nav__group-row">

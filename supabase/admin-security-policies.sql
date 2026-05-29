@@ -5,6 +5,7 @@ alter table public.profiles enable row level security;
 
 alter table public.profiles
   add column if not exists allowed_actions text[] default array['view']::text[],
+  add column if not exists mobile_allowed_modules text[],
   add column if not exists permission_preset text,
   add column if not exists approved_at timestamptz,
   add column if not exists approved_by uuid,
