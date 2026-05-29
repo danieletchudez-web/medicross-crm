@@ -1,6 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import logoImg from "../assets/logo.jpg";
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+const PASSWORD_RULES = [
+  { id: "length",  label: "Mínimo 10 caracteres",            test: v => v.length >= 10 },
+  { id: "upper",   label: "Una letra mayúscula",              test: v => /[A-ZÁÉÍÓÚÑ]/.test(v) },
+  { id: "lower",   label: "Una letra minúscula",              test: v => /[a-záéíóúñ]/.test(v) },
+  { id: "number",  label: "Un número",                        test: v => /\d/.test(v) },
+  { id: "special", label: "Un carácter especial: @ # $ % ...", test: v => /[^A-Za-zÁÉÍÓÚÑáéíóúñ0-9]/.test(v) },
+];
+
+function isStrongPassword(password) {
+  return PASSWORD_RULES.every(rule => rule.test(password));
+}
+
+function PasswordChecklist({ password }) {
+  return (
+    <div style={s.passwordBox}>
+      {PASSWORD_RULES.map(rule => {
+        const ok = rule.test(password);
+        return (
+          <span key={rule.id} style={{ ...s.passwordRule, color: ok ? "#047857" : "#64748b" }}>
+            <span style={{ ...s.ruleDot, background: ok ? "#10b981" : "#cbd5e1" }} />
+            {rule.label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function makeCaptchaQuestion() {
+  const a = Math.floor(Math.random() * 7) + 3;
+  const b = Math.floor(Math.random() * 6) + 2;
+  return { label: `${a} + ${b}`, answer: String(a + b) };
+}
 
 export default function LoginPage() {
   const [mode, setMode]         = useState("login");
@@ -9,22 +44,96 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading]   = useState(false);
   const [message, setMessage]   = useState(null);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaQuestion, setCaptchaQuestion] = useState(() => makeCaptchaQuestion());
+  const captchaRef = useRef(null);
+  const widgetRef = useRef(null);
+
+  const needsCaptcha = ["login", "register", "reset"].includes(mode);
+  const localCaptchaOk = captchaAnswer.trim() === captchaQuestion.answer;
+  const captchaOk = TURNSTILE_SITE_KEY ? Boolean(captchaToken) : localCaptchaOk;
+  const strongPassword = useMemo(() => isStrongPassword(password), [password]);
 
   useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) setMode("recovery");
   }, []);
 
+  useEffect(() => {
+    setCaptchaToken("");
+    setCaptchaAnswer("");
+    setCaptchaQuestion(makeCaptchaQuestion());
+  }, [mode]);
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY || !needsCaptcha || !captchaRef.current) return;
+
+    function renderTurnstile() {
+      if (!window.turnstile || !captchaRef.current || widgetRef.current) return;
+      widgetRef.current = window.turnstile.render(captchaRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        theme: "light",
+        callback: token => setCaptchaToken(token),
+        "expired-callback": () => setCaptchaToken(""),
+        "error-callback": () => setCaptchaToken(""),
+      });
+    }
+
+    if (!document.querySelector('script[data-turnstile="true"]')) {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      script.dataset.turnstile = "true";
+      script.onload = renderTurnstile;
+      document.head.appendChild(script);
+    } else {
+      renderTurnstile();
+    }
+
+    return () => {
+      if (widgetRef.current && window.turnstile) {
+        window.turnstile.remove(widgetRef.current);
+        widgetRef.current = null;
+      }
+    };
+  }, [mode, needsCaptcha]);
+
+  function refreshLocalCaptcha() {
+    setCaptchaQuestion(makeCaptchaQuestion());
+    setCaptchaAnswer("");
+  }
+
+  function requireCaptcha() {
+    if (!needsCaptcha || captchaOk) return true;
+    setMessage({ type: "error", text: "Completá la verificación de seguridad antes de continuar." });
+    return false;
+  }
+
+  function buildCaptchaOptions(extra = {}) {
+    return {
+      ...extra,
+      ...(captchaToken ? { captchaToken } : {}),
+    };
+  }
+
   async function handleLogin(e) {
     e.preventDefault();
+    if (!requireCaptcha()) return;
     setLoading(true);
     setMessage(null);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: buildCaptchaOptions(),
+    });
 
     if (error) {
       setMessage({ type: "error", text: "Email o contraseña incorrectos." });
       setLoading(false);
+      refreshLocalCaptcha();
       return;
     }
 
@@ -33,18 +142,24 @@ export default function LoginPage() {
 
   async function handleRegister(e) {
     e.preventDefault();
+    if (!strongPassword) {
+      setMessage({ type: "error", text: "La contraseña debe cumplir todos los requisitos de seguridad." });
+      return;
+    }
+    if (!requireCaptcha()) return;
     setLoading(true);
     setMessage(null);
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: buildCaptchaOptions({ data: { full_name: fullName } }),
     });
 
     if (error) {
       setMessage({ type: "error", text: error.message });
       setLoading(false);
+      refreshLocalCaptcha();
       return;
     }
 
@@ -69,11 +184,13 @@ export default function LoginPage() {
 
   async function handleResetEmail(e) {
     e.preventDefault();
+    if (!requireCaptcha()) return;
     setLoading(true);
     setMessage(null);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
+      captchaToken: captchaToken || undefined,
     });
 
     if (error) {
@@ -86,6 +203,10 @@ export default function LoginPage() {
 
   async function handleNewPassword(e) {
     e.preventDefault();
+    if (!strongPassword) {
+      setMessage({ type: "error", text: "La nueva contraseña debe cumplir todos los requisitos de seguridad." });
+      return;
+    }
     setLoading(true);
     setMessage(null);
 
@@ -108,6 +229,45 @@ export default function LoginPage() {
     reset:    "Recuperar contraseña",
     recovery: "Definí tu nueva contraseña",
   };
+
+  const changeMode = next => {
+    setMode(next);
+    setMessage(null);
+  };
+
+  function CaptchaBox() {
+    if (!needsCaptcha) return null;
+
+    if (TURNSTILE_SITE_KEY) {
+      return (
+        <div style={s.captchaBox}>
+          <span style={s.captchaLabel}>Verificación de seguridad</span>
+          <div ref={captchaRef} style={s.turnstileBox} />
+        </div>
+      );
+    }
+
+    return (
+      <div style={s.captchaBox}>
+        <label style={s.captchaLabel}>Verificación de seguridad</label>
+        <div style={s.captchaRow}>
+          <span style={s.captchaQuestion}>{captchaQuestion.label} =</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={captchaAnswer}
+            onChange={(e) => setCaptchaAnswer(e.target.value)}
+            placeholder="Resultado"
+            required
+            style={{ ...s.input, margin: 0 }}
+          />
+          <button type="button" style={s.captchaRefresh} onClick={refreshLocalCaptcha} aria-label="Cambiar captcha">
+            ↻
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={s.container}>
@@ -132,11 +292,12 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} style={s.form}>
             <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required style={s.input} />
             <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required style={s.input} />
-            <button style={s.button} disabled={loading}>{loading ? "Ingresando..." : "Ingresar"}</button>
+            <CaptchaBox />
+            <button style={s.button} disabled={loading || !captchaOk}>{loading ? "Ingresando..." : "Ingresar"}</button>
             <div style={s.links}>
-              <button type="button" style={s.linkBtn} onClick={() => { setMode("register"); setMessage(null); }}>Crear cuenta</button>
+              <button type="button" style={s.linkBtn} onClick={() => changeMode("register")}>Crear cuenta</button>
               <span style={s.dot}>·</span>
-              <button type="button" style={s.linkBtn} onClick={() => { setMode("reset"); setMessage(null); }}>Olvidé mi contraseña</button>
+              <button type="button" style={s.linkBtn} onClick={() => changeMode("reset")}>Olvidé mi contraseña</button>
             </div>
           </form>
         )}
@@ -146,10 +307,12 @@ export default function LoginPage() {
           <form onSubmit={handleRegister} style={s.form}>
             <input type="text" placeholder="Nombre completo" value={fullName} onChange={(e) => setFullName(e.target.value)} required style={s.input} />
             <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required style={s.input} />
-            <input type="password" placeholder="Contraseña (mín. 6 caracteres)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} style={s.input} />
+            <input type="password" placeholder="Contraseña segura" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} style={s.input} />
+            <PasswordChecklist password={password} />
+            <CaptchaBox />
             <p style={s.hint}>Tu cuenta quedará pendiente de aprobación por un administrador.</p>
-            <button style={s.button} disabled={loading}>{loading ? "Registrando..." : "Crear cuenta"}</button>
-            <button type="button" style={s.linkBtn} onClick={() => { setMode("login"); setMessage(null); }}>← Volver al login</button>
+            <button style={s.button} disabled={loading || !strongPassword || !captchaOk}>{loading ? "Registrando..." : "Crear cuenta"}</button>
+            <button type="button" style={s.linkBtn} onClick={() => changeMode("login")}>← Volver al login</button>
           </form>
         )}
 
@@ -157,16 +320,18 @@ export default function LoginPage() {
         {mode === "reset" && (
           <form onSubmit={handleResetEmail} style={s.form}>
             <input type="email" placeholder="Tu email" value={email} onChange={(e) => setEmail(e.target.value)} required style={s.input} />
-            <button style={s.button} disabled={loading}>{loading ? "Enviando..." : "Enviar email de recuperación"}</button>
-            <button type="button" style={s.linkBtn} onClick={() => { setMode("login"); setMessage(null); }}>← Volver al login</button>
+            <CaptchaBox />
+            <button style={s.button} disabled={loading || !captchaOk}>{loading ? "Enviando..." : "Enviar email de recuperación"}</button>
+            <button type="button" style={s.linkBtn} onClick={() => changeMode("login")}>← Volver al login</button>
           </form>
         )}
 
         {/* RECOVERY */}
         {mode === "recovery" && (
           <form onSubmit={handleNewPassword} style={s.form}>
-            <input type="password" placeholder="Nueva contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} style={s.input} />
-            <button style={s.button} disabled={loading}>{loading ? "Guardando..." : "Guardar nueva contraseña"}</button>
+            <input type="password" placeholder="Nueva contraseña segura" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} style={s.input} />
+            <PasswordChecklist password={password} />
+            <button style={s.button} disabled={loading || !strongPassword}>{loading ? "Guardando..." : "Guardar nueva contraseña"}</button>
           </form>
         )}
 
@@ -273,6 +438,72 @@ const s = {
     color: "#94a3b8",
     textAlign: "left",
     lineHeight: 1.4,
+  },
+  passwordBox: {
+    display: "grid",
+    gap: 5,
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "#f8fafc",
+    border: "1px solid #e8ecf2",
+    textAlign: "left",
+  },
+  passwordRule: {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    fontSize: 11.5,
+    fontWeight: 650,
+    lineHeight: 1.2,
+  },
+  ruleDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+    flexShrink: 0,
+  },
+  captchaBox: {
+    display: "grid",
+    gap: 7,
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "#f8fafc",
+    border: "1px solid #e8ecf2",
+    textAlign: "left",
+  },
+  captchaLabel: {
+    color: "#64748b",
+    fontSize: 11.5,
+    fontWeight: 750,
+  },
+  captchaRow: {
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr) 34px",
+    alignItems: "center",
+    gap: 8,
+  },
+  captchaQuestion: {
+    color: "#0f2444",
+    fontSize: 14,
+    fontWeight: 800,
+    whiteSpace: "nowrap",
+  },
+  captchaRefresh: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    border: "1px solid #dbe4ef",
+    background: "#ffffff",
+    color: "#2563eb",
+    fontWeight: 900,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  turnstileBox: {
+    minHeight: 65,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
   credit: {
     marginTop: 20,
