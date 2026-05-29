@@ -452,6 +452,70 @@
   font-weight: 600;
 }
 
+.adm-save-hint {
+  display: inline-flex;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 750;
+  margin-bottom: 8px;
+}
+
+.adm-save-actions {
+  display: grid;
+  gap: 6px;
+  min-width: 132px;
+  margin-bottom: 8px;
+}
+
+.adm-save-actions span {
+  color: #d97706;
+  font-size: 10.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .35px;
+}
+
+.adm-save-btn,
+.adm-discard-btn {
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  font-weight: 850;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+}
+
+.adm-save-btn {
+  border: 1px solid #1d4ed8;
+  background: #0f2444;
+  color: #ffffff;
+}
+
+.adm-save-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.adm-discard-btn {
+  border: 1px solid #e8ecf2;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.adm-discard-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #334155;
+}
+
+.adm-save-btn:disabled,
+.adm-discard-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* ─── Status pill ────────────────────────────────────────────────────── */
 .status-pill {
   display: inline-flex;
@@ -572,6 +636,23 @@
   color: #1d4ed8;
 }
 .quick-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.quick-actions .adm-save-actions {
+  width: 100%;
+  margin: 0;
+}
+
+.quick-actions .adm-save-btn {
+  border-color: #1d4ed8;
+  background: #0f2444;
+  color: #ffffff;
+}
+
+.quick-actions .adm-discard-btn {
+  border-color: #e8ecf2;
+  background: #ffffff;
+  color: #64748b;
+}
 
 /* ─── Mobile list ────────────────────────────────────────────────────── */
 .admin-mobile-list { display: none; }

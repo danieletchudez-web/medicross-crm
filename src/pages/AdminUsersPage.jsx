@@ -219,6 +219,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   const [userView,    setUserView]    = useState("pending");
   const [deleteTarget,setDeleteTarget]= useState(null);
   const [auditLogs,   setAuditLogs]   = useState([]);
+  const [drafts,      setDrafts]      = useState({});
   const canAdminUsers = profile?.role === "super_admin";
 
   useEffect(() => { loadUsers(); loadAuditLogs(); }, []);
@@ -228,7 +229,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     const { data, error } = await supabase
       .from("profiles").select("*").order("created_at", { ascending: false });
     if (error) { alert("Error cargando usuarios: " + error.message); setUsers([]); }
-    else setUsers(data || []);
+    else { setUsers(data || []); setDrafts({}); }
     setLoading(false);
   }
 
@@ -288,14 +289,50 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     return { error, applied: withUpdatedAt };
   }
 
-  async function updateUser(userId, changes, event = "profile_update") {
+  function getDraftUser(user) {
+    return { ...user, ...(drafts[user.id] || {}) };
+  }
+
+  function hasDraft(userId) {
+    return Boolean(drafts[userId] && Object.keys(drafts[userId]).length);
+  }
+
+  function queueUserChange(user, changes) {
     if (!canAdminUsers) return;
+    setDrafts(prev => ({
+      ...prev,
+      [user.id]: { ...(prev[user.id] || {}), ...changes },
+    }));
+  }
+
+  function discardDraft(userId) {
+    setDrafts(prev => {
+      const next = { ...prev };
+      delete next[userId];
+      return next;
+    });
+  }
+
+  async function updateUser(userId, changes, event = "profile_update") {
+    if (!canAdminUsers) return false;
     setSavingId(userId);
     const { error, applied } = await persistProfileUpdate(userId, changes);
-    if (error) { alert("Error actualizando usuario: " + error.message); setSavingId(null); return; }
+    if (error) {
+      alert("Error actualizando usuario: " + error.message);
+      setSavingId(null);
+      return false;
+    }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...applied } : u));
     logAdminEvent(event, userId, changes).then(loadAuditLogs).catch(() => {});
     setSavingId(null);
+    return true;
+  }
+
+  async function saveDraft(user) {
+    const changes = drafts[user.id];
+    if (!changes || Object.keys(changes).length === 0) return;
+    const ok = await updateUser(user.id, changes, "profile_changes_saved");
+    if (ok) discardDraft(user.id);
   }
 
   function toggleModule(user, moduleId) {
@@ -308,7 +345,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     const changes = { allowed_modules: next };
     if (currentMobile) changes.mobile_allowed_modules = currentMobile.filter(m => next.includes(m));
     if (removing && currentMobile?.includes(moduleId)) changes.mobile_allowed_modules = currentMobile.filter(m => m !== moduleId);
-    updateUser(user.id, changes, "module_toggle");
+    queueUserChange(user, changes);
   }
 
   function toggleMobileModule(user, moduleId) {
@@ -317,39 +354,39 @@ export default function AdminUsersPage({ profile, onNavigate }) {
     const next = current.includes(moduleId)
       ? current.filter(m => m !== moduleId)
       : [...current, moduleId];
-    updateUser(user.id, { mobile_allowed_modules: next }, "mobile_module_toggle");
+    queueUserChange(user, { mobile_allowed_modules: next });
   }
 
   function copyDesktopToMobile(user) {
-    updateUser(user.id, { mobile_allowed_modules: user.allowed_modules || [] }, "mobile_modules_copy_desktop");
+    queueUserChange(user, { mobile_allowed_modules: user.allowed_modules || [] });
   }
 
   function applyMobilePreset(user) {
     const desktop = new Set(user.allowed_modules || []);
     const next = MOBILE_CORE_MODULES.filter(moduleId => desktop.has(moduleId));
-    updateUser(user.id, { mobile_allowed_modules: next }, "mobile_modules_preset");
+    queueUserChange(user, { mobile_allowed_modules: next });
   }
 
   function approveUser(user)  {
-    updateUser(user.id, {
+    queueUserChange(user, {
       approved: true,
       is_active: true,
       approved_at: new Date().toISOString(),
       approved_by: profile?.id || null,
-    }, "user_approved");
+    });
   }
 
   function blockUser(user) {
-    updateUser(user.id, {
+    queueUserChange(user, {
       approved: false,
       is_active: false,
-    }, "login_temporarily_blocked");
+    });
   }
 
   function applyPreset(user, presetId) {
     const preset = PRESETS.find(p => p.id === presetId);
     if (!preset) return;
-    updateUser(user.id, {
+    queueUserChange(user, {
       approved: true,
       is_active: true,
       role: preset.role,
@@ -359,7 +396,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
       permission_preset: preset.id,
       approved_at: new Date().toISOString(),
       approved_by: profile?.id || null,
-    }, `preset_${preset.id}`);
+    });
   }
 
   async function archiveUser(user) {
@@ -484,69 +521,77 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                         <th>Permisos</th>
                         <th>Módulos PC / móvil</th>
                         <th>Auditoría</th>
-                        <th>Archivar</th>
+                        <th>Acciones</th>
                       </tr>
                     )}
                   </thead>
                   <tbody>
-                    {filteredUsers.map(user => (
-                      userView === "archived" ? (
-                        <ArchivedRow
-                          key={user.id}
-                          user={user}
-                          saving={savingId === user.id}
-                          onRestore={() => restoreUser(user)}
-                        />
-                      ) : (
-                        <UserRow
-                          key={user.id}
-                          user={user}
-                          saving={savingId === user.id}
-                          currentProfile={profile}
-                          onRoleChange={role => updateUser(user.id, { role }, "role_change")}
-                          onApprove={() => approveUser(user)}
-                          onBlock={() => blockUser(user)}
-                          onToggleModule={moduleId => toggleModule(user, moduleId)}
-                          onToggleMobileModule={moduleId => toggleMobileModule(user, moduleId)}
-                          onCopyDesktopToMobile={() => copyDesktopToMobile(user)}
-                          onApplyMobilePreset={() => applyMobilePreset(user)}
-                          onApplyPreset={presetId => applyPreset(user, presetId)}
-                          onArchive={() => setDeleteTarget(user)}
-                        />
-                      )
-                    ))}
+                    {filteredUsers.map(user => {
+                      const draftUser = getDraftUser(user);
+                      return userView === "archived" ? (
+                          <ArchivedRow
+                            key={user.id}
+                            user={user}
+                            saving={savingId === user.id}
+                            onRestore={() => restoreUser(user)}
+                          />
+                        ) : (
+                          <UserRow
+                            key={user.id}
+                            user={draftUser}
+                            saving={savingId === user.id}
+                            hasPendingChanges={hasDraft(user.id)}
+                            currentProfile={profile}
+                            onRoleChange={role => queueUserChange(draftUser, { role })}
+                            onApprove={() => approveUser(draftUser)}
+                            onBlock={() => blockUser(draftUser)}
+                            onToggleModule={moduleId => toggleModule(draftUser, moduleId)}
+                            onToggleMobileModule={moduleId => toggleMobileModule(draftUser, moduleId)}
+                            onCopyDesktopToMobile={() => copyDesktopToMobile(draftUser)}
+                            onApplyMobilePreset={() => applyMobilePreset(draftUser)}
+                            onApplyPreset={presetId => applyPreset(draftUser, presetId)}
+                            onSaveChanges={() => saveDraft(user)}
+                            onDiscardChanges={() => discardDraft(user.id)}
+                            onArchive={() => setDeleteTarget(user)}
+                          />
+                        );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               {/* Mobile */}
               <div className="admin-mobile-list">
-                {filteredUsers.map(user => (
-                  userView === "archived" ? (
-                    <ArchivedMobileCard
-                      key={user.id}
-                      user={user}
-                      saving={savingId === user.id}
-                      onRestore={() => restoreUser(user)}
-                    />
-                  ) : (
-                    <UserMobileCard
-                      key={user.id}
-                      user={user}
-                      saving={savingId === user.id}
-                      currentProfile={profile}
-                      onRoleChange={role => updateUser(user.id, { role }, "role_change")}
-                      onApprove={() => approveUser(user)}
-                      onBlock={() => blockUser(user)}
-                      onToggleModule={moduleId => toggleModule(user, moduleId)}
-                      onToggleMobileModule={moduleId => toggleMobileModule(user, moduleId)}
-                      onCopyDesktopToMobile={() => copyDesktopToMobile(user)}
-                      onApplyMobilePreset={() => applyMobilePreset(user)}
-                      onApplyPreset={presetId => applyPreset(user, presetId)}
-                      onArchive={() => setDeleteTarget(user)}
-                    />
-                  )
-                ))}
+                {filteredUsers.map(user => {
+                  const draftUser = getDraftUser(user);
+                  return userView === "archived" ? (
+                      <ArchivedMobileCard
+                        key={user.id}
+                        user={user}
+                        saving={savingId === user.id}
+                        onRestore={() => restoreUser(user)}
+                      />
+                    ) : (
+                      <UserMobileCard
+                        key={user.id}
+                        user={draftUser}
+                        saving={savingId === user.id}
+                        hasPendingChanges={hasDraft(user.id)}
+                        currentProfile={profile}
+                        onRoleChange={role => queueUserChange(draftUser, { role })}
+                        onApprove={() => approveUser(draftUser)}
+                        onBlock={() => blockUser(draftUser)}
+                        onToggleModule={moduleId => toggleModule(draftUser, moduleId)}
+                        onToggleMobileModule={moduleId => toggleMobileModule(draftUser, moduleId)}
+                        onCopyDesktopToMobile={() => copyDesktopToMobile(draftUser)}
+                        onApplyMobilePreset={() => applyMobilePreset(draftUser)}
+                        onApplyPreset={presetId => applyPreset(draftUser, presetId)}
+                        onSaveChanges={() => saveDraft(user)}
+                        onDiscardChanges={() => discardDraft(user.id)}
+                        onArchive={() => setDeleteTarget(user)}
+                      />
+                    );
+                })}
               </div>
             </>
           )}
@@ -625,6 +670,9 @@ function UserRow({
   onCopyDesktopToMobile,
   onApplyMobilePreset,
   onApplyPreset,
+  hasPendingChanges,
+  onSaveChanges,
+  onDiscardChanges,
   onArchive,
 }) {
   const isSelf = user.id === currentProfile?.id;
@@ -696,6 +744,12 @@ function UserRow({
         </div>
       </td>
       <td>
+        <PendingChangeActions
+          visible={hasPendingChanges}
+          saving={saving}
+          onSave={onSaveChanges}
+          onDiscard={onDiscardChanges}
+        />
         {!isSelf && !isSuperAdmin ? (
           <button
             className="adm-archive-btn"
@@ -712,6 +766,24 @@ function UserRow({
         )}
       </td>
     </tr>
+  );
+}
+
+function PendingChangeActions({ visible, saving, onSave, onDiscard }) {
+  if (!visible) {
+    return <span className="adm-save-hint">Sin cambios</span>;
+  }
+
+  return (
+    <div className="adm-save-actions">
+      <span>Cambios pendientes</span>
+      <button type="button" className="adm-save-btn" onClick={onSave} disabled={saving}>
+        {saving ? "Guardando..." : "Guardar cambios"}
+      </button>
+      <button type="button" className="adm-discard-btn" onClick={onDiscard} disabled={saving}>
+        Descartar
+      </button>
+    </div>
   );
 }
 
@@ -821,6 +893,9 @@ function UserMobileCard({
   onCopyDesktopToMobile,
   onApplyMobilePreset,
   onApplyPreset,
+  hasPendingChanges,
+  onSaveChanges,
+  onDiscardChanges,
   onArchive,
 }) {
   const isSelf = user.id === currentProfile?.id;
@@ -883,6 +958,12 @@ function UserMobileCard({
         <span>Aprobado: {formatDateTime(user.approved_at)}</span>
       </div>
       <div className="quick-actions">
+        <PendingChangeActions
+          visible={hasPendingChanges}
+          saving={saving}
+          onSave={onSaveChanges}
+          onDiscard={onDiscardChanges}
+        />
         {!isSelf && !isSuperAdmin && (
           <button className="adm-archive-btn" onClick={onArchive} disabled={saving}>
             Archivar
