@@ -14,6 +14,23 @@ function fullMoney(v) {
   return "$" + n.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+function comparablePrice(rowOrValue) {
+  const value = typeof rowOrValue === "object" ? rowOrValue?.precio_unitario : rowOrValue;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
+function comparableMoney(v) {
+  const n = comparablePrice(v);
+  return n === null ? "—" : fullMoney(n);
+}
+
+function pctVsMin(value, min) {
+  const price = comparablePrice(value);
+  if (price === null || !min || price === min) return null;
+  return ((price - min) / min * 100).toFixed(1);
+}
+
 function compactMoney(v) {
   const n = Number(v || 0); if (!n) return "—";
   if (n >= 1_000_000_000) return `$${(n/1_000_000_000).toFixed(1).replace(".",",")} MM`;
@@ -146,18 +163,24 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       byTenderReng[key].push(r);
     });
     let minimoCount = 0;
+    let renglonesComparables = 0;
     Object.values(byTenderReng).forEach(grupo => {
-      const min = Math.min(...grupo.map(r => r.precio_unitario).filter(Boolean));
+      const precios = grupo.map(comparablePrice).filter(p => p !== null);
+      const min = precios.length ? Math.min(...precios) : null;
+      if (min === null) return;
+      renglonesComparables++;
       const nuestra = grupo.find(r => r.es_nuestra_oferta);
-      if (nuestra && nuestra.precio_unitario === min) minimoCount++;
+      if (comparablePrice(nuestra) === min) minimoCount++;
     });
-    const totalRenglones = Object.keys(byTenderReng).length;
+    const totalRenglones = renglonesComparables;
     const preciosNuestros = nuestras
       .filter(r => r.tenders?.end_date)
       .sort((a, b) => a.tenders.end_date.localeCompare(b.tenders.end_date))
-      .map(r => ({ fecha: r.tenders.end_date, precio: r.precio_unitario, hospital: r.tenders.institution }));
-    const avgNuestro = nuestras.length
-      ? nuestras.reduce((s, r) => s + Number(r.precio_unitario || 0), 0) / nuestras.length : null;
+      .map(r => ({ fecha: r.tenders.end_date, precio: comparablePrice(r), hospital: r.tenders.institution }))
+      .filter(r => r.precio !== null);
+    const preciosValidosNuestros = nuestras.map(comparablePrice).filter(p => p !== null);
+    const avgNuestro = preciosValidosNuestros.length
+      ? preciosValidosNuestros.reduce((s, p) => s + p, 0) / preciosValidosNuestros.length : null;
     let tendencia = null;
     if (preciosNuestros.length >= 2) {
       const mid  = Math.floor(preciosNuestros.length / 2);
@@ -177,7 +200,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   }, [rows]);
 
   function precioMinRenglon(filas) {
-    const precios = filas.map(f => f.precio_unitario).filter(Boolean);
+    const precios = filas.map(comparablePrice).filter(p => p !== null);
     return precios.length ? Math.min(...precios) : null;
   }
 
@@ -559,8 +582,17 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
             {Object.entries(grupo.renglones).map(([reng, data]) => {
               const min = precioMinRenglon(data.filas);
               const nuestra = data.filas.find(f => f.es_nuestra_oferta);
-              const ganamos = nuestra && nuestra.precio_unitario === min;
-              const empresasReng = [...data.filas].sort((a, b) => a.precio_unitario - b.precio_unitario);
+              const nuestraPrice = comparablePrice(nuestra);
+              const ganamos = min !== null && nuestraPrice === min;
+              const nuestraDiff = pctVsMin(nuestra, min);
+              const empresasReng = [...data.filas].sort((a, b) => {
+                const pa = comparablePrice(a);
+                const pb = comparablePrice(b);
+                if (pa === null && pb === null) return String(a.empresa || "").localeCompare(String(b.empresa || ""));
+                if (pa === null) return 1;
+                if (pb === null) return -1;
+                return pa - pb;
+              });
               return (
                 <div key={reng} style={{borderTop:"1px solid #f0f4f8"}}>
                   <div style={{padding:"10px 18px 8px",background:"#f8fafc",
@@ -578,9 +610,13 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                     {nuestra && (
                       <span style={{fontSize:10,fontWeight:700,borderRadius:20,padding:"3px 10px",
                         whiteSpace:"nowrap",flexShrink:0,
-                        background:ganamos?"#d4edda":"#fde8e8",
-                        color:ganamos?"#166534":"#7f1d1d"}}>
-                        {ganamos?"✓ Precio mínimo":`+${((nuestra.precio_unitario-min)/min*100).toFixed(1)}% sobre mínimo`}
+                        background:nuestraPrice === null || min === null ? "#e2e8f0" : ganamos ? "#d4edda" : "#fde8e8",
+                        color:nuestraPrice === null || min === null ? "#64748b" : ganamos ? "#166534" : "#7f1d1d"}}>
+                        {nuestraPrice === null || min === null
+                          ? "Sin precio comparable"
+                          : ganamos
+                            ? "✓ Precio mínimo"
+                            : `+${nuestraDiff}% sobre mínimo`}
                       </span>
                     )}
                   </div>
@@ -599,8 +635,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                       <tbody>
                         {empresasReng.map((f, i) => {
                           const esNuestra = f.es_nuestra_oferta;
-                          const esMin = f.precio_unitario === min;
-                          const diff = min&&!esMin?((f.precio_unitario-min)/min*100).toFixed(1):null;
+                          const price = comparablePrice(f);
+                          const esMin = min !== null && price === min;
+                          const diff = pctVsMin(f, min);
                           return (
                             <tr key={f.id} style={{
                               background:esNuestra?"#eff6ff":f.adjudicado?"#f0fdf4":i%2===0?"#fff":"#fafbfc",
@@ -611,9 +648,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                               </td>
                               <td style={{padding:"10px 14px",textAlign:"right",
                                 fontFamily:"DM Mono,monospace",fontWeight:700,
-                                color:esMin?"#166534":"#0f172a"}}>
+                                color:esMin?"#166534":price === null ? "#94a3b8" : "#0f172a"}}>
                                 {esMin&&<span style={{marginRight:4,fontSize:10}}>🏆</span>}
-                                {fullMoney(f.precio_unitario)}
+                                {comparableMoney(f.precio_unitario)}
                               </td>
                               <td style={{padding:"10px 14px",textAlign:"right",color:"#64748b"}}>{f.cantidad}</td>
                               <td style={{padding:"10px 14px",textAlign:"right",
@@ -621,7 +658,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                                 {fullMoney(f.total_ars)}
                               </td>
                               <td style={{padding:"10px 14px",textAlign:"center"}}>
-                                {esMin
+                                {price === null || min === null
+                                  ? <span style={{fontSize:10,background:"#eef2f7",color:"#64748b",
+                                      borderRadius:20,padding:"3px 10px",fontWeight:700}}>—</span>
+                                  : esMin
                                   ?<span style={{fontSize:10,background:"#d4edda",color:"#166534",
                                       borderRadius:20,padding:"3px 10px",fontWeight:700}}>Mínimo</span>
                                   :<span style={{fontSize:10,background:"#fde8e8",color:"#7f1d1d",

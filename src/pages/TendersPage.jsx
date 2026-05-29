@@ -70,6 +70,23 @@ function fullMoney(v) {
   return "$" + n.toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 
+function comparablePrice(rowOrValue) {
+  const value = typeof rowOrValue === "object" ? rowOrValue?.precio_unitario : rowOrValue;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
+function comparableMoney(v) {
+  const n = comparablePrice(v);
+  return n === null ? "—" : fullMoney(n);
+}
+
+function pctVsMin(value, min) {
+  const price = comparablePrice(value);
+  if (price === null || !min || price === min) return null;
+  return ((price - min) / min * 100).toFixed(1);
+}
+
 function daysUntil(d) {
   if (!d) return null;
   const now = new Date(); now.setHours(0,0,0,0);
@@ -642,7 +659,7 @@ function Comparativa({ tenderId, tenderInfo }) {
   }, [rows]);
 
   function precioMin(renglon) {
-    const precios = Object.values(matriz[renglon] || {}).map(r => r.precio_unitario).filter(Boolean);
+    const precios = Object.values(matriz[renglon] || {}).map(comparablePrice).filter(p => p !== null);
     return precios.length ? Math.min(...precios) : null;
   }
 
@@ -662,9 +679,10 @@ function Comparativa({ tenderId, tenderInfo }) {
       const COLOR_WHITE   = "FFFFFF";
 
       const fmtPct = (v, min) => {
-        if (!v || !min) return "";
-        if (v === min)  return "PRECIO MÍNIMO";
-        return "+" + ((v - min) / min * 100).toFixed(1) + "%";
+        const price = comparablePrice(v);
+        if (price === null || !min) return "";
+        if (price === min)  return "PRECIO MÍNIMO";
+        return "+" + pctVsMin(price, min) + "%";
       };
 
       const h1 = [
@@ -720,7 +738,7 @@ function Comparativa({ tenderId, tenderInfo }) {
           const ref = XLSX.utils.encode_cell({r:ri+1,c:ci});
           if (!ws2[ref]) ws2[ref]={v:val??"",t:val===null?"s":typeof val==="number"?"n":"s"};
           const esNuestra=ci>=2&&empresas[ci-2]?.toUpperCase().includes(NUESTRA_EMPRESA);
-          const esMenor=ci>=2&&val===min&&val!==null;
+          const esMenor=ci>=2&&comparablePrice(val)===min&&min!==null;
           const bgColor=esNuestra?COLOR_NUESTRA:ri%2===0?COLOR_WHITE:COLOR_ALT;
           ws2[ref].s={fill:{fgColor:{rgb:esMenor?COLOR_ADJ:bgColor}},font:{bold:esMenor,color:{rgb:esMenor?COLOR_MIN:"0F172A"},sz:10},alignment:{horizontal:ci>=2?"right":ci===0?"center":"left",vertical:"center"},numFmt:ci>=2?"#,##0":undefined,border:{bottom:{style:"thin",color:{rgb:"E2E8F0"}},right:{style:"thin",color:{rgb:"E2E8F0"}}}};
         });
@@ -732,7 +750,7 @@ function Comparativa({ tenderId, tenderInfo }) {
         const nuestra=rows.find(r=>r.renglon===reng&&r.es_nuestra_oferta);
         const min=precioMin(reng);
         const ganador=rows.find(r=>r.renglon===reng&&r.adjudicado);
-        const empMenor=rows.find(r=>r.renglon===reng&&r.precio_unitario===min);
+        const empMenor=rows.find(r=>r.renglon===reng&&comparablePrice(r)===min);
         const descRow=Object.values(matriz[reng]||{})[0];
         return [reng,descRow?.descripcion||"",nuestra?.precio_unitario||null,min||null,nuestra?fmtPct(nuestra.precio_unitario,min):"Sin oferta",empMenor?.empresa||"",ganador?.empresa||""];
       });
@@ -764,7 +782,7 @@ function Comparativa({ tenderId, tenderInfo }) {
         ["Hoja 3","Resumen de posición — nuestra oferta vs precio mínimo por renglón"],
         [""],["TOTALES"],[""],
         ["Total de renglones",renglones.length],["Total de empresas",empresas.length],["Total de ofertas",rows.length],
-        ["Renglones donde fuimos precio mínimo",renglones.filter(reng=>{const n=rows.find(r=>r.renglon===reng&&r.es_nuestra_oferta);return n&&n.precio_unitario===precioMin(reng);}).length],
+        ["Renglones donde fuimos precio mínimo",renglones.filter(reng=>{const n=rows.find(r=>r.renglon===reng&&r.es_nuestra_oferta);return n&&comparablePrice(n)===precioMin(reng);}).length],
       ];
       const ws4 = XLSX.utils.aoa_to_sheet(meta);
       ws4["!cols"] = [{wch:40},{wch:70}];
@@ -861,15 +879,16 @@ function Comparativa({ tenderId, tenderInfo }) {
                     {empresas.map(emp => {
                       const cell=matriz[reng]?.[emp];
                       const esNuestra=emp.toUpperCase().includes(NUESTRA_EMPRESA);
-                      const esMinimo=cell&&minPrecio&&cell.precio_unitario===minPrecio;
-                      const diff=(cell&&minPrecio&&!esMinimo)?((cell.precio_unitario-minPrecio)/minPrecio*100).toFixed(1):null;
+                      const price=cell ? comparablePrice(cell) : null;
+                      const esMinimo=cell&&minPrecio&&price===minPrecio;
+                      const diff=cell ? pctVsMin(cell,minPrecio) : null;
                       return (
                         <td key={emp} style={{padding:"10px 12px",textAlign:"right",borderLeft:"1px solid #f0f4f8",background:esNuestra?"#f0f7ff":cell?.adjudicado?"#f0fdf4":undefined}}>
                           {cell?(
                             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-                              <div style={{fontFamily:"DM Mono,monospace",fontWeight:700,fontSize:12,color:esMinimo?"#166534":"#334155"}}>
+                              <div style={{fontFamily:"DM Mono,monospace",fontWeight:700,fontSize:12,color:esMinimo?"#166534":price === null ? "#94a3b8" : "#334155"}}>
                                 {esMinimo&&<span style={{marginRight:4,fontSize:10}}>🏆</span>}
-                                {"$"+Math.round(cell.precio_unitario).toLocaleString("es-AR")}
+                                {comparableMoney(cell.precio_unitario)}
                               </div>
                               {diff&&<div style={{fontSize:9.5,color:"#f97316",fontWeight:600}}>+{diff}%</div>}
                               {cell.adjudicado&&<span style={{fontSize:9,background:"#d4edda",color:"#1a5c2f",borderRadius:4,padding:"1px 5px",fontWeight:700}}>ADJ</span>}
@@ -897,16 +916,19 @@ function Comparativa({ tenderId, tenderInfo }) {
             {renglones.map(reng => {
               const nuestra=rows.find(r=>r.renglon===reng&&r.es_nuestra_oferta);
               const minPrecio=precioMin(reng);
-              const ganamos=nuestra&&nuestra.precio_unitario===minPrecio;
-              const diff=(nuestra&&minPrecio&&!ganamos)?((nuestra.precio_unitario-minPrecio)/minPrecio*100).toFixed(1):null;
+              const nuestraPrice=nuestra ? comparablePrice(nuestra) : null;
+              const ganamos=nuestra&&minPrecio&&nuestraPrice===minPrecio;
+              const diff=nuestra ? pctVsMin(nuestra,minPrecio) : null;
               const ganador=rows.find(r=>r.renglon===reng&&r.adjudicado);
               return (
                 <div key={reng} style={{display:"flex",alignItems:"center",gap:10,fontSize:11.5}}>
                   <span style={{fontFamily:"DM Mono,monospace",fontWeight:700,color:"#0f2444",minWidth:28}}>R{reng}</span>
                   {nuestra?(
                     <>
-                      <span style={{color:ganamos?"#166534":"#334155",fontWeight:600,fontFamily:"DM Mono,monospace"}}>{"$"+Math.round(nuestra.precio_unitario).toLocaleString("es-AR")}</span>
-                      {ganamos
+                      <span style={{color:ganamos?"#166534":nuestraPrice === null ? "#94a3b8" : "#334155",fontWeight:600,fontFamily:"DM Mono,monospace"}}>{comparableMoney(nuestra.precio_unitario)}</span>
+                      {nuestraPrice === null || !minPrecio
+                        ? <span style={{background:"#eef2f7",color:"#64748b",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>Sin precio comparable</span>
+                        : ganamos
                         ?<span style={{background:"#d4edda",color:"#1a5c2f",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>✓ Precio mínimo</span>
                         :<span style={{background:"#fde8e8",color:"#7f1d1d",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>+{diff}% sobre mínimo</span>
                       }
