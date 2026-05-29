@@ -44,8 +44,28 @@ const VENDEDORES    = ["Monica Somosa","Daniel Etchudez","Soledad Cantero","Otro
 const ESTADOS       = ["borrador","enviada","seguimiento","negociacion","ganada","perdida","facturada","cobrada"];
 const ESTADO_LABELS = { borrador:"Borrador", enviada:"Enviada", seguimiento:"Seguimiento", negociacion:"Negociación", ganada:"Ganada", perdida:"Perdida", facturada:"Facturada", cobrada:"Cobrada" };
 
+function uniqueNames(names) {
+  const seen = new Set();
+  return names
+    .map(v => String(v || "").trim())
+    .filter(Boolean)
+    .filter(name => {
+      const key = name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function canQuoteUser(user) {
+  if (!user?.approved || user?.is_active === false) return false;
+  if (user.role === "super_admin") return true;
+  return Array.isArray(user.allowed_modules) && user.allowed_modules.includes("cotizador");
+}
+
 export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [vendedor,    setVendedor]    = useState(initialData?.vendedor    || "");
+  const [vendedores,  setVendedores]  = useState(VENDEDORES);
   const [tc,          setTc]          = useState("1425");
   const [fechaApert,  setFechaApert]  = useState(initialData?.fechaApert  || "");
   const [nroLicit,    setNroLicit]    = useState(initialData?.nroLicit    || "");
@@ -66,13 +86,37 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [loadingHist,   setLoadingHist]   = useState(false);
 
   useEffect(() => {
+    loadVendedores();
     if (!initialData?.vendedor) {
-      const vMatch = VENDEDORES.find(v => profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase()));
+      const vMatch = vendedores.find(v => profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase()));
       if (vMatch) setVendedor(vMatch);
     }
     if (initialData?.institucion || initialData?.nroLicit)
       showToast(`Cotización pre-cargada desde Licitaciones: ${initialData.institucion || initialData.nroLicit}`);
   }, []);
+
+  useEffect(() => {
+    if (initialData?.vendedor || vendedor) return;
+    const firstName = profile?.full_name?.split(" ")[0]?.toLowerCase();
+    if (!firstName) return;
+    const vMatch = vendedores.find(v => v.toLowerCase().includes(firstName));
+    if (vMatch) setVendedor(vMatch);
+  }, [vendedores, profile?.full_name, initialData?.vendedor, vendedor]);
+
+  async function loadVendedores() {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name,email,role,approved,is_active,allowed_modules")
+      .order("full_name", { ascending: true });
+
+    if (error) return;
+
+    const dynamicNames = (data || [])
+      .filter(canQuoteUser)
+      .map(u => u.full_name || u.email);
+
+    setVendedores(uniqueNames([...dynamicNames, ...VENDEDORES]));
+  }
 
   function showToast(msg, type = "ok") {
     setToast({ msg, type });
@@ -94,7 +138,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     setVendedor(""); setTc("1425"); setFechaApert(""); setNroLicit("");
     setInstitucion(""); setPlazoVenta(""); setMantOferta(""); setFormaCobro("");
     setRenglones([emptyR()]);
-    const vMatch = VENDEDORES.find(v => profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase()));
+    const vMatch = vendedores.find(v => profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase()));
     if (vMatch) setVendedor(vMatch);
     window.scrollTo(0,0);
   }
@@ -424,7 +468,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
             <div className="cot-field"><label>Vendedor</label>
               <select value={vendedor} onChange={e=>setVendedor(e.target.value)}>
                 <option value="">— Seleccionar —</option>
-                {VENDEDORES.map(v=><option key={v} value={v}>{v}</option>)}
+                {vendedores.map(v=><option key={v} value={v}>{v}</option>)}
               </select>
             </div>
             <div className="cot-field"><label>Tipo de cambio USD → ARS</label>
