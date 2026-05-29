@@ -9,6 +9,24 @@ const fARS   = (n) => "$ "   + Number(n||0).toLocaleString("es-AR",{minimumFract
 const fUSD   = (n) => "U$D " + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fPct   = (n) => Number(n||0).toFixed(1) + "%";
 const parseN = (s) => parseFloat(String(s||"").replace(",",".")) || 0;
+const parseQuoteNumber = (value) => {
+  const n = Number.parseInt(String(value || "").replace(/\D/g, ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+const formatQuoteNumber = (value) => {
+  const n = parseQuoteNumber(value);
+  return n ? String(n).padStart(6, "0") : null;
+};
+const normalizeFilePart = (value, fallback = "sin_dato") => {
+  const clean = String(value || fallback)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .substring(0, 48);
+  return clean || fallback;
+};
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 function calcR(r, tcGlobal) {
   const tc    = parseN(r.tcInd) > 0 ? parseN(r.tcInd) : tcGlobal;
@@ -118,6 +136,27 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     setVendedores(uniqueNames([...dynamicNames, ...VENDEDORES]));
   }
 
+  async function getNextQuoteNumber() {
+    const { data: numData, error: numError } = await supabase.rpc("next_quote_number");
+    const rpcNumber = parseQuoteNumber(numData);
+    if (!numError && rpcNumber) return rpcNumber;
+
+    const { data, error } = await supabase
+      .from("cotizaciones")
+      .select("quote_number,quote_num_formatted")
+      .order("quote_number", { ascending: false, nullsFirst: false })
+      .limit(20);
+
+    if (error) throw numError || error;
+
+    const maxNumber = (data || []).reduce((max, row) => {
+      const number = parseQuoteNumber(row.quote_number) || parseQuoteNumber(row.quote_num_formatted);
+      return number && number > max ? number : max;
+    }, 0);
+
+    return maxNumber + 1;
+  }
+
   function showToast(msg, type = "ok") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -164,25 +203,55 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     return snap;
   }
 
-  async function guardar() {
+  async function saveCotizacion({ silent = false } = {}) {
     setSaving(true);
     try {
       if (docId) {
-        const { error } = await supabase.from("cotizaciones").update(buildSnap()).eq("id", docId);
+        let quoteNumberToSave;
+        let quoteFormattedToSave;
+        if (!formatQuoteNumber(quoteNum)) {
+          quoteNumberToSave = await getNextQuoteNumber();
+          quoteFormattedToSave = formatQuoteNumber(quoteNumberToSave);
+        }
+        const { error } = await supabase
+          .from("cotizaciones")
+          .update(buildSnap(quoteNumberToSave, quoteFormattedToSave))
+          .eq("id", docId);
         if (error) throw error;
-        showToast(`Cotización #${quoteNum} actualizada ✓`);
+        if (quoteFormattedToSave) setQuoteNum(quoteFormattedToSave);
+        const savedQuoteNum = quoteFormattedToSave || quoteNum;
+        if (!silent) showToast(`Cotización #${savedQuoteNum} actualizada ✓`);
+        setSaving(false);
+        return { ok: true, quoteNum: savedQuoteNum };
       } else {
-        const { data: numData, error: numError } = await supabase.rpc("next_quote_number");
-        if (numError) throw numError;
-        const qNum = numData, qFormatted = String(qNum).padStart(6,"0");
+        const qNum = await getNextQuoteNumber();
+        const qFormatted = formatQuoteNumber(qNum);
+        if (!qFormatted) throw new Error("No se pudo generar un número de cotización válido.");
         const snap = { ...buildSnap(qNum, qFormatted), created_at: new Date().toISOString(), created_by: profile?.email||"desconocido", estado:"borrador", deleted:false };
         const { data: newRow, error } = await supabase.from("cotizaciones").insert([snap]).select().single();
         if (error) throw error;
         setDocId(newRow.id); setQuoteNum(qFormatted);
-        showToast(`Cotización #${qFormatted} guardada ✓`);
+        if (!silent) showToast(`Cotización #${qFormatted} guardada ✓`);
+        setSaving(false);
+        return { ok: true, quoteNum: qFormatted };
       }
-    } catch(e) { showToast("Error al guardar: " + e.message, "err"); }
-    setSaving(false);
+    } catch(e) {
+      showToast("Error al guardar: " + e.message, "err");
+      setSaving(false);
+      return { ok: false, error: e };
+    }
+  }
+
+  async function guardar() {
+    await saveCotizacion();
+  }
+
+  async function ensureSavedForExport() {
+    const validQuoteNum = formatQuoteNumber(quoteNum);
+    if (validQuoteNum) return validQuoteNum;
+    const result = await saveCotizacion({ silent: true });
+    if (!result.ok) return null;
+    return result.quoteNum;
   }
 
   async function abrirHistorial() {
@@ -221,7 +290,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   async function loadCotizacion(id) {
     const { data, error } = await supabase.from("cotizaciones").select("*").eq("id",id).single();
     if (error||!data) { showToast("No encontrada","err"); return; }
-    setDocId(data.id); setQuoteNum(data.quote_num_formatted||String(data.quote_number)||"?");
+    setDocId(data.id); setQuoteNum(formatQuoteNumber(data.quote_num_formatted) || formatQuoteNumber(data.quote_number) || "?");
     setVendedor(data.vendedor||""); setTc(String(data.tc||"1425"));
     setFechaApert(data.fecha_apert||""); setNroLicit(data.nro_licit||"");
     setInstitucion(data.institucion||""); setPlazoVenta(data.plazo_venta||"");
@@ -246,6 +315,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   async function exportPDF() {
     const hasData = renglones.some(r => parseN(r.costo) > 0);
     if (!hasData) { showToast("Ingresá el costo en al menos un renglón","err"); return; }
+    const exportQuoteNum = await ensureSavedForExport();
+    if (!exportQuoteNum) return;
     const tcN   = parseN(tc);
     const fecha = new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"long",year:"numeric"});
     const esc   = (t) => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[\\]/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)").replace(/[^\x20-\x7E]/g,"").substring(0,110);
@@ -288,7 +359,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       txt(cx, H-22, "ANALISIS DE PRECIOS", 15, true);
       ps.push(".30 .30 .30 rg");
       txt(cx, H-36, "Drogueria Medi-Cross S.R.L.", 9, false);
-      const numLabel = quoteNum ? "Cotizacion #"+quoteNum : "Sin guardar";
+      const numLabel = "Cotizacion #"+exportQuoteNum;
       ps.push(".20 .20 .20 rg");
       txt(cx, H-48, numLabel+" | "+fecha, 7.8, true);
       ps.push(".45 .45 .45 rg");
@@ -410,7 +481,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const tr=`trailer\n<< /Size ${totN} /Root 1 0 R >>\nstartxref\n${pdf.length}\n%%EOF`;
     const fin=s2u8(pdf+xs+tr);
 
-    const fn=`MC_${quoteNum||"nueva"}_${(institucion||"cotizacion").substring(0,20).replace(/\s/g,"_")}_${new Date().toISOString().slice(0,10)}.pdf`;
+    const fn=`Cotizacion_${exportQuoteNum}_${todayISO()}_${normalizeFilePart(institucion,"sin_institucion")}.pdf`;
     const blob=new Blob([fin],{type:"application/pdf"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");a.href=url;a.download=fn;
