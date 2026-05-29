@@ -52,6 +52,25 @@ function avg(values) {
   return values.length ? values.reduce((s, v) => s + v, 0) / values.length : null;
 }
 
+function normalizeProductText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function productKey(row) {
+  return normalizeProductText(row?.descripcion).slice(0, 160) || `renglon-${row?.renglon || "s/d"}`;
+}
+
+function shortText(value, max = 110) {
+  const text = String(value || "Sin descripción").trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
 function compactMoney(v) {
   const n = Number(v || 0); if (!n) return "—";
   if (n >= 1_000_000_000) return `$${(n/1_000_000_000).toFixed(1).replace(".",",")} MM`;
@@ -111,6 +130,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [institutionFilter, setInstitutionFilter] = useState("");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("");
   const [companyFilter, setCompanyFilter] = useState("");
+  const [selectedProductKey, setSelectedProductKey] = useState("");
   const inputRef   = useRef(null);
   const debounceRef = useRef(null);
 
@@ -142,6 +162,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     let result = data || [];
     if (desde) result = result.filter(r => r.tenders?.end_date && r.tenders.end_date >= desde);
     if (hasta) result = result.filter(r => r.tenders?.end_date && r.tenders.end_date <= hasta);
+    setSelectedProductKey("");
     setRows(result);
     setLoading(false);
   }, [query, desde, hasta]);
@@ -156,6 +177,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const limpiar = () => {
     setQuery(""); setDesde(""); setHasta("");
     setInstitutionFilter(""); setJurisdictionFilter(""); setCompanyFilter("");
+    setSelectedProductKey("");
     setRows([]); setSearched(false); setShowSug(false);
     inputRef.current?.focus();
   };
@@ -169,12 +191,92 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     return { institutions, jurisdictions, companies };
   }, [rows]);
 
-  const filteredRows = useMemo(() => rows.filter(row => {
+  const baseFilteredRows = useMemo(() => rows.filter(row => {
     if (institutionFilter && row.tenders?.institution !== institutionFilter) return false;
     if (jurisdictionFilter && row.tenders?.jurisdiction !== jurisdictionFilter) return false;
     if (companyFilter && row.empresa !== companyFilter) return false;
     return true;
   }), [rows, institutionFilter, jurisdictionFilter, companyFilter]);
+
+  const productGroups = useMemo(() => {
+    const groups = {};
+    baseFilteredRows.forEach(row => {
+      const key = productKey(row);
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          title: row.descripcion || "Sin descripción",
+          rows: [],
+          latestDate: "",
+          institutions: new Set(),
+          companies: new Set(),
+        };
+      }
+      groups[key].rows.push(row);
+      if (rowDate(row) > groups[key].latestDate) {
+        groups[key].latestDate = rowDate(row);
+        groups[key].title = row.descripcion || groups[key].title;
+      }
+      if (row.tenders?.institution) groups[key].institutions.add(row.tenders.institution);
+      if (row.empresa) groups[key].companies.add(row.empresa);
+    });
+
+    return Object.values(groups).map(group => {
+      const valid = group.rows
+        .map(row => ({ row, price: comparablePrice(row) }))
+        .filter(item => item.price !== null);
+      const ownRows = valid.filter(item => item.row.es_nuestra_oferta).map(item => item.row);
+      const compRows = valid.filter(item => !item.row.es_nuestra_oferta).map(item => item.row);
+      const minItem = valid.length
+        ? valid.reduce((best, item) => item.price < best.price ? item : best, valid[0])
+        : null;
+      const lastOwn = newestRow(ownRows);
+      const lastComp = newestRow(compRows);
+      const ownPrice = comparablePrice(lastOwn);
+      const minPrice = minItem?.price || null;
+      const diff = ownPrice !== null && minPrice
+        ? Number(((ownPrice - minPrice) / minPrice * 100).toFixed(1))
+        : null;
+      const status = ownPrice === null || !minPrice
+        ? { label: "Sin referencia propia", color: "#64748b", bg: "#f1f5f9" }
+        : ownPrice <= minPrice
+          ? { label: "Competitivo", color: "#059669", bg: "#dcfce7" }
+          : diff <= 8
+            ? { label: "Cerca", color: "#d97706", bg: "#fef3c7" }
+            : { label: "Revisar precio", color: "#dc2626", bg: "#fee2e2" };
+
+      return {
+        ...group,
+        refs: group.rows.length,
+        validRefs: valid.length,
+        minRow: minItem?.row || null,
+        minPrice,
+        lastOwn,
+        lastComp,
+        diff,
+        status,
+        institutionsCount: group.institutions.size,
+        companiesCount: group.companies.size,
+      };
+    }).sort((a, b) => {
+      if (b.latestDate !== a.latestDate) return b.latestDate.localeCompare(a.latestDate);
+      return b.validRefs - a.validRefs;
+    });
+  }, [baseFilteredRows]);
+
+  const activeProductKey = productGroups.some(group => group.key === selectedProductKey)
+    ? selectedProductKey
+    : productGroups.length === 1
+      ? productGroups[0].key
+      : "";
+
+  const focusedProduct = productGroups.find(group => group.key === activeProductKey) || null;
+
+  const filteredRows = useMemo(() => (
+    activeProductKey
+      ? baseFilteredRows.filter(row => productKey(row) === activeProductKey)
+      : baseFilteredRows
+  ), [baseFilteredRows, activeProductKey]);
 
   const agrupado = useMemo(() => {
     const map = {};
@@ -245,6 +347,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
   const pctMinimo = metricas && metricas.totalRenglones
     ? Math.round(metricas.minimoCount / metricas.totalRenglones * 100) : 0;
+
+  const showFocusedAnalysis = Boolean(activeProductKey);
 
   const decision = useMemo(() => {
     const validRows = filteredRows
@@ -519,6 +623,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                   setInstitutionFilter("");
                   setJurisdictionFilter("");
                   setCompanyFilter("");
+                  setSelectedProductKey("");
                 }}
                   style={{padding:"9px 12px",borderRadius:9,border:"1px solid #e2e8f0",
                     background:"#fff",fontSize:12.5,fontWeight:700,cursor:"pointer",
@@ -606,6 +711,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               setInstitutionFilter("");
               setJurisdictionFilter("");
               setCompanyFilter("");
+              setSelectedProductKey("");
             }}
               style={{padding:"8px 13px",borderRadius:9,border:"1px solid #bfdbfe",
                 background:"#eff6ff",fontSize:12.5,fontWeight:800,cursor:"pointer",
@@ -615,8 +721,105 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
           </div>
         )}
 
+        {searched && !loading && baseFilteredRows.length > 0 && (
+          <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
+            boxShadow:"0 2px 8px rgba(15,23,42,.06)",padding:"18px 20px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:12,
+              alignItems:"flex-start",flexWrap:"wrap",marginBottom:14}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",
+                  letterSpacing:".7px",color:"#94a3b8",marginBottom:4}}>
+                  Paso 1 · Elegí el producto exacto
+                </div>
+                <h3 style={{margin:0,fontSize:18,color:"#0f2444",letterSpacing:"-.35px"}}>
+                  {productGroups.length} producto{productGroups.length !== 1 ? "s" : ""} encontrado{productGroups.length !== 1 ? "s" : ""}
+                </h3>
+                <p style={{margin:"5px 0 0",fontSize:12.5,color:"#64748b",lineHeight:1.45}}>
+                  La búsqueda puede traer varios renglones distintos. Seleccioná uno para ver precio sugerido, último MediCross y competidores.
+                </p>
+              </div>
+              {focusedProduct && (
+                <button onClick={() => setSelectedProductKey("")}
+                  disabled={productGroups.length === 1}
+                  style={{padding:"8px 12px",borderRadius:9,border:"1px solid #e2e8f0",
+                    background:productGroups.length === 1 ? "#f8fafc" : "#fff",
+                    color:productGroups.length === 1 ? "#94a3b8" : "#64748b",
+                    fontSize:12,fontWeight:800,cursor:productGroups.length === 1 ? "default" : "pointer",
+                    fontFamily:"inherit"}}>
+                  Ver todos
+                </button>
+              )}
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",
+              gap:10}}>
+              {productGroups.slice(0, 12).map(group => {
+                const active = group.key === activeProductKey;
+                return (
+                  <button key={group.key} onClick={() => setSelectedProductKey(group.key)}
+                    style={{textAlign:"left",border:active?"1px solid #185fa5":"1px solid #e2e8f0",
+                      borderTop:active?"4px solid #185fa5":"4px solid #e2e8f0",
+                      background:active?"#eff6ff":"#fff",borderRadius:11,padding:"13px 14px",
+                      boxShadow:active?"0 8px 18px rgba(24,95,165,.14)":"0 1px 3px rgba(15,23,42,.04)",
+                      cursor:"pointer",fontFamily:"inherit",transition:"all .16s ease"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",gap:10,
+                      alignItems:"flex-start",marginBottom:8}}>
+                      <span style={{fontSize:10.5,fontWeight:900,color:group.status.color,
+                        background:group.status.bg,borderRadius:999,padding:"4px 8px",
+                        whiteSpace:"nowrap"}}>
+                        {group.status.label}
+                      </span>
+                      <span style={{fontSize:10.5,color:"#94a3b8",fontWeight:800,
+                        whiteSpace:"nowrap"}}>
+                        {group.validRefs} refs.
+                      </span>
+                    </div>
+                    <div style={{fontSize:13.5,fontWeight:800,color:"#0f2444",lineHeight:1.35,
+                      minHeight:38,marginBottom:10}}>
+                      {shortText(group.title, 92)}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",
+                      gap:8}}>
+                      <div style={{background:"#f8fafc",border:"1px solid #eef2f7",
+                        borderRadius:8,padding:"8px"}}>
+                        <div style={{fontSize:9.5,fontWeight:800,color:"#94a3b8",
+                          textTransform:"uppercase",letterSpacing:".5px"}}>Mínimo</div>
+                        <div style={{fontFamily:"DM Mono,monospace",fontWeight:900,
+                          color:"#0f172a",fontSize:13,marginTop:2}}>
+                          {group.minPrice ? fullMoney(group.minPrice) : "—"}
+                        </div>
+                      </div>
+                      <div style={{background:"#f8fafc",border:"1px solid #eef2f7",
+                        borderRadius:8,padding:"8px"}}>
+                        <div style={{fontSize:9.5,fontWeight:800,color:"#94a3b8",
+                          textTransform:"uppercase",letterSpacing:".5px"}}>MediCross</div>
+                        <div style={{fontFamily:"DM Mono,monospace",fontWeight:900,
+                          color:"#0f172a",fontSize:13,marginTop:2}}>
+                          {group.lastOwn ? comparableMoney(group.lastOwn) : "—"}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",gap:8,
+                      color:"#94a3b8",fontSize:10.5,fontWeight:700,marginTop:9}}>
+                      <span>{group.institutionsCount} institución{group.institutionsCount !== 1 ? "es" : ""}</span>
+                      <span>{group.companiesCount} empresa{group.companiesCount !== 1 ? "s" : ""}</span>
+                      <span>{fmtDate(group.latestDate)}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {productGroups.length > 12 && (
+              <div style={{marginTop:10,fontSize:12,color:"#94a3b8",fontWeight:700}}>
+                Mostrando los 12 productos más recientes. Usá institución, jurisdicción o una búsqueda más específica para acotar.
+              </div>
+            )}
+          </div>
+        )}
+
         {/* RESUMEN DE DECISIÓN */}
-        {decision && !loading && (
+        {showFocusedAnalysis && decision && !loading && (
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",
             gap:12,alignItems:"stretch"}}>
             <div style={{background:"linear-gradient(135deg,#0f2444 0%,#185fa5 100%)",
@@ -769,7 +972,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         )}
 
         {/* MÉTRICAS */}
-        {metricas && !loading && (
+        {showFocusedAnalysis && metricas && !loading && (
           <>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10}}>
               {[
@@ -892,7 +1095,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         )}
 
         {/* RESULTADOS */}
-        {!loading && agrupado.map((grupo, gi) => (
+        {showFocusedAnalysis && !loading && agrupado.map((grupo, gi) => (
           <div key={grupo.tender?.id||gi} style={{background:"#fff",borderRadius:12,
             border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,.06)"}}>
 
