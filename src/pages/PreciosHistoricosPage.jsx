@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
+import "./preciosHistoricos.css";
 
 function fmtDate(d) {
   if (!d) return "—";
@@ -118,6 +119,79 @@ function Sparkline({ datos, color = "#185fa5" }) {
   );
 }
 
+function MarketEvolutionChart({ data }) {
+  if (!data || data.length < 2) {
+    return (
+      <div className="ph-empty-chart">
+        Se necesitan al menos dos fechas comparables para leer tendencia de mercado.
+      </div>
+    );
+  }
+
+  const W = 760;
+  const H = 260;
+  const PAD_X = 46;
+  const PAD_Y = 28;
+  const seriesKeys = ["min", "avg", "max", "own"];
+  const values = data
+    .flatMap(point => seriesKeys.map(key => point[key]))
+    .filter(value => Number.isFinite(value) && value > 0);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const range = maxVal - minVal || 1;
+
+  const xFor = index => PAD_X + (index / Math.max(data.length - 1, 1)) * (W - PAD_X * 2);
+  const yFor = value => {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return PAD_Y + (1 - (value - minVal) / range) * (H - PAD_Y * 2);
+  };
+  const pathFor = key => data
+    .map((point, index) => {
+      const y = yFor(point[key]);
+      if (y === null) return null;
+      return `${index === 0 ? "M" : "L"} ${xFor(index).toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .filter(Boolean)
+    .join(" ");
+  const colors = {
+    min: "#10b981",
+    avg: "#3b82f6",
+    max: "#ef4444",
+    own: "#0f2444",
+  };
+
+  return (
+    <div className="ph-chart-wrap">
+      <svg className="ph-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Evolución de precios de mercado">
+        {[0, 1, 2, 3].map(i => {
+          const y = PAD_Y + i * ((H - PAD_Y * 2) / 3);
+          return <line key={i} x1={PAD_X} x2={W - PAD_X} y1={y} y2={y} className="ph-chart-grid"/>;
+        })}
+        {seriesKeys.map(key => (
+          <path key={key} d={pathFor(key)} fill="none" stroke={colors[key]} strokeWidth={key === "own" ? 3 : 2.4}
+            strokeLinecap="round" strokeLinejoin="round" className="ph-chart-line"/>
+        ))}
+        {data.map((point, index) => (
+          <g key={`${point.date}-${index}`}>
+            {seriesKeys.map(key => {
+              const y = yFor(point[key]);
+              if (y === null) return null;
+              return <circle key={key} cx={xFor(index)} cy={y} r={key === "own" ? 4 : 3} fill={colors[key]} className="ph-chart-dot"/>;
+            })}
+            <text x={xFor(index)} y={H - 4} textAnchor="middle" className="ph-chart-label">{fmtDate(point.date)}</text>
+          </g>
+        ))}
+      </svg>
+      <div className="ph-chart-legend">
+        <span><i style={{ background:"#10b981" }}/>Mínimo</span>
+        <span><i style={{ background:"#3b82f6" }}/>Promedio</span>
+        <span><i style={{ background:"#ef4444" }}/>Máximo</span>
+        <span><i style={{ background:"#0f2444" }}/>MediCross</span>
+      </div>
+    </div>
+  );
+}
+
 export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [query,    setQuery]    = useState("");
   const [desde,    setDesde]    = useState("");
@@ -131,8 +205,12 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [jurisdictionFilter, setJurisdictionFilter] = useState("");
   const [companyFilter, setCompanyFilter] = useState("");
   const [selectedProductKey, setSelectedProductKey] = useState("");
+  const [marketSearch, setMarketSearch] = useState("");
+  const [marketSort, setMarketSort] = useState({ key: "fecha", dir: "desc" });
+  const [marketPage, setMarketPage] = useState(1);
   const inputRef   = useRef(null);
   const debounceRef = useRef(null);
+  const marketPageSize = 10;
 
   useEffect(() => { setRecientes(getBusquedasRecientes()); }, []);
 
@@ -277,6 +355,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       ? baseFilteredRows.filter(row => productKey(row) === activeProductKey)
       : baseFilteredRows
   ), [baseFilteredRows, activeProductKey]);
+
+  useEffect(() => {
+    setMarketPage(1);
+  }, [marketSearch, activeProductKey, institutionFilter, jurisdictionFilter, companyFilter, rows.length]);
 
   const agrupado = useMemo(() => {
     const map = {};
@@ -430,11 +512,204 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     };
   }, [filteredRows]);
 
+  const marketTrend = useMemo(() => {
+    const byDate = {};
+    filteredRows.forEach(row => {
+      const price = comparablePrice(row);
+      const date = rowDate(row);
+      if (price === null || !date) return;
+      if (!byDate[date]) byDate[date] = { date, prices: [], own: [] };
+      byDate[date].prices.push(price);
+      if (row.es_nuestra_oferta) byDate[date].own.push(price);
+    });
+    return Object.values(byDate)
+      .map(point => ({
+        date: point.date,
+        min: Math.min(...point.prices),
+        avg: avg(point.prices),
+        max: Math.max(...point.prices),
+        own: avg(point.own),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredRows]);
+
+  const competitiveIntel = useMemo(() => {
+    const byGroup = {};
+    filteredRows.forEach(row => {
+      const key = `${row.tender_id}_${row.renglon}`;
+      if (!byGroup[key]) byGroup[key] = [];
+      byGroup[key].push(row);
+    });
+
+    const companies = {};
+    const ensureCompany = name => {
+      const key = name || "Sin empresa";
+      if (!companies[key]) {
+        companies[key] = { name: key, refs: 0, adjudicaciones: 0, minimos: 0, total: 0, lastDate: "" };
+      }
+      return companies[key];
+    };
+
+    filteredRows.forEach(row => {
+      const company = ensureCompany(row.empresa);
+      company.refs += 1;
+      company.total += Number(row.total_ars || 0);
+      if (row.adjudicado) company.adjudicaciones += 1;
+      if (rowDate(row) > company.lastDate) company.lastDate = rowDate(row);
+    });
+
+    Object.values(byGroup).forEach(groupRows => {
+      const min = precioMinRenglon(groupRows);
+      if (min === null) return;
+      groupRows.forEach(row => {
+        if (comparablePrice(row) === min) ensureCompany(row.empresa).minimos += 1;
+      });
+    });
+
+    const ranking = Object.values(companies)
+      .sort((a, b) => b.refs - a.refs || b.adjudicaciones - a.adjudicaciones || b.minimos - a.minimos);
+    const totalRefs = ranking.reduce((sum, item) => sum + item.refs, 0) || 1;
+    return {
+      ranking,
+      totalRefs,
+      frecuentes: [...ranking].sort((a, b) => b.refs - a.refs).slice(0, 5),
+      adjudicaciones: [...ranking].sort((a, b) => b.adjudicaciones - a.adjudicaciones || b.refs - a.refs).slice(0, 5),
+      minimos: [...ranking].sort((a, b) => b.minimos - a.minimos || b.refs - a.refs).slice(0, 5),
+    };
+  }, [filteredRows]);
+
+  const marketRows = useMemo(() => {
+    const byGroup = {};
+    filteredRows.forEach(row => {
+      const key = `${row.tender_id}_${row.renglon}`;
+      if (!byGroup[key]) byGroup[key] = [];
+      byGroup[key].push(row);
+    });
+    const minByGroup = Object.fromEntries(
+      Object.entries(byGroup).map(([key, groupRows]) => [key, precioMinRenglon(groupRows)])
+    );
+
+    const q = marketSearch.trim().toLowerCase();
+    const list = filteredRows.map(row => {
+      const min = minByGroup[`${row.tender_id}_${row.renglon}`];
+      const price = comparablePrice(row);
+      const diff = price !== null && min ? Number(((price - min) / min * 100).toFixed(1)) : null;
+      return {
+        id: row.id,
+        row,
+        fecha: rowDate(row),
+        institucion: row.tenders?.institution || "—",
+        jurisdiccion: row.tenders?.jurisdiction || "—",
+        expediente: row.tenders?.process_number || "—",
+        renglon: row.renglon || "—",
+        descripcion: row.descripcion || "",
+        empresa: row.empresa || "—",
+        precio: price,
+        cantidad: Number(row.cantidad || 0),
+        total: Number(row.total_ars || 0),
+        resultado: row.adjudicado ? "Adjudicada" : row.es_nuestra_oferta ? "MediCross" : "Presentada",
+        adjudicado: Boolean(row.adjudicado),
+        diff,
+        min,
+      };
+    }).filter(item => {
+      if (!q) return true;
+      return [
+        item.fecha, item.institucion, item.jurisdiccion, item.expediente,
+        item.renglon, item.descripcion, item.empresa, item.resultado,
+      ].join(" ").toLowerCase().includes(q);
+    });
+
+    const sortValue = item => {
+      switch (marketSort.key) {
+        case "fecha": return item.fecha || "";
+        case "institucion": return item.institucion;
+        case "jurisdiccion": return item.jurisdiccion;
+        case "expediente": return item.expediente;
+        case "renglon": return Number(item.renglon) || 0;
+        case "empresa": return item.empresa;
+        case "precio": return item.precio ?? Number.POSITIVE_INFINITY;
+        case "cantidad": return item.cantidad;
+        case "total": return item.total;
+        case "resultado": return item.resultado;
+        case "adjudicado": return item.adjudicado ? 1 : 0;
+        case "diff": return item.diff ?? Number.POSITIVE_INFINITY;
+        default: return item.fecha || "";
+      }
+    };
+
+    return [...list].sort((a, b) => {
+      const av = sortValue(a);
+      const bv = sortValue(b);
+      const dir = marketSort.dir === "asc" ? 1 : -1;
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+      return String(av).localeCompare(String(bv)) * dir;
+    });
+  }, [filteredRows, marketSearch, marketSort]);
+
+  const marketTotalPages = Math.max(1, Math.ceil(marketRows.length / marketPageSize));
+  const marketPageRows = marketRows.slice((marketPage - 1) * marketPageSize, marketPage * marketPageSize);
+
+  const insights = useMemo(() => {
+    if (!metricas || !decision) return [];
+    const firstTrend = marketTrend[0];
+    const lastTrend = marketTrend[marketTrend.length - 1];
+    const trendPct = firstTrend?.avg && lastTrend?.avg
+      ? Number(((lastTrend.avg - firstTrend.avg) / firstTrend.avg * 100).toFixed(1))
+      : null;
+    const leaderMin = competitiveIntel.minimos[0];
+    const leaderAdj = competitiveIntel.adjudicaciones.find(item => item.adjudicaciones > 0);
+    return [
+      {
+        label: "Cobertura histórica",
+        value: `${metricas.licitaciones} licitación${metricas.licitaciones !== 1 ? "es" : ""}`,
+        text: `${marketRows.length} referencias comparables para este producto.`,
+      },
+      {
+        label: "Líder de precio",
+        value: leaderMin?.name || "Sin dato",
+        text: leaderMin ? `${leaderMin.minimos} mínimo${leaderMin.minimos !== 1 ? "s" : ""} registrado${leaderMin.minimos !== 1 ? "s" : ""}.` : "Todavía no hay mínimos comparables.",
+      },
+      {
+        label: "Adjudicaciones",
+        value: leaderAdj?.name || "Sin adjudicación",
+        text: leaderAdj ? `${leaderAdj.adjudicaciones} adjudicación${leaderAdj.adjudicaciones !== 1 ? "es" : ""} detectada${leaderAdj.adjudicaciones !== 1 ? "s" : ""}.` : "No hay adjudicaciones cargadas para esta búsqueda.",
+      },
+      {
+        label: "Tendencia mercado",
+        value: trendPct === null ? "Sin tendencia" : `${trendPct > 0 ? "+" : ""}${trendPct}%`,
+        text: trendPct === null
+          ? "Faltan fechas para comparar evolución."
+          : trendPct > 0
+            ? "El promedio de mercado viene subiendo."
+            : "El promedio de mercado viene bajando o estable.",
+      },
+      {
+        label: "Posición MediCross",
+        value: decision.diffMercado === null ? "Sin referencia" : `${decision.diffMercado > 0 ? "+" : ""}${decision.diffMercado}%`,
+        text: decision.diffMercado === null
+          ? "Falta una cotización propia comparable."
+          : "Diferencia de la última referencia propia contra mínimo mercado.",
+      },
+      {
+        label: "Recomendación",
+        value: decision.sugerido ? fullMoney(decision.sugerido) : "—",
+        text: decision.motivo,
+      },
+    ];
+  }, [metricas, decision, marketTrend, competitiveIntel, marketRows.length]);
+
+  const sortMarketBy = key => {
+    setMarketSort(prev => ({
+      key,
+      dir: prev.key === key && prev.dir === "asc" ? "desc" : "asc",
+    }));
+  };
+
   return (
     <Layout title="Inteligencia de Precios" profile={profile} onNavigate={onNavigate}>
-      <div style={{padding:"18px 24px 48px",display:"flex",flexDirection:"column",gap:18,
-        fontFamily:"DM Sans, system-ui, sans-serif",background:"#f0f2f5",minHeight:"100vh",
-        color:"#0f172a",fontSize:"13.5px"}}>
+      <div className="ph-page" style={{padding:"18px 24px 48px",display:"flex",flexDirection:"column",gap:18,
+        fontFamily:"DM Sans, system-ui, sans-serif",minHeight:"100vh",fontSize:"13.5px"}}>
 
         {/* HEADER */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
@@ -818,278 +1093,191 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
           </div>
         )}
 
-        {/* RESUMEN DE DECISIÓN */}
+        {/* CAPA EJECUTIVA */}
         {showFocusedAnalysis && decision && !loading && (
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",
-            gap:12,alignItems:"stretch"}}>
-            <div style={{background:"linear-gradient(135deg,#0f2444 0%,#185fa5 100%)",
-              borderRadius:14,border:"1px solid rgba(255,255,255,.18)",
-              boxShadow:"0 12px 28px rgba(15,36,68,.18)",padding:"18px 20px",
-              color:"#fff",position:"relative",overflow:"hidden"}}>
-              <div style={{position:"absolute",right:-40,top:-70,width:210,height:210,
-                borderRadius:"50%",background:"rgba(255,255,255,.08)",pointerEvents:"none"}}/>
-              <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",
-                position:"relative",zIndex:1,flexWrap:"wrap"}}>
-                <div>
-                  <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",
-                    letterSpacing:".8px",color:"rgba(255,255,255,.62)",marginBottom:5}}>
-                    Resumen de decisión
-                  </div>
-                  <h3 style={{margin:"0 0 4px",fontSize:24,lineHeight:1.1,letterSpacing:"-.6px"}}>
-                    {decision.estado.label}
-                  </h3>
-                  <p style={{margin:0,fontSize:12.5,lineHeight:1.5,color:"rgba(255,255,255,.72)",
-                    maxWidth:680}}>
-                    {decision.diffMercado !== null
-                      ? decision.diffMercado <= 0
-                        ? `Nuestra última referencia está ${Math.abs(decision.diffMercado)}% por debajo o al nivel del mínimo comparable.`
-                        : `Nuestra última referencia está ${decision.diffMercado}% sobre el mínimo comparable.`
-                      : "El sistema encontró referencias, pero falta una cotización propia comparable para contrastar posición."}
-                  </p>
-                </div>
-                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                  <span style={{background:decision.estado.bg,color:decision.estado.color,
-                    borderRadius:999,padding:"6px 11px",fontWeight:800,fontSize:11}}>
-                    {decision.estado.label}
-                  </span>
-                  <span style={{background:decision.confianza.bg,color:decision.confianza.color,
-                    borderRadius:999,padding:"6px 11px",fontWeight:800,fontSize:11}}>
-                    Confianza {decision.confianza.level}
-                  </span>
-                </div>
+          <section className="ph-exec">
+            <div className="ph-exec__head">
+              <div>
+                <span className="ph-eyebrow">Lectura ejecutiva</span>
+                <h3>{decision.estado.label}</h3>
+                <p>
+                  {decision.diffMercado !== null
+                    ? decision.diffMercado <= 0
+                      ? `MediCross está al nivel o ${Math.abs(decision.diffMercado)}% por debajo del mínimo comparable.`
+                      : `MediCross está ${decision.diffMercado}% por encima del mínimo comparable.`
+                    : "Hay mercado comparable, pero falta referencia propia para medir posición."}
+                </p>
               </div>
-
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",
-                gap:10,marginTop:18,position:"relative",zIndex:1}}>
-                {[
-                  {
-                    label:"Precio sugerido",
-                    value:decision.sugerido ? fullMoney(decision.sugerido) : "—",
-                    sub:decision.motivo,
-                  },
-                  {
-                    label:"Última MediCross",
-                    value:decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—",
-                    sub:decision.ultimaPropia
-                      ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}`
-                      : "Sin cotización propia comparable.",
-                  },
-                  {
-                    label:"Mínimo mercado",
-                    value:decision.minimoMercado ? fullMoney(decision.minimoMercado) : "—",
-                    sub:decision.minimoRow
-                      ? `${decision.minimoRow.empresa} · ${fmtDate(rowDate(decision.minimoRow))}`
-                      : "Sin competidores comparables.",
-                  },
-                  {
-                    label:"Última adjudicación",
-                    value:decision.ultimaAdjudicada ? comparableMoney(decision.ultimaAdjudicada) : "—",
-                    sub:decision.ultimaAdjudicada
-                      ? `${decision.ultimaAdjudicada.empresa} · ${fmtDate(rowDate(decision.ultimaAdjudicada))}`
-                      : "No hay adjudicación cargada.",
-                  },
-                ].map(item => (
-                  <div key={item.label} style={{background:"rgba(255,255,255,.1)",
-                    border:"1px solid rgba(255,255,255,.16)",borderRadius:11,
-                    padding:"12px 13px",minHeight:86,backdropFilter:"blur(8px)"}}>
-                    <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",
-                      letterSpacing:".7px",color:"rgba(255,255,255,.58)",marginBottom:5}}>
-                      {item.label}
-                    </div>
-                    <div style={{fontFamily:"DM Mono,monospace",fontWeight:800,
-                      fontSize:19,lineHeight:1.15,color:"#fff",marginBottom:5}}>
-                      {item.value}
-                    </div>
-                    <div style={{fontSize:10.5,lineHeight:1.35,color:"rgba(255,255,255,.66)"}}>
-                      {item.sub}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
-              boxShadow:"0 2px 8px rgba(15,23,42,.06)",padding:"16px 18px",
-              display:"flex",flexDirection:"column",gap:12}}>
-              <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center"}}>
-                <div>
-                  <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",
-                    letterSpacing:".7px",color:"#94a3b8"}}>
-                    Últimos competidores
-                  </div>
-                  <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
-                    Referencia rápida por empresa
-                  </div>
-                </div>
-                <span style={{fontSize:11,fontWeight:800,color:"#185fa5",
-                  background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:999,
-                  padding:"5px 9px"}}>
-                  {decision.refs} refs.
+              <div className="ph-exec__badges">
+                <span className="ph-status" style={{"--status-bg":decision.estado.bg,"--status-color":decision.estado.color}}>
+                  {decision.estado.label}
+                </span>
+                <span className="ph-status" style={{"--status-bg":decision.confianza.bg,"--status-color":decision.confianza.color}}>
+                  Confianza {decision.confianza.level}
                 </span>
               </div>
-              {decision.competidores.length > 0 ? (
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {decision.competidores.map(row => (
-                    <div key={`${row.empresa}-${row.id}`} style={{display:"grid",
-                      gridTemplateColumns:"minmax(0,1fr) auto",gap:10,alignItems:"center",
-                      padding:"10px 0",borderTop:"1px solid #f0f4f8"}}>
-                      <div style={{minWidth:0}}>
-                        <div style={{fontSize:12.5,fontWeight:800,color:"#0f2444",
-                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {row.empresa}
-                        </div>
-                        <div style={{fontSize:10.5,color:"#94a3b8",overflow:"hidden",
-                          textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {fmtDate(rowDate(row))} · {row.tenders?.institution || "Sin institución"}
-                        </div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"DM Mono,monospace",fontWeight:800,
-                          color:"#0f172a",fontSize:13}}>
-                          {comparableMoney(row)}
-                        </div>
-                        {decision.ultimaPropia && comparablePrice(decision.ultimaPropia) && (
-                          <div style={{fontSize:10,fontWeight:700,
-                            color:comparablePrice(row) < comparablePrice(decision.ultimaPropia)
-                              ? "#dc2626" : "#059669"}}>
-                            {comparablePrice(row) < comparablePrice(decision.ultimaPropia)
-                              ? `${Math.abs(Number(((comparablePrice(row) - comparablePrice(decision.ultimaPropia)) / comparablePrice(decision.ultimaPropia) * 100).toFixed(1)))}% menor`
-                              : `${Number(((comparablePrice(row) - comparablePrice(decision.ultimaPropia)) / comparablePrice(decision.ultimaPropia) * 100).toFixed(1))}% mayor`}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{padding:"18px",borderRadius:10,background:"#f8fafc",
-                  border:"1px solid #e2e8f0",fontSize:12,color:"#64748b"}}>
-                  No hay referencias de competidores para esta búsqueda.
-                </div>
-              )}
             </div>
-          </div>
-        )}
 
-        {/* MÉTRICAS */}
-        {showFocusedAnalysis && metricas && !loading && (
-          <>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:10}}>
+            <div className="ph-exec-grid">
               {[
-                {icon:"📋",label:"Licitaciones",val:metricas.licitaciones,color:"#185fa5",sub:"encontradas"},
-                {icon:"🏢",label:"Empresas",val:metricas.empresas,color:"#7c3aed",sub:"competidoras"},
-                {icon:"📦",label:"Renglones",val:metricas.totalRenglones,color:"#0369a1",sub:"analizados"},
-                {
-                  icon:"🏆",label:"Precio mínimo",
-                  val:`${metricas.minimoCount}/${metricas.totalRenglones}`,
-                  color:pctMinimo>=50?"#166534":pctMinimo>=25?"#d97706":"#dc2626",
-                  sub:`${pctMinimo}% de las veces`
-                },
-                {
-                  icon:"💰",label:"Nuestro promedio",
-                  val:metricas.avgNuestro?compactMoney(metricas.avgNuestro):"—",
-                  color:"#0f2444",
-                  sub:metricas.tendencia
-                    ?(metricas.tendencia.subiendo?`↑ +${metricas.tendencia.pct}% tendencia`:`↓ ${metricas.tendencia.pct}% tendencia`)
-                    :"precio unitario"
-                },
-              ].map(k => (
-                <div key={k.label} style={{background:"#fff",borderRadius:11,border:"1px solid #e2e8f0",
-                  borderTop:`3px solid ${k.color}`,padding:"14px 16px",
-                  boxShadow:"0 1px 3px rgba(15,23,42,.04)",position:"relative",overflow:"hidden"}}>
-                  <span style={{position:"absolute",top:10,right:12,fontSize:18,opacity:.12,pointerEvents:"none"}}>{k.icon}</span>
-                  <div style={{fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".6px",
-                    color:"#94a3b8",marginBottom:5}}>{k.label}</div>
-                  <div style={{fontSize:22,fontWeight:700,color:"#0f2444",fontFamily:"DM Mono,monospace",
-                    lineHeight:1.1,marginBottom:3}}>{k.val}</div>
-                  <div style={{fontSize:10.5,color:"#94a3b8"}}>{k.sub}</div>
-                </div>
+                { icon:"◆", label:"Estado comercial", value:decision.estado.label, sub:"Diagnóstico contra mercado comparable", tone:"blue" },
+                { icon:"$", label:"Precio sugerido actual", value:decision.sugerido ? fullMoney(decision.sugerido) : "—", sub:decision.motivo, tone:"green" },
+                { icon:"↕", label:"Diferencia vs mínimo", value:decision.diffMercado === null ? "—" : `${decision.diffMercado > 0 ? "+" : ""}${decision.diffMercado}%`, sub:decision.minimoRow ? `Mínimo: ${decision.minimoRow.empresa}` : "Sin mínimo comparable", tone:decision.diffMercado !== null && decision.diffMercado > 8 ? "red" : "amber" },
+                { icon:"M", label:"Última MediCross", value:decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—", sub:decision.ultimaPropia ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}` : "Sin cotización propia comparable", tone:"navy" },
+                { icon:"✓", label:"Última adjudicación", value:decision.ultimaAdjudicada ? comparableMoney(decision.ultimaAdjudicada) : "—", sub:decision.ultimaAdjudicada ? `${decision.ultimaAdjudicada.empresa} · ${fmtDate(rowDate(decision.ultimaAdjudicada))}` : "No hay adjudicación cargada", tone:"green" },
+                { icon:"◎", label:"Nivel de confianza", value:decision.confianza.level, sub:`${decision.refs} referencias · ${decision.antiguedad ?? "s/d"} días desde el último dato`, tone:"blue" },
+              ].map(card => (
+                <article key={card.label} className={`ph-kpi ph-kpi--${card.tone}`}>
+                  <span className="ph-kpi__icon">{card.icon}</span>
+                  <span className="ph-kpi__label">{card.label}</span>
+                  <strong>{card.value}</strong>
+                  <small>{card.sub}</small>
+                </article>
               ))}
             </div>
+          </section>
+        )}
 
-            {/* PANEL ANÁLISIS */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-
-              {/* Evolución precios */}
-              <div style={{background:"#fff",borderRadius:11,border:"1px solid #e2e8f0",
-                padding:"16px 18px",boxShadow:"0 1px 3px rgba(15,23,42,.04)"}}>
-                <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:".6px",
-                  color:"#94a3b8",marginBottom:12}}>Evolución de nuestros precios</div>
-                {metricas.preciosNuestros.length >= 2 ? (
-                  <>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-                      <div style={{flex:1,minWidth:0}}>
-                        {metricas.preciosNuestros.map((p, i) => (
-                          <div key={i} style={{display:"flex",alignItems:"center",gap:8,
-                            fontSize:11.5,marginBottom:6}}>
-                            <span style={{fontSize:10,color:"#94a3b8",fontFamily:"DM Mono,monospace",
-                              flexShrink:0,minWidth:52}}>{fmtDate(p.fecha)}</span>
-                            <span style={{fontFamily:"DM Mono,monospace",fontWeight:700,color:"#0f2444",flexShrink:0}}>
-                              {compactMoney(p.precio)}
-                            </span>
-                            <span style={{fontSize:10,color:"#94a3b8",overflow:"hidden",
-                              textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                              {p.hospital}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <Sparkline datos={metricas.preciosNuestros}
-                        color={metricas.tendencia?.subiendo?"#dc2626":"#166534"}/>
-                    </div>
-                    {metricas.tendencia && (
-                      <div style={{marginTop:10,padding:"7px 11px",borderRadius:8,
-                        background:metricas.tendencia.subiendo?"#fff5f5":"#f0fdf4",
-                        fontSize:11,fontWeight:600,
-                        color:metricas.tendencia.subiendo?"#7f1d1d":"#166534"}}>
-                        {metricas.tendencia.subiendo
-                          ?`↑ Precios subiendo ${metricas.tendencia.pct}% vs período anterior`
-                          :`↓ Precios bajando ${Math.abs(metricas.tendencia.pct)}% vs período anterior`}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div style={{fontSize:12,color:"#94a3b8",padding:"12px 0"}}>
-                    {metricas.preciosNuestros.length===1
-                      ?"Solo 1 licitación propia — necesitás al menos 2 para ver evolución."
-                      :"Sin datos propios para mostrar evolución."}
+        {/* INTELIGENCIA VISUAL */}
+        {showFocusedAnalysis && metricas && !loading && (
+          <>
+            <div className="ph-grid ph-grid--analysis">
+              <section className="ph-panel ph-panel--wide">
+                <div className="ph-panel__head">
+                  <div>
+                    <span className="ph-eyebrow">Evolución de mercado</span>
+                    <h3>Precio mínimo, promedio, máximo y MediCross</h3>
                   </div>
-                )}
-              </div>
+                  <span className="ph-pill">{marketTrend.length} fechas</span>
+                </div>
+                <MarketEvolutionChart data={marketTrend}/>
+              </section>
 
-              {/* Top competidores */}
-              <div style={{background:"#fff",borderRadius:11,border:"1px solid #e2e8f0",
-                padding:"16px 18px",boxShadow:"0 1px 3px rgba(15,23,42,.04)"}}>
-                <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:".6px",
-                  color:"#94a3b8",marginBottom:12}}>Competidores más frecuentes</div>
-                {metricas.topCompetidores.length > 0 ? (
-                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    {metricas.topCompetidores.map((c, i) => {
-                      const pct = Math.round(c.veces / metricas.totalRenglones * 100);
-                      const colors = ["#185fa5","#7c3aed","#0369a1"];
+              <section className="ph-panel">
+                <div className="ph-panel__head">
+                  <div>
+                    <span className="ph-eyebrow">Insights automáticos</span>
+                    <h3>Qué mirar ahora</h3>
+                  </div>
+                </div>
+                <div className="ph-insights">
+                  {insights.map(item => (
+                    <article key={item.label} className="ph-insight">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                      <small>{item.text}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <section className="ph-panel">
+              <div className="ph-panel__head">
+                <div>
+                  <span className="ph-eyebrow">Inteligencia competitiva</span>
+                  <h3>Competidores, participación y ranking histórico</h3>
+                </div>
+                <span className="ph-pill">{competitiveIntel.ranking.length} empresas</span>
+              </div>
+              <div className="ph-competitive-grid">
+                {[
+                  { title:"Más frecuentes", data:competitiveIntel.frecuentes, keyName:"refs", suffix:"refs.", color:"#185fa5" },
+                  { title:"Más adjudicaciones", data:competitiveIntel.adjudicaciones, keyName:"adjudicaciones", suffix:"adj.", color:"#10b981" },
+                  { title:"Más mínimos", data:competitiveIntel.minimos, keyName:"minimos", suffix:"mín.", color:"#f59e0b" },
+                ].map(block => (
+                  <div key={block.title} className="ph-rank-card">
+                    <strong>{block.title}</strong>
+                    {block.data.length > 0 ? block.data.map((item, index) => {
+                      const value = item[block.keyName];
+                      const pct = block.keyName === "refs"
+                        ? Math.round(item.refs / competitiveIntel.totalRefs * 100)
+                        : Math.min(100, value * 18);
                       return (
-                        <div key={c.nombre}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:12}}>
-                            <span style={{fontWeight:600,color:"#334155",overflow:"hidden",
-                              textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:200}}>
-                              {i===0?"🥇":i===1?"🥈":"🥉"} {c.nombre}
-                            </span>
-                            <span style={{color:"#64748b",fontSize:11,whiteSpace:"nowrap",flexShrink:0}}>
-                              {c.veces} renglón{c.veces!==1?"es":""}
-                            </span>
+                        <div key={`${block.title}-${item.name}`} className="ph-rank-row">
+                          <div className="ph-rank-row__top">
+                            <span>{index + 1}. {item.name}</span>
+                            <em>{value} {block.suffix}</em>
                           </div>
-                          <div style={{height:5,background:"#e8ecf2",borderRadius:10,overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${Math.max(pct,4)}%`,
-                              background:colors[i],borderRadius:10,transition:"width .4s ease"}}/>
+                          <div className="ph-rank-bar">
+                            <i style={{ width:`${Math.max(pct, 5)}%`, background:block.color }}/>
                           </div>
                         </div>
                       );
-                    })}
+                    }) : (
+                      <p className="ph-muted">Sin datos para este ranking.</p>
+                    )}
                   </div>
-                ) : (
-                  <div style={{fontSize:12,color:"#94a3b8"}}>Sin competidores registrados.</div>
-                )}
+                ))}
               </div>
+            </section>
+
+            <section className="ph-panel ph-history">
+              <div className="ph-panel__head">
+                <div>
+                  <span className="ph-eyebrow">Historial de mercado</span>
+                  <h3>Todas las licitaciones donde aparece el producto</h3>
+                </div>
+                <span className="ph-pill">{marketRows.length} filas</span>
+              </div>
+              <div className="ph-history-tools">
+                <input value={marketSearch} onChange={e => setMarketSearch(e.target.value)}
+                  placeholder="Filtrar por institución, empresa, expediente, resultado..."/>
+                <div className="ph-pagination">
+                  <button disabled={marketPage <= 1} onClick={() => setMarketPage(p => Math.max(1, p - 1))}>Anterior</button>
+                  <span>{marketPage} / {marketTotalPages}</span>
+                  <button disabled={marketPage >= marketTotalPages} onClick={() => setMarketPage(p => Math.min(marketTotalPages, p + 1))}>Siguiente</button>
+                </div>
+              </div>
+              <div className="ph-table-wrap">
+                <table className="ph-table">
+                  <thead>
+                    <tr>
+                      {[
+                        ["fecha","Fecha"],["institucion","Institución"],["jurisdiccion","Jurisdicción"],
+                        ["expediente","Expediente"],["renglon","Renglón"],["empresa","Empresa"],
+                        ["precio","Precio unitario"],["cantidad","Cantidad"],["total","Total"],
+                        ["resultado","Resultado"],["adjudicado","Adjudicado"],["diff","Dif. vs mínimo"],
+                      ].map(([key, label]) => (
+                        <th key={key}>
+                          <button onClick={() => sortMarketBy(key)}>
+                            {label} {marketSort.key === key ? (marketSort.dir === "asc" ? "↑" : "↓") : ""}
+                          </button>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marketPageRows.map(item => (
+                      <tr key={item.id}>
+                        <td>{fmtDate(item.fecha)}</td>
+                        <td><strong>{item.institucion}</strong></td>
+                        <td>{item.jurisdiccion}</td>
+                        <td>{item.expediente}</td>
+                        <td>R{item.renglon}</td>
+                        <td>{item.empresa}</td>
+                        <td className="ph-money">{comparableMoney(item.precio)}</td>
+                        <td>{item.cantidad || "—"}</td>
+                        <td className="ph-money">{fullMoney(item.total)}</td>
+                        <td><span className="ph-chip">{item.resultado}</span></td>
+                        <td>{item.adjudicado ? <span className="ph-chip ph-chip--ok">Sí</span> : <span className="ph-muted">—</span>}</td>
+                        <td>
+                          {item.diff === null
+                            ? <span className="ph-chip">—</span>
+                            : item.diff === 0
+                              ? <span className="ph-chip ph-chip--ok">Mínimo</span>
+                              : <span className="ph-chip ph-chip--bad">+{item.diff}%</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <div className="ph-detail-title">
+              <span className="ph-eyebrow">Detalle operativo</span>
+              <h3>Vista por licitación</h3>
             </div>
           </>
         )}
