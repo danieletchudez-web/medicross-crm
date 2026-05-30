@@ -87,8 +87,113 @@
 
 .ph-exec-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, minmax(190px, 1fr));
   gap: 10px;
+}
+
+.ph-simple-decision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  gap: 14px;
+  align-items: stretch;
+  margin: 6px 0 14px;
+  padding: 16px;
+  border: 1px solid rgba(24, 95, 165, .16);
+  border-left: 5px solid #185fa5;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .74);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .68);
+}
+
+.ph-simple-decision--green { border-left-color: #10b981; }
+.ph-simple-decision--amber { border-left-color: #f59e0b; }
+.ph-simple-decision--red { border-left-color: #ef4444; }
+
+.ph-simple-decision strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f2444;
+  font-size: 22px;
+  line-height: 1.08;
+  letter-spacing: -.35px;
+}
+
+.ph-simple-decision p {
+  margin: 8px 0 0;
+  max-width: 760px;
+  color: #475569;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.ph-simple-decision__price {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 94px;
+  padding: 13px 15px;
+  border: 1px solid rgba(24, 95, 165, .14);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(239, 246, 255, .95), rgba(255, 255, 255, .76));
+}
+
+.ph-simple-decision__price span,
+.ph-simple-decision__price small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.ph-simple-decision__price span {
+  text-transform: uppercase;
+  letter-spacing: .55px;
+}
+
+.ph-simple-decision__price strong {
+  margin: 6px 0;
+  font-family: "DM Mono", monospace;
+  font-size: 24px;
+}
+
+.ph-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .05);
+}
+
+.ph-view-tabs button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background .2s cubic-bezier(.2,.8,.2,1),
+    color .2s cubic-bezier(.2,.8,.2,1),
+    transform .2s cubic-bezier(.2,.8,.2,1),
+    box-shadow .2s cubic-bezier(.2,.8,.2,1);
+}
+
+.ph-view-tabs button:hover {
+  transform: translateY(-1px);
+  background: #f8fafc;
+  color: #0f2444;
+}
+
+.ph-view-tabs button.active {
+  background: #185fa5;
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(24, 95, 165, .22);
 }
 
 .ph-kpi {
@@ -445,7 +550,7 @@
 
 @media (max-width: 1200px) {
   .ph-exec-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .ph-grid--analysis,
@@ -461,13 +566,27 @@
 
   .ph-exec__head,
   .ph-panel__head,
-  .ph-history-tools {
+  .ph-history-tools,
+  .ph-simple-decision {
     flex-direction: column;
     align-items: stretch;
   }
 
   .ph-exec-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ph-simple-decision {
+    display: flex;
+  }
+
+  .ph-view-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .ph-view-tabs button {
+    flex: 0 0 auto;
   }
 
   .ph-pagination {
@@ -514,9 +633,35 @@
 
 [data-theme="dark"] .ph-kpi,
 [data-theme="dark"] .ph-insight,
-[data-theme="dark"] .ph-rank-card {
+[data-theme="dark"] .ph-rank-card,
+[data-theme="dark"] .ph-simple-decision,
+[data-theme="dark"] .ph-view-tabs {
   background: #0d1117;
   border-color: #30363d;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .ph-simple-decision__price,
+[data-theme="dark"] .ph-view-tabs button:hover {
+  background: #111820;
+  border-color: #30363d;
+}
+
+[data-theme="dark"] .ph-simple-decision strong,
+[data-theme="dark"] .ph-view-tabs button:hover {
+  color: #e6edf3;
+}
+
+[data-theme="dark"] .ph-simple-decision p,
+[data-theme="dark"] .ph-simple-decision__price span,
+[data-theme="dark"] .ph-simple-decision__price small,
+[data-theme="dark"] .ph-view-tabs button {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .ph-view-tabs button.active {
+  background: #1f6feb;
+  color: #fff;
   box-shadow: none;
 }
 

@@ -72,14 +72,6 @@ function shortText(value, max = 110) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-function compactMoney(v) {
-  const n = Number(v || 0); if (!n) return "—";
-  if (n >= 1_000_000_000) return `$${(n/1_000_000_000).toFixed(1).replace(".",",")} MM`;
-  if (n >= 1_000_000)     return `$${(n/1_000_000).toFixed(1).replace(".",",")} M`;
-  if (n >= 1_000)         return `$${Math.round(n/1_000)} K`;
-  return `$${n.toLocaleString("es-AR")}`;
-}
-
 const SUGERENCIAS = [
   "cateter","filtro","dialisis","ablacion","introductor",
   "aguja","set","bandeja","apheresis","nefrologia",
@@ -94,29 +86,6 @@ function saveBusqueda(q) {
     const prev = getBusquedasRecientes().filter(b => b.toLowerCase() !== q.toLowerCase());
     localStorage.setItem(STORAGE_KEY, JSON.stringify([q, ...prev].slice(0, 8)));
   } catch { /* recent searches are optional */ }
-}
-
-function Sparkline({ datos, color = "#185fa5" }) {
-  if (!datos || datos.length < 2) return null;
-  const vals = datos.map(d => d.precio);
-  const min = Math.min(...vals), max = Math.max(...vals), range = max - min || 1;
-  const W = 120, H = 36, PAD = 4;
-  const pts = vals.map((v, i) => {
-    const x = PAD + (i / (vals.length - 1)) * (W - PAD * 2);
-    const y = PAD + (1 - (v - min) / range) * (H - PAD * 2);
-    return `${x},${y}`;
-  }).join(" ");
-  return (
-    <svg width={W} height={H} style={{display:"block",flexShrink:0}}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2"
-        strokeLinejoin="round" strokeLinecap="round"/>
-      {vals.map((v, i) => {
-        const x = PAD + (i / (vals.length - 1)) * (W - PAD * 2);
-        const y = PAD + (1 - (v - min) / range) * (H - PAD * 2);
-        return <circle key={i} cx={x} cy={y} r="2.5" fill={color}/>;
-      })}
-    </svg>
-  );
 }
 
 function MarketEvolutionChart({ data }) {
@@ -208,6 +177,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [marketSearch, setMarketSearch] = useState("");
   const [marketSort, setMarketSort] = useState({ key: "fecha", dir: "desc" });
   const [marketPage, setMarketPage] = useState(1);
+  const [analysisView, setAnalysisView] = useState("resumen");
   const inputRef   = useRef(null);
   const debounceRef = useRef(null);
   const marketPageSize = 10;
@@ -360,6 +330,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     setMarketPage(1);
   }, [marketSearch, activeProductKey, institutionFilter, jurisdictionFilter, companyFilter, rows.length]);
 
+  useEffect(() => {
+    setAnalysisView("resumen");
+  }, [activeProductKey, rows.length]);
+
   const agrupado = useMemo(() => {
     const map = {};
     filteredRows.forEach(r => {
@@ -426,9 +400,6 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     const precios = filas.map(comparablePrice).filter(p => p !== null);
     return precios.length ? Math.min(...precios) : null;
   }
-
-  const pctMinimo = metricas && metricas.totalRenglones
-    ? Math.round(metricas.minimoCount / metricas.totalRenglones * 100) : 0;
 
   const showFocusedAnalysis = Boolean(activeProductKey);
 
@@ -705,6 +676,40 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       dir: prev.key === key && prev.dir === "asc" ? "desc" : "asc",
     }));
   };
+
+  const quickDecision = useMemo(() => {
+    if (!decision) return null;
+    if (decision.diffMercado === null) {
+      return {
+        title: "Completar referencia propia",
+        text: "Hay mercado comparable, pero falta una cotización MediCross para medir posición real.",
+        action: "Usar precio sugerido con cautela",
+        tone: "amber",
+      };
+    }
+    if (decision.diffMercado <= 0) {
+      return {
+        title: "Competir con margen controlado",
+        text: "La última referencia MediCross está al nivel del mínimo o por debajo del mercado.",
+        action: "Mantener estrategia",
+        tone: "green",
+      };
+    }
+    if (decision.diffMercado <= 8) {
+      return {
+        title: "Ajuste fino recomendado",
+        text: "MediCross está cerca del mercado. Conviene revisar margen antes de cotizar.",
+        action: "Cotizar cerca del sugerido",
+        tone: "amber",
+      };
+    }
+    return {
+      title: "Riesgo por precio",
+      text: "La última referencia propia está lejos del mínimo comparable. Requiere revisión comercial.",
+      action: "Recalcular precio",
+      tone: "red",
+    };
+  }, [decision]);
 
   return (
     <Layout title="Inteligencia de Precios" profile={profile} onNavigate={onNavigate}>
@@ -1118,6 +1123,21 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               </div>
             </div>
 
+            {quickDecision && (
+              <div className={`ph-simple-decision ph-simple-decision--${quickDecision.tone}`}>
+                <div>
+                  <span className="ph-eyebrow">Conclusión rápida</span>
+                  <strong>{quickDecision.title}</strong>
+                  <p>{quickDecision.text}</p>
+                </div>
+                <div className="ph-simple-decision__price">
+                  <span>Precio sugerido</span>
+                  <strong>{decision.sugerido ? fullMoney(decision.sugerido) : "—"}</strong>
+                  <small>{quickDecision.action}</small>
+                </div>
+              </div>
+            )}
+
             <div className="ph-exec-grid">
               {[
                 { icon:"◆", label:"Estado comercial", value:decision.estado.label, sub:"Diagnóstico contra mercado comparable", tone:"blue" },
@@ -1138,9 +1158,30 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
           </section>
         )}
 
+        {showFocusedAnalysis && decision && !loading && (
+          <div className="ph-view-tabs">
+            {[
+              ["resumen", "Resumen ejecutivo"],
+              ["historial", "Historial"],
+              ["competidores", "Competidores"],
+              ["detalle", "Detalle operativo"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={analysisView === key ? "active" : ""}
+                onClick={() => setAnalysisView(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* INTELIGENCIA VISUAL */}
         {showFocusedAnalysis && metricas && !loading && (
           <>
+            {analysisView === "resumen" && (
             <div className="ph-grid ph-grid--analysis">
               <section className="ph-panel ph-panel--wide">
                 <div className="ph-panel__head">
@@ -1171,7 +1212,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 </div>
               </section>
             </div>
+            )}
 
+            {analysisView === "competidores" && (
             <section className="ph-panel">
               <div className="ph-panel__head">
                 <div>
@@ -1211,7 +1254,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 ))}
               </div>
             </section>
+            )}
 
+            {analysisView === "historial" && (
             <section className="ph-panel ph-history">
               <div className="ph-panel__head">
                 <div>
@@ -1274,16 +1319,19 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 </table>
               </div>
             </section>
+            )}
 
+            {analysisView === "detalle" && (
             <div className="ph-detail-title">
               <span className="ph-eyebrow">Detalle operativo</span>
               <h3>Vista por licitación</h3>
             </div>
+            )}
           </>
         )}
 
         {/* RESULTADOS */}
-        {showFocusedAnalysis && !loading && agrupado.map((grupo, gi) => (
+        {showFocusedAnalysis && !loading && analysisView === "detalle" && agrupado.map((grupo, gi) => (
           <div key={grupo.tender?.id||gi} style={{background:"#fff",borderRadius:12,
             border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,.06)"}}>
 
