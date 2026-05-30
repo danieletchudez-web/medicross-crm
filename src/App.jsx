@@ -3,8 +3,9 @@ import { supabase } from "./lib/supabaseClient";
 import { canOpenModule } from "./lib/moduleAccess";
 
 import LoginPage    from "./pages/LoginPage";
-import CRMAssistant from "./components/CRMAssistant";
-import DialogSystem from "./components/DialogSystem";
+import CRMAssistant   from "./components/CRMAssistant";
+import DialogSystem   from "./components/DialogSystem";
+import VoiceAssistant from "./components/VoiceAssistant";
 
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
@@ -291,6 +292,7 @@ export default function App() {
       })}
       {routeLoading && <FullPageLoader label="Preparando módulo…" overlay />}
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
+      <VoiceAssistant profile={safeProfile} />
       <DialogSystem />
     </>
   );
