@@ -120,8 +120,11 @@ export default function AccountsPage({ profile, onNavigate }) {
           <AccKpi label="Con contactos"       value={withContact} accent="green" />
         </section>
 
+        {/* FORM + LIST side by side */}
+        <div className="acc-main">
+
         {/* FORM */}
-        <section className="acc-card">
+        <section className="acc-card acc-card--form">
           <div className="acc-card-head">
             <div>
               <h2>{editingId ? "Editar cliente" : "Nuevo cliente"}</h2>
@@ -264,8 +267,8 @@ export default function AccountsPage({ profile, onNavigate }) {
           </form>
         </section>
 
-        {/* TABLA */}
-        <section className="acc-card">
+        {/* LISTA */}
+        <section className="acc-card acc-card--list">
           <div className="acc-card-head">
             <div>
               <h2>Listado de clientes</h2>
@@ -351,6 +354,8 @@ export default function AccountsPage({ profile, onNavigate }) {
             </table>
           </div>
         </section>
+
+        </div>{/* end acc-main */}
 
         <footer className="acc-footer">
           <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>
