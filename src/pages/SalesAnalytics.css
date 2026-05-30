@@ -448,18 +448,250 @@
 .sa-footer a { font-size: 10px; color: #c1cdd9; text-decoration: none; font-weight: 500; }
 .sa-footer a:hover { color: #94a3b8; }
 
+/* ─── Tab badge ──────────────────────────────────────────────────────── */
+.sa-tab__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 5px;
+  line-height: 1;
+}
+.sa-tab.active .sa-tab__badge { background: rgba(255,255,255,0.3); }
+
+/* ─── Performance cards (Tablero tab) ───────────────────────────────── */
+.sa-perf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.sa-perf-card {
+  background: #fff;
+  border: 1px solid #e8ecf2;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sa-perf-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-radius: 16px 0 0 16px;
+}
+.sa-perf-card--top::before { background: #10b981; }
+.sa-perf-card--mid::before { background: #f59e0b; }
+.sa-perf-card--low::before { background: #ef4444; }
+
+.sa-perf-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sa-perf-card__avatar {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sa-perf-card__identity {
+  flex: 1;
+  min-width: 0;
+}
+.sa-perf-card__identity strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sa-perf-tier {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+.sa-perf-tier--top { background: #ecfdf5; color: #059669; }
+.sa-perf-tier--mid { background: #fffbeb; color: #d97706; }
+.sa-perf-tier--low { background: #fef2f2; color: #dc2626; }
+
+.sa-perf-card__score-wrap { text-align: center; flex-shrink: 0; }
+.sa-perf-card__score {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  font-family: "DM Mono", monospace;
+}
+.sa-perf-card__score-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+.sa-perf-card__bar-wrap {
+  height: 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.sa-perf-card__bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sa-perf-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 8px;
+}
+
+.sa-perf-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sa-perf-metric span {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+}
+.sa-perf-metric strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: "DM Mono", monospace;
+  letter-spacing: -0.5px;
+}
+
+.sa-perf-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f4f8;
+}
+
+.sa-perf-card__alerts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.sa-perf-alert {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.sa-perf-alert--red   { background: #fef2f2; color: #dc2626; }
+.sa-perf-alert--amber { background: #fffbeb; color: #d97706; }
+
+.sa-perf-card__ok {
+  font-size: 11px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.sa-perf-card__rank {
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  flex-shrink: 0;
+}
+
+/* ─── Alerts summary bar ─────────────────────────────────────────────── */
+.sa-alerts-summary {
+  background: #fff;
+  border: 1px solid #e8ecf2;
+  border-radius: 14px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  box-shadow: 0 2px 6px rgba(15,23,42,0.04);
+}
+.sa-alerts-summary__stat {
+  flex: 1;
+  text-align: center;
+}
+.sa-alerts-summary__stat strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: "DM Mono", monospace;
+}
+.sa-alerts-summary__stat strong.red   { color: #dc2626; }
+.sa-alerts-summary__stat strong.amber { color: #d97706; }
+.sa-alerts-summary__stat span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+.sa-alerts-summary__divider {
+  width: 1px;
+  height: 36px;
+  background: #e8ecf2;
+  flex-shrink: 0;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
-  .sa-team-kpis  { grid-template-columns: repeat(3, 1fr); }
+  .sa-team-kpis   { grid-template-columns: repeat(3, 1fr); }
   .sa-charts-grid { grid-template-columns: 1fr; }
   .sa-chart-card--wide { grid-column: 1; }
+  .sa-perf-grid   { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 900px) {
   .sa-page { padding: 14px; gap: 12px; }
   .sa-team-kpis { grid-template-columns: repeat(2, 1fr); }
   .sa-toolbar { flex-direction: column; align-items: flex-start; }
+  .sa-alerts-summary { gap: 0; padding: 14px 16px; }
 }
 @media (max-width: 600px) {
   .sa-team-kpis { grid-template-columns: 1fr 1fr; }
   .sa-rank-card { flex-wrap: wrap; }
+  .sa-perf-grid { grid-template-columns: 1fr; }
+  .sa-perf-card__metrics { grid-template-columns: repeat(2, 1fr); }
+  .sa-alerts-summary { flex-direction: column; gap: 12px; }
+  .sa-alerts-summary__divider { width: 100%; height: 1px; }
 }

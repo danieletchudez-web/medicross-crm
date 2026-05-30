@@ -26,9 +26,9 @@ function periodRange(key) {
     const mon = new Date(now); mon.setDate(now.getDate() - day + 1); mon.setHours(0,0,0,0);
     return { from: mon, to: now };
   }
-  if (key === "month")   return { from: new Date(y, m, 1),           to: now };
+  if (key === "month")   return { from: new Date(y, m, 1),                to: now };
   if (key === "quarter") return { from: new Date(y, Math.floor(m/3)*3, 1), to: now };
-  if (key === "year")    return { from: new Date(y, 0, 1),            to: now };
+  if (key === "year")    return { from: new Date(y, 0, 1),                 to: now };
   return { from: new Date(y, m, 1), to: now };
 }
 
@@ -38,7 +38,6 @@ function inRange(dateStr, range) {
   return d >= range.from && d <= range.to;
 }
 
-/* ─── Colores por vendedor ───────────────────────────────────────────── */
 const PALETTE = [
   "#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6",
   "#06b6d4","#ec4899","#84cc16","#f97316","#6366f1",
@@ -53,12 +52,12 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
   const [loading,  setLoading]  = useState(true);
 
   const [period,    setPeriod]    = useState("month");
-  const [selected,  setSelected]  = useState([]); // seller ids
-  const [activeTab, setActiveTab] = useState("overview"); // overview | ranking | funnel | activity
+  const [selected,  setSelected]  = useState([]);
+  const [activeTab, setActiveTab] = useState("tablero");
 
-  const barRef    = useRef(null);
-  const lineRef   = useRef(null);
-  const radarRef  = useRef(null);
+  const barRef   = useRef(null);
+  const lineRef  = useRef(null);
+  const radarRef = useRef(null);
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { if (!loading) renderCharts(); }, [loading, period, selected, activeTab]);
@@ -75,13 +74,12 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
     setVisits(visRes.data  || []);
     setOpps(oppRes.data    || []);
     setAccounts(accRes.data || []);
-    setSelected((sellRes.data || []).map((s) => s.id)); // todos seleccionados por defecto
+    setSelected((sellRes.data || []).map((s) => s.id));
     setLoading(false);
   }
 
   const range = useMemo(() => periodRange(period), [period]);
 
-  /* Métricas por vendedor */
   const sellerMetrics = useMemo(() => {
     return sellers.map((seller, idx) => {
       const sv = visits.filter((v) => v.owner_id === seller.id);
@@ -91,27 +89,25 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
       const svP = sv.filter((v) => inRange(v.visit_date, range));
       const soP = so.filter((o) => inRange(o.created_at, range));
 
-      const totalVisits     = svP.length;
-      const realizadas      = svP.filter((v) => v.status === "realizada").length;
-      const canceladas      = svP.filter((v) => v.status === "cancelada").length;
-      const reprogramadas   = svP.filter((v) => v.status === "reprogramada").length;
-      const oppsCreated     = soP.length;
-      const oppsWon         = so.filter((o) => o.stage === "Ganado" && inRange(o.created_at, range)).length;
-      const oppsLost        = so.filter((o) => o.stage === "Perdido" && inRange(o.created_at, range)).length;
-      const openOpps        = so.filter((o) => !["Ganado","Perdido"].includes(o.stage));
-      const pipeline        = openOpps.reduce((s, o) => s + Number(o.amount || 0), 0);
-      const wonAmount       = so.filter((o) => o.stage === "Ganado").reduce((s, o) => s + Number(o.amount || 0), 0);
-      const forecast        = openOpps.reduce((s, o) => s + (Number(o.amount || 0) * Number(o.probability || 0)) / 100, 0);
-      const convRate        = pct(oppsWon, oppsWon + oppsLost);
-      const avgDeal         = openOpps.length > 0 ? Math.round(pipeline / openOpps.length) : 0;
-      const overdueOpps     = openOpps.filter((o) => o.expected_close && new Date(o.expected_close) < new Date()).length;
-      const noNextAction    = openOpps.filter((o) => !o.next_action).length;
-      const redAccounts     = sa.filter((a) => a.follow_status === "rojo").length;
+      const totalVisits   = svP.length;
+      const realizadas    = svP.filter((v) => v.status === "realizada").length;
+      const canceladas    = svP.filter((v) => v.status === "cancelada").length;
+      const reprogramadas = svP.filter((v) => v.status === "reprogramada").length;
+      const oppsCreated   = soP.length;
+      const oppsWon       = so.filter((o) => o.stage === "Ganado"  && inRange(o.created_at, range)).length;
+      const oppsLost      = so.filter((o) => o.stage === "Perdido" && inRange(o.created_at, range)).length;
+      const openOpps      = so.filter((o) => !["Ganado","Perdido"].includes(o.stage));
+      const pipeline      = openOpps.reduce((s, o) => s + Number(o.amount || 0), 0);
+      const forecast      = openOpps.reduce((s, o) => s + (Number(o.amount || 0) * Number(o.probability || 0)) / 100, 0);
+      const convRate      = pct(oppsWon, oppsWon + oppsLost);
+      const avgDeal       = openOpps.length > 0 ? Math.round(pipeline / openOpps.length) : 0;
+      const overdueOpps   = openOpps.filter((o) => o.expected_close && new Date(o.expected_close) < new Date()).length;
+      const noNextAction  = openOpps.filter((o) => !o.next_action).length;
+      const redAccounts   = sa.filter((a) => a.follow_status === "rojo").length;
+      const visitToOpp    = totalVisits > 0 ? pct(oppsCreated, totalVisits) : 0;
 
-      // Actividad por día de semana
       const byDow = [0,1,2,3,4,5,6].map((d) => svP.filter((v) => new Date(v.visit_date).getDay() === d).length);
 
-      // Score de productividad (0-100)
       let score = 0;
       score += Math.min(40, totalVisits * 4);
       score += Math.min(20, realizadas * 3);
@@ -122,15 +118,13 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
       score = Math.max(0, Math.min(100, Math.round(score)));
 
       return {
-        id: seller.id,
-        name: seller.full_name || seller.email,
-        email: seller.email,
-        role: seller.role,
+        id: seller.id, name: seller.full_name || seller.email,
+        email: seller.email, role: seller.role,
         color: PALETTE[idx % PALETTE.length],
         totalVisits, realizadas, canceladas, reprogramadas,
-        oppsCreated, oppsWon, oppsLost, pipeline, wonAmount, forecast,
+        oppsCreated, oppsWon, oppsLost, pipeline, forecast,
         convRate, avgDeal, overdueOpps, noNextAction, redAccounts,
-        openOpps: openOpps.length, byDow, score,
+        openOpps: openOpps.length, byDow, score, visitToOpp,
         totalAccounts: sa.length,
       };
     });
@@ -139,23 +133,21 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
   const filtered = useMemo(() => sellerMetrics.filter((s) => selected.includes(s.id)), [sellerMetrics, selected]);
   const ranked   = useMemo(() => [...filtered].sort((a, b) => b.score - a.score), [filtered]);
 
-  /* Totales del equipo */
   const totals = useMemo(() => ({
-    visits:    filtered.reduce((s, x) => s + x.totalVisits, 0),
-    opps:      filtered.reduce((s, x) => s + x.oppsCreated, 0),
-    pipeline:  filtered.reduce((s, x) => s + x.pipeline, 0),
-    won:       filtered.reduce((s, x) => s + x.oppsWon, 0),
-    convRate:  filtered.length > 0 ? Math.round(filtered.reduce((s, x) => s + x.convRate, 0) / filtered.length) : 0,
+    visits:   filtered.reduce((s, x) => s + x.totalVisits, 0),
+    opps:     filtered.reduce((s, x) => s + x.oppsCreated, 0),
+    pipeline: filtered.reduce((s, x) => s + x.pipeline, 0),
+    won:      filtered.reduce((s, x) => s + x.oppsWon, 0),
+    convRate: filtered.length > 0 ? Math.round(filtered.reduce((s, x) => s + x.convRate, 0) / filtered.length) : 0,
+    alerts:   filtered.reduce((s, x) => s + x.overdueOpps + x.noNextAction + x.redAccounts, 0),
   }), [filtered]);
 
-  /* ── Charts ── */
   function renderCharts() {
     const Chart = window.Chart;
     if (!Chart || filtered.length === 0) return;
     [barRef, lineRef, radarRef].forEach((r) => { if (r.current?.chartInstance) r.current.chartInstance.destroy(); });
 
-    // Bar — visitas por vendedor
-    if (barRef.current && activeTab === "overview") {
+    if (barRef.current && activeTab === "graficos") {
       barRef.current.chartInstance = new Chart(barRef.current, {
         type: "bar",
         data: {
@@ -169,8 +161,7 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
       });
     }
 
-    // Line — pipeline por vendedor
-    if (lineRef.current && activeTab === "overview") {
+    if (lineRef.current && activeTab === "graficos") {
       lineRef.current.chartInstance = new Chart(lineRef.current, {
         type: "bar",
         data: {
@@ -181,8 +172,7 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
       });
     }
 
-    // Radar — comparativa multidimensional
-    if (radarRef.current && activeTab === "overview" && filtered.length > 0) {
+    if (radarRef.current && activeTab === "graficos" && filtered.length > 0) {
       const maxV = Math.max(...filtered.map((s) => s.totalVisits), 1);
       const maxP = Math.max(...filtered.map((s) => s.pipeline), 1);
       radarRef.current.chartInstance = new Chart(radarRef.current, {
@@ -199,11 +189,8 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
               s.score,
               Math.round((s.realizadas / Math.max(s.totalVisits, 1)) * 100),
             ],
-            borderColor: s.color,
-            backgroundColor: s.color + "18",
-            pointBackgroundColor: s.color,
-            borderWidth: 2,
-            pointRadius: 3,
+            borderColor: s.color, backgroundColor: s.color + "18",
+            pointBackgroundColor: s.color, borderWidth: 2, pointRadius: 3,
           })),
         },
         options: {
@@ -218,7 +205,6 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
   function toggleSeller(id) {
     setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }
-
   function selectAll()  { setSelected(sellers.map((s) => s.id)); }
   function selectNone() { setSelected([]); }
 
@@ -253,12 +239,12 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
 
         {/* TEAM KPIs */}
         <section className="sa-team-kpis">
-          <SaKpi label="Visitas del equipo"  value={totals.visits}              accent="blue"/>
-          <SaKpi label="Opps. creadas"       value={totals.opps}                accent="slate"/>
+          <SaKpi label="Visitas del equipo"  value={totals.visits}                 accent="blue"/>
+          <SaKpi label="Opps. creadas"       value={totals.opps}                   accent="slate"/>
           <SaKpi label="Pipeline total"      value={compactMoney(totals.pipeline)} accent="green"/>
-          <SaKpi label="Opp. ganadas"        value={totals.won}                 accent="green"/>
-          <SaKpi label="Conversión promedio" value={`${totals.convRate}%`}      accent={totals.convRate >= 40 ? "green" : totals.convRate >= 20 ? "amber" : "red"}/>
-          {best && <SaKpi label="⭐ Top vendedor" value={best.name.split(" ")[0]} sub={`Score ${best.score}`} accent="gold"/>}
+          <SaKpi label="Opp. ganadas"        value={totals.won}                    accent="green"/>
+          <SaKpi label="Conversión promedio" value={`${totals.convRate}%`}         accent={totals.convRate >= 40 ? "green" : totals.convRate >= 20 ? "amber" : "red"}/>
+          {best && <SaKpi label="⭐ Top vendedor" value={best.name.split(" ")[0]} sub={`Score ${best.score}/100`} accent="gold"/>}
         </section>
 
         {/* FILTRO DE VENDEDORES */}
@@ -288,19 +274,35 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
         {/* TABS */}
         <div className="sa-tabs">
           {[
-            { key: "overview", label: "Resumen"   },
-            { key: "ranking",  label: "Ranking"   },
-            { key: "detail",   label: "Detalle"   },
-            { key: "alerts",   label: "Alertas"   },
+            { key: "tablero",  label: "Tablero"  },
+            { key: "graficos", label: "Gráficos" },
+            { key: "ranking",  label: "Ranking"  },
+            { key: "detail",   label: "Detalle"  },
+            { key: "alerts",   label: "Alertas",  badge: totals.alerts > 0 ? totals.alerts : null },
           ].map((t) => (
             <button key={t.key} className={`sa-tab ${activeTab === t.key ? "active" : ""}`} onClick={() => setActiveTab(t.key)}>
               {t.label}
+              {t.badge && <span className="sa-tab__badge">{t.badge}</span>}
             </button>
           ))}
         </div>
 
-        {/* ── OVERVIEW ── */}
-        {activeTab === "overview" && (
+        {/* ── TABLERO ── */}
+        {activeTab === "tablero" && (
+          <>
+            {ranked.length === 0
+              ? <p className="sa-empty">Seleccioná al menos un vendedor.</p>
+              : (
+                <div className="sa-perf-grid">
+                  {ranked.map((s, i) => <SellerPerfCard key={s.id} s={s} rank={i} />)}
+                </div>
+              )
+            }
+          </>
+        )}
+
+        {/* ── GRÁFICOS ── */}
+        {activeTab === "graficos" && (
           <>
             <section className="sa-charts-grid">
               <div className="sa-chart-card sa-chart-card--wide">
@@ -326,7 +328,6 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
               </div>
             </section>
 
-            {/* Heatmap de actividad semanal */}
             <div className="sa-chart-card">
               <div className="sa-chart-card__header">
                 <h3>Actividad por día de semana</h3>
@@ -444,52 +445,62 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
         {/* ── ALERTAS ── */}
         {activeTab === "alerts" && (
           <div className="sa-alerts">
+            {/* Team health summary */}
+            {filtered.length > 0 && (
+              <div className="sa-alerts-summary">
+                <div className="sa-alerts-summary__stat">
+                  <strong>{filtered.filter((s) => s.totalVisits === 0).length}</strong>
+                  <span>Sin actividad</span>
+                </div>
+                <div className="sa-alerts-summary__divider"/>
+                <div className="sa-alerts-summary__stat">
+                  <strong className={filtered.reduce((s, x) => s + x.overdueOpps, 0) > 0 ? "red" : ""}>{filtered.reduce((s, x) => s + x.overdueOpps, 0)}</strong>
+                  <span>Opps. vencidas</span>
+                </div>
+                <div className="sa-alerts-summary__divider"/>
+                <div className="sa-alerts-summary__stat">
+                  <strong className={filtered.reduce((s, x) => s + x.noNextAction, 0) > 0 ? "amber" : ""}>{filtered.reduce((s, x) => s + x.noNextAction, 0)}</strong>
+                  <span>Sin próx. acción</span>
+                </div>
+                <div className="sa-alerts-summary__divider"/>
+                <div className="sa-alerts-summary__stat">
+                  <strong className={filtered.reduce((s, x) => s + x.redAccounts, 0) > 0 ? "red" : ""}>{filtered.reduce((s, x) => s + x.redAccounts, 0)}</strong>
+                  <span>Clientes en riesgo</span>
+                </div>
+              </div>
+            )}
 
-            {/* Sin actividad */}
             {filtered.filter((s) => s.totalVisits === 0).map((s) => (
-              <AlertCard key={s.id} type="danger" icon="⚠"
+              <AlertCard key={`na-${s.id}`} type="danger" icon="⚠"
                 title={`${s.name} sin actividad`}
-                text={`No registró ninguna visita en el período seleccionado.`}
+                text="No registró ninguna visita en el período seleccionado."
               />
             ))}
-
-            {/* Oportunidades vencidas */}
             {filtered.filter((s) => s.overdueOpps > 0).map((s) => (
-              <AlertCard key={s.id} type="warning" icon="◎"
+              <AlertCard key={`od-${s.id}`} type="warning" icon="◎"
                 title={`${s.name} — ${s.overdueOpps} opp. vencida${s.overdueOpps > 1 ? "s" : ""}`}
                 text="Oportunidades con fecha de cierre pasada sin actualizar."
               />
             ))}
-
-            {/* Sin próxima acción */}
             {filtered.filter((s) => s.noNextAction > 0).map((s) => (
-              <AlertCard key={s.id} type="warning" icon="◎"
+              <AlertCard key={`na2-${s.id}`} type="warning" icon="◎"
                 title={`${s.name} — ${s.noNextAction} opp. sin próxima acción`}
                 text="Definir próximo paso en las oportunidades abiertas."
               />
             ))}
-
-            {/* Clientes en riesgo */}
             {filtered.filter((s) => s.redAccounts > 0).map((s) => (
-              <AlertCard key={s.id} type="danger" icon="🔴"
+              <AlertCard key={`ra-${s.id}`} type="danger" icon="🔴"
                 title={`${s.name} — ${s.redAccounts} cliente${s.redAccounts > 1 ? "s" : ""} en riesgo`}
                 text="Clientes con seguimiento en rojo que requieren atención urgente."
               />
             ))}
-
-            {/* Top performer */}
             {best && (
               <AlertCard type="success" icon="⭐"
                 title={`${best.name} — mejor vendedor del período`}
                 text={`Score ${best.score}/100 · ${best.totalVisits} visitas · ${best.convRate}% conversión · ${compactMoney(best.pipeline)} en pipeline.`}
               />
             )}
-
-            {filtered.filter((s) => s.totalVisits > 0 && s.overdueOpps === 0 && s.noNextAction === 0).length === 0 && filtered.length > 0 && filtered.every((s) => s.totalVisits > 0) && (
-              <AlertCard type="success" icon="✓" title="Sin alertas críticas" text="Todos los vendedores tienen actividad registrada en el período."/>
-            )}
-
-            {filtered.length === 0 && <p className="sa-empty">Seleccioná al menos un vendedor para ver alertas.</p>}
+            {filtered.length === 0 && <p className="sa-empty">Seleccioná al menos un vendedor.</p>}
           </div>
         )}
 
@@ -499,6 +510,81 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
 
       </div>
     </Layout>
+  );
+}
+
+/* ─── Seller Performance Card ────────────────────────────────────────── */
+function SellerPerfCard({ s, rank }) {
+  const tier = s.score >= 70 ? "top" : s.score >= 40 ? "mid" : "low";
+  const tierColor = { top: "#10b981", mid: "#f59e0b", low: "#ef4444" }[tier];
+  const tierLabel = { top: "Alto rendimiento", mid: "Rendimiento medio", low: "Necesita atención" }[tier];
+  const hasAlerts = s.overdueOpps > 0 || s.noNextAction > 0 || s.redAccounts > 0;
+
+  return (
+    <div className={`sa-perf-card sa-perf-card--${tier}`}>
+      <div className="sa-perf-card__head">
+        <div className="sa-perf-card__avatar" style={{ background: s.color }}>
+          {s.name.slice(0,1).toUpperCase()}
+        </div>
+        <div className="sa-perf-card__identity">
+          <strong>{s.name}</strong>
+          <span className={`sa-perf-tier sa-perf-tier--${tier}`}>{tierLabel}</span>
+        </div>
+        <div className="sa-perf-card__score-wrap">
+          <div className="sa-perf-card__score" style={{ color: tierColor }}>{s.score}</div>
+          <div className="sa-perf-card__score-label">score</div>
+        </div>
+      </div>
+
+      <div className="sa-perf-card__bar-wrap">
+        <div className="sa-perf-card__bar" style={{ width: `${s.score}%`, background: tierColor }}/>
+      </div>
+
+      <div className="sa-perf-card__metrics">
+        <PerfMetric label="Visitas"    value={s.totalVisits} />
+        <PerfMetric label="Realizadas" value={s.realizadas}  />
+        <PerfMetric label="Opps."      value={s.oppsCreated} />
+        <PerfMetric label="Ganadas"    value={s.oppsWon}     color={s.oppsWon > 0 ? "#10b981" : undefined} />
+        <PerfMetric label="Pipeline"   value={compactMoney(s.pipeline)} />
+        <PerfMetric label="Conversión" value={`${s.convRate}%`} color={s.convRate >= 40 ? "#10b981" : s.convRate >= 20 ? "#f59e0b" : "#ef4444"} />
+      </div>
+
+      <div className="sa-perf-card__footer">
+        {hasAlerts ? (
+          <div className="sa-perf-card__alerts">
+            {s.overdueOpps > 0 && (
+              <span className="sa-perf-alert sa-perf-alert--red">
+                {s.overdueOpps} vencida{s.overdueOpps > 1 ? "s" : ""}
+              </span>
+            )}
+            {s.noNextAction > 0 && (
+              <span className="sa-perf-alert sa-perf-alert--amber">
+                {s.noNextAction} sin acción
+              </span>
+            )}
+            {s.redAccounts > 0 && (
+              <span className="sa-perf-alert sa-perf-alert--red">
+                {s.redAccounts} cliente{s.redAccounts > 1 ? "s" : ""} en riesgo
+              </span>
+            )}
+          </div>
+        ) : s.totalVisits > 0 ? (
+          <span className="sa-perf-card__ok">✓ Sin alertas activas</span>
+        ) : (
+          <span className="sa-perf-alert sa-perf-alert--red">Sin actividad en el período</span>
+        )}
+        <span className="sa-perf-card__rank">#{rank + 1}</span>
+      </div>
+    </div>
+  );
+}
+
+function PerfMetric({ label, value, color }) {
+  return (
+    <div className="sa-perf-metric">
+      <span>{label}</span>
+      <strong style={color ? { color } : {}}>{value}</strong>
+    </div>
   );
 }
 
@@ -525,7 +611,7 @@ function SaStat({ label, value }) {
 }
 
 function AlertCard({ type, icon, title, text }) {
-  const bg = { danger: "#fef2f2", warning: "#fffbeb", success: "#f0fdf4" }[type];
+  const bg     = { danger: "#fef2f2", warning: "#fffbeb", success: "#f0fdf4" }[type];
   const border = { danger: "#fecaca", warning: "#fde68a", success: "#bbf7d0" }[type];
   const color  = { danger: "#dc2626", warning: "#d97706", success: "#059669" }[type];
   return (
