@@ -198,6 +198,107 @@
   box-shadow: 0 2px 8px rgba(15,23,42,0.04);
 }
 
+/* ─── Commercial goals ─────────────────────────────────────────────── */
+.adm-goals-card {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+}
+
+.adm-goals-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.adm-goals-head span,
+.adm-goal-field span {
+  display: block;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .45px;
+  text-transform: uppercase;
+}
+
+.adm-goals-head h3 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.adm-goals-head p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.adm-goals-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.adm-goals-controls select,
+.adm-goals-controls input,
+.adm-goal-field input {
+  border: 1px solid #e8ecf2;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+}
+
+.adm-goals-controls select:focus,
+.adm-goals-controls input:focus,
+.adm-goal-field input:focus {
+  border-color: #3b82f6;
+  background: #ffffff;
+}
+
+.adm-goals-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.adm-goal-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.35fr) repeat(4, minmax(110px, 1fr));
+  gap: 10px;
+  align-items: end;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  transition: border-color .15s, background .15s;
+}
+
+.adm-goal-row.pending {
+  border-color: #fde68a;
+  background: #fffdf5;
+}
+
+.adm-goal-field {
+  display: grid;
+  gap: 5px;
+}
+
+.adm-goal-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .admin-audit-card__head {
   display: flex;
   justify-content: space-between;
@@ -710,6 +811,8 @@
   .admin-desktop-table { display: none; }
   .admin-mobile-list   { display: block; }
   .adm-module-scope { min-width: 0; }
+  .adm-goal-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adm-goal-row .admin-user-cell { grid-column: 1 / -1; }
 }
 
 @media (max-width: 600px) {
@@ -717,6 +820,11 @@
   .admin-kpi-grid { grid-template-columns: 1fr 1fr; }
   .admin-header-card { flex-direction: column; align-items: flex-start; }
   .admin-refresh-btn { width: 100%; }
+  .adm-goals-head { flex-direction: column; }
+  .adm-goals-controls,
+  .adm-goals-controls select,
+  .adm-goals-controls input,
+  .adm-goals-controls button { width: 100%; }
 }
 
 /* ─── Tab buttons ────────────────────────────────────────────────────── */

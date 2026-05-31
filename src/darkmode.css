@@ -158,7 +158,13 @@
 [data-theme="dark"] .cot-modal     { background: #161b22 !important; border-color: #21262d !important; }
 [data-theme="dark"] .cot-modal__header { background: #0d1117 !important; border-color: #21262d !important; }
 [data-theme="dark"] .cot-modal__header h3 { color: #e6edf3 !important; }
+[data-theme="dark"] .cot-modal__header p { color: #8b949e !important; }
 [data-theme="dark"] .cot-modal__body { background: #161b22 !important; }
+[data-theme="dark"] .cot-template-create { background: #0d1117 !important; border-color: #21262d !important; }
+[data-theme="dark"] .cot-template-global { color: #8b949e !important; }
+[data-theme="dark"] .cot-template-item { background: #0d1117 !important; border-color: #21262d !important; }
+[data-theme="dark"] .cot-template-item__head strong { color: #e6edf3 !important; }
+[data-theme="dark"] .cot-template-item small { color: #8b949e !important; }
 [data-theme="dark"] .cot-search    { background: #0d1117 !important; border-color: #21262d !important; color: #e6edf3 !important; }
 [data-theme="dark"] .cot-hist-item { background: #0d1117 !important; border-color: #21262d !important; }
 [data-theme="dark"] .cot-hist-item:hover { background: #1c2d3f !important; }
@@ -1115,6 +1121,27 @@
 [data-theme="dark"] .dash-kpi-section {
   background: rgba(21, 28, 37, 0.72) !important;
   border-color: #273244 !important;
+}
+
+[data-theme="dark"] .dash-comparison {
+  background: rgba(21, 28, 37, 0.82) !important;
+  border-color: #273244 !important;
+}
+
+[data-theme="dark"] .dash-comparison-card {
+  background: #111821 !important;
+  border-color: #273244 !important;
+}
+
+[data-theme="dark"] .dash-comparison__head strong,
+[data-theme="dark"] .dash-comparison-card strong {
+  color: #edf5ff !important;
+}
+
+[data-theme="dark"] .dash-comparison__head select {
+  background: #111821 !important;
+  border-color: #334155 !important;
+  color: #edf5ff !important;
 }
 
 [data-theme="dark"] .dash-kpi-toggle span.is-active {

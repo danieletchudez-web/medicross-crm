@@ -5,6 +5,12 @@ import { supabase } from "../lib/supabaseClient";
 import "./managerDashboard.css";
 
 const STAGES = ["Lead", "Contactado", "Reunión", "Demo", "Cotización", "Negociación"];
+const COMPARISON_PERIODS = [
+  { value: "week", label: "Esta semana vs anterior" },
+  { value: "month", label: "Este mes vs anterior" },
+  { value: "quarter", label: "Este trimestre vs anterior" },
+  { value: "year", label: "Este año vs anterior" },
+];
 
 const STAGE_COLORS = {
   "Lead":        { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.5)" },
@@ -26,6 +32,42 @@ function compactMoney(v) {
   if (n >= 1_000_000)         return `$${(n / 1_000_000).toFixed(1).replace(".", ",")} M`;
   if (n >= 1_000)             return `$${(n / 1_000).toFixed(0)} K`;
   return `$${Math.round(n).toLocaleString("es-AR")}`;
+}
+
+function periodRange(period, offset = 0) {
+  const now = new Date();
+  let start;
+  let end;
+
+  if (period === "week") {
+    const day = now.getDay() || 7;
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1 + (offset * 7));
+    end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+  } else if (period === "quarter") {
+    const quarterStart = Math.floor(now.getMonth() / 3) * 3 + (offset * 3);
+    start = new Date(now.getFullYear(), quarterStart, 1);
+    end = new Date(start.getFullYear(), start.getMonth() + 3, 1);
+  } else if (period === "year") {
+    start = new Date(now.getFullYear() + offset, 0, 1);
+    end = new Date(now.getFullYear() + offset + 1, 0, 1);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+  }
+
+  return { start, end };
+}
+
+function isInPeriod(value, range) {
+  if (!value) return false;
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime()) && date >= range.start && date < range.end;
+}
+
+function comparisonDelta(current, previous) {
+  if (!previous) return current ? { label: "Nuevo", tone: "up" } : { label: "Sin cambios", tone: "flat" };
+  const value = Math.round(((current - previous) / Math.abs(previous)) * 100);
+  return { label: `${value > 0 ? "+" : ""}${value}%`, tone: value > 0 ? "up" : value < 0 ? "down" : "flat" };
 }
 
 /* ── Tooltip ────────────────────────────────────────────────────────── */
@@ -188,6 +230,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
   const [campaigns, setCampaigns]         = useState([]);
   const [loading, setLoading]             = useState(true);
   const [kpisCollapsed, setKpisCollapsed] = useState(false);
+  const [comparisonPeriod, setComparisonPeriod] = useState("month");
 
   const pipelineRef    = useRef(null);
   const activityRef    = useRef(null);
@@ -239,6 +282,35 @@ export default function ManagerDashboard({ profile, onNavigate }) {
     if (selectedLine === "Todas") return campaigns;
     return campaigns.filter((c) => (c.product_line || c.line || "") === selectedLine);
   }, [campaigns, selectedLine]);
+
+  const comparison = useMemo(() => {
+    const currentRange  = periodRange(comparisonPeriod);
+    const previousRange = periodRange(comparisonPeriod, -1);
+    const open = (o) => !["Ganado", "Perdido"].includes(o.stage);
+    const createdIn = (range) => filteredOpps.filter((o) => isInPeriod(o.created_at, range));
+    const visitsIn = (range) => filteredVisits.filter((v) => isInPeriod(v.visit_date || v.created_at, range));
+    const wonIn = (range) => filteredOpps.filter((o) => o.stage === "Ganado" && isInPeriod(o.updated_at || o.created_at, range));
+    const summarize = (range) => {
+      const opportunities = createdIn(range);
+      const openCreated = opportunities.filter(open);
+      return {
+        pipeline: openCreated.reduce((sum, o) => sum + Number(o.amount || 0), 0),
+        forecast: openCreated.reduce((sum, o) => sum + ((Number(o.amount || 0) * Number(o.probability || 0)) / 100), 0),
+        visits: visitsIn(range).length,
+        created: opportunities.length,
+        won: wonIn(range).length,
+      };
+    };
+    const current = summarize(currentRange);
+    const previous = summarize(previousRange);
+    return [
+      { label: "Pipeline generado", value: current.pipeline, previous: previous.pipeline, formatter: compactMoney },
+      { label: "Forecast generado", value: current.forecast, previous: previous.forecast, formatter: compactMoney },
+      { label: "Visitas", value: current.visits, previous: previous.visits },
+      { label: "Opps. creadas", value: current.created, previous: previous.created },
+      { label: "Opps. ganadas", value: current.won, previous: previous.won },
+    ];
+  }, [comparisonPeriod, filteredOpps, filteredVisits]);
 
   const metrics = useMemo(() => {
     const open     = filteredOpps.filter((o) => !["Ganado","Perdido"].includes(o.stage));
@@ -489,6 +561,35 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             <button className="dash-hero-cta" onClick={() => onNavigate("opportunities")}>Ver pipeline</button>
           </div>
         </header>
+
+        <section className="dash-comparison">
+          <div className="dash-comparison__head">
+            <div>
+              <span>Comparativo de períodos</span>
+              <strong>Actividad comercial generada</strong>
+              <p>Medición por fecha de creación o registro, separada de la foto actual del pipeline.</p>
+            </div>
+            <select value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)}>
+              {COMPARISON_PERIODS.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
+            </select>
+          </div>
+          <div className="dash-comparison__grid">
+            {comparison.map((item) => {
+              const delta = comparisonDelta(item.value, item.previous);
+              const format = item.formatter || ((value) => Number(value || 0).toLocaleString("es-AR"));
+              return (
+                <article key={item.label} className="dash-comparison-card">
+                  <span>{item.label}</span>
+                  <strong>{format(item.value)}</strong>
+                  <small>Anterior: {format(item.previous)}</small>
+                  <em className={`dash-comparison-card__delta dash-comparison-card__delta--${delta.tone}`}>
+                    {delta.tone === "up" ? "↑" : delta.tone === "down" ? "↓" : "→"} {delta.label}
+                  </em>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
         {/* PRIMARY KPIs — fila 1 */}
         <section className="dash-primary-kpis">

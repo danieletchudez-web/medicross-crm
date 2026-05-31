@@ -119,9 +119,12 @@ export default function GlobalSearch({ onNavigate }) {
   const [results,     setResults]     = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(-1);
+  const [activeType,  setActiveType]  = useState("all");
 
-  const flatRef    = useRef([]);
-  const resultsRef = useRef(null);
+  const flatRef     = useRef([]);
+  const resultsRef  = useRef(null);
+  const searchTimer = useRef(null);
+  const searchSeq   = useRef(0);
 
   const hasQuery = query.trim().length >= 2;
 
@@ -139,9 +142,16 @@ export default function GlobalSearch({ onNavigate }) {
   const sortedGroups = Object.entries(grouped).sort(
     ([a], [b]) => moduleOrder.indexOf(a) - moduleOrder.indexOf(b)
   );
+  const visibleGroups = activeType === "all"
+    ? sortedGroups
+    : sortedGroups.filter(([kind]) => kind === activeType);
+  const visibleCount = visibleGroups.reduce((sum, [, rows]) => sum + rows.length, 0);
+  const visibleRows = useMemo(() => visibleGroups.flatMap(([, rows]) => rows), [visibleGroups]);
 
   // Keep flat ref in sync for keyboard nav
-  flatRef.current = sortedGroups.flatMap(([, rows]) => rows);
+  useEffect(() => { flatRef.current = visibleRows; }, [visibleRows]);
+
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -184,11 +194,21 @@ export default function GlobalSearch({ onNavigate }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onNavigate]);
 
-  async function runSearch(value) {
+  function runSearch(value) {
     setQuery(value);
-    if (value.trim().length < 2) { setResults([]); return; }
+    setActiveType("all");
+    clearTimeout(searchTimer.current);
+    const seq = ++searchSeq.current;
+    if (value.trim().length < 2) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    searchTimer.current = setTimeout(() => executeSearch(value, seq), 300);
+  }
 
+  async function executeSearch(value, seq) {
     const loaded = await Promise.all(
       TABLES.map(async table => {
         try {
@@ -205,7 +225,7 @@ export default function GlobalSearch({ onNavigate }) {
               matches(row, table.fields, value, table.jsonFields || [], table.objFields || [])
             );
           }
-          return rows.slice(0, 8).map(row => ({
+          return rows.slice(0, 3).map(row => ({
             ...row,
             kind:     table.label,
             kindIcon: table.icon,
@@ -217,6 +237,7 @@ export default function GlobalSearch({ onNavigate }) {
       })
     );
 
+    if (seq !== searchSeq.current) return;
     setResults(loaded.flat());
     setLoading(false);
   }
@@ -273,9 +294,13 @@ export default function GlobalSearch({ onNavigate }) {
                   {sortedGroups.map(([kind, rows]) => {
                     const icon = TABLES.find(t => t.label === kind)?.icon || "";
                     return (
-                      <span key={kind} className="global-search-summary__tag">
+                      <button
+                        key={kind}
+                        className={`global-search-summary__tag${activeType === kind ? " global-search-summary__tag--active" : ""}`}
+                        onClick={() => setActiveType(activeType === kind ? "all" : kind)}
+                      >
                         {icon} {kind} <strong>{rows.length}</strong>
-                      </span>
+                      </button>
                     );
                   })}
                 </div>
@@ -301,7 +326,7 @@ export default function GlobalSearch({ onNavigate }) {
                 <p className="global-search-empty">Sin resultados para <strong>"{query}"</strong>.</p>
               )}
 
-              {sortedGroups.map(([kind, rows]) => {
+              {visibleGroups.map(([kind, rows]) => {
                 const icon = TABLES.find(t => t.label === kind)?.icon || "";
                 return (
                   <div key={kind} className="global-search-group">
@@ -336,6 +361,7 @@ export default function GlobalSearch({ onNavigate }) {
             {/* Footer */}
             {hasQuery && totalCount > 0 && (
               <div className="global-search-footer">
+                <span>{visibleCount} visibles</span>
                 <span><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
                 <span><kbd>↵</kbd> Abrir</span>
                 <span><kbd>Esc</kbd> Cerrar</span>

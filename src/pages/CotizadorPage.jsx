@@ -59,8 +59,8 @@ const emptyR = () => ({
 });
 
 const VENDEDORES    = ["Monica Somosa","Daniel Etchudez","Soledad Cantero","Otros"];
-const ESTADOS       = ["borrador","enviada","seguimiento","negociacion","ganada","perdida","facturada","cobrada"];
-const ESTADO_LABELS = { borrador:"Borrador", enviada:"Enviada", seguimiento:"Seguimiento", negociacion:"Negociación", ganada:"Ganada", perdida:"Perdida", facturada:"Facturada", cobrada:"Cobrada" };
+const ESTADOS       = ["borrador","enviada","evaluacion","aceptada","rechazada","vencida","seguimiento","negociacion","ganada","perdida","facturada","cobrada"];
+const ESTADO_LABELS = { borrador:"Borrador", enviada:"Enviada", evaluacion:"En evaluación", aceptada:"Aceptada", rechazada:"Rechazada", vencida:"Vencida", seguimiento:"Seguimiento", negociacion:"Negociación", ganada:"Ganada", perdida:"Perdida", facturada:"Facturada", cobrada:"Cobrada" };
 
 function uniqueNames(names) {
   const seen = new Set();
@@ -88,6 +88,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [fechaApert,  setFechaApert]  = useState(initialData?.fechaApert  || "");
   const [nroLicit,    setNroLicit]    = useState(initialData?.nroLicit    || "");
   const [institucion, setInstitucion] = useState(initialData?.institucion || "");
+  const [sourceTenderId, setSourceTenderId] = useState(initialData?.tenderId || null);
   const [plazoVenta,  setPlazoVenta]  = useState("");
   const [mantOferta,  setMantOferta]  = useState("");
   const [formaCobro,  setFormaCobro]  = useState("");
@@ -98,20 +99,47 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [toast,         setToast]         = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
   const [showPapelera,  setShowPapelera]  = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [histItems,     setHistItems]     = useState([]);
   const [papItems,      setPapItems]      = useState([]);
+  const [templates,     setTemplates]     = useState([]);
+  const [templateName,  setTemplateName]  = useState("");
+  const [templateGlobal,setTemplateGlobal]= useState(false);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [savingTemplate,   setSavingTemplate]   = useState(false);
   const [histSearch,    setHistSearch]    = useState("");
   const [loadingHist,   setLoadingHist]   = useState(false);
+  const [catalog,        setCatalog]       = useState([]);
+  const [catalogOpenId,  setCatalogOpenId] = useState(null);
+  const [expirationDays, setExpirationDays] = useState(30);
 
   useEffect(() => {
     loadVendedores();
+    loadCatalog();
+    loadQuoteSettings();
     if (!initialData?.vendedor) {
       const vMatch = vendedores.find(v => profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase()));
       if (vMatch) setVendedor(vMatch);
     }
-    if (initialData?.institucion || initialData?.nroLicit)
-      showToast(`Cotización pre-cargada desde Licitaciones: ${initialData.institucion || initialData.nroLicit}`);
   }, []);
+
+  useEffect(() => {
+    if (!initialData?.tenderId) return;
+    if (initialData.quoteId) {
+      loadCotizacion(initialData.quoteId);
+      return;
+    }
+    setDocId(null);
+    setQuoteNum(null);
+    setSourceTenderId(initialData.tenderId);
+    setInstitucion(initialData.institucion || "");
+    setNroLicit(initialData.nroLicit || "");
+    setFechaApert(initialData.fechaApert || "");
+    if (initialData.vendedor) setVendedor(initialData.vendedor);
+    setRenglones([emptyR()]);
+    showToast(`Cotización pre-cargada desde Licitaciones: ${initialData.institucion || initialData.nroLicit}`);
+    window.scrollTo(0, 0);
+  }, [initialData?.tenderId, initialData?.quoteId, initialData?.institucion, initialData?.nroLicit, initialData?.fechaApert, initialData?.vendedor]);
 
   useEffect(() => {
     if (initialData?.vendedor || vendedor) return;
@@ -134,6 +162,24 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       .map(u => u.full_name || u.email);
 
     setVendedores(uniqueNames([...dynamicNames, ...VENDEDORES]));
+  }
+
+  async function loadCatalog() {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("name", { ascending: true });
+    if (!error) setCatalog(data || []);
+  }
+
+  async function loadQuoteSettings() {
+    const { data } = await supabase
+      .from("crm_settings")
+      .select("value")
+      .eq("key", "quote_expiration_days")
+      .maybeSingle();
+    const configured = Number(data?.value?.days);
+    if (configured > 0) setExpirationDays(configured);
   }
 
   async function getNextQuoteNumber() {
@@ -165,6 +211,26 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const totalGeneral = renglones.reduce((s, r) => s + (calcR(r, parseN(tc))?.sub || 0), 0);
 
   const updateR = (id, key, val) => setRenglones(prev => prev.map(r => r.id === id ? {...r, [key]: val} : r));
+  const catalogMatches = (query) => {
+    const normalized = String(query || "").trim().toLowerCase();
+    if (normalized.length < 2) return [];
+    return catalog
+      .filter((product) => [product.name, product.line, product.supplier, product.sku, product.brand, product.speech]
+        .some((value) => value?.toLowerCase().includes(normalized)))
+      .slice(0, 6);
+  };
+  const selectCatalogProduct = (rowId, product) => {
+    setRenglones(prev => prev.map(row => row.id === rowId ? {
+      ...row,
+      catalog_product_id: product.id,
+      empresa: product.supplier || row.empresa,
+      codigo: product.sku || row.codigo,
+      marca: product.brand || product.line || row.marca,
+      descr: product.name || row.descr,
+      costo: product.base_price ? String(product.base_price) : row.costo,
+    } : row));
+    setCatalogOpenId(null);
+  };
   const addR    = () => setRenglones(prev => [...prev, emptyR()]);
   const removeR = (id) => {
     if (renglones.length <= 1) { showToast("Debe haber al menos un renglón","err"); return; }
@@ -173,13 +239,102 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
   function nuevaCotizacion() {
     if (docId && !confirm("¿Crear nueva cotización? Los datos sin guardar se perderán.")) return;
-    setDocId(null); setQuoteNum(null);
+    setDocId(null); setQuoteNum(null); setSourceTenderId(null);
     setVendedor(""); setTc("1425"); setFechaApert(""); setNroLicit("");
     setInstitucion(""); setPlazoVenta(""); setMantOferta(""); setFormaCobro("");
     setRenglones([emptyR()]);
     const vMatch = vendedores.find(v => profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase()));
     if (vMatch) setVendedor(vMatch);
     window.scrollTo(0,0);
+  }
+
+  function templatePayload() {
+    return {
+      tc,
+      plazo_venta: plazoVenta,
+      mant_oferta: mantOferta,
+      forma_cobro: formaCobro,
+      renglones: renglones.map(row => Object.fromEntries(Object.entries(row).filter(([key]) => key !== "id"))),
+    };
+  }
+
+  function rowsFromTemplate(rows) {
+    return (Array.isArray(rows) && rows.length ? rows : [{}]).map(row => ({
+      ...emptyR(),
+      ...row,
+      id: Date.now() + Math.random(),
+      iva: String(row.iva || "10.5"),
+      markup: String(row.markup || "2"),
+      cant: row.cant || 1,
+    }));
+  }
+
+  async function abrirTemplates() {
+    setLoadingTemplates(true);
+    setShowTemplates(true);
+    const { data, error } = await supabase
+      .from("quote_templates")
+      .select("*")
+      .order("is_global", { ascending: false })
+      .order("updated_at", { ascending: false });
+    if (error) showToast("No se pudieron cargar las plantillas: " + error.message, "err");
+    else setTemplates(data || []);
+    setLoadingTemplates(false);
+  }
+
+  async function guardarTemplate() {
+    const name = templateName.trim();
+    if (!name) { showToast("Ingresá un nombre para la plantilla.", "err"); return; }
+    setSavingTemplate(true);
+    const { data, error } = await supabase
+      .from("quote_templates")
+      .insert([{
+        name,
+        owner_id: profile?.id || null,
+        created_by: profile?.id || null,
+        is_global: profile?.role === "super_admin" && templateGlobal,
+        payload: templatePayload(),
+      }])
+      .select()
+      .single();
+    setSavingTemplate(false);
+    if (error) { showToast("No se pudo guardar la plantilla: " + error.message, "err"); return; }
+    setTemplates(prev => [data, ...prev]);
+    setTemplateName("");
+    setTemplateGlobal(false);
+    showToast(`Plantilla “${name}” guardada.`);
+  }
+
+  function aplicarTemplate(template) {
+    const payload = template.payload || {};
+    if (payload.tc) setTc(String(payload.tc));
+    setPlazoVenta(payload.plazo_venta || "");
+    setMantOferta(payload.mant_oferta || "");
+    setFormaCobro(payload.forma_cobro || "");
+    setRenglones(rowsFromTemplate(payload.renglones));
+    setShowTemplates(false);
+    showToast(`Plantilla “${template.name}” aplicada.`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function renombrarTemplate(template) {
+    const nextName = prompt("Nuevo nombre de la plantilla:", template.name)?.trim();
+    if (!nextName || nextName === template.name) return;
+    const { error } = await supabase
+      .from("quote_templates")
+      .update({ name: nextName, updated_at: new Date().toISOString() })
+      .eq("id", template.id);
+    if (error) { showToast("No se pudo renombrar: " + error.message, "err"); return; }
+    setTemplates(prev => prev.map(item => item.id === template.id ? { ...item, name: nextName } : item));
+    showToast("Plantilla renombrada.");
+  }
+
+  async function borrarTemplate(template) {
+    if (!confirm(`¿Eliminar la plantilla “${template.name}”?`)) return;
+    const { error } = await supabase.from("quote_templates").delete().eq("id", template.id);
+    if (error) { showToast("No se pudo eliminar: " + error.message, "err"); return; }
+    setTemplates(prev => prev.filter(item => item.id !== template.id));
+    showToast("Plantilla eliminada.");
   }
 
   function buildSnap(quoteNumber, quoteNumFormatted) {
@@ -192,6 +347,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         marca:r.marca, descr:r.descr, costo:r.costo, cant:r.cant, moneda:r.moneda,
         iva:String(r.iva), markup:String(r.markup), tcInd:r.tcInd||"",
         modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
+        catalog_product_id:r.catalog_product_id||null,
       })),
       total_general: totalGeneral,
       updated_at: new Date().toISOString(),
@@ -200,7 +356,17 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     };
     if (quoteNumber)       snap.quote_number       = quoteNumber;
     if (quoteNumFormatted) snap.quote_num_formatted = quoteNumFormatted;
+    if (sourceTenderId)     snap.tender_id          = sourceTenderId;
     return snap;
+  }
+
+  async function linkTenderToQuote(quoteId) {
+    if (!sourceTenderId || !quoteId) return;
+    const { error } = await supabase
+      .from("tenders")
+      .update({ linked_quote_id: quoteId, updated_at: new Date().toISOString() })
+      .eq("id", sourceTenderId);
+    if (error) showToast("La cotización se guardó, pero no se pudo vincular a la licitación: " + error.message, "err");
   }
 
   async function saveCotizacion({ silent = false } = {}) {
@@ -218,6 +384,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
           .update(buildSnap(quoteNumberToSave, quoteFormattedToSave))
           .eq("id", docId);
         if (error) throw error;
+        await linkTenderToQuote(docId);
         if (quoteFormattedToSave) setQuoteNum(quoteFormattedToSave);
         const savedQuoteNum = quoteFormattedToSave || quoteNum;
         if (!silent) showToast(`Cotización #${savedQuoteNum} actualizada ✓`);
@@ -231,6 +398,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         const { data: newRow, error } = await supabase.from("cotizaciones").insert([snap]).select().single();
         if (error) throw error;
         setDocId(newRow.id); setQuoteNum(qFormatted);
+        await linkTenderToQuote(newRow.id);
         if (!silent) showToast(`Cotización #${qFormatted} guardada ✓`);
         setSaving(false);
         return { ok: true, quoteNum: qFormatted };
@@ -257,7 +425,18 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   async function abrirHistorial() {
     setLoadingHist(true); setShowHistorial(true);
     const { data, error } = await supabase.from("cotizaciones").select("*").eq("deleted",false).order("created_at",{ascending:false}).limit(100);
-    if (!error) setHistItems(data||[]); else showToast("Error: "+error.message,"err");
+    if (!error) {
+      const now = Date.now();
+      const nextItems = (data || []).map((quote) => {
+        const openedAt = quote.fecha_apert || quote.created_at;
+        const daysOpen = openedAt ? Math.floor((now - new Date(openedAt).getTime()) / 86400000) : 0;
+        if (["enviada", "evaluacion"].includes(quote.estado) && daysOpen > expirationDays) return { ...quote, estado: "vencida" };
+        return quote;
+      });
+      const expired = nextItems.filter((quote, index) => quote.estado === "vencida" && data[index]?.estado !== "vencida");
+      if (expired.length) await Promise.all(expired.map((quote) => supabase.from("cotizaciones").update({ estado: "vencida", updated_at: new Date().toISOString() }).eq("id", quote.id)));
+      setHistItems(nextItems);
+    } else showToast("Error: "+error.message,"err");
     setLoadingHist(false);
   }
 
@@ -265,6 +444,38 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const { error } = await supabase.from("cotizaciones").update({ estado, updated_at:new Date().toISOString(), updated_by:profile?.email||"" }).eq("id",id);
     if (!error) { setHistItems(prev=>prev.map(c=>c.id===id?{...c,estado}:c)); showToast("Estado actualizado"); }
     else showToast("Error: "+error.message,"err");
+  }
+
+  async function convertAcceptedQuote(quote) {
+    if (quote.accepted_opportunity_id) {
+      showToast("Esta cotización ya fue convertida en oportunidad.");
+      return;
+    }
+    const { data: account } = await supabase
+      .from("accounts")
+      .select("id")
+      .ilike("name", quote.institucion || "")
+      .limit(1)
+      .maybeSingle();
+    const firstProduct = (quote.renglones || []).find((row) => row.catalog_product_id);
+    const payload = {
+      name: `Cotización #${quote.quote_num_formatted || quote.quote_number || ""}${quote.institucion ? ` · ${quote.institucion}` : ""}`,
+      account_id: account?.id || null,
+      product_id: firstProduct?.catalog_product_id || null,
+      stage: "Ganado",
+      amount: Number(quote.total_general || 0),
+      forecast_amount: Number(quote.total_general || 0),
+      probability: 100,
+      next_action: "Coordinar entrega y seguimiento postventa",
+      source_quote_id: quote.id,
+      owner_id: profile?.id || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data: opportunity, error } = await supabase.from("opportunities").insert([payload]).select("id").single();
+    if (error) { showToast("No se pudo crear la oportunidad: " + error.message, "err"); return; }
+    await supabase.from("cotizaciones").update({ accepted_opportunity_id: opportunity.id, updated_at: new Date().toISOString() }).eq("id", quote.id);
+    setHistItems(prev => prev.map(item => item.id === quote.id ? { ...item, accepted_opportunity_id: opportunity.id } : item));
+    showToast("Oportunidad ganada creada desde la cotización.");
   }
 
   async function softDelete(id, num) {
@@ -291,6 +502,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const { data, error } = await supabase.from("cotizaciones").select("*").eq("id",id).single();
     if (error||!data) { showToast("No encontrada","err"); return; }
     setDocId(data.id); setQuoteNum(formatQuoteNumber(data.quote_num_formatted) || formatQuoteNumber(data.quote_number) || "?");
+    setSourceTenderId(data.tender_id || null);
     setVendedor(data.vendedor||""); setTc(String(data.tc||"1425"));
     setFechaApert(data.fecha_apert||""); setNroLicit(data.nro_licit||"");
     setInstitucion(data.institucion||""); setPlazoVenta(data.plazo_venta||"");
@@ -301,6 +513,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       codigo:r.codigo||"", marca:r.marca||"", descr:r.descr||"", costo:r.costo||"",
       cant:r.cant||1, moneda:r.moneda||"USD", iva:String(r.iva||"10.5"), markup:String(r.markup||"2"),
       tcInd:r.tcInd||"", modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
+      catalog_product_id:r.catalog_product_id||null,
     })) : [emptyR()]);
     setShowHistorial(false);
     showToast(`Cotización #${data.quote_num_formatted||"?"} cargada`);
@@ -502,10 +715,11 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
         {toast && <div className={`cot-toast cot-toast--${toast.type}`}>{toast.msg}</div>}
 
-        {initialData?.institucion && !docId && (
+        {sourceTenderId && (
           <div className="cot-banner-warn">
-            📋 Cotización iniciada desde Licitaciones — <strong>{initialData.institucion}</strong>
-            {initialData.nroLicit ? ` · ${initialData.nroLicit}` : ""}. Completá los renglones y guardá.
+            📋 Originada en licitación — <strong>{institucion || initialData?.institucion}</strong>
+            {(nroLicit || initialData?.nroLicit) ? ` · ${nroLicit || initialData?.nroLicit}` : ""}.
+            {!docId && " Completá los renglones y guardá."}
           </div>
         )}
 
@@ -522,6 +736,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
           <div className="cot-header-actions">
             <button className="cot-btn cot-btn--ghost" onClick={()=>onNavigate("tenders")}>← Licitaciones</button>
             <button className="cot-btn cot-btn--ghost" onClick={abrirHistorial}>📋 Historial</button>
+            <button className="cot-btn cot-btn--ghost" onClick={abrirTemplates}>📁 Plantillas</button>
             <button className="cot-btn cot-btn--ghost" onClick={abrirPapelera} style={{color:"#dc2626"}}>🗑 Papelera</button>
             <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>+ Nueva</button>
             <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>⬇ PDF</button>
@@ -593,7 +808,20 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                       <input value={r.marca} onChange={e=>updateR(r.id,"marca",e.target.value)} placeholder="Marca"/></div>
                   </div>
                   <div className="cot-field" style={{marginTop:10}}><label>Descripción del producto</label>
-                    <textarea rows={3} value={r.descr} onChange={e=>updateR(r.id,"descr",e.target.value)} placeholder="Descripción completa del producto"/>
+                    <div className="cot-catalog-field">
+                      <textarea rows={3} value={r.descr} onFocus={()=>setCatalogOpenId(r.id)} onChange={e=>{updateR(r.id,"descr",e.target.value);setCatalogOpenId(r.id);}} placeholder="Descripción completa del producto"/>
+                      {catalogOpenId === r.id && catalogMatches(r.descr).length > 0 && (
+                        <div className="cot-catalog-menu">
+                          <span className="cot-catalog-menu__title">Productos del Share Kit</span>
+                          {catalogMatches(r.descr).map(product => (
+                            <button type="button" key={product.id} onClick={()=>selectCatalogProduct(r.id, product)}>
+                              <strong>{product.name}</strong>
+                              <small>{[product.sku, product.brand || product.line, product.base_price ? `Base ${fARS(product.base_price)}` : ""].filter(Boolean).join(" · ")}</small>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="cot-divider"/>
                   <div className="cot-grid-3">
@@ -729,6 +957,58 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         </div>
       </div>
 
+      {showTemplates && createPortal((
+        <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowTemplates(false);}}>
+          <div className="cot-modal cot-modal--templates">
+            <div className="cot-modal__header">
+              <div>
+                <h3>📁 Plantillas de cotización</h3>
+                <p>Reutilizá condiciones comerciales y renglones frecuentes.</p>
+              </div>
+              <button className="cot-modal__close" onClick={()=>setShowTemplates(false)}>×</button>
+            </div>
+            <div className="cot-template-create">
+              <input className="cot-search" value={templateName} onChange={e=>setTemplateName(e.target.value)} placeholder="Nombre de la nueva plantilla"/>
+              {profile?.role === "super_admin" && (
+                <label className="cot-template-global">
+                  <input type="checkbox" checked={templateGlobal} onChange={e=>setTemplateGlobal(e.target.checked)}/>
+                  Visible para todo el equipo
+                </label>
+              )}
+              <button className="cot-btn cot-btn--primary" onClick={guardarTemplate} disabled={savingTemplate}>
+                {savingTemplate ? "Guardando…" : "Guardar actual"}
+              </button>
+            </div>
+            <div className="cot-modal__body">
+              {loadingTemplates ? (
+                <p className="cot-template-empty">Cargando…</p>
+              ) : templates.length === 0 ? (
+                <p className="cot-template-empty">Todavía no hay plantillas. Guardá una cotización frecuente para empezar.</p>
+              ) : templates.map(template => {
+                const canEdit = template.owner_id === profile?.id || profile?.role === "super_admin";
+                const count = Array.isArray(template.payload?.renglones) ? template.payload.renglones.length : 0;
+                return (
+                  <article className="cot-template-item" key={template.id}>
+                    <div>
+                      <div className="cot-template-item__head">
+                        <strong>{template.name}</strong>
+                        {template.is_global && <span>Equipo</span>}
+                      </div>
+                      <small>{count} renglón{count === 1 ? "" : "es"} · Actualizada {template.updated_at ? new Date(template.updated_at).toLocaleDateString("es-AR") : "hoy"}</small>
+                    </div>
+                    <div className="cot-template-item__actions">
+                      <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>aplicarTemplate(template)}>Usar</button>
+                      {canEdit && <button className="cot-btn cot-btn--sm" onClick={()=>renombrarTemplate(template)}>Renombrar</button>}
+                      {canEdit && <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>borrarTemplate(template)}>Eliminar</button>}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ), document.body)}
+
       {showHistorial && createPortal((
         <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowHistorial(false);}}>
           <div className="cot-modal">
@@ -761,6 +1041,11 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                     <select className="cot-estado-select" value={c.estado||"borrador"} onChange={e=>cambiarEstado(c.id,e.target.value)}>
                       {ESTADOS.map(s=><option key={s} value={s}>{ESTADO_LABELS[s]}</option>)}
                     </select>
+                    {c.estado === "aceptada" && (
+                      <button className="cot-btn cot-btn--success cot-btn--sm" onClick={()=>convertAcceptedQuote(c)}>
+                        {c.accepted_opportunity_id ? "✓ Oportunidad creada" : "✓ Convertir en ganada"}
+                      </button>
+                    )}
                     <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>softDelete(c.id,c.quote_num_formatted||"???")}>Borrar</button>
                   </div>
                 </div>

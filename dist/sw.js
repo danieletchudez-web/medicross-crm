@@ -1,4 +1,4 @@
-const CACHE_NAME = "medicross-crm-shell-v1";
+const CACHE_NAME = "medicross-crm-shell-v2";
 const STATIC_ASSETS = [
   "/",
   "/manifest.webmanifest",

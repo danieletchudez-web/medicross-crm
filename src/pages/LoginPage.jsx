@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import logoImg from "../assets/logo.jpg";
 
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 const PASSWORD_RULES = [
   { id: "length",  label: "Mínimo 10 caracteres",            test: v => v.length >= 10 },
   { id: "upper",   label: "Una letra mayúscula",              test: v => /[A-ZÁÉÍÓÚÑ]/.test(v) },
@@ -44,15 +43,11 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading]   = useState(false);
   const [message, setMessage]   = useState(null);
-  const [captchaToken, setCaptchaToken] = useState("");
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [captchaQuestion, setCaptchaQuestion] = useState(() => makeCaptchaQuestion());
-  const captchaRef = useRef(null);
-  const widgetRef = useRef(null);
 
   const needsCaptcha = ["login", "register", "reset"].includes(mode);
-  const localCaptchaOk = captchaAnswer.trim() === captchaQuestion.answer;
-  const captchaOk = TURNSTILE_SITE_KEY ? Boolean(captchaToken) : localCaptchaOk;
+  const captchaOk = captchaAnswer.trim() === captchaQuestion.answer;
   const strongPassword = useMemo(() => isStrongPassword(password), [password]);
 
   useEffect(() => {
@@ -61,44 +56,9 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    setCaptchaToken("");
     setCaptchaAnswer("");
     setCaptchaQuestion(makeCaptchaQuestion());
   }, [mode]);
-
-  useEffect(() => {
-    if (!TURNSTILE_SITE_KEY || !needsCaptcha || !captchaRef.current) return;
-
-    function renderTurnstile() {
-      if (!window.turnstile || !captchaRef.current || widgetRef.current) return;
-      widgetRef.current = window.turnstile.render(captchaRef.current, {
-        sitekey: TURNSTILE_SITE_KEY,
-        theme: "light",
-        callback: token => setCaptchaToken(token),
-        "expired-callback": () => setCaptchaToken(""),
-        "error-callback": () => setCaptchaToken(""),
-      });
-    }
-
-    if (!document.querySelector('script[data-turnstile="true"]')) {
-      const script = document.createElement("script");
-      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-      script.async = true;
-      script.defer = true;
-      script.dataset.turnstile = "true";
-      script.onload = renderTurnstile;
-      document.head.appendChild(script);
-    } else {
-      renderTurnstile();
-    }
-
-    return () => {
-      if (widgetRef.current && window.turnstile) {
-        window.turnstile.remove(widgetRef.current);
-        widgetRef.current = null;
-      }
-    };
-  }, [mode, needsCaptcha]);
 
   function refreshLocalCaptcha() {
     setCaptchaQuestion(makeCaptchaQuestion());
@@ -111,13 +71,6 @@ export default function LoginPage() {
     return false;
   }
 
-  function buildCaptchaOptions(extra = {}) {
-    return {
-      ...extra,
-      ...(captchaToken ? { captchaToken } : {}),
-    };
-  }
-
   async function handleLogin(e) {
     e.preventDefault();
     if (!requireCaptcha()) return;
@@ -127,7 +80,6 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-      options: buildCaptchaOptions(),
     });
 
     if (error) {
@@ -153,7 +105,7 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: buildCaptchaOptions({ data: { full_name: fullName } }),
+      options: { data: { full_name: fullName } },
     });
 
     if (error) {
@@ -190,7 +142,6 @@ export default function LoginPage() {
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
-      captchaToken: captchaToken || undefined,
     });
 
     if (error) {
@@ -237,15 +188,6 @@ export default function LoginPage() {
 
   function CaptchaBox() {
     if (!needsCaptcha) return null;
-
-    if (TURNSTILE_SITE_KEY) {
-      return (
-        <div style={s.captchaBox}>
-          <span style={s.captchaLabel}>Verificación de seguridad</span>
-          <div ref={captchaRef} style={s.turnstileBox} />
-        </div>
-      );
-    }
 
     return (
       <div style={s.captchaBox}>
@@ -498,12 +440,6 @@ const s = {
     fontWeight: 900,
     cursor: "pointer",
     fontFamily: "inherit",
-  },
-  turnstileBox: {
-    minHeight: 65,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
   },
   credit: {
     marginTop: 20,

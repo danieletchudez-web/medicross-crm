@@ -285,7 +285,7 @@
 
 /* ─── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .crm-ai-panel { width: calc(100vw - 32px); right: 16px; bottom: 80px; }
-  .crm-ai-fab   { right: 16px; bottom: 16px; }
+  .crm-ai-panel { width: calc(100vw - 32px); right: 16px; bottom: calc(136px + env(safe-area-inset-bottom)); }
+  .crm-ai-fab   { right: 16px; bottom: calc(70px + env(safe-area-inset-bottom)); }
   .crm-ai-suggestions { grid-template-columns: 1fr; }
 }

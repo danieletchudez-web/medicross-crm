@@ -324,6 +324,18 @@
 .acc-row--expanded td { background: #f0f7ff; }
 
 .acc-td-name strong { display: block; font-weight: 700; color: #0f172a; }
+.acc-account-link {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.acc-account-link:hover { color: #1769aa; text-decoration: underline; }
 .acc-td-name small  { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; }
 
 .acc-td-contact {

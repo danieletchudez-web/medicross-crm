@@ -18,6 +18,7 @@ const EMPTY_FORM = {
 };
 
 const STAGES = ["Lead","Contactado","Reunión","Demo","Cotización","Negociación","Ganado","Perdido"];
+const DEFAULT_STAGE_CONFIG = STAGES.map((name, index) => ({ name, probability: [10,20,35,50,65,80,100,0][index] }));
 
 const STAGE_COLOR = {
   "Lead":        "#64748b",
@@ -34,7 +35,17 @@ function money(value) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(Number(value || 0));
 }
 
-export default function OpportunitiesPage({ profile, onNavigate }) {
+function activityInfo(opportunity) {
+  const value = [opportunity.last_movement_at, opportunity.updated_at, opportunity.created_at]
+    .filter(Boolean)
+    .sort((a, b) => new Date(b) - new Date(a))[0];
+  const days = value ? Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86400000)) : 0;
+  if (days > 30) return { label: "Fría", level: "cold", days };
+  if (days >= 15) return { label: "Tibia", level: "warm", days };
+  return { label: "Activa", level: "active", days };
+}
+
+export default function OpportunitiesPage({ profile, onNavigate, navigationData }) {
   const [opportunities, setOpportunities] = useState([]);
   const [accounts, setAccounts]           = useState([]);
   const [products, setProducts]           = useState([]);
@@ -46,20 +57,30 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
   const [draggingId, setDraggingId]       = useState(null);
   const [dragOverStage, setDragOverStage] = useState(null);
   const [movingId, setMovingId]           = useState(null);
+  const [stageConfig, setStageConfig]     = useState(DEFAULT_STAGE_CONFIG);
+  const [pendingMove, setPendingMove]     = useState(null);
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (navigationData?.action === "create" && navigationData?.accountId) {
+      setForm((current) => ({ ...current, account_id: navigationData.accountId }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [navigationData]);
 
   async function loadData() {
-    const [oppRes, accRes, prodRes, campRes] = await Promise.all([
+    const [oppRes, accRes, prodRes, campRes, configRes] = await Promise.all([
       supabase.from("opportunities").select("*, accounts(name), products(name, line), campaigns(name)").order("created_at", { ascending: false }),
       supabase.from("accounts").select("*").order("name"),
       supabase.from("products").select("*").order("name"),
       supabase.from("campaigns").select("*").order("name"),
+      supabase.from("crm_settings").select("value").eq("key", "pipeline_stages").maybeSingle(),
     ]);
     setOpportunities(oppRes.data || []);
     setAccounts(accRes.data || []);
     setProducts(prodRes.data || []);
     setCampaigns(campRes.data || []);
+    if (Array.isArray(configRes.data?.value) && configRes.data.value.length) setStageConfig(configRes.data.value);
   }
 
   const metrics = useMemo(() => {
@@ -122,20 +143,21 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
     loadData();
   }
 
-  async function moveOpportunityToStage(id, nextStage) {
+  async function moveOpportunityToStage(id, nextStage, moveData) {
     const current = opportunities.find((o) => o.id === id);
     if (!current || current.stage === nextStage || movingId === id) return;
 
     const previous = opportunities;
     const updatedAt = new Date().toISOString();
+    const probability = Number(moveData.probability || 0);
     setMovingId(id);
     setOpportunities((items) =>
-      items.map((o) => o.id === id ? { ...o, stage: nextStage, updated_at: updatedAt } : o)
+      items.map((o) => o.id === id ? { ...o, stage: nextStage, next_action: moveData.next_action, next_action_date: moveData.next_action_date, probability, forecast_amount: Math.round(Number(o.amount || 0) * probability / 100), updated_at: updatedAt, last_movement_at: updatedAt } : o)
     );
 
     const { error } = await supabase
       .from("opportunities")
-      .update({ stage: nextStage, updated_at: updatedAt })
+      .update({ stage: nextStage, next_action: moveData.next_action, next_action_date: moveData.next_action_date, probability, forecast_amount: Math.round(Number(current.amount || 0) * probability / 100), updated_at: updatedAt, last_movement_at: updatedAt })
       .eq("id", id);
 
     setMovingId(null);
@@ -167,7 +189,18 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
     const id = e.dataTransfer.getData("text/plain") || draggingId;
     setDraggingId(null);
     setDragOverStage(null);
-    if (id) moveOpportunityToStage(id, stage);
+    const opportunity = opportunities.find((item) => item.id === id);
+    if (!opportunity || opportunity.stage === stage) return;
+    const defaultProbability = stageConfig.find((item) => item.name === stage)?.probability ?? opportunity.probability ?? 0;
+    setPendingMove({ id, stage, name: opportunity.name, next_action: opportunity.next_action || "", next_action_date: opportunity.next_action_date || "", probability: defaultProbability });
+  }
+
+  async function confirmMove(e) {
+    e.preventDefault();
+    if (!pendingMove?.next_action.trim() || !pendingMove?.next_action_date) return;
+    const draft = pendingMove;
+    setPendingMove(null);
+    await moveOpportunityToStage(draft.id, draft.stage, draft);
   }
 
   function editOpportunity(o) {
@@ -263,7 +296,7 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
             <div>
               <label>Etapa</label>
               <select value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
-                {STAGES.map((s) => <option key={s}>{s}</option>)}
+                {stageConfig.map((item) => <option key={item.name}>{item.name}</option>)}
               </select>
             </div>
             <div>
@@ -318,7 +351,7 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
 
           {viewMode === "kanban" && (
             <div className="opp-kanban">
-              {STAGES.map(stage => {
+              {stageConfig.map(({ name: stage }) => {
                 const rows = filteredOpps.filter(o => o.stage === stage);
                 const totalStage = rows.reduce((sum, o) => sum + Number(o.amount || 0), 0);
                 return (
@@ -337,6 +370,9 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                       {rows.length === 0 ? (
                         <p className="opp-kanban-empty">Sin oportunidades</p>
                       ) : rows.map(o => (
+                        (() => {
+                          const activity = activityInfo(o);
+                          return (
                         <article
                           key={o.id}
                           className={`opp-kanban-card ${draggingId === o.id ? "opp-kanban-card--dragging" : ""} ${movingId === o.id ? "opp-kanban-card--moving" : ""}`}
@@ -347,11 +383,14 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                           <strong>{o.name}</strong>
                           <span>{o.accounts?.name || "Sin cliente"}</span>
                           <small>{money(o.amount)} · {o.probability || 0}%</small>
+                          <small className={`opp-temperature opp-temperature--${activity.level}`}>{activity.label} · sin actividad: {activity.days}d</small>
                           <div className="opp-kanban-card__actions">
                             <span className="opp-kanban-card__hint">Arrastrar</span>
                             <button onClick={() => editOpportunity(o)}>Editar</button>
                           </div>
                         </article>
+                          );
+                        })()
                       ))}
                     </div>
                   </section>
@@ -402,6 +441,7 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                       <td className="opp-td-name">
                         <strong>{o.name}</strong>
                         <small>{o.product_line || o.products?.line || "—"} · {o.campaigns?.name || "—"}</small>
+                        <small className={`opp-temperature opp-temperature--${activityInfo(o).level}`}>{activityInfo(o).label} · sin actividad: {activityInfo(o).days}d</small>
                       </td>
                       <td>{o.accounts?.name || "—"}</td>
                       <td>
@@ -463,6 +503,7 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
                     <span>Cierre: {o.expected_close ? new Date(o.expected_close).toLocaleDateString("es-AR") : "—"}</span>
                   </div>
                   <p>{o.next_action || "Sin próxima acción"}</p>
+                  <p className={`opp-temperature opp-temperature--${activityInfo(o).level}`}>{activityInfo(o).label} · sin actividad: {activityInfo(o).days}d</p>
                   <div className="opp-actions">
                     {isOpen && <button className="opp-btn opp-btn--edit" onClick={() => editOpportunity(o)}>Editar</button>}
                     {isOpen && <button className="opp-btn opp-btn--won" onClick={() => quickClose(o.id, "Ganado")}>Ganado</button>}
@@ -475,6 +516,29 @@ export default function OpportunitiesPage({ profile, onNavigate }) {
             })}
           </div>}
         </section>
+
+        {pendingMove && (
+          <div className="opp-move-backdrop" role="presentation" onMouseDown={() => setPendingMove(null)}>
+            <form className="opp-move-modal" onSubmit={confirmMove} onMouseDown={(event) => event.stopPropagation()}>
+              <span className="opp-move-modal__eyebrow">Actualizar pipeline</span>
+              <h3>Mover a {pendingMove.stage}</h3>
+              <p>{pendingMove.name}</p>
+              <label>Próxima acción
+                <textarea value={pendingMove.next_action} onChange={(event) => setPendingMove({ ...pendingMove, next_action: event.target.value })} placeholder="Ej: enviar propuesta revisada" required />
+              </label>
+              <label>Fecha próxima acción
+                <input type="date" value={pendingMove.next_action_date} onChange={(event) => setPendingMove({ ...pendingMove, next_action_date: event.target.value })} required />
+              </label>
+              <label>Probabilidad %
+                <input type="number" min="0" max="100" value={pendingMove.probability} onChange={(event) => setPendingMove({ ...pendingMove, probability: event.target.value })} required />
+              </label>
+              <div className="opp-move-modal__actions">
+                <button type="button" className="opp-ghost-btn" onClick={() => setPendingMove(null)}>Cancelar</button>
+                <button className="opp-submit">Confirmar movimiento</button>
+              </div>
+            </form>
+          </div>
+        )}
 
         <footer className="opp-footer">
           <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>

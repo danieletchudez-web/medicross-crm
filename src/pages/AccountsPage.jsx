@@ -303,7 +303,7 @@ export default function AccountsPage({ profile, onNavigate }) {
                   <>
                     <tr key={a.id} className={expanded === a.id ? "acc-row--expanded" : ""}>
                       <td className="acc-td-name">
-                        <strong>{a.name}</strong>
+                        <button className="acc-account-link" onClick={() => onNavigate("accountDetail", { accountId: a.id })}>{a.name}</button>
                         {a.address && <small>{a.address}</small>}
                       </td>
                       <td>{a.type || "—"}</td>

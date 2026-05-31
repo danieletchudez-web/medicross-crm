@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { canOpenModule } from "../lib/moduleAccess";
+import useNotificationCount from "../hooks/useNotificationCount";
 import "./Sidebar.css";
 import logoImg from "../assets/logo.jpg";
 
@@ -67,6 +68,13 @@ const MENU_SECTIONS = [
 ];
 
 const ALL_IDS = MENU_SECTIONS.flatMap(s => s.items.map(i => i.id));
+const MOBILE_NAV = [
+  { id: "todayActions",  label: "Hoy",       icon: Clock3 },
+  { id: "accounts",      label: "Clientes",  icon: Building2 },
+  { id: "visits",        label: "Visitas",   icon: Handshake },
+  { id: "calendar",      label: "Agenda",    icon: CalendarDays },
+  { id: "notifications", label: "Alertas",   icon: BellRing },
+];
 
 function loadOrder() {
   try {
@@ -112,6 +120,7 @@ export default function Sidebar({ profile, onNavigate }) {
   const [tooltip, setTooltip] = useState(null); // { label, y }
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const dragIdx = useRef(null);
+  const notificationCount = useNotificationCount(profile?.id);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
@@ -305,6 +314,7 @@ export default function Sidebar({ profile, onNavigate }) {
                     >
                       <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                       <span className="sidebar-nav__label">{item.label}</span>
+                      {item.id === "notifications" && notificationCount > 0 && <span className="sidebar-nav__badge">{notificationCount > 99 ? "99+" : notificationCount}</span>}
                     </button>
                   );
                 })}
@@ -340,6 +350,7 @@ export default function Sidebar({ profile, onNavigate }) {
                       >
                         <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                         <span className="sidebar-nav__label">{item.label}</span>
+                        {item.id === "notifications" && notificationCount > 0 && <span className="sidebar-nav__badge">{notificationCount > 99 ? "99+" : notificationCount}</span>}
                       </button>
                       {editing && (
                         <button
@@ -408,6 +419,29 @@ export default function Sidebar({ profile, onNavigate }) {
         className={`sidebar-overlay ${menuOpen ? "open" : ""}`}
         onClick={() => setMenuOpen(false)}
       />
+
+      <nav className="mobile-bottom-nav" aria-label="Navegación móvil principal">
+        {MOBILE_NAV.filter(item => canSee(item.id)).map(item => (
+          <button key={item.id} type="button" onClick={() => handleNavigate(item.id)} aria-label={item.label}>
+            <span>
+              <SidebarIcon icon={item.icon}/>
+              {item.id === "notifications" && notificationCount > 0 && <b>{notificationCount > 9 ? "9+" : notificationCount}</b>}
+            </span>
+            <em>{item.label}</em>
+          </button>
+        ))}
+      </nav>
+
+      {canSee("visits") && (
+        <button
+          type="button"
+          className="mobile-quick-visit-fab"
+          onClick={() => handleNavigate("visits", { action: "quick", source: "mobileQuickAction" })}
+        >
+          <CalendarPlus aria-hidden="true"/>
+          <span>Visita rápida</span>
+        </button>
+      )}
     </>
   );
 }

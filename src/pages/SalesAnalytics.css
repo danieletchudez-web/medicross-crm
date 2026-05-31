@@ -576,6 +576,83 @@
   gap: 10px 8px;
 }
 
+.sa-goal-progress {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid #f0f4f8;
+  padding-top: 11px;
+}
+
+.sa-goal-progress__title,
+.sa-goal-line,
+.sa-goal-line > div:first-child {
+  display: flex;
+  align-items: center;
+}
+
+.sa-goal-progress__title {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sa-goal-progress__title strong {
+  color: #334155;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
+.sa-goal-progress__title span {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.sa-goal-line {
+  display: grid;
+  grid-template-columns: 138px 1fr 38px;
+  gap: 8px;
+}
+
+.sa-goal-line > div:first-child {
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.sa-goal-line span,
+.sa-goal-line small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sa-goal-line small {
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.sa-goal-line__bar {
+  height: 5px;
+  border-radius: 999px;
+  background: #eef2f7;
+  overflow: hidden;
+}
+
+.sa-goal-line__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width .35s cubic-bezier(.22, 1, .36, 1);
+}
+
+.sa-goal-line > strong {
+  font-size: 10.5px;
+  font-weight: 900;
+  text-align: right;
+}
+
 .sa-perf-metric {
   display: flex;
   flex-direction: column;

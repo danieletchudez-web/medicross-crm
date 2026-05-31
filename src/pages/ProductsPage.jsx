@@ -43,6 +43,10 @@ const EMPTY_FORM = {
   brochure_url: "",
   tech_sheet_url: "",
   video_url: "",
+  supplier: "",
+  sku: "",
+  brand: "",
+  base_price: "",
 };
 
 export default function ProductsPage({ profile, onNavigate }) {
@@ -105,6 +109,10 @@ export default function ProductsPage({ profile, onNavigate }) {
       brochure_url: product.brochure_url || "",
       tech_sheet_url: product.tech_sheet_url || "",
       video_url: product.video_url || "",
+      supplier: product.supplier || "",
+      sku: product.sku || "",
+      brand: product.brand || "",
+      base_price: product.base_price || "",
     });
 
     scrollToEditor();
@@ -197,7 +205,7 @@ Quedo atento para coordinar una presentación.`;
     const query = search.trim().toLowerCase();
 
     return products.filter((product) => {
-      const matchesSearch = !query || [product.name, product.line, product.speech]
+      const matchesSearch = !query || [product.name, product.line, product.speech, product.supplier, product.sku, product.brand]
         .some((value) => value?.toLowerCase().includes(query));
       const matchesLine = lineFilter === "Todas" || product.line === lineFilter;
       const matchesReadiness =
@@ -445,6 +453,45 @@ Quedo atento para coordinar una presentación.`;
                   value={form.speech}
                   onChange={(e) => setForm({ ...form, speech: e.target.value })}
                   placeholder="Texto introductorio para enviar o usar en visita..."
+                />
+              </div>
+
+              <div>
+                <label>Empresa / Proveedor</label>
+                <input
+                  value={form.supplier}
+                  onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                  placeholder="Ej: MediCross"
+                />
+              </div>
+
+              <div>
+                <label>Código / SKU</label>
+                <input
+                  value={form.sku}
+                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                  placeholder="Ej: MC-001"
+                />
+              </div>
+
+              <div>
+                <label>Marca</label>
+                <input
+                  value={form.brand}
+                  onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                  placeholder="Ej: EchoLaser"
+                />
+              </div>
+
+              <div>
+                <label>Precio base sugerido</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.base_price}
+                  onChange={(e) => setForm({ ...form, base_price: e.target.value })}
+                  placeholder="0,00"
                 />
               </div>
 

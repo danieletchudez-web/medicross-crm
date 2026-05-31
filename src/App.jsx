@@ -9,6 +9,7 @@ import DialogSystem from "./components/DialogSystem";
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
 const AccountsPage          = lazy(() => import("./pages/AccountsPage"));
+const AccountDetailPage     = lazy(() => import("./pages/AccountDetailPage"));
 const ProductsPage          = lazy(() => import("./pages/ProductsPage"));
 const OpportunitiesPage     = lazy(() => import("./pages/OpportunitiesPage"));
 const CampaignsPage         = lazy(() => import("./pages/CampaignsPage"));
@@ -28,6 +29,7 @@ const ALL_PAGES = [
   { id: "managerDashboard",  Component: ManagerDashboard },
   { id: "sellerDashboard",   Component: SellerDashboard },
   { id: "accounts",          Component: AccountsPage },
+  { id: "accountDetail",     Component: AccountDetailPage },
   { id: "products",          Component: ProductsPage },
   { id: "opportunities",     Component: OpportunitiesPage },
   { id: "campaigns",         Component: CampaignsPage },
@@ -261,6 +263,7 @@ export default function App() {
 
   function canOpenPage(pageId) {
     if (["notifications","settings"].includes(pageId)) return true;
+    if (pageId === "accountDetail") return canOpenModule(safeProfile, "accounts", isMobileViewport);
     return canOpenModule(safeProfile, pageId, isMobileViewport);
   }
 
@@ -279,6 +282,8 @@ export default function App() {
           ? { initialData: navigateData }
           : id === "visits"
             ? { navigationData: navigateData }
+            : id === "accountDetail" || id === "opportunities"
+              ? { navigationData: navigateData }
             : {};
         return (
           <div

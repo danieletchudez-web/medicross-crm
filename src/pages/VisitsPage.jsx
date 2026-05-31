@@ -4,11 +4,19 @@ import {
   CalendarDays,
   CalendarPlus,
   ClipboardCheck,
+  FileText,
   History,
+  Image,
+  Paperclip,
   Pencil,
+  Play,
   RefreshCw,
   Search,
+  Square,
+  Timer,
   Trash2,
+  X,
+  Zap,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { EmptyState, MetricKpi, ModuleHeader } from "../components/CRMUI";
@@ -22,6 +30,8 @@ const EMPTY_FORM = {
   business_unit:"", pipeline_stage:"", objective:"", notes:"",
   result:"", objection:"", next_step:"", next_action:"",
   next_action_date:"", followup_date:"", commercial_potential:"", materials:[],
+  present_contacts:[], attachments:[], pending_files:[],
+  started_at:"", ended_at:"", duration_minutes:"", is_draft:false,
 };
 
 const VISIT_TYPES = [
@@ -31,6 +41,7 @@ const VISIT_TYPES = [
   {value:"cotizacion",label:"Cotización"},{value:"postventa",label:"Postventa"},
 ];
 const STATUS_OPTIONS = [
+  {value:"borrador",          label:"Borrador",          color:"#64748b"},
   {value:"programada",       label:"Programada",       color:"#185fa5"},
   {value:"realizada",        label:"Realizada",         color:"#2d7d46"},
   {value:"reprogramada",     label:"Reprogramada",      color:"#d97706"},
@@ -73,9 +84,15 @@ function getTimelineData(visitDate,followupDate) {
   return {daysSinceVisit,totalSpan,progress};
 }
 function buildPayload(f,profileId) {
+  const presentContacts = Array.isArray(f.present_contacts) ? f.present_contacts : [];
   return {
     account_id:f.account_id||null, product_id:f.product_id||null,
-    contact_name:f.contact_name||null, visit_type:f.visit_type,
+    contact_name:presentContacts.map(contact=>contact.name).filter(Boolean).join(", ")||f.contact_name||null,
+    present_contacts:presentContacts,
+    attachments:Array.isArray(f.attachments)?f.attachments:[],
+    started_at:f.started_at||null, ended_at:f.ended_at||null,
+    duration_minutes:Number(f.duration_minutes||0)||null, is_draft:Boolean(f.is_draft),
+    visit_type:f.visit_type,
     visit_date:f.visit_date, visit_time:f.visit_time||null, status:f.status,
     priority:f.priority, business_unit:f.business_unit||null,
     pipeline_stage:f.pipeline_stage||null, objective:f.objective||null,
@@ -97,8 +114,132 @@ function useMobile() {
   return isMobile;
 }
 
+function formatElapsed(totalSeconds) {
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+function ContactPicker({ f, setF, accounts, onCreateContact }) {
+  const account = accounts.find(item => item.id === f.account_id);
+  const contacts = Array.isArray(account?.contacts) ? account.contacts : [];
+  const selected = Array.isArray(f.present_contacts) ? f.present_contacts : [];
+
+  function addContact(event) {
+    const index = Number(event.target.value);
+    if (!Number.isInteger(index)) return;
+    const contact = contacts[index];
+    if (!contact || selected.some(item => item.name === contact.name && item.email === contact.email)) return;
+    setF({ ...f, present_contacts: [...selected, contact], contact_name: "" });
+    event.target.value = "";
+  }
+
+  return (
+    <div className="vf-contact-picker">
+      <div className="vf-contact-picker__row">
+        <select value="" onChange={addContact} disabled={!f.account_id}>
+          <option value="">{f.account_id ? "Agregar contacto presente" : "Elegí un cliente primero"}</option>
+          {contacts.map((contact, index) => (
+            <option key={`${contact.email||contact.name}-${index}`} value={index}>
+              {contact.name||"Sin nombre"}{contact.role?` · ${contact.role}`:""}
+            </option>
+          ))}
+        </select>
+        <button type="button" className="vf-link-btn" onClick={() => onCreateContact(f, setF)} disabled={!f.account_id}>
+          + Nuevo contacto
+        </button>
+      </div>
+      {selected.length > 0 && (
+        <div className="vf-contact-chips">
+          {selected.map((contact, index) => (
+            <span className="vf-contact-chip" key={`${contact.email||contact.name}-${index}`}>
+              {contact.name||"Sin nombre"}
+              <button type="button" onClick={() => setF({ ...f, present_contacts:selected.filter((_, itemIndex)=>itemIndex!==index) })} title="Quitar contacto">
+                <X size={12}/>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AttachmentPicker({ f, setF }) {
+  const attachments = Array.isArray(f.attachments) ? f.attachments : [];
+  const pendingFiles = Array.isArray(f.pending_files) ? f.pending_files : [];
+
+  function onPick(event) {
+    const incoming = [...event.target.files];
+    const available = Math.max(0, 5 - attachments.length - pendingFiles.length);
+    const accepted = incoming.slice(0, available).filter(file => {
+      if (!["image/jpeg","image/png","application/pdf"].includes(file.type)) {
+        alert(`${file.name}: formato no permitido. Usá JPG, PNG o PDF.`);
+        return false;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name}: supera el límite de 10 MB.`);
+        return false;
+      }
+      return true;
+    });
+    setF({ ...f, pending_files:[...pendingFiles, ...accepted] });
+    event.target.value = "";
+  }
+
+  return (
+    <div className="vf-attachments">
+      <label className="vf-upload-btn">
+        <Paperclip size={15}/> Adjuntar archivo
+        <input type="file" accept=".jpg,.jpeg,.png,.pdf" multiple onChange={onPick}/>
+      </label>
+      <small>{attachments.length + pendingFiles.length}/5 archivos · JPG, PNG o PDF · máximo 10 MB</small>
+      {(attachments.length > 0 || pendingFiles.length > 0) && (
+        <div className="vf-attachment-list">
+          {attachments.map((file, index) => (
+            <a className="vf-attachment" key={file.path||index} href={file.url} target="_blank" rel="noreferrer">
+              {file.type?.startsWith("image/") ? <Image size={15}/> : <FileText size={15}/>}
+              <span>{file.name}</span>
+            </a>
+          ))}
+          {pendingFiles.map((file, index) => (
+            <span className="vf-attachment vf-attachment--pending" key={`${file.name}-${index}`}>
+              {file.type.startsWith("image/") ? <Image size={15}/> : <FileText size={15}/>}
+              <span>{file.name}</span>
+              <button type="button" onClick={() => setF({ ...f, pending_files:pendingFiles.filter((_, itemIndex)=>itemIndex!==index) })} title="Quitar archivo">
+                <X size={12}/>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VisitTimer({ f, elapsed, onStart, onFinish }) {
+  const running = Boolean(f.started_at && !f.ended_at);
+  return (
+    <div className={`vf-timer ${running ? "vf-timer--running" : ""}`}>
+      <div className="vf-timer__readout">
+        <Timer size={17}/>
+        <div>
+          <span>Tiempo de visita</span>
+          <strong>{running ? formatElapsed(elapsed) : f.duration_minutes ? `${f.duration_minutes} min` : "Sin iniciar"}</strong>
+        </div>
+      </div>
+      {running ? (
+        <button type="button" className="vf-timer__btn vf-timer__btn--stop" onClick={onFinish}><Square size={13}/> Finalizar visita</button>
+      ) : (
+        <button type="button" className="vf-timer__btn" onClick={onStart}><Play size={13}/> Iniciar visita</button>
+      )}
+    </div>
+  );
+}
+
 /* ── VisitForm DESKTOP ─────────────────────────────────────────────── */
-function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial}) {
+function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial,onCreateContact,elapsed,onStartTimer,onFinishTimer}) {
   return (
     <div className="vf-wrap">
       <div className="vf-section">
@@ -111,9 +252,9 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
               {accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
-          <div className="vf-field">
-            <label>Contacto</label>
-            <input value={f.contact_name} onChange={e=>setF({...f,contact_name:e.target.value})} placeholder="Dr. Ramírez, Jefa de compras"/>
+          <div className="vf-field vf-field--wide">
+            <label>Contactos presentes</label>
+            <ContactPicker f={f} setF={setF} accounts={accounts} onCreateContact={onCreateContact}/>
           </div>
           <div className="vf-field">
             <label>Producto / línea</label>
@@ -131,6 +272,8 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
           </div>
         </div>
       </div>
+
+      <VisitTimer f={f} elapsed={elapsed} onStart={onStartTimer} onFinish={onFinishTimer}/>
 
       <div className="vf-section">
         <span className="vf-section__label">Fecha, tipo y estado</span>
@@ -193,6 +336,11 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
         </div>
       </div>
 
+      <div className="vf-section">
+        <span className="vf-section__label">Archivos adjuntos</span>
+        <AttachmentPicker f={f} setF={setF}/>
+      </div>
+
       <div className="vf-actions">
         {onCancel&&<button type="button" className="vf-btn vf-btn--cancel" onClick={onCancel}>Cancelar</button>}
         <button type={isEdit?"button":"submit"} className="vf-btn vf-btn--save"
@@ -205,7 +353,7 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
 }
 
 /* ── VisitFormMobile ───────────────────────────────────────────────── */
-function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,loading,onToggleMaterial}) {
+function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial,onCreateContact,elapsed,onStartTimer,onFinishTimer}) {
   const [step, setStep] = useState(1);
   const stepLabels = ["¿Con quién?","¿Qué pasó?","¿Qué sigue?"];
   return (
@@ -230,8 +378,13 @@ function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,loading,onTog
                 <option value="">Seleccionar cliente</option>
                 {accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
               </select></div>
-            <div className="vf-field vf-field--full"><label>Contacto</label>
-              <input value={f.contact_name} onChange={e=>setF({...f,contact_name:e.target.value})} placeholder="Dr. Ramírez..."/></div>
+            <div className="vf-field vf-field--full"><label>Contactos presentes</label>
+              <ContactPicker f={f} setF={setF} accounts={accounts} onCreateContact={onCreateContact}/></div>
+            <div className="vf-field vf-field--full"><label>Producto / línea</label>
+              <select value={f.product_id} onChange={e=>setF({...f,product_id:e.target.value})}>
+                <option value="">Seleccionar producto</option>
+                {products.map(p=><option key={p.id} value={p.id}>{p.name} · {p.line}</option>)}
+              </select></div>
             <div className="vf-field vf-field--full"><label>Fecha visita</label>
               <input type="date" value={f.visit_date} onChange={e=>setF({...f,visit_date:e.target.value})}/></div>
             <div className="vf-field vf-field--full"><label>Tipo</label>
@@ -244,6 +397,7 @@ function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,loading,onTog
               <select value={f.priority} onChange={e=>setF({...f,priority:e.target.value})}>
                 {PRIORITY_OPTIONS.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
           </div>
+          <VisitTimer f={f} elapsed={elapsed} onStart={onStartTimer} onFinish={onFinishTimer}/>
           <div className="vf-actions">
             {onCancel&&<button type="button" className="vf-btn vf-btn--cancel" onClick={onCancel}>Cancelar</button>}
             <button type="button" className="vf-btn vf-btn--save" onClick={()=>setStep(2)}>Siguiente →</button>
@@ -287,6 +441,7 @@ function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,loading,onTog
             <div className="vf-field vf-field--full"><label>Próximo compromiso</label>
               <input value={f.next_step} onChange={e=>setF({...f,next_step:e.target.value})} placeholder="Demo, visita técnica..."/></div>
           </div>
+          <AttachmentPicker f={f} setF={setF}/>
           <div className="vf-actions">
             <button type="button" className="vf-btn vf-btn--cancel" onClick={()=>setStep(2)}>← Atrás</button>
             <button type={isEdit?"button":"submit"} className="vf-btn vf-btn--save"
@@ -317,8 +472,29 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
   const [activeTab,    setActiveTab]    = useState("history");
   const [search,       setSearch]       = useState("");
   const [attentionOnly,setAttentionOnly]= useState(false);
+  const [quickOpen,    setQuickOpen]    = useState(false);
+  const [quickForm,    setQuickForm]    = useState({account_id:"",product_id:"",result:""});
+  const [elapsed,      setElapsed]      = useState(0);
 
   useEffect(()=>{ loadData(); },[]);
+  useEffect(()=>{
+    const stored = localStorage.getItem("medicross_visit_timer");
+    if (!stored) return;
+    try {
+      const timer = JSON.parse(stored);
+      if (!timer.started_at) return;
+      setForm(current=>({...current,started_at:timer.started_at,ended_at:""}));
+    } catch { localStorage.removeItem("medicross_visit_timer"); }
+  },[]);
+
+  useEffect(()=>{
+    const startedAt = form.started_at;
+    if (!startedAt || form.ended_at) { setElapsed(0); return; }
+    const update = () => setElapsed(Math.max(0,Math.floor((Date.now()-new Date(startedAt).getTime())/1000)));
+    update();
+    const timer = window.setInterval(update,1000);
+    return () => window.clearInterval(timer);
+  },[form.ended_at,form.started_at]);
 
   async function loadData() {
     const [vRes,aRes,pRes] = await Promise.all([
@@ -334,13 +510,88 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
   const toggleMaterialNew  = m => setForm(p=>({...p,materials:p.materials.includes(m)?p.materials.filter(x=>x!==m):[...p.materials,m]}));
   const toggleMaterialEdit = m => setEditForm(p=>({...p,materials:p.materials.includes(m)?p.materials.filter(x=>x!==m):[...p.materials,m]}));
 
+  async function uploadAttachments(visitId,currentAttachments,pendingFiles) {
+    const uploaded = [...(currentAttachments||[])];
+    for (const file of pendingFiles||[]) {
+      const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g,"-");
+      const path = `${profile?.id||"unassigned"}/${visitId}/${crypto.randomUUID()}-${cleanName}`;
+      const {error} = await supabase.storage.from("visit-attachments").upload(path,file,{contentType:file.type,upsert:false});
+      if (error) throw error;
+      const {data} = supabase.storage.from("visit-attachments").getPublicUrl(path);
+      uploaded.push({name:file.name,path,url:data.publicUrl,type:file.type,size:file.size});
+    }
+    return uploaded;
+  }
+
   async function saveVisit(e) {
     e?.preventDefault();
     setLoading(true);
-    const {error} = await supabase.from("visits").insert([buildPayload(form,profile?.id)]);
+    const {data,error} = await supabase.from("visits").insert([buildPayload(form,profile?.id)]).select("id").single();
     if (error) alert("Error: "+error.message);
-    else { setForm(EMPTY_FORM); setActiveTab("history"); await loadData(); }
+    else {
+      try {
+        const attachments = await uploadAttachments(data.id,form.attachments,form.pending_files);
+        if (attachments.length) await supabase.from("visits").update({attachments}).eq("id",data.id);
+        localStorage.removeItem("medicross_visit_timer");
+        setForm({...EMPTY_FORM,materials:[],present_contacts:[],attachments:[],pending_files:[]});
+        setActiveTab("history");
+        await loadData();
+      } catch (uploadError) {
+        alert("La visita se guardó, pero no se pudieron subir todos los adjuntos: "+uploadError.message);
+      }
+    }
     setLoading(false);
+  }
+
+  async function saveQuickVisit(e) {
+    e.preventDefault();
+    setLoading(true);
+    const payload = buildPayload({
+      ...EMPTY_FORM,
+      account_id:quickForm.account_id,
+      product_id:quickForm.product_id,
+      result:quickForm.result,
+      next_action:quickForm.result,
+      status:"borrador",
+      is_draft:true,
+    },profile?.id);
+    const {error} = await supabase.from("visits").insert([payload]);
+    if (error) alert("Error: "+error.message);
+    else {
+      setQuickOpen(false);
+      setQuickForm({account_id:"",product_id:"",result:""});
+      setActiveTab("history");
+      await loadData();
+    }
+    setLoading(false);
+  }
+
+  async function createContact(targetForm,setTargetForm) {
+    const account = accounts.find(item=>item.id===targetForm.account_id);
+    if (!account) return;
+    const name = prompt("Nombre completo del nuevo contacto");
+    if (!name?.trim()) return;
+    const role = prompt("Cargo o área del contacto (opcional)")||"";
+    const contact = {name:name.trim(),role:role.trim(),area:"",phone:"",email:""};
+    const contacts = [...(Array.isArray(account.contacts)?account.contacts:[]),contact];
+    const {error} = await supabase.from("accounts").update({contacts}).eq("id",account.id);
+    if (error) { alert("Error: "+error.message); return; }
+    setAccounts(current=>current.map(item=>item.id===account.id?{...item,contacts}:item));
+    setTargetForm({...targetForm,present_contacts:[...(targetForm.present_contacts||[]),contact],contact_name:""});
+  }
+
+  function startTimer(targetForm,setTargetForm) {
+    const started_at = new Date().toISOString();
+    localStorage.setItem("medicross_visit_timer",JSON.stringify({started_at}));
+    setTargetForm({...targetForm,started_at,ended_at:"",duration_minutes:""});
+  }
+
+  function finishTimer(targetForm,setTargetForm) {
+    if (!targetForm.started_at) return;
+    const ended_at = new Date().toISOString();
+    const duration_minutes = Math.max(1,Math.ceil((new Date(ended_at)-new Date(targetForm.started_at))/60000));
+    localStorage.removeItem("medicross_visit_timer");
+    setTargetForm({...targetForm,ended_at,duration_minutes});
   }
 
   function startEdit(v) {
@@ -354,15 +605,22 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
       objection:v.objection||"", next_step:v.next_step||"", next_action:v.next_action||"",
       next_action_date:v.next_action_date||"", followup_date:v.followup_date||"",
       commercial_potential:v.commercial_potential||"", materials:v.materials||[],
+      present_contacts:Array.isArray(v.present_contacts)?v.present_contacts:[],
+      attachments:Array.isArray(v.attachments)?v.attachments:[], pending_files:[],
+      started_at:v.started_at||"", ended_at:v.ended_at||"",
+      duration_minutes:v.duration_minutes||"", is_draft:Boolean(v.is_draft),
     });
   }
   function cancelEdit() { setEditingId(null); setEditForm(null); }
 
   async function saveEdit(id) {
     setLoading(true);
-    const {error} = await supabase.from("visits").update(buildPayload(editForm,profile?.id)).eq("id",id);
-    if (error) alert("Error: "+error.message);
-    else { setEditingId(null); setEditForm(null); await loadData(); }
+    try {
+      const attachments = await uploadAttachments(id,editForm.attachments,editForm.pending_files);
+      const {error} = await supabase.from("visits").update({...buildPayload(editForm,profile?.id),attachments}).eq("id",id);
+      if (error) alert("Error: "+error.message);
+      else { setEditingId(null); setEditForm(null); await loadData(); }
+    } catch (error) { alert("Error: "+error.message); }
     setLoading(false);
   }
 
@@ -375,14 +633,18 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
     setDeletingId(null);
   }
 
-  function openNewVisit() {
-    setForm({...EMPTY_FORM,materials:[]});
+  function openNewVisit(initial={}) {
+    setForm({...EMPTY_FORM,materials:[],present_contacts:[],attachments:[],pending_files:[],...initial});
     setActiveTab("form");
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
   useEffect(()=>{
-    if (navigationData?.action === "create") openNewVisit();
+    if (navigationData?.action === "create") openNewVisit({account_id:navigationData.accountId||""});
+    if (navigationData?.action === "quick") {
+      setQuickForm({account_id:navigationData.accountId||"",product_id:"",result:""});
+      setQuickOpen(true);
+    }
   },[navigationData,pageKey]);
 
   const stats = useMemo(()=>{
@@ -447,6 +709,9 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
               <button className="visits-header-btn" type="button" onClick={() => onNavigate("calendar")}>
                 <CalendarDays size={16}/> Calendario
               </button>
+              <button className="visits-header-btn visits-header-btn--quick" type="button" onClick={() => setQuickOpen(true)}>
+                <Zap size={16}/> Visita rápida
+              </button>
               <button className="visits-header-btn visits-header-btn--primary" type="button" onClick={openNewVisit}>
                 <CalendarPlus size={16}/> Nueva visita
               </button>
@@ -501,7 +766,11 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
             <form onSubmit={saveVisit}>
               <FormComponent f={form} setF={setForm} isEdit={false}
                 accounts={accounts} products={products} loading={loading}
-                onToggleMaterial={toggleMaterialNew}/>
+                onToggleMaterial={toggleMaterialNew}
+                onCreateContact={createContact}
+                elapsed={elapsed}
+                onStartTimer={()=>startTimer(form,setForm)}
+                onFinishTimer={()=>finishTimer(form,setForm)}/>
             </form>
           </section>
         )}
@@ -555,7 +824,11 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
                       <FormComponent f={editForm} setF={setEditForm} isEdit={true}
                         onSubmit={()=>saveEdit(v.id)} onCancel={cancelEdit}
                         accounts={accounts} products={products} loading={loading}
-                        onToggleMaterial={toggleMaterialEdit}/>
+                        onToggleMaterial={toggleMaterialEdit}
+                        onCreateContact={createContact}
+                        elapsed={0}
+                        onStartTimer={()=>startTimer(editForm,setEditForm)}
+                        onFinishTimer={()=>finishTimer(editForm,setEditForm)}/>
                     ) : (
                       <>
                         {alert && (
@@ -593,6 +866,8 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
                           {v.pipeline_stage&&<span className="visits-meta-chip">📊 {v.pipeline_stage}</span>}
                           {v.commercial_potential>0&&<span className="visits-meta-chip">💰 {money(v.commercial_potential)}</span>}
                           {v.visit_date&&<span className="visits-meta-chip">📅 {new Date(v.visit_date).toLocaleDateString("es-AR")}</span>}
+                          {v.duration_minutes>0&&<span className="visits-meta-chip"><Timer size={13}/> {v.duration_minutes} min</span>}
+                          {(v.attachments||[]).length>0&&<span className="visits-meta-chip"><Paperclip size={13}/> {v.attachments.length}</span>}
                         </div>
 
                         {v.objective&&(
@@ -636,6 +911,9 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
                         )}
 
                         <div className="visits-item__meta">
+                          {(v.present_contacts||[]).map((contact,index)=>(
+                            <span className="visits-tag" key={`${contact.email||contact.name}-${index}`}>👤 {contact.name}</span>
+                          ))}
                           {v.next_action&&<span className="visits-tag">↗ {v.next_action}</span>}
                           {v.next_step&&<span className="visits-tag">📋 {v.next_step}</span>}
                           {v.objection&&<span className="visits-tag visits-tag--red">⚑ {v.objection}</span>}
@@ -651,6 +929,43 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
               })}
             </div>
           </section>
+        )}
+
+        {quickOpen&&(
+          <div className="visits-modal-backdrop" role="presentation" onMouseDown={()=>setQuickOpen(false)}>
+            <section className="visits-quick-modal" role="dialog" aria-modal="true" aria-labelledby="quick-visit-title" onMouseDown={event=>event.stopPropagation()}>
+              <header>
+                <div className="visits-quick-modal__icon"><Zap size={18}/></div>
+                <div>
+                  <span>Modo de campo</span>
+                  <h2 id="quick-visit-title">Visita rápida</h2>
+                  <p>Guardá lo esencial ahora y completá el informe después.</p>
+                </div>
+                <button type="button" className="visits-quick-modal__close" onClick={()=>setQuickOpen(false)} title="Cerrar"><X size={17}/></button>
+              </header>
+              <form onSubmit={saveQuickVisit}>
+                <label>Cliente *
+                  <select value={quickForm.account_id} onChange={event=>setQuickForm({...quickForm,account_id:event.target.value})} required>
+                    <option value="">Seleccionar cliente</option>
+                    {accounts.map(account=><option key={account.id} value={account.id}>{account.name}</option>)}
+                  </select>
+                </label>
+                <label>Producto *
+                  <select value={quickForm.product_id} onChange={event=>setQuickForm({...quickForm,product_id:event.target.value})} required>
+                    <option value="">Seleccionar producto</option>
+                    {products.map(product=><option key={product.id} value={product.id}>{product.name}</option>)}
+                  </select>
+                </label>
+                <label>Resultado / próxima acción *
+                  <textarea value={quickForm.result} onChange={event=>setQuickForm({...quickForm,result:event.target.value})} placeholder="Ej: enviar cotización y llamar el martes..." required/>
+                </label>
+                <div className="visits-quick-modal__actions">
+                  <button type="button" className="vf-btn vf-btn--cancel" onClick={()=>setQuickOpen(false)}>Cancelar</button>
+                  <button className="vf-btn vf-btn--save" disabled={loading}>{loading?"Guardando...":"Guardar borrador"}</button>
+                </div>
+              </form>
+            </section>
+          </div>
         )}
 
         <footer className="visits-footer">

@@ -173,6 +173,14 @@
   color: #475569;
   font-family: "DM Sans", system-ui, sans-serif;
   white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.global-search-summary__tag:hover,
+.global-search-summary__tag--active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 .global-search-summary__tag strong {
   font-family: "DM Mono", monospace;
@@ -384,6 +392,8 @@
 [data-theme="dark"] .global-search-summary { background: #0d1117; border-color: #21262d; }
 [data-theme="dark"] .global-search-summary > span { color: #484f58; border-color: #21262d; }
 [data-theme="dark"] .global-search-summary__tag { background: #161b22; border-color: #21262d; color: #8b949e; }
+[data-theme="dark"] .global-search-summary__tag:hover,
+[data-theme="dark"] .global-search-summary__tag--active { background: rgba(56,139,253,.12); border-color: rgba(56,139,253,.36); color: #79c0ff; }
 [data-theme="dark"] .global-search-summary__tag strong { color: #58a6ff; }
 
 [data-theme="dark"] .global-search-group__label { color: #484f58; }

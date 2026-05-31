@@ -69,6 +69,8 @@
 .cot-btn:active { transform: scale(.98); }
 .cot-btn--primary { background: #0f2444; color: #fff; border-color: #0f2444; }
 .cot-btn--primary:hover { background: #1a3a6b; box-shadow: 0 2px 8px rgba(15,36,68,.25); }
+.cot-btn--success { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.cot-btn--success:hover { background: #d1fae5; }
 .cot-btn--ghost { border-color: transparent; background: transparent; color: #64748b; }
 .cot-btn--ghost:hover { background: #f1f5f9; border-color: rgba(15,36,68,.12); color: #334155; }
 .cot-btn--danger { color: #dc2626; border-color: #fecaca; background: #fff; }
@@ -120,6 +122,27 @@
   box-shadow: 0 0 0 3px rgba(24,95,165,.1);
 }
 .cot-field textarea { resize: vertical; min-height: 72px; }
+
+.cot-catalog-field { position: relative; }
+.cot-catalog-menu {
+  position: absolute; z-index: 80; top: calc(100% + 6px); left: 0; right: 0;
+  overflow: hidden; border: 1px solid rgba(24,95,165,.2); border-radius: 10px;
+  background: #fff; box-shadow: 0 14px 30px rgba(15,36,68,.16);
+}
+.cot-catalog-menu__title {
+  display: block; padding: 8px 11px 6px; background: #f8fafc;
+  color: #64748b; font-size: 10px; font-weight: 800; letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.cot-catalog-menu button {
+  display: flex; width: 100%; flex-direction: column; gap: 2px; padding: 9px 11px;
+  border: 0; border-top: 1px solid rgba(15,36,68,.06); background: #fff;
+  color: #0f2444; text-align: left; cursor: pointer; font-family: inherit;
+  transition: background .15s ease;
+}
+.cot-catalog-menu button:hover { background: #eff6ff; }
+.cot-catalog-menu strong { font-size: 12.5px; }
+.cot-catalog-menu small { color: #64748b; font-size: 11px; }
 
 /* ── Renglón ── */
 .cot-renglon {
@@ -282,6 +305,7 @@
   padding: 16px 20px; border-bottom: 1px solid rgba(15,36,68,.09); background: #f7f8fa;
 }
 .cot-modal__header h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0f2444; }
+.cot-modal__header p { margin: 3px 0 0; color: #64748b; font-size: 11.5px; }
 .cot-modal__close {
   width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(15,36,68,.14);
   background: #fff; cursor: pointer; font-size: 16px; color: #64748b;
@@ -299,6 +323,32 @@
   padding: 16px;
   overflow-y: auto;
 }
+
+/* ── Plantillas ── */
+.cot-modal--templates { max-width: 780px; }
+.cot-template-create {
+  display: grid; grid-template-columns: minmax(180px,1fr) auto auto; gap: 10px;
+  align-items: center; padding: 14px 16px;
+  border-bottom: 1px solid rgba(15,36,68,.07); background: #fbfdff;
+}
+.cot-template-global {
+  display: flex; align-items: center; gap: 7px; color: #64748b;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.cot-template-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 13px 14px; margin-bottom: 8px; border: 1px solid rgba(15,36,68,.09);
+  border-radius: 11px; background: #f8fafc;
+}
+.cot-template-item__head { display: flex; align-items: center; gap: 7px; }
+.cot-template-item__head strong { color: #0f2444; font-size: 13px; }
+.cot-template-item__head span {
+  padding: 2px 7px; border-radius: 99px; background: #dbeafe;
+  color: #185fa5; font-size: 10px; font-weight: 700;
+}
+.cot-template-item small { display: block; margin-top: 4px; color: #64748b; font-size: 11px; }
+.cot-template-item__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.cot-template-empty { padding: 26px 10px; color: #94a3b8; text-align: center; font-size: 13px; }
 
 .cot-search {
   width: 100%; padding: 9px 14px; border: 1px solid rgba(15,36,68,.14);
@@ -333,6 +383,10 @@
 }
 .cot-estado--borrador    { background:#f3f4f6; color:#374151; }
 .cot-estado--enviada     { background:#dbeafe; color:#185fa5; }
+.cot-estado--evaluacion  { background:#e0e7ff; color:#4338ca; }
+.cot-estado--aceptada    { background:#d1fae5; color:#047857; }
+.cot-estado--rechazada   { background:#fee2e2; color:#b91c1c; }
+.cot-estado--vencida     { background:#ffedd5; color:#c2410c; }
 .cot-estado--seguimiento { background:#fef3c7; color:#b45309; }
 .cot-estado--negociacion { background:#ede9fe; color:#7c3aed; }
 .cot-estado--ganada      { background:#d4edda; color:#166534; }
@@ -364,4 +418,7 @@
   .cot-renglon__body { grid-template-columns: 1fr; }
   .cot-pv-grid { grid-template-columns: 1fr; }
   .cot-mk-row { grid-template-columns: 1fr; }
+  .cot-template-create { grid-template-columns: 1fr; align-items: stretch; }
+  .cot-template-item { align-items: flex-start; flex-direction: column; }
+  .cot-template-item__actions { justify-content: flex-start; }
 }

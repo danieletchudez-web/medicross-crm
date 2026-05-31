@@ -1083,9 +1083,9 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
                 <span className="tn-cotizador-link__icon">📊</span>
                 <div className="tn-cotizador-link__info">
                   <div className="tn-cotizador-link__title">Cotizador MediCross</div>
-                  <div className="tn-cotizador-link__sub">Abre el cotizador con los datos de esta licitación pre-cargados</div>
+                  <div className="tn-cotizador-link__sub">{editData.linked_quote_id ? "Esta licitación ya tiene una cotización vinculada" : "Abre el cotizador con los datos de esta licitación pre-cargados"}</div>
                 </div>
-                <button className="tn-btn tn-btn--success" onClick={e=>onCotizador(editData,e)}>Crear cotización →</button>
+                <button className="tn-btn tn-btn--success" onClick={e=>onCotizador(editData,e)}>{editData.linked_quote_id ? "Abrir cotización →" : "Crear cotización →"}</button>
               </div>
             )}
           </div>
@@ -1368,9 +1368,9 @@ export default function TendersPage({ profile, onNavigate }) {
 
   async function abrirCotizador(t, e) {
     e?.stopPropagation();
-    const src=t||{institution:form.institution,process_number:form.process_number,end_date:form.end_date,internal_owner:form.internal_owner};
+    const src=t||{id:editData?.id,institution:form.institution,process_number:form.process_number,detection_date:form.detection_date,end_date:form.end_date,internal_owner:form.internal_owner};
     if (src?.id) await logEvent(src.id,"cotizador","Cotización iniciada desde Licitaciones",null,null);
-    onNavigate("cotizador",{institucion:src.institution||"",nroLicit:src.process_number||"",fechaApert:src.end_date||"",vendedor:src.internal_owner||""});
+    onNavigate("cotizador",{tenderId:src.id||null,quoteId:src.linked_quote_id||null,institucion:src.institution||"",nroLicit:src.process_number||"",fechaApert:src.detection_date||src.end_date||"",vendedor:src.internal_owner||""});
     setShowForm(false);
   }
 

@@ -38,6 +38,12 @@ function inRange(dateStr, range) {
   return d >= range.from && d <= range.to;
 }
 
+function goalPeriodStart(period) {
+  const now = new Date();
+  const month = period === "quarter" ? Math.floor(now.getMonth() / 3) * 3 : now.getMonth();
+  return `${now.getFullYear()}-${String(month + 1).padStart(2, "0")}-01`;
+}
+
 const PALETTE = [
   "#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6",
   "#06b6d4","#ec4899","#84cc16","#f97316","#6366f1",
@@ -49,6 +55,7 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
   const [visits,   setVisits]   = useState([]);
   const [opps,     setOpps]     = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [goals,    setGoals]    = useState([]);
   const [loading,  setLoading]  = useState(true);
 
   const [period,    setPeriod]    = useState("month");
@@ -64,16 +71,18 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
 
   async function loadData() {
     setLoading(true);
-    const [sellRes, visRes, oppRes, accRes] = await Promise.all([
+    const [sellRes, visRes, oppRes, accRes, goalsRes] = await Promise.all([
       supabase.from("profiles").select("id, full_name, email, role").eq("approved", true),
       supabase.from("visits").select("id, owner_id, visit_date, status, visit_type, account_id, commercial_potential").order("visit_date", { ascending: false }),
       supabase.from("opportunities").select("id, owner_id, stage, amount, probability, created_at, expected_close, next_action").order("created_at", { ascending: false }),
       supabase.from("accounts").select("id, owner_id, follow_status, potential"),
+      supabase.from("sales_goals").select("*"),
     ]);
     setSellers(sellRes.data || []);
     setVisits(visRes.data  || []);
     setOpps(oppRes.data    || []);
     setAccounts(accRes.data || []);
+    setGoals(goalsRes.data || []);
     setSelected((sellRes.data || []).map((s) => s.id));
     setLoading(false);
   }
@@ -105,6 +114,12 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
       const noNextAction  = openOpps.filter((o) => !o.next_action).length;
       const redAccounts   = sa.filter((a) => a.follow_status === "rojo").length;
       const visitToOpp    = totalVisits > 0 ? pct(oppsCreated, totalVisits) : 0;
+      const goalType      = period === "quarter" ? "trimestral" : "mensual";
+      const goal          = goals.find((item) =>
+        item.seller_id === seller.id &&
+        item.period_type === goalType &&
+        item.period_start === goalPeriodStart(period)
+      ) || null;
 
       const byDow = [0,1,2,3,4,5,6].map((d) => svP.filter((v) => new Date(v.visit_date).getDay() === d).length);
 
@@ -126,9 +141,10 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
         convRate, avgDeal, overdueOpps, noNextAction, redAccounts,
         openOpps: openOpps.length, byDow, score, visitToOpp,
         totalAccounts: sa.length,
+        goal,
       };
     });
-  }, [sellers, visits, opps, accounts, range]);
+  }, [sellers, visits, opps, accounts, goals, period, range]);
 
   const filtered = useMemo(() => sellerMetrics.filter((s) => selected.includes(s.id)), [sellerMetrics, selected]);
   const ranked   = useMemo(() => [...filtered].sort((a, b) => b.score - a.score), [filtered]);
@@ -549,6 +565,19 @@ function SellerPerfCard({ s, rank }) {
         <PerfMetric label="Conversión" value={`${s.convRate}%`} color={s.convRate >= 40 ? "#10b981" : s.convRate >= 20 ? "#f59e0b" : "#ef4444"} />
       </div>
 
+      {s.goal && (
+        <div className="sa-goal-progress">
+          <div className="sa-goal-progress__title">
+            <strong>Avance de metas</strong>
+            <span>{s.goal.period_type}</span>
+          </div>
+          <GoalProgress label="Visitas" current={s.realizadas} target={s.goal.visits_target} />
+          <GoalProgress label="Oportunidades" current={s.oppsCreated} target={s.goal.opportunities_target} />
+          <GoalProgress label="Pipeline" current={s.pipeline} target={s.goal.pipeline_target} money />
+          <GoalProgress label="Forecast" current={s.forecast} target={s.goal.forecast_target} money />
+        </div>
+      )}
+
       <div className="sa-perf-card__footer">
         {hasAlerts ? (
           <div className="sa-perf-card__alerts">
@@ -575,6 +604,21 @@ function SellerPerfCard({ s, rank }) {
         )}
         <span className="sa-perf-card__rank">#{rank + 1}</span>
       </div>
+    </div>
+  );
+}
+
+function GoalProgress({ label, current, target, money = false }) {
+  const progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+  const color = progress >= 80 ? "#10b981" : progress >= 50 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="sa-goal-line">
+      <div>
+        <span>{label}</span>
+        <small>{money ? compactMoney(current) : current} / {money ? compactMoney(target) : target}</small>
+      </div>
+      <div className="sa-goal-line__bar"><i style={{ width: `${progress}%`, background: color }} /></div>
+      <strong style={{ color }}>{progress}%</strong>
     </div>
   );
 }

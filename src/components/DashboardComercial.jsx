@@ -154,6 +154,9 @@ export default function DashboardComercial() {
   const gmThisMon  = avgGM(thisMonthDocs);
   const gmPrevMon  = avgGM(prevMonthDocs);
   const totalMes   = thisMonthDocs.reduce((s, d) => s + d._total, 0);
+  const acceptedQuotes = rawData.filter(d => ["aceptada", "ganada", "facturada", "cobrada"].includes(d.estado)).length;
+  const resolvedQuotes = rawData.filter(d => ["aceptada", "ganada", "facturada", "cobrada", "rechazada", "perdida", "vencida"].includes(d.estado)).length;
+  const acceptanceRate = resolvedQuotes ? Math.round((acceptedQuotes / resolvedQuotes) * 100) : 0;
 
   /* ── Charts ── */
   function destroyAllCharts() {
@@ -381,6 +384,13 @@ export default function DashboardComercial() {
               dir="neutral"
               trend="Total bruto c/IVA"
               accent="linear-gradient(90deg,#0e5fa8,#2596d4)"
+            />
+            <KPICard
+              label="Tasa de aceptación"
+              value={acceptanceRate + "%"}
+              dir={resolvedQuotes ? (acceptanceRate >= 50 ? "up" : "down") : "neutral"}
+              trend={resolvedQuotes ? `${acceptedQuotes} de ${resolvedQuotes} cotizaciones resueltas` : "Sin cotizaciones resueltas"}
+              accent="linear-gradient(90deg,#10b981,#34d399)"
             />
           </div>
 

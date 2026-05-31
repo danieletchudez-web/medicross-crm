@@ -161,6 +161,31 @@ function formatDateTime(value) {
   });
 }
 
+function currentPeriodValue() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function normalizeGoalPeriod(periodType, value) {
+  const [year, month] = String(value || currentPeriodValue()).split("-").map(Number);
+  const normalizedMonth = periodType === "trimestral"
+    ? Math.floor((Math.max(month, 1) - 1) / 3) * 3 + 1
+    : Math.max(month, 1);
+  return `${year}-${String(normalizedMonth).padStart(2, "0")}-01`;
+}
+
+function emptyGoal(sellerId, periodType, periodValue) {
+  return {
+    seller_id: sellerId,
+    period_type: periodType,
+    period_start: normalizeGoalPeriod(periodType, periodValue),
+    visits_target: 0,
+    opportunities_target: 0,
+    pipeline_target: 0,
+    forecast_target: 0,
+  };
+}
+
 /* ─── Modal de confirmación para eliminar ────────────────────────────── */
 function DeleteConfirmModal({ user, onConfirm, onCancel }) {
   const [input, setInput] = useState("");
@@ -597,6 +622,12 @@ export default function AdminUsersPage({ profile, onNavigate }) {
           )}
         </section>
 
+        <SalesGoalsPanel
+          sellers={approvedUsers}
+          profile={profile}
+          logAdminEvent={logAdminEvent}
+        />
+
         <section className="admin-audit-card">
           <div className="admin-audit-card__head">
             <div>
@@ -644,6 +675,125 @@ export default function AdminUsersPage({ profile, onNavigate }) {
       )}
 
     </Layout>
+  );
+}
+
+function SalesGoalsPanel({ sellers, profile, logAdminEvent }) {
+  const [periodType, setPeriodType] = useState("mensual");
+  const [periodValue, setPeriodValue] = useState(currentPeriodValue);
+  const [goals, setGoals] = useState({});
+  const [drafts, setDrafts] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const periodStart = normalizeGoalPeriod(periodType, periodValue);
+  const visibleSellers = sellers.filter(user => user.role !== "super_admin");
+
+  useEffect(() => { loadGoals(); }, [periodType, periodStart]);
+
+  async function loadGoals() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("sales_goals")
+      .select("*")
+      .eq("period_type", periodType)
+      .eq("period_start", periodStart);
+    if (error && !optionalColumnError(error)) alert("Error cargando metas: " + error.message);
+    const indexed = Object.fromEntries((data || []).map(goal => [goal.seller_id, goal]));
+    setGoals(indexed);
+    setDrafts({});
+    setLoading(false);
+  }
+
+  function getGoal(sellerId) {
+    return { ...emptyGoal(sellerId, periodType, periodValue), ...(goals[sellerId] || {}), ...(drafts[sellerId] || {}) };
+  }
+
+  function updateGoal(sellerId, field, value) {
+    setDrafts(prev => ({
+      ...prev,
+      [sellerId]: { ...(prev[sellerId] || {}), [field]: Number(value || 0) },
+    }));
+  }
+
+  async function saveGoals() {
+    const changedIds = Object.keys(drafts);
+    if (!changedIds.length) return;
+    setSaving(true);
+    const payload = changedIds.map(sellerId => ({
+      ...getGoal(sellerId),
+      period_start: periodStart,
+      created_by: goals[sellerId]?.created_by || profile?.id || null,
+      updated_by: profile?.id || null,
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase
+      .from("sales_goals")
+      .upsert(payload, { onConflict: "seller_id,period_type,period_start" });
+    if (error) {
+      alert("Error guardando metas: " + error.message);
+      setSaving(false);
+      return;
+    }
+    await Promise.all(changedIds.map(sellerId => logAdminEvent("sales_goal_saved", sellerId, getGoal(sellerId))));
+    setSaving(false);
+    await loadGoals();
+  }
+
+  return (
+    <section className="adm-goals-card">
+      <div className="adm-goals-head">
+        <div>
+          <span>Control ejecutivo</span>
+          <h3>Metas comerciales</h3>
+          <p>Definí objetivos por vendedor. El avance se refleja en Análisis Comercial.</p>
+        </div>
+        <div className="adm-goals-controls">
+          <select value={periodType} onChange={e => setPeriodType(e.target.value)}>
+            <option value="mensual">Mensual</option>
+            <option value="trimestral">Trimestral</option>
+          </select>
+          <input type="month" value={periodValue} onChange={e => setPeriodValue(e.target.value)} />
+          <button type="button" className="adm-save-btn" onClick={saveGoals} disabled={saving || !Object.keys(drafts).length}>
+            {saving ? "Guardando..." : "Guardar metas"}
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <p className="admin-empty">Cargando metas...</p>
+      ) : visibleSellers.length === 0 ? (
+        <p className="admin-empty">No hay vendedores o gerentes aprobados para configurar.</p>
+      ) : (
+        <div className="adm-goals-grid">
+          {visibleSellers.map(seller => {
+            const goal = getGoal(seller.id);
+            return (
+              <article key={seller.id} className={`adm-goal-row ${drafts[seller.id] ? "pending" : ""}`}>
+                <div className="admin-user-cell">
+                  <div className="admin-avatar">{(seller.full_name || seller.email || "U").slice(0, 1).toUpperCase()}</div>
+                  <div>
+                    <strong>{seller.full_name || "Sin nombre"}</strong>
+                    <span>{seller.email || "Sin email"}</span>
+                  </div>
+                </div>
+                <GoalInput label="Visitas" value={goal.visits_target} onChange={value => updateGoal(seller.id, "visits_target", value)} />
+                <GoalInput label="Oportunidades" value={goal.opportunities_target} onChange={value => updateGoal(seller.id, "opportunities_target", value)} />
+                <GoalInput label="Pipeline ARS" value={goal.pipeline_target} onChange={value => updateGoal(seller.id, "pipeline_target", value)} />
+                <GoalInput label="Forecast ARS" value={goal.forecast_target} onChange={value => updateGoal(seller.id, "forecast_target", value)} />
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function GoalInput({ label, value, onChange }) {
+  return (
+    <label className="adm-goal-field">
+      <span>{label}</span>
+      <input type="number" min="0" step="1" value={value} onChange={e => onChange(e.target.value)} />
+    </label>
   );
 }
 
