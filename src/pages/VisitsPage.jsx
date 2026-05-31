@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CalendarPlus,
+  ClipboardCheck,
+  History,
+  Pencil,
+  RefreshCw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import Layout from "../components/Layout";
+import { EmptyState, MetricKpi, ModuleHeader } from "../components/CRMUI";
 import { supabase } from "../lib/supabaseClient";
 import "./visits.css";
 
@@ -302,7 +314,9 @@ export default function VisitsPage({profile,onNavigate}) {
   const [editForm,     setEditForm]     = useState(null);
   const [deletingId,   setDeletingId]   = useState(null);
   const [filterStatus, setFilterStatus] = useState("todas");
-  const [activeTab,    setActiveTab]    = useState("form");
+  const [activeTab,    setActiveTab]    = useState("history");
+  const [search,       setSearch]       = useState("");
+  const [attentionOnly,setAttentionOnly]= useState(false);
 
   useEffect(()=>{ loadData(); },[]);
 
@@ -361,20 +375,46 @@ export default function VisitsPage({profile,onNavigate}) {
     setDeletingId(null);
   }
 
+  function openNewVisit() {
+    setForm(EMPTY_FORM);
+    setActiveTab("form");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
   const stats = useMemo(()=>{
     const today = new Date().toISOString().slice(0,10);
+    const requiresAttention = visits.filter(v=>{
+      const alert = getFollowupAlert(v.visit_date,v.followup_date);
+      return alert && ["overdue","today","urgent"].includes(alert.tone);
+    }).length;
     return {
       total:      visits.length,
       programadas:visits.filter(v=>v.status==="programada").length,
       realizadas: visits.filter(v=>v.status==="realizada").length,
       pendientes: visits.filter(v=>v.status==="pendiente_informe").length,
       hoy:        visits.filter(v=>v.visit_date?.slice(0,10)===today).length,
+      requiresAttention,
     };
   },[visits]);
 
-  const filteredVisits = useMemo(()=>
-    filterStatus==="todas"?visits:visits.filter(v=>v.status===filterStatus),
-  [visits,filterStatus]);
+  const filteredVisits = useMemo(()=>{
+    const query = search.trim().toLowerCase();
+    return visits.filter(v=>{
+      const alert = getFollowupAlert(v.visit_date,v.followup_date);
+      const matchesStatus = filterStatus==="todas" || v.status===filterStatus;
+      const matchesAttention = !attentionOnly || (alert && ["overdue","today","urgent"].includes(alert.tone));
+      const matchesQuery = !query || [
+        v.accounts?.name,
+        v.products?.name,
+        v.products?.line,
+        v.contact_name,
+        v.business_unit,
+        v.objective,
+        v.next_action,
+      ].some(value=>String(value||"").toLowerCase().includes(query));
+      return matchesStatus && matchesAttention && matchesQuery;
+    });
+  },[attentionOnly,filterStatus,search,visits]);
 
   const statusInfo   = s => STATUS_OPTIONS.find(x=>x.value===s)||{label:s,color:"#94a3b8"};
   const priorityInfo = p => PRIORITY_OPTIONS.find(x=>x.value===p)||{label:p,color:"#94a3b8"};
@@ -382,55 +422,66 @@ export default function VisitsPage({profile,onNavigate}) {
   const FormComponent = isMobile ? VisitFormMobile : VisitForm;
 
   const kpiData = [
-    {icon:"📋", label:"Visitas totales",   value:stats.total,       accent:"blue",  sub:"registradas"},
-    {icon:"🗓", label:"Programadas",        value:stats.programadas, accent:"slate", sub:"pendientes"},
-    {icon:"✅", label:"Realizadas",         value:stats.realizadas,  accent:"green", sub:"completadas"},
-    {icon:"⏳", label:"Pend. informe",      value:stats.pendientes,  accent:"amber", sub:"sin cerrar"},
-    {icon:"📅", label:"Hoy",               value:stats.hoy,         accent:"blue",  sub:"visitas hoy"},
+    {label:"Visitas registradas", value:stats.total,              accent:"blue",  sub:"historial comercial"},
+    {label:"Agenda de hoy",       value:stats.hoy,                accent:"green", sub:"visitas programadas"},
+    {label:"Pendientes informe",  value:stats.pendientes,         accent:"amber", sub:"visitas por cerrar"},
+    {label:"Requieren atención",  value:stats.requiresAttention,  accent:"red",   sub:"seguimientos próximos"},
   ];
 
   return (
     <Layout title="Visitas Comerciales" profile={profile} onNavigate={onNavigate}>
       <div className="visits-page">
 
-        {/* HEADER */}
-        <header className="visits-header">
-          <div className="visits-header__left">
-            <h1 className="visits-header__title">Visitas Comerciales</h1>
-            <p className="visits-header__sub">
-              Registro completo de visitas, objetivos, resultados y próximas acciones.
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate("calendar")}
-            style={{padding:"7px 14px",borderRadius:8,border:"1px solid rgba(15,36,68,.14)",
-              background:"#fff",fontSize:12.5,fontWeight:500,cursor:"pointer",
-              color:"#334155",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
-            📅 Ver calendario
-          </button>
-        </header>
+        <ModuleHeader
+          title="Visitas Comerciales"
+          subtitle="Historial operativo, próximos seguimientos y resultados de cada contacto comercial."
+          actions={(
+            <>
+              <button className="visits-header-btn" type="button" onClick={loadData}>
+                <RefreshCw size={16}/> Actualizar
+              </button>
+              <button className="visits-header-btn" type="button" onClick={() => onNavigate("calendar")}>
+                <CalendarDays size={16}/> Calendario
+              </button>
+              <button className="visits-header-btn visits-header-btn--primary" type="button" onClick={openNewVisit}>
+                <CalendarPlus size={16}/> Nueva visita
+              </button>
+            </>
+          )}
+        />
 
-        {/* KPIs */}
         <section className="visits-kpi-grid">
-          {kpiData.map(k => (
-            <article key={k.label} className={`visits-kpi visits-kpi--${k.accent}`}>
-              <span className="visits-kpi__icon">{k.icon}</span>
-              <span className="visits-kpi__label">{k.label}</span>
-              <strong className="visits-kpi__value">{k.value}</strong>
-              <span className="visits-kpi__sub">{k.sub}</span>
-            </article>
-          ))}
+          {kpiData.map(k => <MetricKpi key={k.label} {...k}/>)}
         </section>
 
-        {/* TABS */}
+        <section className={`visits-insight ${stats.requiresAttention ? "visits-insight--alert" : "visits-insight--ok"}`}>
+          <div className="visits-insight__icon">
+            {stats.requiresAttention ? <AlertTriangle size={19}/> : <ClipboardCheck size={19}/>}
+          </div>
+          <div>
+            <span>Lectura operativa</span>
+            <strong>{stats.requiresAttention ? "Hay seguimientos para resolver" : "Agenda de visitas bajo control"}</strong>
+            <p>
+              {stats.requiresAttention
+                ? `${stats.requiresAttention} visita${stats.requiresAttention!==1?"s":""} con seguimiento vencido o próximo.`
+                : `${stats.programadas} visita${stats.programadas!==1?"s":""} programada${stats.programadas!==1?"s":""} y ${stats.pendientes} informe${stats.pendientes!==1?"s":""} pendiente${stats.pendientes!==1?"s":""}.`}
+            </p>
+          </div>
+          {stats.requiresAttention>0&&(
+            <button type="button" className="visits-insight__action" onClick={()=>{setActiveTab("history");setAttentionOnly(true);}}>
+              Ver seguimientos
+            </button>
+          )}
+        </section>
+
         <div className="visits-tabs">
           <button className={`visits-tab ${activeTab==="form"?"active":""}`}
-            onClick={()=>setActiveTab("form")}>
-            + Nueva visita
+            onClick={openNewVisit}>
+            <CalendarPlus size={15}/> Nueva visita
           </button>
           <button className={`visits-tab ${activeTab==="history"?"active":""}`}
             onClick={()=>setActiveTab("history")}>
-            Historial ({visits.length})
+            <History size={15}/> Historial ({visits.length})
           </button>
         </div>
 
@@ -456,9 +507,16 @@ export default function VisitsPage({profile,onNavigate}) {
           <section className="visits-panel">
             <header className="visits-panel__header">
               <div>
-                <h2 className="visits-panel__title">Historial de visitas</h2>
+                <h2 className="visits-panel__title">Actividad comercial reciente</h2>
                 <p className="visits-panel__sub">{filteredVisits.length} visita{filteredVisits.length!==1?"s":""} en esta vista</p>
               </div>
+            </header>
+
+            <div className="visits-history-toolbar">
+              <label className="visits-search">
+                <Search size={16}/>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente, producto, unidad o próxima acción..."/>
+              </label>
               <div className="visits-filter-tabs">
                 {[
                   {key:"todas",             label:`Todas (${visits.length})`},
@@ -469,16 +527,19 @@ export default function VisitsPage({profile,onNavigate}) {
                   <button key={t.key} className={`visits-filter-tab ${filterStatus===t.key?"active":""}`}
                     onClick={()=>setFilterStatus(t.key)}>{t.label}</button>
                 ))}
+                <button className={`visits-filter-tab ${attentionOnly?"active":""}`} onClick={()=>setAttentionOnly(value=>!value)}>
+                  Seguimientos ({stats.requiresAttention})
+                </button>
               </div>
-            </header>
+            </div>
 
             <div className="visits-history">
               {filteredVisits.length===0 ? (
-                <div className="visits-empty">
-                  <span className="visits-empty__icon">🗓</span>
-                  <span className="visits-empty__title">Sin visitas en esta categoría</span>
-                  <span>Cambiá el filtro o registrá una nueva visita.</span>
-                </div>
+                <EmptyState
+                  title="Sin visitas en esta vista"
+                  text="Cambiá los filtros o registrá una nueva visita comercial."
+                  action={<button className="visits-header-btn visits-header-btn--primary" type="button" onClick={openNewVisit}><CalendarPlus size={15}/> Nueva visita</button>}
+                />
               ) : filteredVisits.map(v => {
                 const alert    = getFollowupAlert(v.visit_date,v.followup_date);
                 const timeline = getTimelineData(v.visit_date,v.followup_date);
@@ -516,9 +577,9 @@ export default function VisitsPage({profile,onNavigate}) {
                             <span className="visits-badge" style={{background:`${pi.color}18`,color:pi.color,borderColor:`${pi.color}40`}}>{pi.label}</span>
                           </div>
                           <div className="visits-item__actions">
-                            <button className="visits-action-btn visits-action-btn--edit" onClick={()=>startEdit(v)} title="Editar">✎</button>
+                            <button className="visits-action-btn visits-action-btn--edit" onClick={()=>startEdit(v)} title="Editar"><Pencil size={14}/></button>
                             <button className="visits-action-btn visits-action-btn--delete" onClick={()=>deleteVisit(v.id)} disabled={deletingId===v.id} title="Eliminar">
-                              {deletingId===v.id?"…":"✕"}
+                              {deletingId===v.id?"…":<Trash2 size={14}/>}
                             </button>
                           </div>
                         </div>
