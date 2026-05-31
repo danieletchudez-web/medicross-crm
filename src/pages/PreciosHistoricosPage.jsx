@@ -113,10 +113,34 @@ function saveBusqueda(q) {
 }
 
 function MarketEvolutionChart({ data }) {
-  if (!data || data.length < 2) {
+  if (!data || data.length === 0) {
     return (
       <div className="ph-empty-chart">
-        Se necesitan al menos dos fechas comparables para leer tendencia de mercado.
+        Todavía no hay fechas comparables para mostrar evolución de mercado.
+      </div>
+    );
+  }
+
+  if (data.length === 1) {
+    const point = data[0];
+    return (
+      <div className="ph-market-snapshot">
+        <div>
+          <span>Lectura puntual</span>
+          <strong>{fmtDate(point.date)}</strong>
+          <small>Se necesita una segunda fecha comparable para construir tendencia.</small>
+        </div>
+        {[
+          ["Mínimo", point.min],
+          ["Promedio", point.avg],
+          ["Máximo", point.max],
+          ["Oferta propia", point.own],
+        ].map(([label, value]) => (
+          <article key={label}>
+            <span>{label}</span>
+            <strong>{value ? fullMoney(value) : "—"}</strong>
+          </article>
+        ))}
       </div>
     );
   }
@@ -652,7 +676,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     const ensureCompany = name => {
       const key = name || "Sin empresa";
       if (!companies[key]) {
-        companies[key] = { name: key, refs: 0, adjudicaciones: 0, minimos: 0, total: 0, lastDate: "" };
+        companies[key] = {
+          name: key, refs: 0, adjudicaciones: 0, minimos: 0,
+          total: 0, lastDate: "", prices: [], latestRow: null,
+        };
       }
       return companies[key];
     };
@@ -662,7 +689,12 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       company.refs += 1;
       company.total += Number(row.total_ars || 0);
       if (row.adjudicado) company.adjudicaciones += 1;
-      if (rowDate(row) > company.lastDate) company.lastDate = rowDate(row);
+      const price = comparablePrice(row);
+      if (price !== null) company.prices.push(price);
+      if (rowDate(row) > company.lastDate) {
+        company.lastDate = rowDate(row);
+        company.latestRow = row;
+      }
     });
 
     Object.values(byGroup).forEach(groupRows => {
@@ -673,9 +705,16 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       });
     });
 
-    const ranking = Object.values(companies)
-      .sort((a, b) => b.refs - a.refs || b.adjudicaciones - a.adjudicaciones || b.minimos - a.minimos);
-    const totalRefs = ranking.reduce((sum, item) => sum + item.refs, 0) || 1;
+    const rawRanking = Object.values(companies);
+    const totalRefs = rawRanking.reduce((sum, item) => sum + item.refs, 0) || 1;
+    const ranking = rawRanking
+      .map(item => ({
+        ...item,
+        avgPrice: avg(item.prices),
+        lastPrice: comparablePrice(item.latestRow),
+        participation: Math.round(item.refs / totalRefs * 100),
+      }))
+      .sort((a, b) => b.refs - a.refs || b.minimos - a.minimos || b.adjudicaciones - a.adjudicaciones);
     return {
       ranking,
       totalRefs,
@@ -778,20 +817,6 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         text: leaderMin ? `${leaderMin.minimos} mínimo${leaderMin.minimos !== 1 ? "s" : ""} registrado${leaderMin.minimos !== 1 ? "s" : ""}.` : "Todavía no hay mínimos comparables.",
       },
       {
-        label: "Adjudicaciones",
-        value: leaderAdj?.name || "Sin adjudicación",
-        text: leaderAdj ? `${leaderAdj.adjudicaciones} adjudicación${leaderAdj.adjudicaciones !== 1 ? "es" : ""} detectada${leaderAdj.adjudicaciones !== 1 ? "s" : ""}.` : "No hay adjudicaciones cargadas para esta búsqueda.",
-      },
-      {
-        label: "Tendencia mercado",
-        value: trendPct === null ? "Sin tendencia" : `${trendPct > 0 ? "+" : ""}${trendPct}%`,
-        text: trendPct === null
-          ? "Faltan fechas para comparar evolución."
-          : trendPct > 0
-            ? "El promedio de mercado viene subiendo."
-            : "El promedio de mercado viene bajando o estable.",
-      },
-      {
         label: "Posición propia",
         value: decision.diffMercado === null ? "Sin referencia" : `${decision.diffMercado > 0 ? "+" : ""}${decision.diffMercado}%`,
         text: decision.diffMercado === null
@@ -801,7 +826,23 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       {
         label: "Recomendación",
         value: decision.sugerido ? fullMoney(decision.sugerido) : "—",
-        text: decision.motivo,
+        text: decision.fechaFuenteSugerido
+          ? `${decision.motivo} Base: ${fmtDate(decision.fechaFuenteSugerido)}.`
+          : decision.motivo,
+      },
+      {
+        label: "Tendencia mercado",
+        value: trendPct === null ? "Sin tendencia" : `${trendPct > 0 ? "+" : ""}${trendPct}%`,
+        text: trendPct === null
+          ? "Falta una segunda fecha comparable."
+          : trendPct > 0
+            ? "El promedio de mercado viene subiendo."
+            : "El promedio de mercado viene bajando o estable.",
+      },
+      {
+        label: "Adjudicaciones",
+        value: leaderAdj?.name || "Sin adjudicación",
+        text: leaderAdj ? `${leaderAdj.adjudicaciones} adjudicación${leaderAdj.adjudicaciones !== 1 ? "es" : ""} detectada${leaderAdj.adjudicaciones !== 1 ? "s" : ""}.` : "No hay adjudicaciones cargadas para esta búsqueda.",
       },
     ];
   }, [metricas, decision, marketTrend, competitiveIntel, marketRows.length]);
@@ -1288,15 +1329,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
           <section className="ph-exec">
             <div className="ph-exec__head">
               <div>
-                <span className="ph-eyebrow">Lectura ejecutiva</span>
-                <h3>{decision.estado.label}</h3>
-                <p>
-                  {decision.diffMercado !== null
-                    ? decision.diffMercado <= 0
-                      ? `Nuestra empresa está al nivel o ${Math.abs(decision.diffMercado)}% por debajo del mínimo comparable.`
-                      : `Nuestra empresa está ${decision.diffMercado}% por encima del mínimo comparable.`
-                    : "Hay mercado comparable, pero falta referencia propia para medir posición."}
-                </p>
+                <span className="ph-eyebrow">Decisión comercial</span>
+                <h3>{quickDecision?.title || decision.estado.label}</h3>
+                <p>{quickDecision?.text || "Revisá las referencias comparables antes de cotizar."}</p>
               </div>
               <div className="ph-exec__badges">
                 <span className="ph-status" style={{"--status-bg":decision.estado.bg,"--status-color":decision.estado.color}}>
@@ -1308,32 +1343,39 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               </div>
             </div>
 
-            {quickDecision && (
-              <div className={`ph-simple-decision ph-simple-decision--${quickDecision.tone}`}>
-                <div>
-                  <span className="ph-eyebrow">Conclusión rápida</span>
-                  <strong>{quickDecision.title}</strong>
-                  <p>{quickDecision.text}</p>
-                </div>
-                <div className="ph-simple-decision__price">
-                  <span>Precio sugerido</span>
-                  <strong>{decision.sugerido ? fullMoney(decision.sugerido) : "—"}</strong>
-                  <small>{quickDecision.action}</small>
-                  <em>{decision.detalleFuenteSugerido}</em>
-                </div>
-              </div>
-            )}
+            <div className="ph-decision-grid">
+              <article className={`ph-decision-card ph-decision-card--primary ph-decision-card--${quickDecision?.tone || "blue"}`}>
+                <span>Precio sugerido</span>
+                <strong>{decision.sugerido ? fullMoney(decision.sugerido) : "—"}</strong>
+                <small>{quickDecision?.action || "Revisar referencias"}</small>
+              </article>
+              <article className="ph-decision-card">
+                <span>Mínimo de mercado</span>
+                <strong>{decision.minimoMercado ? fullMoney(decision.minimoMercado) : "—"}</strong>
+                <small>{decision.minimoRow?.empresa || "Sin empresa comparable"}</small>
+              </article>
+              <article className="ph-decision-card">
+                <span>Última oferta propia</span>
+                <strong>{decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—"}</strong>
+                <small>{decision.ultimaPropia ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}` : "Sin cotización propia comparable"}</small>
+              </article>
+              <article className="ph-decision-card">
+                <span>Base de recomendación</span>
+                <strong>{fmtDate(decision.fechaFuenteSugerido)}</strong>
+                <small>{decision.detalleFuenteSugerido}</small>
+              </article>
+            </div>
 
-            <div className="ph-evidence">
-              <div className="ph-evidence__head">
+            <details className="ph-evidence ph-evidence--details">
+              <summary className="ph-evidence__head">
                 <div>
                   <span className="ph-eyebrow">Trazabilidad de la recomendación</span>
-                  <strong>Cómo se obtuvo el precio sugerido</strong>
+                  <strong>Ver cómo se obtuvo el precio sugerido</strong>
                 </div>
                 <span className={`ph-freshness ph-freshness--${decision.vigenciaSugerido.tone}`}>
                   {decision.vigenciaSugerido.label}
                 </span>
-              </div>
+              </summary>
               <div className="ph-evidence-grid">
                 <article>
                   <CalendarDays size={17}/>
@@ -1360,7 +1402,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                   <small>{decision.fuenteSugerido?.tenders?.process_number || "Sin expediente"}</small>
                 </article>
               </div>
-            </div>
+            </details>
 
             <details className="ph-more-metrics">
               <summary>
@@ -1449,40 +1491,71 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               <div className="ph-panel__head">
                 <div>
                   <span className="ph-eyebrow">Inteligencia competitiva</span>
-                  <h3>Competidores, participación y ranking histórico</h3>
+                  <h3>Mapa competitivo del producto</h3>
+                  <p className="ph-muted">Compará posición de precio, presencia y actividad reciente de cada empresa.</p>
                 </div>
                 <span className="ph-pill">{competitiveIntel.ranking.length} empresas</span>
               </div>
-              <div className="ph-competitive-grid">
-                {[
-                  { title:"Más frecuentes", data:competitiveIntel.frecuentes, keyName:"refs", suffix:"refs.", color:"#185fa5" },
-                  { title:"Más adjudicaciones", data:competitiveIntel.adjudicaciones, keyName:"adjudicaciones", suffix:"adj.", color:"#10b981" },
-                  { title:"Más mínimos", data:competitiveIntel.minimos, keyName:"minimos", suffix:"mín.", color:"#f59e0b" },
-                ].map(block => (
-                  <div key={block.title} className="ph-rank-card">
-                    <strong>{block.title}</strong>
-                    {block.data.length > 0 ? block.data.map((item, index) => {
-                      const value = item[block.keyName];
-                      const pct = block.keyName === "refs"
-                        ? Math.round(item.refs / competitiveIntel.totalRefs * 100)
-                        : Math.min(100, value * 18);
-                      return (
-                        <div key={`${block.title}-${item.name}`} className="ph-rank-row">
-                          <div className="ph-rank-row__top">
-                            <span>{index + 1}. {item.name}</span>
-                            <em>{value} {block.suffix}</em>
-                          </div>
-                          <div className="ph-rank-bar">
-                            <i style={{ width:`${Math.max(pct, 5)}%`, background:block.color }}/>
-                          </div>
-                        </div>
-                      );
-                    }) : (
-                      <p className="ph-muted">Sin datos para este ranking.</p>
-                    )}
-                  </div>
-                ))}
+              <div className="ph-competitive-summary">
+                <article>
+                  <span>Mínimo de mercado</span>
+                  <strong>{decision.minimoMercado ? fullMoney(decision.minimoMercado) : "—"}</strong>
+                  <small>{decision.minimoRow?.empresa || "Sin referencia comparable"}</small>
+                </article>
+                <article>
+                  <span>Mayor presencia</span>
+                  <strong>{competitiveIntel.frecuentes[0]?.name || "—"}</strong>
+                  <small>{competitiveIntel.frecuentes[0] ? `${competitiveIntel.frecuentes[0].refs} referencias · ${competitiveIntel.frecuentes[0].participation}% del total` : "Sin actividad registrada"}</small>
+                </article>
+                <article>
+                  <span>Líder de precio</span>
+                  <strong>{competitiveIntel.minimos[0]?.name || "—"}</strong>
+                  <small>{competitiveIntel.minimos[0] ? `${competitiveIntel.minimos[0].minimos} mínimo${competitiveIntel.minimos[0].minimos !== 1 ? "s" : ""} registrado${competitiveIntel.minimos[0].minimos !== 1 ? "s" : ""}` : "Sin mínimos comparables"}</small>
+                </article>
               </div>
+
+              {competitiveIntel.ranking.length > 0 ? (
+                <div className="ph-competitor-table-wrap">
+                  <table className="ph-competitor-table">
+                    <thead>
+                      <tr>
+                        <th>Empresa</th>
+                        <th>Último precio</th>
+                        <th>Vs. mínimo</th>
+                        <th>Participación</th>
+                        <th>Mínimos</th>
+                        <th>Adjudicaciones</th>
+                        <th>Última actividad</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {competitiveIntel.ranking.map(item => {
+                        const diff = item.lastPrice !== null && decision.minimoMercado
+                          ? Number(((item.lastPrice - decision.minimoMercado) / decision.minimoMercado * 100).toFixed(1))
+                          : null;
+                        return (
+                          <tr key={item.name}>
+                            <td><strong>{item.name}</strong><small>{item.refs} referencia{item.refs !== 1 ? "s" : ""}</small></td>
+                            <td className="ph-money">{comparableMoney(item.lastPrice)}</td>
+                            <td>{diff === null ? <span className="ph-muted">—</span> : diff === 0 ? <span className="ph-chip ph-chip--ok">Mínimo</span> : <span className="ph-chip ph-chip--bad">+{diff}%</span>}</td>
+                            <td>
+                              <div className="ph-participation">
+                                <span>{item.participation}%</span>
+                                <i><b style={{ width:`${item.participation}%` }}/></i>
+                              </div>
+                            </td>
+                            <td>{item.minimos}</td>
+                            <td>{item.adjudicaciones || "—"}</td>
+                            <td>{fmtDate(item.lastDate)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="ph-muted">No hay competidores comparables para este producto.</p>
+              )}
             </section>
             )}
 
