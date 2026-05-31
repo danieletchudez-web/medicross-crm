@@ -303,7 +303,7 @@ function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,loading,onTog
 /* ══════════════════════════════════════════════════════════════════════
    VisitsPage — componente principal
 ══════════════════════════════════════════════════════════════════════ */
-export default function VisitsPage({profile,onNavigate}) {
+export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) {
   const isMobile = useMobile();
   const [visits,       setVisits]       = useState([]);
   const [accounts,     setAccounts]     = useState([]);
@@ -376,10 +376,14 @@ export default function VisitsPage({profile,onNavigate}) {
   }
 
   function openNewVisit() {
-    setForm(EMPTY_FORM);
+    setForm({...EMPTY_FORM,materials:[]});
     setActiveTab("form");
     window.scrollTo({top:0,behavior:"smooth"});
   }
+
+  useEffect(()=>{
+    if (navigationData?.action === "create") openNewVisit();
+  },[navigationData,pageKey]);
 
   const stats = useMemo(()=>{
     const today = new Date().toISOString().slice(0,10);

@@ -374,7 +374,7 @@ export default function CalendarPage({ profile, onNavigate }) {
                 </button>
               ))}
             </div>
-            <button className="cal-new-btn" onClick={() => onNavigate("visits")}>+ Nueva visita</button>
+            <button className="cal-new-btn" onClick={() => onNavigate("visits", { action: "create", source: "calendar" })}>+ Nueva visita</button>
           </div>
         </div>
 

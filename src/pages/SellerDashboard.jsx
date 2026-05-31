@@ -201,7 +201,7 @@ export default function SellerDashboard({ profile, onNavigate }) {
             <p className="sd-hero__sub">Resumen del equipo comercial — pipeline, visitas, oportunidades y clientes.</p>
           </div>
           <div className="sd-hero__right">
-            <button className="sd-hero__btn" onClick={() => onNavigate("visits")}>+ Registrar visita</button>
+            <button className="sd-hero__btn" onClick={() => onNavigate("visits", { action: "create", source: "sellerDashboard" })}>+ Registrar visita</button>
           </div>
         </header>
 

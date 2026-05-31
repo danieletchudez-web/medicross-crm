@@ -275,7 +275,11 @@ export default function App() {
       {ALL_PAGES.map(({ id, Component }) => {
         if (!shouldMount(id)) return null;
         const isActive   = id === currentPage;
-        const extraProps = id === "cotizador" ? { initialData: navigateData } : {};
+        const extraProps = id === "cotizador"
+          ? { initialData: navigateData }
+          : id === "visits"
+            ? { navigationData: navigateData }
+            : {};
         return (
           <div
             key={id}

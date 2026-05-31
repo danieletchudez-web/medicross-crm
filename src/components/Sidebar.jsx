@@ -165,11 +165,11 @@ export default function Sidebar({ profile, onNavigate }) {
     window.location.reload();
   }
 
-  function handleNavigate(id) {
+  function handleNavigate(id, data) {
     setMenuOpen(false);
     setEditing(false);
     setTooltip(null);
-    onNavigate(id);
+    onNavigate(id, data);
   }
 
   function handleToggle() {
@@ -242,7 +242,7 @@ export default function Sidebar({ profile, onNavigate }) {
             <div className="sidebar-quick">
               {canSee("visits") && (
                 <button
-                  onClick={() => handleNavigate("visits")}
+                  onClick={() => handleNavigate("visits", { action: "create", source: "sidebarQuickAction" })}
                   aria-label="Nueva visita"
                   onMouseEnter={(e) => showTooltip(e, "Nueva visita")}
                   onMouseLeave={hideTooltip}

@@ -127,7 +127,7 @@ Quedo atento para coordinar una presentación.`;
               <button className="ta-header-btn" type="button" onClick={loadActions}>
                 <RefreshCw size={16} /> Actualizar
               </button>
-              <button className="ta-header-btn ta-header-btn--primary" type="button" onClick={() => onNavigate("visits")}>
+              <button className="ta-header-btn ta-header-btn--primary" type="button" onClick={() => onNavigate("visits", { action: "create", source: "todayActions" })}>
                 <CalendarPlus size={16} /> Registrar visita
               </button>
             </>
@@ -246,7 +246,7 @@ Quedo atento para coordinar una presentación.`;
                   </button>
                   <button
                     className="ta-btn ta-btn--secondary"
-                    onClick={() => onNavigate("visits")}
+                    onClick={() => onNavigate("visits", { action: "create", source: "todayActions" })}
                   >
                     <CalendarPlus size={15} /> Registrar visita
                   </button>
