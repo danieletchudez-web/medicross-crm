@@ -454,6 +454,21 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
     const base = ultimaAdjudicada?.precioComparable || minimoMercado || promedioMercado || ownPrice;
     const sugerido = base ? Math.round(base * 1.02) : null;
+    const fuenteSugerido = ultimaAdjudicada || minimoRow || ultimaPropia || ultimoDato || null;
+    const tipoFuenteSugerido = ultimaAdjudicada
+      ? "Última adjudicación"
+      : minimoRow
+        ? "Mínimo de mercado"
+        : ultimaPropia
+          ? "Última MediCross"
+          : ultimoDato
+            ? "Última referencia"
+            : "Sin referencia";
+    const fechaFuenteSugerido = rowDate(fuenteSugerido);
+    const diasFuenteSugerido = daysSince(fechaFuenteSugerido);
+    const detalleFuenteSugerido = fuenteSugerido
+      ? `${tipoFuenteSugerido} · ${fmtDate(fechaFuenteSugerido)}${diasFuenteSugerido !== null ? ` · hace ${diasFuenteSugerido} días` : ""}`
+      : "Sin fecha de referencia";
     const motivo = ultimaAdjudicada
       ? "Basado en la última adjudicación registrada, con 2% de colchón operativo."
       : minimoMercado
@@ -475,6 +490,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       minimoMercado,
       promedioMercado,
       sugerido,
+      fuenteSugerido,
+      detalleFuenteSugerido,
       motivo,
       confianza,
       estado,
@@ -1134,6 +1151,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                   <span>Precio sugerido</span>
                   <strong>{decision.sugerido ? fullMoney(decision.sugerido) : "—"}</strong>
                   <small>{quickDecision.action}</small>
+                  <em>{decision.detalleFuenteSugerido}</em>
                 </div>
               </div>
             )}
@@ -1141,7 +1159,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
             <div className="ph-exec-grid">
               {[
                 { icon:"◆", label:"Estado comercial", value:decision.estado.label, sub:"Diagnóstico contra mercado comparable", tone:"blue" },
-                { icon:"$", label:"Precio sugerido actual", value:decision.sugerido ? fullMoney(decision.sugerido) : "—", sub:decision.motivo, tone:"green" },
+                { icon:"$", label:"Precio sugerido actual", value:decision.sugerido ? fullMoney(decision.sugerido) : "—", sub:decision.sugerido ? decision.detalleFuenteSugerido : decision.motivo, tone:"green" },
                 { icon:"↕", label:"Diferencia vs mínimo", value:decision.diffMercado === null ? "—" : `${decision.diffMercado > 0 ? "+" : ""}${decision.diffMercado}%`, sub:decision.minimoRow ? `Mínimo: ${decision.minimoRow.empresa}` : "Sin mínimo comparable", tone:decision.diffMercado !== null && decision.diffMercado > 8 ? "red" : "amber" },
                 { icon:"M", label:"Última MediCross", value:decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—", sub:decision.ultimaPropia ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}` : "Sin cotización propia comparable", tone:"navy" },
                 { icon:"✓", label:"Última adjudicación", value:decision.ultimaAdjudicada ? comparableMoney(decision.ultimaAdjudicada) : "—", sub:decision.ultimaAdjudicada ? `${decision.ultimaAdjudicada.empresa} · ${fmtDate(rowDate(decision.ultimaAdjudicada))}` : "No hay adjudicación cargada", tone:"green" },

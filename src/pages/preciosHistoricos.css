@@ -138,7 +138,8 @@
 }
 
 .ph-simple-decision__price span,
-.ph-simple-decision__price small {
+.ph-simple-decision__price small,
+.ph-simple-decision__price em {
   color: #64748b;
   font-size: 11px;
   font-weight: 900;
@@ -153,6 +154,15 @@
   margin: 6px 0;
   font-family: "DM Mono", monospace;
   font-size: 24px;
+}
+
+.ph-simple-decision__price em {
+  display: block;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(24, 95, 165, .12);
+  font-style: normal;
+  line-height: 1.35;
 }
 
 .ph-view-tabs {
@@ -655,6 +665,7 @@
 [data-theme="dark"] .ph-simple-decision p,
 [data-theme="dark"] .ph-simple-decision__price span,
 [data-theme="dark"] .ph-simple-decision__price small,
+[data-theme="dark"] .ph-simple-decision__price em,
 [data-theme="dark"] .ph-view-tabs button {
   color: #8b949e;
 }
