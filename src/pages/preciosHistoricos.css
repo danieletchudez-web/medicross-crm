@@ -165,6 +165,142 @@
   line-height: 1.35;
 }
 
+.ph-evidence {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .7);
+}
+
+.ph-evidence__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ph-evidence__head strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f2444;
+  font-size: 15px;
+}
+
+.ph-freshness {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #64748b;
+  font-size: 10.5px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ph-freshness--green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ph-freshness--amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ph-freshness--red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ph-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ph-evidence-grid article {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #edf2f7;
+  border-radius: 9px;
+  background: #fbfdff;
+}
+
+.ph-evidence-grid svg {
+  display: block;
+  margin-bottom: 9px;
+  color: #185fa5;
+}
+
+.ph-evidence-grid span {
+  display: block;
+  color: #94a3b8;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: .55px;
+  text-transform: uppercase;
+}
+
+.ph-evidence-grid strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 5px;
+  color: #0f2444;
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ph-evidence-grid small {
+  display: block;
+  overflow: hidden;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10.5px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ph-more-metrics {
+  margin-top: 12px;
+}
+
+.ph-more-metrics summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid #dbe4ef;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+  list-style: none;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+
+.ph-more-metrics summary::-webkit-details-marker {
+  display: none;
+}
+
+.ph-more-metrics summary:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #185fa5;
+}
+
+.ph-more-metrics[open] summary {
+  margin-bottom: 10px;
+}
+
 .ph-view-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -564,7 +700,8 @@
   }
 
   .ph-grid--analysis,
-  .ph-competitive-grid {
+  .ph-competitive-grid,
+  .ph-evidence-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -575,6 +712,7 @@
   }
 
   .ph-exec__head,
+  .ph-evidence__head,
   .ph-panel__head,
   .ph-history-tools,
   .ph-simple-decision {
@@ -644,6 +782,8 @@
 [data-theme="dark"] .ph-kpi,
 [data-theme="dark"] .ph-insight,
 [data-theme="dark"] .ph-rank-card,
+[data-theme="dark"] .ph-evidence,
+[data-theme="dark"] .ph-evidence-grid article,
 [data-theme="dark"] .ph-simple-decision,
 [data-theme="dark"] .ph-view-tabs {
   background: #0d1117;
@@ -652,22 +792,32 @@
 }
 
 [data-theme="dark"] .ph-simple-decision__price,
+[data-theme="dark"] .ph-more-metrics summary,
 [data-theme="dark"] .ph-view-tabs button:hover {
   background: #111820;
   border-color: #30363d;
 }
 
 [data-theme="dark"] .ph-simple-decision strong,
+[data-theme="dark"] .ph-evidence__head strong,
+[data-theme="dark"] .ph-evidence-grid strong,
 [data-theme="dark"] .ph-view-tabs button:hover {
   color: #e6edf3;
 }
 
 [data-theme="dark"] .ph-simple-decision p,
+[data-theme="dark"] .ph-evidence-grid small,
 [data-theme="dark"] .ph-simple-decision__price span,
 [data-theme="dark"] .ph-simple-decision__price small,
 [data-theme="dark"] .ph-simple-decision__price em,
 [data-theme="dark"] .ph-view-tabs button {
   color: #8b949e;
+}
+
+[data-theme="dark"] .ph-more-metrics summary:hover {
+  border-color: rgba(47, 129, 247, .42);
+  background: rgba(47, 129, 247, .12);
+  color: #93c5fd;
 }
 
 [data-theme="dark"] .ph-view-tabs button.active {

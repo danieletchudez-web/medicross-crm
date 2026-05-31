@@ -87,6 +87,26 @@ function pctVsMin(value, min) {
   return ((price - min) / min * 100).toFixed(1);
 }
 
+const OWN_COMPANY_ALIASES = ["MEDI-CROSS", "MEDICROSS", "STORING INSUMOS MEDICOS"];
+
+function normalizeCompanyText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+}
+
+function isOwnCompany(value) {
+  const name = normalizeCompanyText(value);
+  return OWN_COMPANY_ALIASES.some(alias => name.includes(normalizeCompanyText(alias)));
+}
+
+function isOwnOffer(row) {
+  return Boolean(row?.es_nuestra_oferta) || isOwnCompany(row?.empresa);
+}
+
 function daysUntil(d) {
   if (!d) return null;
   const now = new Date(); now.setHours(0,0,0,0);
@@ -499,8 +519,6 @@ function Comparativa({ tenderId, tenderInfo }) {
   const [draft, setDraft]         = useState(null);
   const fileRef = useRef(null);
 
-  const NUESTRA_EMPRESA = "MEDI-CROSS";
-
   useEffect(() => { if (tenderId) load(); }, [tenderId]);
 
   async function load() {
@@ -582,7 +600,7 @@ function Comparativa({ tenderId, tenderInfo }) {
             renglon,
             descripcion,
             empresa:           emp.nombre,
-            es_nuestra_oferta: emp.nombre.toUpperCase().includes(NUESTRA_EMPRESA),
+            es_nuestra_oferta: isOwnCompany(emp.nombre),
             moneda:            "ARS",
             precio_unitario:   precioRaw,
             cantidad,
@@ -620,7 +638,7 @@ function Comparativa({ tenderId, tenderInfo }) {
       renglon:           parseInt(draft.renglon) || 1,
       descripcion:       draft.descripcion || "",
       empresa:           draft.empresa,
-      es_nuestra_oferta: draft.empresa.toUpperCase().includes(NUESTRA_EMPRESA),
+      es_nuestra_oferta: isOwnCompany(draft.empresa),
       moneda:            "ARS",
       precio_unitario:   precio,
       cantidad:          cant,
@@ -692,7 +710,7 @@ function Comparativa({ tenderId, tenderInfo }) {
       ];
       const d1 = rows.map(r => {
         const min = precioMin(r.renglon);
-        return [r.renglon,r.descripcion,r.empresa,r.es_nuestra_oferta?"Sí":"No",
+        return [r.renglon,r.descripcion,r.empresa,isOwnOffer(r)?"Sí":"No",
           r.precio_unitario,r.cantidad,r.total_ars,min,fmtPct(r.precio_unitario,min),r.adjudicado?"Adjudicado":""];
       });
       const ws1 = XLSX.utils.aoa_to_sheet([h1,...d1]);
@@ -729,7 +747,7 @@ function Comparativa({ tenderId, tenderInfo }) {
       pivotHeader.forEach((_,ci) => {
         const ref = XLSX.utils.encode_cell({r:0,c:ci});
         if (!ws2[ref]) return;
-        const esNuestra = ci>=2&&empresas[ci-2]?.toUpperCase().includes(NUESTRA_EMPRESA);
+        const esNuestra = ci>=2&&isOwnCompany(empresas[ci-2]);
         ws2[ref].s = {font:{bold:true,color:{rgb:COLOR_WHITE},sz:11},fill:{fgColor:{rgb:esNuestra?COLOR_HEADER:COLOR_NAVY}},alignment:{horizontal:"center",vertical:"center",wrapText:true}};
       });
       pivotData.forEach((row,ri) => {
@@ -737,7 +755,7 @@ function Comparativa({ tenderId, tenderInfo }) {
         row.forEach((val,ci) => {
           const ref = XLSX.utils.encode_cell({r:ri+1,c:ci});
           if (!ws2[ref]) ws2[ref]={v:val??"",t:val===null?"s":typeof val==="number"?"n":"s"};
-          const esNuestra=ci>=2&&empresas[ci-2]?.toUpperCase().includes(NUESTRA_EMPRESA);
+          const esNuestra=ci>=2&&isOwnCompany(empresas[ci-2]);
           const esMenor=ci>=2&&comparablePrice(val)===min&&min!==null;
           const bgColor=esNuestra?COLOR_NUESTRA:ri%2===0?COLOR_WHITE:COLOR_ALT;
           ws2[ref].s={fill:{fgColor:{rgb:esMenor?COLOR_ADJ:bgColor}},font:{bold:esMenor,color:{rgb:esMenor?COLOR_MIN:"0F172A"},sz:10},alignment:{horizontal:ci>=2?"right":ci===0?"center":"left",vertical:"center"},numFmt:ci>=2?"#,##0":undefined,border:{bottom:{style:"thin",color:{rgb:"E2E8F0"}},right:{style:"thin",color:{rgb:"E2E8F0"}}}};
@@ -747,7 +765,7 @@ function Comparativa({ tenderId, tenderInfo }) {
 
       const h3 = ["Renglón","Descripción","Nuestro precio ($)","Precio mínimo ($)","Diferencia vs mínimo","Empresa ganadora (precio)","Adjudicado a"];
       const d3 = renglones.map(reng => {
-        const nuestra=rows.find(r=>r.renglon===reng&&r.es_nuestra_oferta);
+        const nuestra=rows.find(r=>r.renglon===reng&&isOwnOffer(r));
         const min=precioMin(reng);
         const ganador=rows.find(r=>r.renglon===reng&&r.adjudicado);
         const empMenor=rows.find(r=>r.renglon===reng&&comparablePrice(r)===min);
@@ -782,7 +800,7 @@ function Comparativa({ tenderId, tenderInfo }) {
         ["Hoja 3","Resumen de posición — nuestra oferta vs precio mínimo por renglón"],
         [""],["TOTALES"],[""],
         ["Total de renglones",renglones.length],["Total de empresas",empresas.length],["Total de ofertas",rows.length],
-        ["Renglones donde fuimos precio mínimo",renglones.filter(reng=>{const n=rows.find(r=>r.renglon===reng&&r.es_nuestra_oferta);return n&&comparablePrice(n)===precioMin(reng);}).length],
+        ["Renglones donde fuimos precio mínimo",renglones.filter(reng=>{const n=rows.find(r=>r.renglon===reng&&isOwnOffer(r));return n&&comparablePrice(n)===precioMin(reng);}).length],
       ];
       const ws4 = XLSX.utils.aoa_to_sheet(meta);
       ws4["!cols"] = [{wch:40},{wch:70}];
@@ -805,12 +823,12 @@ function Comparativa({ tenderId, tenderInfo }) {
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
       <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
         <button className="tn-btn tn-btn--primary tn-btn--sm" onClick={() => fileRef.current?.click()} disabled={importing}>
-          {importing ? "⏳ Importando…" : "📊 Importar Excel de apertura"}
+          {importing ? "⏳ Importando…" : "📊 Importar Excel BAC"}
         </button>
         <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={handleImportExcel}/>
         <button className="tn-btn tn-btn--ghost tn-btn--sm"
           onClick={() => setDraft({renglon:"",descripcion:"",empresa:"",precio_unitario:"",cantidad:1,adjudicado:false})}>
-          + Carga manual
+          + Cargar otra fuente
         </button>
         {rows.length > 0 && (
           <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={exportarExcel} disabled={exporting} style={{marginLeft:"auto"}}>
@@ -850,7 +868,7 @@ function Comparativa({ tenderId, tenderInfo }) {
         <div style={{textAlign:"center",padding:"32px",color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0"}}>
           <div style={{fontSize:28,marginBottom:8}}>📊</div>
           <div style={{fontWeight:500}}>Sin comparativa cargada</div>
-          <div style={{fontSize:12,marginTop:4}}>Importá el Excel oficial de apertura o cargá manualmente</div>
+          <div style={{fontSize:12,marginTop:4}}>Importá el Excel oficial de BAC o cargá manualmente datos recibidos por otra fuente.</div>
         </div>
       ) : (
         <div style={{overflowX:"auto",borderRadius:10,border:"1px solid #e2e8f0"}}>
@@ -860,8 +878,8 @@ function Comparativa({ tenderId, tenderInfo }) {
                 <th style={{padding:"9px 12px",textAlign:"left",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",minWidth:40}}>Reng.</th>
                 <th style={{padding:"9px 12px",textAlign:"left",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",minWidth:200}}>Descripción</th>
                 {empresas.map(emp => (
-                  <th key={emp} style={{padding:"9px 12px",textAlign:"right",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap",minWidth:130,color:emp.toUpperCase().includes(NUESTRA_EMPRESA)?"#86efac":"rgba(255,255,255,.75)",borderLeft:"1px solid rgba(255,255,255,.08)"}}>
-                    {emp.toUpperCase().includes(NUESTRA_EMPRESA)?"★ ":""}{emp}
+                  <th key={emp} style={{padding:"9px 12px",textAlign:"right",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap",minWidth:130,color:isOwnCompany(emp)?"#86efac":"rgba(255,255,255,.75)",borderLeft:"1px solid rgba(255,255,255,.08)"}}>
+                    {isOwnCompany(emp)?"★ ":""}{emp}
                   </th>
                 ))}
               </tr>
@@ -878,7 +896,7 @@ function Comparativa({ tenderId, tenderInfo }) {
                     </td>
                     {empresas.map(emp => {
                       const cell=matriz[reng]?.[emp];
-                      const esNuestra=emp.toUpperCase().includes(NUESTRA_EMPRESA);
+                      const esNuestra=isOwnCompany(emp);
                       const price=cell ? comparablePrice(cell) : null;
                       const esMinimo=cell&&minPrecio&&price===minPrecio;
                       const diff=cell ? pctVsMin(cell,minPrecio) : null;
@@ -914,7 +932,7 @@ function Comparativa({ tenderId, tenderInfo }) {
           <div style={{fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".6px",color:"#94a3b8",marginBottom:8}}>Nuestra posición por renglón</div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {renglones.map(reng => {
-              const nuestra=rows.find(r=>r.renglon===reng&&r.es_nuestra_oferta);
+              const nuestra=rows.find(r=>r.renglon===reng&&isOwnOffer(r));
               const minPrecio=precioMin(reng);
               const nuestraPrice=nuestra ? comparablePrice(nuestra) : null;
               const ganamos=nuestra&&minPrecio&&nuestraPrice===minPrecio;

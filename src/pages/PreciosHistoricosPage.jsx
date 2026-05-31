@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { CalendarDays, Calculator, Database, FileSpreadsheet, ShieldCheck } from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./preciosHistoricos.css";
@@ -61,6 +62,26 @@ function normalizeProductText(value) {
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+const OWN_COMPANY_ALIASES = ["MEDI-CROSS", "MEDICROSS", "STORING INSUMOS MEDICOS"];
+
+function normalizeCompanyText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+}
+
+function isOwnCompany(value) {
+  const name = normalizeCompanyText(value);
+  return OWN_COMPANY_ALIASES.some(alias => name.includes(normalizeCompanyText(alias)));
+}
+
+function isOwnOffer(row) {
+  return Boolean(row?.es_nuestra_oferta) || isOwnCompany(row?.empresa);
 }
 
 function productKey(row) {
@@ -155,7 +176,7 @@ function MarketEvolutionChart({ data }) {
         <span><i style={{ background:"#10b981" }}/>Mínimo</span>
         <span><i style={{ background:"#3b82f6" }}/>Promedio</span>
         <span><i style={{ background:"#ef4444" }}/>Máximo</span>
-        <span><i style={{ background:"#0f2444" }}/>MediCross</span>
+        <span><i style={{ background:"#0f2444" }}/>Nuestra empresa</span>
       </div>
     </div>
   );
@@ -273,8 +294,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       const valid = group.rows
         .map(row => ({ row, price: comparablePrice(row) }))
         .filter(item => item.price !== null);
-      const ownRows = valid.filter(item => item.row.es_nuestra_oferta).map(item => item.row);
-      const compRows = valid.filter(item => !item.row.es_nuestra_oferta).map(item => item.row);
+      const ownRows = valid.filter(item => isOwnOffer(item.row)).map(item => item.row);
+      const compRows = valid.filter(item => !isOwnOffer(item.row)).map(item => item.row);
       const minItem = valid.length
         ? valid.reduce((best, item) => item.price < best.price ? item : best, valid[0])
         : null;
@@ -350,7 +371,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
   const metricas = useMemo(() => {
     if (!filteredRows.length) return null;
-    const nuestras     = filteredRows.filter(r => r.es_nuestra_oferta);
+    const nuestras     = filteredRows.filter(isOwnOffer);
     const licitaciones = new Set(filteredRows.map(r => r.tender_id)).size;
     const empresas     = new Set(filteredRows.map(r => r.empresa)).size;
     const byTenderReng = {};
@@ -366,7 +387,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       const min = precios.length ? Math.min(...precios) : null;
       if (min === null) return;
       renglonesComparables++;
-      const nuestra = grupo.find(r => r.es_nuestra_oferta);
+      const nuestra = grupo.find(isOwnOffer);
       if (comparablePrice(nuestra) === min) minimoCount++;
     });
     const totalRenglones = renglonesComparables;
@@ -387,7 +408,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       tendencia  = { pct: Number(pct), subiendo: Number(pct) > 0 };
     }
     const conteoEmpresas = {};
-    filteredRows.filter(r => !r.es_nuestra_oferta).forEach(r => {
+    filteredRows.filter(r => !isOwnOffer(r)).forEach(r => {
       conteoEmpresas[r.empresa] = (conteoEmpresas[r.empresa] || 0) + 1;
     });
     const topCompetidores = Object.entries(conteoEmpresas)
@@ -409,8 +430,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       .filter(r => r.precioComparable !== null);
     if (!validRows.length) return null;
 
-    const propias = validRows.filter(r => r.es_nuestra_oferta);
-    const competencia = validRows.filter(r => !r.es_nuestra_oferta);
+    const propias = validRows.filter(isOwnOffer);
+    const competencia = validRows.filter(r => !isOwnOffer(r));
     const ultimaPropia = newestRow(propias);
     const ultimaCompetencia = newestRow(competencia);
     const adjudicadas = validRows.filter(r => r.adjudicado);
@@ -460,12 +481,19 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       : minimoRow
         ? "Mínimo de mercado"
         : ultimaPropia
-          ? "Última MediCross"
+          ? "Última oferta propia"
           : ultimoDato
             ? "Última referencia"
             : "Sin referencia";
     const fechaFuenteSugerido = rowDate(fuenteSugerido);
     const diasFuenteSugerido = daysSince(fechaFuenteSugerido);
+    const vigenciaSugerido = diasFuenteSugerido === null
+      ? { label: "Sin fecha verificable", tone: "gray" }
+      : diasFuenteSugerido <= 90
+        ? { label: "Referencia vigente", tone: "green" }
+        : diasFuenteSugerido <= 180
+          ? { label: "Revisar vigencia", tone: "amber" }
+          : { label: "Referencia antigua", tone: "red" };
     const detalleFuenteSugerido = fuenteSugerido
       ? `${tipoFuenteSugerido} · ${fmtDate(fechaFuenteSugerido)}${diasFuenteSugerido !== null ? ` · hace ${diasFuenteSugerido} días` : ""}`
       : "Sin fecha de referencia";
@@ -491,6 +519,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       promedioMercado,
       sugerido,
       fuenteSugerido,
+      tipoFuenteSugerido,
+      fechaFuenteSugerido,
+      diasFuenteSugerido,
+      vigenciaSugerido,
       detalleFuenteSugerido,
       motivo,
       confianza,
@@ -508,7 +540,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       if (price === null || !date) return;
       if (!byDate[date]) byDate[date] = { date, prices: [], own: [] };
       byDate[date].prices.push(price);
-      if (row.es_nuestra_oferta) byDate[date].own.push(price);
+      if (isOwnOffer(row)) byDate[date].own.push(price);
     });
     return Object.values(byDate)
       .map(point => ({
@@ -523,7 +555,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
   const competitiveIntel = useMemo(() => {
     const byGroup = {};
-    filteredRows.forEach(row => {
+    const competitorRows = filteredRows.filter(row => !isOwnOffer(row));
+    competitorRows.forEach(row => {
       const key = `${row.tender_id}_${row.renglon}`;
       if (!byGroup[key]) byGroup[key] = [];
       byGroup[key].push(row);
@@ -538,7 +571,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       return companies[key];
     };
 
-    filteredRows.forEach(row => {
+    competitorRows.forEach(row => {
       const company = ensureCompany(row.empresa);
       company.refs += 1;
       company.total += Number(row.total_ars || 0);
@@ -595,7 +628,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         precio: price,
         cantidad: Number(row.cantidad || 0),
         total: Number(row.total_ars || 0),
-        resultado: row.adjudicado ? "Adjudicada" : row.es_nuestra_oferta ? "MediCross" : "Presentada",
+        resultado: row.adjudicado ? "Adjudicada" : isOwnOffer(row) ? "Oferta propia" : "Presentada",
         adjudicado: Boolean(row.adjudicado),
         diff,
         min,
@@ -673,7 +706,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
             : "El promedio de mercado viene bajando o estable.",
       },
       {
-        label: "Posición MediCross",
+        label: "Posición propia",
         value: decision.diffMercado === null ? "Sin referencia" : `${decision.diffMercado > 0 ? "+" : ""}${decision.diffMercado}%`,
         text: decision.diffMercado === null
           ? "Falta una cotización propia comparable."
@@ -699,7 +732,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     if (decision.diffMercado === null) {
       return {
         title: "Completar referencia propia",
-        text: "Hay mercado comparable, pero falta una cotización MediCross para medir posición real.",
+        text: "Hay mercado comparable, pero falta una cotización propia para medir posición real.",
         action: "Usar precio sugerido con cautela",
         tone: "amber",
       };
@@ -707,7 +740,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     if (decision.diffMercado <= 0) {
       return {
         title: "Competir con margen controlado",
-        text: "La última referencia MediCross está al nivel del mínimo o por debajo del mercado.",
+        text: "La última referencia propia está al nivel del mínimo o por debajo del mercado.",
         action: "Mantener estrategia",
         tone: "green",
       };
@@ -715,7 +748,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     if (decision.diffMercado <= 8) {
       return {
         title: "Ajuste fino recomendado",
-        text: "MediCross está cerca del mercado. Conviene revisar margen antes de cotizar.",
+        text: "Nuestra empresa está cerca del mercado. Conviene revisar margen antes de cotizar.",
         action: "Cotizar cerca del sugerido",
         tone: "amber",
       };
@@ -1032,7 +1065,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                   {productGroups.length} producto{productGroups.length !== 1 ? "s" : ""} encontrado{productGroups.length !== 1 ? "s" : ""}
                 </h3>
                 <p style={{margin:"5px 0 0",fontSize:12.5,color:"#64748b",lineHeight:1.45}}>
-                  La búsqueda puede traer varios renglones distintos. Seleccioná uno para ver precio sugerido, último MediCross y competidores.
+                  La búsqueda puede traer varios renglones distintos. Seleccioná uno para ver precio sugerido, última oferta propia y competidores.
                 </p>
               </div>
               {focusedProduct && (
@@ -1089,7 +1122,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                       <div style={{background:"#f8fafc",border:"1px solid #eef2f7",
                         borderRadius:8,padding:"8px"}}>
                         <div style={{fontSize:9.5,fontWeight:800,color:"#94a3b8",
-                          textTransform:"uppercase",letterSpacing:".5px"}}>MediCross</div>
+                          textTransform:"uppercase",letterSpacing:".5px"}}>Oferta propia</div>
                         <div style={{fontFamily:"DM Mono,monospace",fontWeight:900,
                           color:"#0f172a",fontSize:13,marginTop:2}}>
                           {group.lastOwn ? comparableMoney(group.lastOwn) : "—"}
@@ -1125,8 +1158,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 <p>
                   {decision.diffMercado !== null
                     ? decision.diffMercado <= 0
-                      ? `MediCross está al nivel o ${Math.abs(decision.diffMercado)}% por debajo del mínimo comparable.`
-                      : `MediCross está ${decision.diffMercado}% por encima del mínimo comparable.`
+                      ? `Nuestra empresa está al nivel o ${Math.abs(decision.diffMercado)}% por debajo del mínimo comparable.`
+                      : `Nuestra empresa está ${decision.diffMercado}% por encima del mínimo comparable.`
                     : "Hay mercado comparable, pero falta referencia propia para medir posición."}
                 </p>
               </div>
@@ -1156,23 +1189,67 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               </div>
             )}
 
-            <div className="ph-exec-grid">
-              {[
-                { icon:"◆", label:"Estado comercial", value:decision.estado.label, sub:"Diagnóstico contra mercado comparable", tone:"blue" },
-                { icon:"$", label:"Precio sugerido actual", value:decision.sugerido ? fullMoney(decision.sugerido) : "—", sub:decision.sugerido ? decision.detalleFuenteSugerido : decision.motivo, tone:"green" },
-                { icon:"↕", label:"Diferencia vs mínimo", value:decision.diffMercado === null ? "—" : `${decision.diffMercado > 0 ? "+" : ""}${decision.diffMercado}%`, sub:decision.minimoRow ? `Mínimo: ${decision.minimoRow.empresa}` : "Sin mínimo comparable", tone:decision.diffMercado !== null && decision.diffMercado > 8 ? "red" : "amber" },
-                { icon:"M", label:"Última MediCross", value:decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—", sub:decision.ultimaPropia ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}` : "Sin cotización propia comparable", tone:"navy" },
-                { icon:"✓", label:"Última adjudicación", value:decision.ultimaAdjudicada ? comparableMoney(decision.ultimaAdjudicada) : "—", sub:decision.ultimaAdjudicada ? `${decision.ultimaAdjudicada.empresa} · ${fmtDate(rowDate(decision.ultimaAdjudicada))}` : "No hay adjudicación cargada", tone:"green" },
-                { icon:"◎", label:"Nivel de confianza", value:decision.confianza.level, sub:`${decision.refs} referencias · ${decision.antiguedad ?? "s/d"} días desde el último dato`, tone:"blue" },
-              ].map(card => (
-                <article key={card.label} className={`ph-kpi ph-kpi--${card.tone}`}>
-                  <span className="ph-kpi__icon">{card.icon}</span>
-                  <span className="ph-kpi__label">{card.label}</span>
-                  <strong>{card.value}</strong>
-                  <small>{card.sub}</small>
+            <div className="ph-evidence">
+              <div className="ph-evidence__head">
+                <div>
+                  <span className="ph-eyebrow">Trazabilidad de la recomendación</span>
+                  <strong>Cómo se obtuvo el precio sugerido</strong>
+                </div>
+                <span className={`ph-freshness ph-freshness--${decision.vigenciaSugerido.tone}`}>
+                  {decision.vigenciaSugerido.label}
+                </span>
+              </div>
+              <div className="ph-evidence-grid">
+                <article>
+                  <CalendarDays size={17}/>
+                  <span>Fecha base</span>
+                  <strong>{fmtDate(decision.fechaFuenteSugerido)}</strong>
+                  <small>{decision.diasFuenteSugerido !== null ? `Hace ${decision.diasFuenteSugerido} días` : "Sin fecha disponible"}</small>
                 </article>
-              ))}
+                <article>
+                  <Database size={17}/>
+                  <span>Referencia utilizada</span>
+                  <strong>{decision.tipoFuenteSugerido}</strong>
+                  <small>{decision.fuenteSugerido?.empresa || "Sin empresa informada"}</small>
+                </article>
+                <article>
+                  <Calculator size={17}/>
+                  <span>Criterio de cálculo</span>
+                  <strong>Referencia + 2%</strong>
+                  <small>Colchón operativo configurable</small>
+                </article>
+                <article>
+                  <FileSpreadsheet size={17}/>
+                  <span>Origen del dato</span>
+                  <strong>{decision.fuenteSugerido?.tenders?.institution || "Sin institución"}</strong>
+                  <small>{decision.fuenteSugerido?.tenders?.process_number || "Sin expediente"}</small>
+                </article>
+              </div>
             </div>
+
+            <details className="ph-more-metrics">
+              <summary>
+                <ShieldCheck size={16}/>
+                Ver indicadores complementarios
+              </summary>
+              <div className="ph-exec-grid">
+                {[
+                  { icon:"◆", label:"Estado comercial", value:decision.estado.label, sub:"Diagnóstico contra mercado comparable", tone:"blue" },
+                  { icon:"$", label:"Precio sugerido actual", value:decision.sugerido ? fullMoney(decision.sugerido) : "—", sub:decision.sugerido ? decision.detalleFuenteSugerido : decision.motivo, tone:"green" },
+                  { icon:"↕", label:"Diferencia vs mínimo", value:decision.diffMercado === null ? "—" : `${decision.diffMercado > 0 ? "+" : ""}${decision.diffMercado}%`, sub:decision.minimoRow ? `Mínimo: ${decision.minimoRow.empresa}` : "Sin mínimo comparable", tone:decision.diffMercado !== null && decision.diffMercado > 8 ? "red" : "amber" },
+                  { icon:"M", label:"Última oferta propia", value:decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—", sub:decision.ultimaPropia ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}` : "Sin cotización propia comparable", tone:"navy" },
+                  { icon:"✓", label:"Última adjudicación", value:decision.ultimaAdjudicada ? comparableMoney(decision.ultimaAdjudicada) : "—", sub:decision.ultimaAdjudicada ? `${decision.ultimaAdjudicada.empresa} · ${fmtDate(rowDate(decision.ultimaAdjudicada))}` : "No hay adjudicación cargada", tone:"green" },
+                  { icon:"◎", label:"Nivel de confianza", value:decision.confianza.level, sub:`${decision.refs} referencias · ${decision.antiguedad ?? "s/d"} días desde el último dato`, tone:"blue" },
+                ].map(card => (
+                  <article key={card.label} className={`ph-kpi ph-kpi--${card.tone}`}>
+                    <span className="ph-kpi__icon">{card.icon}</span>
+                    <span className="ph-kpi__label">{card.label}</span>
+                    <strong>{card.value}</strong>
+                    <small>{card.sub}</small>
+                  </article>
+                ))}
+              </div>
+            </details>
           </section>
         )}
 
@@ -1205,7 +1282,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 <div className="ph-panel__head">
                   <div>
                     <span className="ph-eyebrow">Evolución de mercado</span>
-                    <h3>Precio mínimo, promedio, máximo y MediCross</h3>
+                    <h3>Precio mínimo, promedio, máximo y oferta propia</h3>
                   </div>
                   <span className="ph-pill">{marketTrend.length} fechas</span>
                 </div>
@@ -1392,7 +1469,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
             {/* Renglones */}
             {Object.entries(grupo.renglones).map(([reng, data]) => {
               const min = precioMinRenglon(data.filas);
-              const nuestra = data.filas.find(f => f.es_nuestra_oferta);
+              const nuestra = data.filas.find(isOwnOffer);
               const nuestraPrice = comparablePrice(nuestra);
               const ganamos = min !== null && nuestraPrice === min;
               const nuestraDiff = pctVsMin(nuestra, min);
@@ -1445,7 +1522,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                       </thead>
                       <tbody>
                         {empresasReng.map((f, i) => {
-                          const esNuestra = f.es_nuestra_oferta;
+                          const esNuestra = isOwnOffer(f);
                           const price = comparablePrice(f);
                           const esMin = min !== null && price === min;
                           const diff = pctVsMin(f, min);
