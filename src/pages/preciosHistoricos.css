@@ -732,7 +732,7 @@
 
 .ph-latest-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 11px;
 }
 
@@ -837,6 +837,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
   width: 100%;
   padding: 8px 9px;
   border: 1px solid #e2e8f0;
@@ -859,6 +860,7 @@
 }
 
 .ph-latest-card__products span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -939,6 +941,10 @@
 }
 
 @media (max-width: 1200px) {
+  .ph-latest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .ph-exec-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -987,6 +993,10 @@
 
   .ph-latest {
     padding: 15px;
+  }
+
+  .ph-latest-grid {
+    grid-template-columns: 1fr;
   }
 
   .ph-latest__head {
