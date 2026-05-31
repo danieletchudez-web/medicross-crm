@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { CalendarDays, Calculator, Database, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight, Building2, CalendarDays, Calculator, Clock3,
+  Database, FileSpreadsheet, History, ShieldCheck,
+} from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./preciosHistoricos.css";
@@ -188,6 +191,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [hasta,    setHasta]    = useState("");
   const [rows,     setRows]     = useState([]);
   const [loading,  setLoading]  = useState(false);
+  const [latestRows, setLatestRows] = useState([]);
+  const [latestLoading, setLatestLoading] = useState(true);
   const [searched, setSearched] = useState(false);
   const [recientes, setRecientes] = useState([]);
   const [showSug,  setShowSug]  = useState(false);
@@ -204,6 +209,47 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const marketPageSize = 10;
 
   useEffect(() => { setRecientes(getBusquedasRecientes()); }, []);
+
+  useEffect(() => {
+    async function loadLatestRows() {
+      setLatestLoading(true);
+
+      const { data: recentTenders, error: tendersError } = await supabase
+        .from("tenders")
+        .select("id")
+        .order("end_date", { ascending:false, nullsFirst:false })
+        .limit(40);
+
+      if (tendersError) console.error(tendersError);
+      const recentTenderIds = (recentTenders || []).map(tender => tender.id);
+
+      if (!recentTenderIds.length) {
+        setLatestRows([]);
+        setLatestLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("tender_comparativas")
+        .select(`
+          id, renglon, descripcion, empresa, es_nuestra_oferta,
+          precio_unitario, cantidad, total_ars, adjudicado, moneda,
+          tender_id,
+          tenders:tender_id (
+            id, institution, process_number, process_name,
+            end_date, jurisdiction, operational_status
+          )
+        `)
+        .in("tender_id", recentTenderIds)
+        .limit(500);
+
+      if (error) console.error(error);
+      setLatestRows(data || []);
+      setLatestLoading(false);
+    }
+
+    loadLatestRows();
+  }, []);
 
   const buscar = useCallback(async (q = query) => {
     if (!q.trim()) return;
@@ -252,6 +298,46 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   };
 
   const elegirSugerencia = (s) => { setQuery(s); buscar(s); };
+
+  const latestQuotes = useMemo(() => {
+    const grouped = {};
+    latestRows.forEach(row => {
+      const key = row.tender_id || row.tenders?.id;
+      if (!key) return;
+      if (!grouped[key]) {
+        grouped[key] = {
+          id: key,
+          tender: row.tenders,
+          latestDate: rowDate(row),
+          products: {},
+          companies: new Set(),
+          rows: [],
+        };
+      }
+      const group = grouped[key];
+      group.rows.push(row);
+      if (rowDate(row) > group.latestDate) group.latestDate = rowDate(row);
+      if (row.empresa) group.companies.add(row.empresa);
+      const keyProduct = productKey(row);
+      if (!group.products[keyProduct]) {
+        group.products[keyProduct] = {
+          key: keyProduct,
+          description: row.descripcion || "Sin descripción",
+          rows: 0,
+        };
+      }
+      group.products[keyProduct].rows += 1;
+    });
+
+    return Object.values(grouped)
+      .map(group => ({
+        ...group,
+        products: Object.values(group.products),
+        companiesCount: group.companies.size,
+      }))
+      .sort((a, b) => (b.latestDate || "").localeCompare(a.latestDate || ""))
+      .slice(0, 8);
+  }, [latestRows]);
 
   const filterOptions = useMemo(() => {
     const institutions = [...new Set(rows.map(r => r.tenders?.institution).filter(Boolean))].sort();
@@ -969,33 +1055,82 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
           )}
         </div>
 
-        {/* ESTADO VACÍO INICIAL */}
+        {/* ACTIVIDAD RECIENTE INICIAL */}
         {!searched && (
-          <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
-            padding:"52px 24px",textAlign:"center",boxShadow:"0 1px 3px rgba(15,23,42,.04)"}}>
-            <div style={{fontSize:44,marginBottom:14}}>📈</div>
-            <div style={{fontSize:17,fontWeight:700,color:"#0f2444",marginBottom:6,letterSpacing:"-.3px"}}>
-              Historial de precios de mercado
+          <section className="ph-latest">
+            <div className="ph-latest__head">
+              <div>
+                <span className="ph-eyebrow ph-latest__eyebrow"><History size={14}/>Actividad reciente</span>
+                <h3>Últimas cotizaciones comparadas</h3>
+                <p>
+                  Abrí un producto reciente para analizar precios de mercado o usá el buscador
+                  para consultar cualquier referencia histórica.
+                </p>
+              </div>
+              {!latestLoading && <span className="ph-pill">{latestQuotes.length} licitaciones</span>}
             </div>
-            <div style={{fontSize:13,color:"#94a3b8",maxWidth:440,margin:"0 auto",lineHeight:1.7}}>
-              Buscá cualquier producto para ver cómo cotizaron todos los proveedores
-              en cada licitación, quién fue el más barato y cómo evolucionaron los precios a lo largo del tiempo.
-            </div>
-            <div style={{display:"flex",justifyContent:"center",gap:28,marginTop:28,flexWrap:"wrap"}}>
-              {[
-                {icon:"🏆",text:"Precio mínimo por renglón"},
-                {icon:"📊",text:"Evolución temporal de precios"},
-                {icon:"🏢",text:"Comparativa entre proveedores"},
-                {icon:"📅",text:"Filtro por período"},
-              ].map(f => (
-                <div key={f.text} style={{display:"flex",flexDirection:"column",alignItems:"center",
-                  gap:6,fontSize:11.5,color:"#64748b",fontWeight:500}}>
-                  <span style={{fontSize:22}}>{f.icon}</span>
-                  {f.text}
-                </div>
-              ))}
-            </div>
-          </div>
+
+            {latestLoading && (
+              <div className="ph-latest-grid" aria-label="Cargando cotizaciones recientes">
+                {[0, 1, 2, 3].map(item => (
+                  <div key={item} className="ph-latest-card ph-latest-card--loading">
+                    <span/><span/><span/><span/>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!latestLoading && latestQuotes.length === 0 && (
+              <div className="ph-latest-empty">
+                <FileSpreadsheet size={25}/>
+                <strong>Sin comparativas recientes</strong>
+                <span>Importá un Excel BAC desde Licitaciones para comenzar a construir el historial.</span>
+                <button type="button" onClick={() => onNavigate("tenders")}>
+                  Ir a Licitaciones <ArrowRight size={15}/>
+                </button>
+              </div>
+            )}
+
+            {!latestLoading && latestQuotes.length > 0 && (
+              <div className="ph-latest-grid">
+                {latestQuotes.map(quote => (
+                  <article key={quote.id} className="ph-latest-card">
+                    <div className="ph-latest-card__top">
+                      <div className="ph-latest-card__institution">
+                        <Building2 size={17}/>
+                        <div>
+                          <strong>{quote.tender?.institution || "Sin institución"}</strong>
+                          <span>{quote.tender?.process_number || "Sin expediente"}</span>
+                        </div>
+                      </div>
+                      <span className="ph-latest-card__date"><Clock3 size={14}/>{fmtDate(quote.latestDate)}</span>
+                    </div>
+
+                    <p>{shortText(quote.tender?.process_name || quote.products[0]?.description, 112)}</p>
+
+                    <div className="ph-latest-card__meta">
+                      <span>{quote.products.length} producto{quote.products.length !== 1 ? "s" : ""}</span>
+                      <span>{quote.companiesCount} empresa{quote.companiesCount !== 1 ? "s" : ""}</span>
+                      <span>{quote.rows.length} referencia{quote.rows.length !== 1 ? "s" : ""}</span>
+                    </div>
+
+                    <div className="ph-latest-card__products">
+                      {quote.products.slice(0, 3).map(product => (
+                        <button key={product.key} type="button" onClick={() => elegirSugerencia(product.description)}>
+                          <span>{shortText(product.description, 64)}</span>
+                          <ArrowRight size={13}/>
+                        </button>
+                      ))}
+                    </div>
+
+                    {quote.products.length > 3 && (
+                      <small>+{quote.products.length - 3} productos disponibles. Usá el buscador para acotar.</small>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
         {/* LOADING */}
