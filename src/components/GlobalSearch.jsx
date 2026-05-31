@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import "./GlobalSearch.css";
 
@@ -89,29 +89,23 @@ function titleFor(item) {
 }
 
 function subtitleFor(item) {
-  // Cotización — show products from renglones
   if (item.renglones !== undefined) {
     const prods = (item.renglones || [])
       .map(r => r.descr || r.codigo).filter(Boolean).slice(0, 3).join(", ");
     return [item.institucion, item.vendedor, prods].filter(Boolean).join(" · ");
   }
-  // Inteligencia de precios
   if (item.descripcion !== undefined) {
     return [item.empresa, item.renglon != null ? `Renglón ${item.renglon}` : ""].filter(Boolean).join(" · ");
   }
-  // Oportunidad — include account name
   if (item.stage !== undefined) {
     return [item.accounts?.name, item.stage, item.next_action].filter(Boolean).join(" · ");
   }
-  // Campaña
   if (item.product_line !== undefined && item.objective !== undefined) {
     return [item.product_line, item.status, (item.objective || "").slice(0, 60)].filter(Boolean).join(" · ");
   }
-  // Visita
   if (item.visit_date !== undefined) {
     return [item.visit_date, item.visit_type, item.contact].filter(Boolean).join(" · ");
   }
-  // Default
   return [
     item.city, item.province, item.type,
     item.status, item.process_number, item.jurisdiction,
@@ -120,10 +114,14 @@ function subtitleFor(item) {
 
 /* ══════════════════════════════════════════════════════════════════════ */
 export default function GlobalSearch({ onNavigate }) {
-  const [open,    setOpen]    = useState(false);
-  const [query,   setQuery]   = useState("");
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [open,        setOpen]        = useState(false);
+  const [query,       setQuery]       = useState("");
+  const [results,     setResults]     = useState([]);
+  const [loading,     setLoading]     = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(-1);
+
+  const flatRef    = useRef([]);
+  const resultsRef = useRef(null);
 
   const hasQuery = query.trim().length >= 2;
 
@@ -137,15 +135,54 @@ export default function GlobalSearch({ onNavigate }) {
 
   const totalCount = results.length;
 
-  /* Atajo ⌘K / Ctrl+K */
+  const moduleOrder = TABLES.map(t => t.label);
+  const sortedGroups = Object.entries(grouped).sort(
+    ([a], [b]) => moduleOrder.indexOf(a) - moduleOrder.indexOf(b)
+  );
+
+  // Keep flat ref in sync for keyboard nav
+  flatRef.current = sortedGroups.flatMap(([, rows]) => rows);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (selectedIdx < 0 || !resultsRef.current) return;
+    const el = resultsRef.current.querySelector(`[data-idx="${selectedIdx}"]`);
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedIdx]);
+
+  // Reset selection when results change
+  useEffect(() => { setSelectedIdx(-1); }, [results]);
+
+  /* ⌘K / Ctrl+K + arrow nav */
   useEffect(() => {
     function onKey(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setOpen(o => !o); }
-      if (e.key === "Escape") setOpen(false);
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setOpen(o => !o); return; }
+      if (e.key === "Escape") { setOpen(false); return; }
+      if (!open) return;
+      const flat = flatRef.current;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIdx(i => Math.min(i + 1, flat.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIdx(i => Math.max(i - 1, -1));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        setSelectedIdx(i => {
+          const item = flat[i];
+          if (item) {
+            setOpen(false);
+            setQuery("");
+            setResults([]);
+            onNavigate(item.page, { id: item.id, source: "globalSearch" });
+          }
+          return i;
+        });
+      }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [open, onNavigate]);
 
   async function runSearch(value) {
     setQuery(value);
@@ -175,7 +212,7 @@ export default function GlobalSearch({ onNavigate }) {
             page:     table.page,
           }));
         } catch {
-          return []; // table may not exist in this env
+          return [];
         }
       })
     );
@@ -191,10 +228,8 @@ export default function GlobalSearch({ onNavigate }) {
     onNavigate(item.page, { id: item.id, source: "globalSearch" });
   }
 
-  const moduleOrder = TABLES.map(t => t.label);
-  const sortedGroups = Object.entries(grouped).sort(
-    ([a], [b]) => moduleOrder.indexOf(a) - moduleOrder.indexOf(b)
-  );
+  // Render with global flat index for keyboard nav
+  let gIdx = -1;
 
   return (
     <>
@@ -222,7 +257,7 @@ export default function GlobalSearch({ onNavigate }) {
                 autoFocus
                 value={query}
                 onChange={e => runSearch(e.target.value)}
-                placeholder="Buscar en todo el CRM: clientes, productos, licitaciones, cotizaciones…"
+                placeholder="Buscar en todo el CRM: clientes, productos, licitaciones…"
               />
               {loading
                 ? <div className="global-search-spinner"/>
@@ -248,7 +283,7 @@ export default function GlobalSearch({ onNavigate }) {
             )}
 
             {/* Results */}
-            <div className="global-search-results">
+            <div className="global-search-results" ref={resultsRef}>
               {!hasQuery && (
                 <div className="global-search-hint">
                   <p>Buscá en <strong>todos los módulos</strong> del CRM simultáneamente.</p>
@@ -275,18 +310,37 @@ export default function GlobalSearch({ onNavigate }) {
                       <span className="global-search-group__label">{kind}</span>
                       <span className="global-search-group__count">{rows.length}</span>
                     </div>
-                    {rows.map(item => (
-                      <button key={`${kind}-${item.id}`} className="global-search-item" onClick={() => go(item)}>
-                        <strong className="global-search-item__title">{titleFor(item)}</strong>
-                        {subtitleFor(item) && (
-                          <small className="global-search-item__sub">{subtitleFor(item)}</small>
-                        )}
-                      </button>
-                    ))}
+                    {rows.map(item => {
+                      gIdx++;
+                      const myIdx = gIdx;
+                      return (
+                        <button
+                          key={`${kind}-${item.id}`}
+                          data-idx={myIdx}
+                          className={`global-search-item${selectedIdx === myIdx ? " global-search-item--selected" : ""}`}
+                          onMouseEnter={() => setSelectedIdx(myIdx)}
+                          onClick={() => go(item)}
+                        >
+                          <strong className="global-search-item__title">{titleFor(item)}</strong>
+                          {subtitleFor(item) && (
+                            <small className="global-search-item__sub">{subtitleFor(item)}</small>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 );
               })}
             </div>
+
+            {/* Footer */}
+            {hasQuery && totalCount > 0 && (
+              <div className="global-search-footer">
+                <span><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
+                <span><kbd>↵</kbd> Abrir</span>
+                <span><kbd>Esc</kbd> Cerrar</span>
+              </div>
+            )}
 
           </section>
         </div>
