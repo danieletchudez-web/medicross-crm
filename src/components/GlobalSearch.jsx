@@ -2,52 +2,123 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import "./GlobalSearch.css";
 
+/* ─── Table definitions ───────────────────────────────────────────────
+   fields      → client-side match against top-level string columns
+   jsonFields  → match inside JSONB array columns (e.g. renglones)
+   objFields   → match inside a joined object (many-to-one join)
+   ilike       → server-side ilike search (use for large tables)
+──────────────────────────────────────────────────────────────────────── */
 const TABLES = [
-  { key: "accounts",           label: "Cliente",                page: "accounts",         select: "id,name,city,province,type",                        fields: ["name","city","province","type"] },
-  { key: "opportunities",      label: "Oportunidad",            page: "opportunities",    select: "id,name,stage,next_action",                         fields: ["name","stage","next_action"] },
-  { key: "products",           label: "Producto",               page: "products",         select: "id,name,line,speech",                               fields: ["name","line","speech"] },
-  { key: "tenders",            label: "Licitación",             page: "tenders",          select: "id,institution,process_name,process_number,status",  fields: ["institution","process_name","process_number","status"] },
-  { key: "visits",             label: "Visita",                 page: "visits",           select: "id,visit_date,contact,objective,notes",             fields: ["contact","objective","notes","visit_date"] },
   {
-    key: "cotizaciones", label: "Cotización", page: "cotizador",
+    key: "accounts", label: "Cliente", icon: "🏥", page: "accounts",
+    select: "id,name,city,province,type,phone,email",
+    fields: ["name","city","province","type","phone","email"],
+  },
+  {
+    key: "opportunities", label: "Oportunidad", icon: "💼", page: "opportunities",
+    select: "id,name,stage,next_action,accounts(name)",
+    fields: ["name","stage","next_action"],
+    objFields: [{ field: "accounts", keys: ["name"] }],
+  },
+  {
+    key: "products", label: "Producto", icon: "📦", page: "products",
+    select: "id,name,line,speech",
+    fields: ["name","line","speech"],
+  },
+  {
+    key: "campaigns", label: "Campaña", icon: "📣", page: "campaigns",
+    select: "id,name,product_line,status,objective",
+    fields: ["name","product_line","status","objective"],
+  },
+  {
+    key: "tenders", label: "Licitación", icon: "📋", page: "tenders",
+    select: "id,institution,process_name,process_number,status,jurisdiction,product_line,next_action,competitor_winner",
+    fields: ["institution","process_name","process_number","status","jurisdiction","product_line","next_action","competitor_winner"],
+  },
+  {
+    key: "tender_competitors", label: "Competidor", icon: "🏁", page: "tenders",
+    select: "id,name,notes,tender_id",
+    fields: ["name","notes"],
+  },
+  {
+    key: "cotizaciones", label: "Cotización", icon: "🧾", page: "cotizador",
     select: "id,quote_num_formatted,vendedor,institucion,nro_licit,renglones",
     fields: ["quote_num_formatted","vendedor","institucion","nro_licit"],
     jsonFields: [{ field: "renglones", keys: ["descr","codigo","marca","empresa"] }],
   },
   {
-    key: "tender_comparativas", label: "Inteligencia de precios", page: "preciosHistoricos",
+    key: "tender_comparativas", label: "Intel. de precios", icon: "📊", page: "preciosHistoricos",
     select: "id,descripcion,empresa,renglon",
     ilike: ["descripcion","empresa"],
   },
+  {
+    key: "visits", label: "Visita", icon: "📍", page: "visits",
+    select: "id,visit_date,contact,objective,notes,visit_type",
+    fields: ["contact","objective","notes","visit_type"],
+  },
 ];
 
-function matches(row, fields, query, jsonFields = []) {
+/* ─── Matching helpers ───────────────────────────────────────────────── */
+function matches(row, fields = [], query, jsonFields = [], objFields = []) {
   const q = query.toLowerCase();
   if (fields.some(f => String(row[f] || "").toLowerCase().includes(q))) return true;
   for (const { field, keys } of jsonFields) {
     const arr = Array.isArray(row[field]) ? row[field] : [];
     if (arr.some(item => keys.some(k => String(item[k] || "").toLowerCase().includes(q)))) return true;
   }
+  for (const { field, keys } of objFields) {
+    const obj = row[field];
+    if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+      if (keys.some(k => String(obj[k] || "").toLowerCase().includes(q))) return true;
+    }
+  }
   return false;
 }
 
 function titleFor(item) {
-  return item.name || item.institution || item.process_name || item.objective ||
-         item.contact || item.quote_num_formatted || item.descripcion || "Sin título";
+  return (
+    item.name        ||
+    item.institution ||
+    item.process_name||
+    item.quote_num_formatted ||
+    item.descripcion ||
+    item.objective   ||
+    item.contact     ||
+    "Sin título"
+  );
 }
 
 function subtitleFor(item) {
+  // Cotización — show products from renglones
   if (item.renglones !== undefined) {
-    const prods = (item.renglones || []).map(r => r.descr || r.codigo).filter(Boolean).slice(0, 2).join(", ");
+    const prods = (item.renglones || [])
+      .map(r => r.descr || r.codigo).filter(Boolean).slice(0, 3).join(", ");
     return [item.institucion, item.vendedor, prods].filter(Boolean).join(" · ");
   }
+  // Inteligencia de precios
   if (item.descripcion !== undefined) {
-    return [item.empresa, item.renglon ? `Renglón ${item.renglon}` : ""].filter(Boolean).join(" · ");
+    return [item.empresa, item.renglon != null ? `Renglón ${item.renglon}` : ""].filter(Boolean).join(" · ");
   }
-  return [item.city, item.province, item.type, item.stage, item.status, item.process_number, item.visit_date]
-    .filter(Boolean).join(" · ");
+  // Oportunidad — include account name
+  if (item.stage !== undefined) {
+    return [item.accounts?.name, item.stage, item.next_action].filter(Boolean).join(" · ");
+  }
+  // Campaña
+  if (item.product_line !== undefined && item.objective !== undefined) {
+    return [item.product_line, item.status, (item.objective || "").slice(0, 60)].filter(Boolean).join(" · ");
+  }
+  // Visita
+  if (item.visit_date !== undefined) {
+    return [item.visit_date, item.visit_type, item.contact].filter(Boolean).join(" · ");
+  }
+  // Default
+  return [
+    item.city, item.province, item.type,
+    item.status, item.process_number, item.jurisdiction,
+  ].filter(Boolean).join(" · ");
 }
 
+/* ══════════════════════════════════════════════════════════════════════ */
 export default function GlobalSearch({ onNavigate }) {
   const [open,    setOpen]    = useState(false);
   const [query,   setQuery]   = useState("");
@@ -55,7 +126,8 @@ export default function GlobalSearch({ onNavigate }) {
   const [loading, setLoading] = useState(false);
 
   const hasQuery = query.trim().length >= 2;
-  const grouped  = useMemo(() => {
+
+  const grouped = useMemo(() => {
     return results.reduce((acc, item) => {
       acc[item.kind] = acc[item.kind] || [];
       acc[item.kind].push(item);
@@ -63,13 +135,12 @@ export default function GlobalSearch({ onNavigate }) {
     }, {});
   }, [results]);
 
-  /* Atajo de teclado ⌘K / Ctrl+K */
+  const totalCount = results.length;
+
+  /* Atajo ⌘K / Ctrl+K */
   useEffect(() => {
     function onKey(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setOpen(o => !o);
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setOpen(o => !o); }
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("keydown", onKey);
@@ -80,19 +151,35 @@ export default function GlobalSearch({ onNavigate }) {
     setQuery(value);
     if (value.trim().length < 2) { setResults([]); return; }
     setLoading(true);
-    const loaded = await Promise.all(TABLES.map(async table => {
-      let rows;
-      if (table.ilike) {
-        // Server-side search for large tables (e.g. tender_comparativas)
-        const orClause = table.ilike.map(f => `${f}.ilike.%${value.trim()}%`).join(",");
-        const { data } = await supabase.from(table.key).select(table.select).or(orClause).limit(6);
-        rows = data || [];
-      } else {
-        const { data } = await supabase.from(table.key).select(table.select).limit(50);
-        rows = (data || []).filter(row => matches(row, table.fields, value, table.jsonFields || []));
-      }
-      return rows.slice(0, 6).map(row => ({ ...row, kind: table.label, page: table.page }));
-    }));
+
+    const loaded = await Promise.all(
+      TABLES.map(async table => {
+        try {
+          let rows;
+          if (table.ilike) {
+            const orClause = table.ilike.map(f => `${f}.ilike.%${value.trim()}%`).join(",");
+            const { data } = await supabase
+              .from(table.key).select(table.select).or(orClause).limit(8);
+            rows = data || [];
+          } else {
+            const { data } = await supabase
+              .from(table.key).select(table.select).limit(80);
+            rows = (data || []).filter(row =>
+              matches(row, table.fields, value, table.jsonFields || [], table.objFields || [])
+            );
+          }
+          return rows.slice(0, 8).map(row => ({
+            ...row,
+            kind:     table.label,
+            kindIcon: table.icon,
+            page:     table.page,
+          }));
+        } catch {
+          return []; // table may not exist in this env
+        }
+      })
+    );
+
     setResults(loaded.flat());
     setLoading(false);
   }
@@ -103,6 +190,11 @@ export default function GlobalSearch({ onNavigate }) {
     setResults([]);
     onNavigate(item.page, { id: item.id, source: "globalSearch" });
   }
+
+  const moduleOrder = TABLES.map(t => t.label);
+  const sortedGroups = Object.entries(grouped).sort(
+    ([a], [b]) => moduleOrder.indexOf(a) - moduleOrder.indexOf(b)
+  );
 
   return (
     <>
@@ -120,34 +212,82 @@ export default function GlobalSearch({ onNavigate }) {
           onMouseDown={e => { if (e.target === e.currentTarget) setOpen(false); }}
         >
           <section className="global-search-panel">
+
+            {/* Input */}
             <div className="global-search-box">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{color:"#94a3b8",flexShrink:0}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color:"#94a3b8", flexShrink:0 }}>
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
               </svg>
               <input
                 autoFocus
                 value={query}
                 onChange={e => runSearch(e.target.value)}
-                placeholder="Buscar clientes, licitaciones, oportunidades, productos o visitas..."
+                placeholder="Buscar en todo el CRM: clientes, productos, licitaciones, cotizaciones…"
               />
-              <button onClick={() => setOpen(false)}>Esc</button>
+              {loading
+                ? <div className="global-search-spinner"/>
+                : <button onClick={() => setOpen(false)}>Esc</button>
+              }
             </div>
-            <div className="global-search-results">
-              {!hasQuery && <p className="global-search-empty">Escribí al menos 2 letras para buscar en todo el CRM.</p>}
-              {hasQuery && loading  && <p className="global-search-empty">Buscando...</p>}
-              {hasQuery && !loading && results.length === 0 && <p className="global-search-empty">Sin resultados.</p>}
-              {Object.entries(grouped).map(([kind, rows]) => (
-                <div key={kind} className="global-search-group">
-                  <span>{kind}</span>
-                  {rows.map(item => (
-                    <button key={`${kind}-${item.id}`} onClick={() => go(item)}>
-                      <strong>{titleFor(item)}</strong>
-                      <small>{subtitleFor(item) || "Abrir registro"}</small>
-                    </button>
-                  ))}
+
+            {/* Summary bar */}
+            {hasQuery && !loading && totalCount > 0 && (
+              <div className="global-search-summary">
+                <span>{totalCount} resultado{totalCount > 1 ? "s" : ""} en {sortedGroups.length} módulo{sortedGroups.length > 1 ? "s" : ""}</span>
+                <div className="global-search-summary__tags">
+                  {sortedGroups.map(([kind, rows]) => {
+                    const icon = TABLES.find(t => t.label === kind)?.icon || "";
+                    return (
+                      <span key={kind} className="global-search-summary__tag">
+                        {icon} {kind} <strong>{rows.length}</strong>
+                      </span>
+                    );
+                  })}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Results */}
+            <div className="global-search-results">
+              {!hasQuery && (
+                <div className="global-search-hint">
+                  <p>Buscá en <strong>todos los módulos</strong> del CRM simultáneamente.</p>
+                  <div className="global-search-modules">
+                    {TABLES.map(t => (
+                      <span key={t.key} className="global-search-module-tag">
+                        {t.icon} {t.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {hasQuery && loading  && <p className="global-search-empty">Buscando en todos los módulos…</p>}
+              {hasQuery && !loading && totalCount === 0 && (
+                <p className="global-search-empty">Sin resultados para <strong>"{query}"</strong>.</p>
+              )}
+
+              {sortedGroups.map(([kind, rows]) => {
+                const icon = TABLES.find(t => t.label === kind)?.icon || "";
+                return (
+                  <div key={kind} className="global-search-group">
+                    <div className="global-search-group__header">
+                      <span className="global-search-group__icon">{icon}</span>
+                      <span className="global-search-group__label">{kind}</span>
+                      <span className="global-search-group__count">{rows.length}</span>
+                    </div>
+                    {rows.map(item => (
+                      <button key={`${kind}-${item.id}`} className="global-search-item" onClick={() => go(item)}>
+                        <strong className="global-search-item__title">{titleFor(item)}</strong>
+                        {subtitleFor(item) && (
+                          <small className="global-search-item__sub">{subtitleFor(item)}</small>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
+
           </section>
         </div>
       )}
