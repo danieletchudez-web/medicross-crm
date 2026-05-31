@@ -3,26 +3,49 @@ import { supabase } from "../lib/supabaseClient";
 import "./GlobalSearch.css";
 
 const TABLES = [
-  { key: "accounts",     label: "Cliente",     page: "accounts",     select: "id,name,city,province,type",                       fields: ["name","city","province","type"] },
-  { key: "opportunities",label: "Oportunidad", page: "opportunities",select: "id,name,stage,next_action",                        fields: ["name","stage","next_action"] },
-  { key: "products",     label: "Producto",    page: "products",     select: "id,name,line,speech",                              fields: ["name","line","speech"] },
-  { key: "tenders",      label: "Licitación",  page: "tenders",      select: "id,institution,process_name,process_number,status",fields: ["institution","process_name","process_number","status"] },
-  { key: "visits",       label: "Visita",      page: "visits",       select: "id,visit_date,contact,objective,notes",            fields: ["contact","objective","notes","visit_date"] },
+  { key: "accounts",           label: "Cliente",                page: "accounts",         select: "id,name,city,province,type",                        fields: ["name","city","province","type"] },
+  { key: "opportunities",      label: "Oportunidad",            page: "opportunities",    select: "id,name,stage,next_action",                         fields: ["name","stage","next_action"] },
+  { key: "products",           label: "Producto",               page: "products",         select: "id,name,line,speech",                               fields: ["name","line","speech"] },
+  { key: "tenders",            label: "Licitación",             page: "tenders",          select: "id,institution,process_name,process_number,status",  fields: ["institution","process_name","process_number","status"] },
+  { key: "visits",             label: "Visita",                 page: "visits",           select: "id,visit_date,contact,objective,notes",             fields: ["contact","objective","notes","visit_date"] },
+  {
+    key: "cotizaciones", label: "Cotización", page: "cotizador",
+    select: "id,quote_num_formatted,vendedor,institucion,nro_licit,renglones",
+    fields: ["quote_num_formatted","vendedor","institucion","nro_licit"],
+    jsonFields: [{ field: "renglones", keys: ["descr","codigo","marca","empresa"] }],
+  },
+  {
+    key: "tender_comparativas", label: "Inteligencia de precios", page: "preciosHistoricos",
+    select: "id,descripcion,empresa,renglon",
+    ilike: ["descripcion","empresa"],
+  },
 ];
 
-function matches(row, fields, query) {
+function matches(row, fields, query, jsonFields = []) {
   const q = query.toLowerCase();
-  return fields.some(field => String(row[field] || "").toLowerCase().includes(q));
+  if (fields.some(f => String(row[f] || "").toLowerCase().includes(q))) return true;
+  for (const { field, keys } of jsonFields) {
+    const arr = Array.isArray(row[field]) ? row[field] : [];
+    if (arr.some(item => keys.some(k => String(item[k] || "").toLowerCase().includes(q)))) return true;
+  }
+  return false;
 }
 
 function titleFor(item) {
-  return item.name || item.institution || item.process_name || item.objective || item.contact || "Sin título";
+  return item.name || item.institution || item.process_name || item.objective ||
+         item.contact || item.quote_num_formatted || item.descripcion || "Sin título";
 }
 
 function subtitleFor(item) {
+  if (item.renglones !== undefined) {
+    const prods = (item.renglones || []).map(r => r.descr || r.codigo).filter(Boolean).slice(0, 2).join(", ");
+    return [item.institucion, item.vendedor, prods].filter(Boolean).join(" · ");
+  }
+  if (item.descripcion !== undefined) {
+    return [item.empresa, item.renglon ? `Renglón ${item.renglon}` : ""].filter(Boolean).join(" · ");
+  }
   return [item.city, item.province, item.type, item.stage, item.status, item.process_number, item.visit_date]
-    .filter(Boolean)
-    .join(" · ");
+    .filter(Boolean).join(" · ");
 }
 
 export default function GlobalSearch({ onNavigate }) {
@@ -58,11 +81,17 @@ export default function GlobalSearch({ onNavigate }) {
     if (value.trim().length < 2) { setResults([]); return; }
     setLoading(true);
     const loaded = await Promise.all(TABLES.map(async table => {
-      const { data } = await supabase.from(table.key).select(table.select).limit(30);
-      return (data || [])
-        .filter(row => matches(row, table.fields, value))
-        .slice(0, 6)
-        .map(row => ({ ...row, kind: table.label, page: table.page }));
+      let rows;
+      if (table.ilike) {
+        // Server-side search for large tables (e.g. tender_comparativas)
+        const orClause = table.ilike.map(f => `${f}.ilike.%${value.trim()}%`).join(",");
+        const { data } = await supabase.from(table.key).select(table.select).or(orClause).limit(6);
+        rows = data || [];
+      } else {
+        const { data } = await supabase.from(table.key).select(table.select).limit(50);
+        rows = (data || []).filter(row => matches(row, table.fields, value, table.jsonFields || []));
+      }
+      return rows.slice(0, 6).map(row => ({ ...row, kind: table.label, page: table.page }));
     }));
     setResults(loaded.flat());
     setLoading(false);
