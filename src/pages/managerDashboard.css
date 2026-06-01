@@ -413,12 +413,13 @@
 
 .dash-decisions {
   display: grid;
-  grid-template-columns: 260px repeat(3, 1fr);
+  grid-template-columns: 260px 1fr;
   gap: 12px;
   align-items: stretch;
   margin-top: 2px;
 }
 .dash-decisions__head {
+  grid-row: 1 / -1;
   background:
     linear-gradient(135deg, rgba(24,95,165,.08), transparent),
     #ffffff;
@@ -495,9 +496,6 @@
   color: #0f172a;
   font-size: 13px;
   font-weight: 900;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .dash-decision-card p {
   margin: 3px 0 0;
