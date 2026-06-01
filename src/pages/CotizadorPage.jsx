@@ -99,15 +99,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [toast,         setToast]         = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
   const [showPapelera,  setShowPapelera]  = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
   const [histItems,     setHistItems]     = useState([]);
   const [papItems,      setPapItems]      = useState([]);
-  const [templates,     setTemplates]     = useState([]);
-  const [templateName,  setTemplateName]  = useState("");
-  const [templateGlobal,setTemplateGlobal]= useState(false);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [savingTemplate,   setSavingTemplate]   = useState(false);
-  const [templateFeedback, setTemplateFeedback] = useState(null);
   const [histSearch,    setHistSearch]    = useState("");
   const [loadingHist,   setLoadingHist]   = useState(false);
   const [catalog,        setCatalog]       = useState([]);
@@ -268,107 +261,6 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const vMatch = vendedores.find(v => profile?.full_name && v.toLowerCase().includes(profile.full_name.split(" ")[0].toLowerCase()));
     if (vMatch) setVendedor(vMatch);
     window.scrollTo(0,0);
-  }
-
-  function templatePayload() {
-    return {
-      tc,
-      plazo_venta: plazoVenta,
-      mant_oferta: mantOferta,
-      forma_cobro: formaCobro,
-      renglones: renglones.map(row => Object.fromEntries(Object.entries(row).filter(([key]) => key !== "id"))),
-    };
-  }
-
-  function rowsFromTemplate(rows) {
-    return (Array.isArray(rows) && rows.length ? rows : [{}]).map(row => ({
-      ...emptyR(),
-      ...row,
-      id: Date.now() + Math.random(),
-      iva: String(row.iva || "10.5"),
-      markup: String(row.markup || "2"),
-      cant: row.cant || 1,
-    }));
-  }
-
-  async function abrirTemplates() {
-    setLoadingTemplates(true);
-    setTemplateFeedback(null);
-    setShowTemplates(true);
-    const { data, error } = await supabase
-      .from("quote_templates")
-      .select("*")
-      .order("is_global", { ascending: false })
-      .order("updated_at", { ascending: false });
-    if (error) {
-      const msg = "No se pudieron cargar las plantillas: " + error.message;
-      setTemplateFeedback({ type: "err", msg });
-      showToast(msg, "err");
-    } else {
-      setTemplates(data || []);
-    }
-    setLoadingTemplates(false);
-  }
-
-  async function guardarTemplate() {
-    const name = templateName.trim();
-    if (!name) { showToast("Ingresá un nombre para la plantilla.", "err"); return; }
-    setSavingTemplate(true);
-    const { data, error } = await supabase
-      .from("quote_templates")
-      .insert([{
-        name,
-        owner_id: profile?.id || null,
-        created_by: profile?.id || null,
-        is_global: profile?.role === "super_admin" && templateGlobal,
-        payload: templatePayload(),
-      }])
-      .select()
-      .single();
-    setSavingTemplate(false);
-    if (error) {
-      const msg = "No se pudo guardar la plantilla: " + error.message;
-      setTemplateFeedback({ type: "err", msg });
-      showToast(msg, "err");
-      return;
-    }
-    setTemplates(prev => [data, ...prev]);
-    setTemplateName("");
-    setTemplateGlobal(false);
-    setTemplateFeedback({ type: "ok", msg: `Plantilla “${name}” guardada correctamente.` });
-    showToast(`Plantilla “${name}” guardada.`);
-  }
-
-  function aplicarTemplate(template) {
-    const payload = template.payload || {};
-    if (payload.tc) setTc(String(payload.tc));
-    setPlazoVenta(payload.plazo_venta || "");
-    setMantOferta(payload.mant_oferta || "");
-    setFormaCobro(payload.forma_cobro || "");
-    setRenglones(rowsFromTemplate(payload.renglones));
-    setShowTemplates(false);
-    showToast(`Plantilla “${template.name}” aplicada.`);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function renombrarTemplate(template) {
-    const nextName = prompt("Nuevo nombre de la plantilla:", template.name)?.trim();
-    if (!nextName || nextName === template.name) return;
-    const { error } = await supabase
-      .from("quote_templates")
-      .update({ name: nextName, updated_at: new Date().toISOString() })
-      .eq("id", template.id);
-    if (error) { showToast("No se pudo renombrar: " + error.message, "err"); return; }
-    setTemplates(prev => prev.map(item => item.id === template.id ? { ...item, name: nextName } : item));
-    showToast("Plantilla renombrada.");
-  }
-
-  async function borrarTemplate(template) {
-    if (!confirm(`¿Eliminar la plantilla “${template.name}”?`)) return;
-    const { error } = await supabase.from("quote_templates").delete().eq("id", template.id);
-    if (error) { showToast("No se pudo eliminar: " + error.message, "err"); return; }
-    setTemplates(prev => prev.filter(item => item.id !== template.id));
-    showToast("Plantilla eliminada.");
   }
 
   function buildSnap(quoteNumber, quoteNumFormatted) {
@@ -774,7 +666,6 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
           <div className="cot-header-actions">
             <button className="cot-btn cot-btn--ghost" onClick={()=>onNavigate("tenders")}>← Licitaciones</button>
             <button className="cot-btn cot-btn--ghost" onClick={abrirHistorial}>📋 Historial</button>
-            <button className="cot-btn cot-btn--ghost" onClick={abrirTemplates}>📁 Plantillas</button>
             <button className="cot-btn cot-btn--ghost" onClick={abrirPapelera} style={{color:"#dc2626"}}>🗑 Papelera</button>
             <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>+ Nueva</button>
             <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>⬇ PDF</button>
@@ -994,63 +885,6 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
           </button>
         </div>
       </div>
-
-      {showTemplates && createPortal((
-        <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowTemplates(false);}}>
-          <div className="cot-modal cot-modal--templates">
-            <div className="cot-modal__header">
-              <div>
-                <h3>📁 Plantillas de cotización</h3>
-                <p>Reutilizá condiciones comerciales y renglones frecuentes.</p>
-              </div>
-              <button className="cot-modal__close" onClick={()=>setShowTemplates(false)}>×</button>
-            </div>
-            <div className="cot-template-create">
-              <input className="cot-search" value={templateName} onChange={e=>setTemplateName(e.target.value)} placeholder="Nombre de la nueva plantilla"/>
-              {profile?.role === "super_admin" && (
-                <label className="cot-template-global">
-                  <input type="checkbox" checked={templateGlobal} onChange={e=>setTemplateGlobal(e.target.checked)}/>
-                  Visible para todo el equipo
-                </label>
-              )}
-              <button className="cot-btn cot-btn--primary" onClick={guardarTemplate} disabled={savingTemplate}>
-                {savingTemplate ? "Guardando…" : "Guardar actual"}
-              </button>
-            </div>
-            {templateFeedback && (
-              <p className={`cot-template-feedback cot-template-feedback--${templateFeedback.type}`}>
-                {templateFeedback.msg}
-              </p>
-            )}
-            <div className="cot-modal__body">
-              {loadingTemplates ? (
-                <p className="cot-template-empty">Cargando…</p>
-              ) : templates.length === 0 ? (
-                <p className="cot-template-empty">Todavía no hay plantillas. Guardá una cotización frecuente para empezar.</p>
-              ) : templates.map(template => {
-                const canEdit = template.owner_id === profile?.id || profile?.role === "super_admin";
-                const count = Array.isArray(template.payload?.renglones) ? template.payload.renglones.length : 0;
-                return (
-                  <article className="cot-template-item" key={template.id}>
-                    <div>
-                      <div className="cot-template-item__head">
-                        <strong>{template.name}</strong>
-                        {template.is_global && <span>Equipo</span>}
-                      </div>
-                      <small>{count} renglón{count === 1 ? "" : "es"} · Actualizada {template.updated_at ? new Date(template.updated_at).toLocaleDateString("es-AR") : "hoy"}</small>
-                    </div>
-                    <div className="cot-template-item__actions">
-                      <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>aplicarTemplate(template)}>Usar</button>
-                      {canEdit && <button className="cot-btn cot-btn--sm" onClick={()=>renombrarTemplate(template)}>Renombrar</button>}
-                      {canEdit && <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>borrarTemplate(template)}>Eliminar</button>}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ), document.body)}
 
       {showHistorial && createPortal((
         <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowHistorial(false);}}>
