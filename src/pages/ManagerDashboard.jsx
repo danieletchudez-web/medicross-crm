@@ -229,7 +229,9 @@ export default function ManagerDashboard({ profile, onNavigate }) {
   const [products, setProducts]           = useState([]);
   const [campaigns, setCampaigns]         = useState([]);
   const [loading, setLoading]             = useState(true);
-  const [kpisCollapsed, setKpisCollapsed] = useState(false);
+  const [dashboardMode, setDashboardMode] = useState(() => localStorage.getItem("medicross-dashboard-mode") || "executive");
+  const [metricsExpanded, setMetricsExpanded] = useState(false);
+  const [comparisonExpanded, setComparisonExpanded] = useState(false);
   const [comparisonPeriod, setComparisonPeriod] = useState("month");
 
   const pipelineRef    = useRef(null);
@@ -237,7 +239,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
   const probabilityRef = useRef(null);
 
   useEffect(() => { loadData(); }, []);
-  useEffect(() => { if (!loading) renderCharts(); }, [loading, selectedLine, opportunities, visits, campaigns, products]);
+  useEffect(() => { if (!loading) renderCharts(); }, [loading, selectedLine, opportunities, visits, campaigns, products, dashboardMode]);
+  useEffect(() => { localStorage.setItem("medicross-dashboard-mode", dashboardMode); }, [dashboardMode]);
 
   async function loadData() {
     setLoading(true);
@@ -428,6 +431,9 @@ export default function ManagerDashboard({ profile, onNavigate }) {
     }).length
   ), [visits]);
 
+  const showOperationalMetrics = dashboardMode === "complete" || metricsExpanded;
+  const showDetailedPanels = dashboardMode === "complete";
+
   function pipelineByStage() {
     return STAGES.map((stage) => filteredOpps.filter((o) => o.stage === stage).reduce((s, o) => s + Number(o.amount || 0), 0));
   }
@@ -562,33 +568,40 @@ export default function ManagerDashboard({ profile, onNavigate }) {
           </div>
         </header>
 
-        <section className="dash-comparison">
+        <section className={`dash-comparison ${comparisonExpanded ? "is-expanded" : ""}`}>
           <div className="dash-comparison__head">
             <div>
               <span>Comparativo de períodos</span>
               <strong>Actividad comercial generada</strong>
               <p>Medición por fecha de creación o registro, separada de la foto actual del pipeline.</p>
             </div>
-            <select value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)}>
-              {COMPARISON_PERIODS.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
-            </select>
+            <div className="dash-comparison__actions">
+              <select value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)}>
+                {COMPARISON_PERIODS.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
+              </select>
+              <button type="button" onClick={() => setComparisonExpanded((expanded) => !expanded)}>
+                {comparisonExpanded ? "Ocultar detalle" : "Ver comparativo"}
+              </button>
+            </div>
           </div>
-          <div className="dash-comparison__grid">
-            {comparison.map((item) => {
-              const delta = comparisonDelta(item.value, item.previous);
-              const format = item.formatter || ((value) => Number(value || 0).toLocaleString("es-AR"));
-              return (
-                <article key={item.label} className="dash-comparison-card">
-                  <span>{item.label}</span>
-                  <strong>{format(item.value)}</strong>
-                  <small>Anterior: {format(item.previous)}</small>
-                  <em className={`dash-comparison-card__delta dash-comparison-card__delta--${delta.tone}`}>
-                    {delta.tone === "up" ? "↑" : delta.tone === "down" ? "↓" : "→"} {delta.label}
-                  </em>
-                </article>
-              );
-            })}
-          </div>
+          {comparisonExpanded && (
+            <div className="dash-comparison__grid">
+              {comparison.map((item) => {
+                const delta = comparisonDelta(item.value, item.previous);
+                const format = item.formatter || ((value) => Number(value || 0).toLocaleString("es-AR"));
+                return (
+                  <article key={item.label} className="dash-comparison-card">
+                    <span>{item.label}</span>
+                    <strong>{format(item.value)}</strong>
+                    <small>Anterior: {format(item.previous)}</small>
+                    <em className={`dash-comparison-card__delta dash-comparison-card__delta--${delta.tone}`}>
+                      {delta.tone === "up" ? "↑" : delta.tone === "down" ? "↓" : "→"} {delta.label}
+                    </em>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* PRIMARY KPIs — fila 1 */}
@@ -636,6 +649,12 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             <span>Decisiones de hoy</span>
             <strong>Prioridad ejecutiva</strong>
             <p>{decision.text}</p>
+            <button
+              className="dash-exec-action"
+              onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}
+            >
+              Ejecutar acción
+            </button>
           </div>
           {todayDecisions.map((item, index) => (
             <article key={`${item.title}-${index}`} className={`dash-decision-card dash-decision-card--${item.tone}`}>
@@ -646,19 +665,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
               </div>
             </article>
           ))}
-          <div className={`dash-next-action dash-next-action--${decision.tone}`}>
-            <div className="dash-next-action__label">Próxima mejor acción</div>
-            <div className="dash-next-action__body">
-              <span>{decision.icon}</span>
-              <div>
-                <strong>{decision.title}</strong>
-                <p>{decision.text}</p>
-              </div>
-            </div>
-            <button onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}>
-              Ejecutar acción
-            </button>
-          </div>
         </section>
 
         {/* KPIs COLAPSABLES — fila 2 y 3 */}
@@ -668,17 +674,32 @@ export default function ManagerDashboard({ profile, onNavigate }) {
               <span>Salud comercial</span>
               <strong>Métricas operativas</strong>
             </div>
-            <button
-              className="dash-kpi-toggle"
-              onClick={() => setKpisCollapsed((c) => !c)}
-              title={kpisCollapsed ? "Expandir métricas" : "Contraer métricas"}
-            >
-              <span className={kpisCollapsed ? "" : "is-active"}>Completo</span>
-              <span className={kpisCollapsed ? "is-active" : ""}>Ejecutivo</span>
-            </button>
+            <div className="dash-kpi-section__controls">
+              {dashboardMode === "executive" && (
+                <button className="dash-metrics-toggle" onClick={() => setMetricsExpanded((expanded) => !expanded)}>
+                  {metricsExpanded ? "Ocultar métricas" : "Ver métricas"}
+                </button>
+              )}
+              <div className="dash-kpi-toggle" role="group" aria-label="Nivel de detalle del dashboard">
+                <button
+                  type="button"
+                  className={dashboardMode === "complete" ? "is-active" : ""}
+                  onClick={() => setDashboardMode("complete")}
+                >
+                  Completo
+                </button>
+                <button
+                  type="button"
+                  className={dashboardMode === "executive" ? "is-active" : ""}
+                  onClick={() => setDashboardMode("executive")}
+                >
+                  Ejecutivo
+                </button>
+              </div>
+            </div>
           </div>
 
-          {!kpisCollapsed && (
+          {showOperationalMetrics && (
             <>
               {/* FILA 2 — KPIs secundarios */}
               <section className="dash-kpi-grid">
@@ -727,42 +748,55 @@ export default function ManagerDashboard({ profile, onNavigate }) {
           )}
         </div>
 
-        {/* MAIN PANELS */}
-        <section className="dash-main-grid">
-          <ProbabilityPanel probabilityRef={probabilityRef} total={compactMoney(metrics.pipeline)}/>
-          <CampaignPanel rows={campaignRows}/>
-          <HotProjects rows={projectTemperature}/>
-        </section>
+        {showDetailedPanels ? (
+          <>
+            {/* MAIN PANELS */}
+            <section className="dash-main-grid">
+              <ProbabilityPanel probabilityRef={probabilityRef} total={compactMoney(metrics.pipeline)}/>
+              <CampaignPanel rows={campaignRows}/>
+              <HotProjects rows={projectTemperature}/>
+            </section>
 
-        {/* CHART PANELS */}
-        <section className="dash-chart-grid">
-          <Panel title="Pipeline por etapa" subtitle="Monto total en cada fase">
-            <canvas ref={pipelineRef}/>
-          </Panel>
+            {/* CHART PANELS */}
+            <section className="dash-chart-grid">
+              <Panel title="Pipeline por etapa" subtitle="Monto total en cada fase">
+                <canvas ref={pipelineRef}/>
+              </Panel>
 
-          <article className="dash-panel">
-            <header className="dash-panel__header">
-              <div>
-                <h3 className="dash-panel__title">Cobertura de forecast</h3>
-                <p className="dash-panel__sub">Pipeline ponderado vs objetivo de campañas</p>
-              </div>
-              <span className="dash-panel__metric">{metrics.coverage}%</span>
-            </header>
-            <div className="dash-chart-box dash-chart-box--gauge">
-              <ForecastGauge forecast={metrics.forecast} target={metrics.target} coverage={metrics.coverage}/>
+              <article className="dash-panel">
+                <header className="dash-panel__header">
+                  <div>
+                    <h3 className="dash-panel__title">Cobertura de forecast</h3>
+                    <p className="dash-panel__sub">Pipeline ponderado vs objetivo de campañas</p>
+                  </div>
+                  <span className="dash-panel__metric">{metrics.coverage}%</span>
+                </header>
+                <div className="dash-chart-box dash-chart-box--gauge">
+                  <ForecastGauge forecast={metrics.forecast} target={metrics.target} coverage={metrics.coverage}/>
+                </div>
+              </article>
+
+              <StageDistributionPanel opps={filteredOpps}/>
+            </section>
+
+            {/* ACTIVIDAD + ÚLTIMAS VISITAS */}
+            <section className="dash-bottom-grid">
+              <Panel title="Actividad semanal" subtitle="Visitas registradas por día de la semana">
+                <canvas ref={activityRef}/>
+              </Panel>
+              <RecentVisitsPanel visits={filteredVisits}/>
+            </section>
+          </>
+        ) : (
+          <section className="dash-detail-gate">
+            <div>
+              <span>Análisis extendido</span>
+              <strong>Gráficos, campañas y actividad del equipo</strong>
+              <p>La lectura ejecutiva prioriza decisiones. Abrí la vista completa cuando necesites profundizar.</p>
             </div>
-          </article>
-
-          <StageDistributionPanel opps={filteredOpps}/>
-        </section>
-
-        {/* ACTIVIDAD + ÚLTIMAS VISITAS */}
-        <section className="dash-bottom-grid">
-          <Panel title="Actividad semanal" subtitle="Visitas registradas por día de la semana">
-            <canvas ref={activityRef}/>
-          </Panel>
-          <RecentVisitsPanel visits={filteredVisits}/>
-        </section>
+            <button type="button" onClick={() => setDashboardMode("complete")}>Ver análisis completo</button>
+          </section>
+        )}
 
         <footer className="dash-footer">
           <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" className="dash-footer-link">
