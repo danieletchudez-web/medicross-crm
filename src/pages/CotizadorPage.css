@@ -126,9 +126,11 @@
 .cot-catalog-field { position: relative; }
 .cot-catalog-menu {
   position: absolute; z-index: 80; top: calc(100% + 6px); left: 0; right: 0;
-  overflow: hidden; border: 1px solid rgba(24,95,165,.2); border-radius: 10px;
+  overflow-x: hidden; overflow-y: auto; max-height: min(430px, 58vh);
+  border: 1px solid rgba(24,95,165,.2); border-radius: 10px;
   background: #fff; box-shadow: 0 14px 30px rgba(15,36,68,.16);
 }
+.cot-catalog-menu section + section { border-top: 3px solid #e2e8f0; }
 .cot-catalog-menu__title {
   display: block; padding: 8px 11px 6px; background: #f8fafc;
   color: #64748b; font-size: 10px; font-weight: 800; letter-spacing: .5px;
@@ -143,6 +145,16 @@
 .cot-catalog-menu button:hover { background: #eff6ff; }
 .cot-catalog-menu strong { font-size: 12.5px; }
 .cot-catalog-menu small { color: #64748b; font-size: 11px; }
+.cot-catalog-menu em {
+  color: #64748b; font-size: 11px; font-style: normal; line-height: 1.4;
+  white-space: normal;
+}
+.cot-market-menu button strong {
+  line-height: 1.35; white-space: normal;
+}
+.cot-market-menu__loading {
+  margin: 0; padding: 11px; color: #64748b; font-size: 11.5px; font-style: italic;
+}
 
 /* ── Renglón ── */
 .cot-renglon {
@@ -399,6 +411,10 @@
   font-size: 11px; color: #94a3b8; padding: 5px 2px; font-style: italic;
   font-family: "DM Sans", system-ui, sans-serif;
 }
+.cot-pi-hint {
+  margin: 7px 0 2px; padding: 8px 10px; border: 1px dashed #bfdbfe;
+  border-radius: 8px; background: #f8fbff; color: #64748b; font-size: 11px;
+}
 .cot-pi-badge {
   border-radius: 10px; padding: 10px 13px; margin: 8px 0 2px;
   display: flex; flex-direction: column; gap: 7px; border: 1px solid;
@@ -415,9 +431,16 @@
 .cot-pi-badge--riesgo .cot-pi-status { color: #dc2626; }
 .cot-pi-badge--neutral .cot-pi-status { color: #475569; }
 .cot-pi-refs { font-size: 10.5px; color: #94a3b8; font-family: "DM Mono", monospace; }
+.cot-pi-description {
+  margin: 0; padding-bottom: 6px; border-bottom: 1px solid rgba(15,36,68,.08);
+  color: #334155; font-size: 11px; line-height: 1.45;
+}
 
 .cot-pi-data { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.cot-pi-data span { font-size: 11px; color: #475569; font-family: "DM Sans", system-ui, sans-serif; }
+.cot-pi-data span {
+  display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: #64748b;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
 .cot-pi-data strong { font-family: "DM Mono", monospace; font-weight: 700; font-size: 12.5px; color: #0f172a; }
 
 .cot-pi-use {

@@ -9,6 +9,35 @@ const fARS   = (n) => "$ "   + Number(n||0).toLocaleString("es-AR",{minimumFract
 const fUSD   = (n) => "U$D " + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fPct   = (n) => Number(n||0).toFixed(1) + "%";
 const parseN = (s) => parseFloat(String(s||"").replace(",",".")) || 0;
+const fmtDate = (value) => {
+  if (!value) return "Sin fecha";
+  const [year, month, day] = String(value).slice(0, 10).split("-");
+  return year && month && day ? `${day}/${month}/${year.slice(2)}` : "Sin fecha";
+};
+const normalizeSearchText = (value) => String(value || "")
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim()
+  .replace(/\s+/g, " ");
+const searchTokens = (value) => normalizeSearchText(value).split(" ").filter(token => token.length >= 3);
+const fieldScore = (value, tokens, weight) => {
+  const text = normalizeSearchText(value);
+  if (!text || !tokens.length) return 0;
+  const words = text.split(" ");
+  if (!tokens.every(token => words.some(word => word === token || word.startsWith(token)))) return 0;
+  const starts = tokens.every(token => words.some(word => word.startsWith(token)));
+  return weight + (text === tokens.join(" ") ? 30 : 0) + (starts ? 10 : 0);
+};
+const latestByDate = (rows) => [...rows].sort((a, b) =>
+  String(b.tenders?.end_date || "").localeCompare(String(a.tenders?.end_date || ""))
+)[0] || null;
+const OWN_COMPANY_ALIASES = ["MEDI-CROSS", "MEDICROSS", "STORING INSUMOS MEDICOS"];
+const isOwnMarketOffer = (row) => {
+  const company = normalizeSearchText(row?.empresa).toUpperCase();
+  return Boolean(row?.es_nuestra_oferta) || OWN_COMPANY_ALIASES.some(alias => company.includes(normalizeSearchText(alias).toUpperCase()));
+};
 const parseQuoteNumber = (value) => {
   const n = Number.parseInt(String(value || "").replace(/\D/g, ""), 10);
   return Number.isFinite(n) && n > 0 ? n : null;
@@ -56,6 +85,7 @@ const emptyR = () => ({
   empresa:"", renglon:"", subitem:"", codigo:"", marca:"", descr:"",
   costo:"", cant:1, moneda:"USD", iva:"10.5", markup:"2",
   tcInd:"", modoManual:"auto", pvManual:"",
+  market_reference:null,
 });
 
 const VENDEDORES    = ["Monica Somosa","Daniel Etchudez","Soledad Cantero","Otros"];
@@ -188,27 +218,64 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   }
 
   async function fetchPriceIntel(rowId, descr) {
-    if (!descr || descr.trim().length < 3) {
+    const queryTokens = searchTokens(descr);
+    if (!queryTokens.length) {
       setPriceIntel(prev => { const n = {...prev}; delete n[rowId]; return n; });
       return;
     }
     setPriceIntel(prev => ({ ...prev, [rowId]: { loading: true } }));
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tender_comparativas")
-      .select("precio_unitario,empresa,es_nuestra_oferta")
-      .ilike("descripcion", `%${descr.trim()}%`)
-      .limit(60);
-    const valids = (data || []).filter(r => Number(r.precio_unitario) >= 1);
-    if (!valids.length) {
-      setPriceIntel(prev => ({ ...prev, [rowId]: { loading: false, refs: 0 } }));
+      .select(`
+        id, tender_id, renglon, descripcion, empresa, es_nuestra_oferta,
+        precio_unitario, cantidad, total_ars,
+        tenders:tender_id ( id, institution, process_number, end_date )
+      `)
+      .ilike("descripcion", `%${queryTokens[0].slice(0, 3)}%`)
+      .limit(160);
+    if (error) {
+      setPriceIntel(prev => ({ ...prev, [rowId]: { loading: false, refs: 0, suggestions: [] } }));
       return;
     }
-    const prices  = valids.map(r => Number(r.precio_unitario));
-    const ownRows = valids.filter(r => r.es_nuestra_oferta);
-    const minMarket = Math.min(...prices);
-    const lastOwn   = ownRows.length ? Math.max(...ownRows.map(r => Number(r.precio_unitario))) : null;
-    const suggested = Math.round(minMarket * 1.02);
-    setPriceIntel(prev => ({ ...prev, [rowId]: { loading: false, minMarket, lastOwn, suggested, refs: valids.length } }));
+    const grouped = {};
+    (data || []).forEach(row => {
+      const score = fieldScore(row.descripcion, queryTokens, 100);
+      const price = Number(row.precio_unitario);
+      if (!score || !Number.isFinite(price) || price < 1) return;
+      const key = normalizeSearchText(row.descripcion);
+      if (!grouped[key]) grouped[key] = { key, description: row.descripcion, score, rows: [] };
+      grouped[key].score = Math.max(grouped[key].score, score);
+      grouped[key].rows.push(row);
+    });
+
+    const suggestions = Object.values(grouped).map(group => {
+      const competitorRows = group.rows.filter(row => !isOwnMarketOffer(row));
+      const marketRows = competitorRows.length ? competitorRows : group.rows;
+      const minRow = marketRows.reduce((best, row) =>
+        Number(row.precio_unitario) < Number(best.precio_unitario) ? row : best
+      , marketRows[0]);
+      const ownRows = group.rows.filter(isOwnMarketOffer);
+      const lastOwnRow = latestByDate(ownRows);
+      return {
+        ...group,
+        refs: group.rows.length,
+        minMarket: Number(minRow.precio_unitario),
+        minRow,
+        lastOwn: lastOwnRow ? Number(lastOwnRow.precio_unitario) : null,
+        lastOwnRow,
+        suggested: Math.round(Number(minRow.precio_unitario) * 1.02),
+        latestRow: latestByDate(group.rows),
+      };
+    }).sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return String(b.latestRow?.tenders?.end_date || "").localeCompare(String(a.latestRow?.tenders?.end_date || ""));
+    }).slice(0, 6);
+
+    const exact = suggestions.find(suggestion => suggestion.key === normalizeSearchText(descr));
+    setPriceIntel(prev => ({
+      ...prev,
+      [rowId]: { loading: false, refs: suggestions.reduce((sum, item) => sum + item.refs, 0), suggestions, selected: exact || null },
+    }));
   }
 
   function debouncedFetchPriceIntel(rowId, descr) {
@@ -216,7 +283,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     priceTimers.current[rowId] = setTimeout(() => fetchPriceIntel(rowId, descr), 650);
   }
 
-  function useSuggestedPrice(rowId, suggested) {
+  function applySuggestedPrice(rowId, suggested) {
     setRenglones(prev => prev.map(r => r.id === rowId
       ? { ...r, modoManual: "manual", pvManual: String(suggested) }
       : r
@@ -273,13 +340,28 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     ].some((value) => String(value || "").trim()))
   );
 
-  const updateR = (id, key, val) => setRenglones(prev => prev.map(r => r.id === id ? {...r, [key]: val} : r));
+  const updateR = (id, key, val) => setRenglones(prev => prev.map(r => r.id === id ? {
+    ...r,
+    [key]: val,
+    ...(key === "descr" ? { market_reference: null } : {}),
+  } : r));
   const catalogMatches = (query) => {
-    const normalized = String(query || "").trim().toLowerCase();
-    if (normalized.length < 2) return [];
+    const tokens = searchTokens(query);
+    if (!tokens.length) return [];
     return catalog
-      .filter((product) => [product.name, product.line, product.supplier, product.sku, product.brand, product.speech]
-        .some((value) => value?.toLowerCase().includes(normalized)))
+      .map(product => ({
+        product,
+        score: Math.max(
+          fieldScore(product.name, tokens, 120),
+          fieldScore(product.sku, tokens, 110),
+          fieldScore(product.brand, tokens, 90),
+          fieldScore(product.line, tokens, 70),
+          fieldScore(product.supplier, tokens, 60),
+        ),
+      }))
+      .filter(match => match.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(match => match.product)
       .slice(0, 6);
   };
   const selectCatalogProduct = (rowId, product) => {
@@ -289,11 +371,33 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       empresa: product.supplier || row.empresa,
       codigo: product.sku || row.codigo,
       marca: product.brand || product.line || row.marca,
-      descr: product.name || row.descr,
+      descr: product.speech || product.name || row.descr,
       costo: product.base_price ? String(product.base_price) : row.costo,
+      market_reference: null,
     } : row));
     setCatalogOpenId(null);
-    debouncedFetchPriceIntel(rowId, product.name || "");
+    debouncedFetchPriceIntel(rowId, product.speech || product.name || "");
+  };
+  const selectMarketReference = (rowId, reference) => {
+    setRenglones(prev => prev.map(row => row.id === rowId ? {
+      ...row,
+      descr: reference.description,
+      market_reference: {
+        description: reference.description,
+        suggested: reference.suggested,
+        min_market: reference.minMarket,
+        company: reference.minRow?.empresa || "",
+        institution: reference.minRow?.tenders?.institution || "",
+        date: reference.minRow?.tenders?.end_date || "",
+        tender_id: reference.minRow?.tender_id || null,
+        refs: reference.refs,
+      },
+    } : row));
+    setPriceIntel(prev => ({
+      ...prev,
+      [rowId]: { ...(prev[rowId] || {}), loading: false, selected: reference },
+    }));
+    setCatalogOpenId(null);
   };
   const addR    = () => setRenglones(prev => [...prev, emptyR()]);
   const removeR = (id) => {
@@ -323,6 +427,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         iva:String(r.iva), markup:String(r.markup), tcInd:r.tcInd||"",
         modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
         catalog_product_id:r.catalog_product_id||null,
+        market_reference:r.market_reference||null,
       })),
       total_general: totalGeneral,
       updated_at: new Date().toISOString(),
@@ -493,6 +598,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       cant:r.cant||1, moneda:r.moneda||"USD", iva:String(r.iva||"10.5"), markup:String(r.markup||"2"),
       tcInd:r.tcInd||"", modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
       catalog_product_id:r.catalog_product_id||null,
+      market_reference:r.market_reference||null,
     })) : [emptyR()]);
     setShowHistorial(false);
     showToast(`Cotización #${data.quote_num_formatted||"?"} cargada`);
@@ -763,6 +869,12 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
         {renglones.map((r,idx) => {
           const calc = calcR(r, parseN(tc));
+          const catalogSuggestions = catalogMatches(r.descr);
+          const intel = priceIntel[r.id];
+          const marketSuggestions = intel?.suggestions || [];
+          const showSuggestions = catalogOpenId === r.id && (
+            catalogSuggestions.length > 0 || marketSuggestions.length > 0 || intel?.loading
+          );
           return (
             <div key={r.id} className="cot-renglon">
               <div className="cot-renglon__header">
@@ -788,39 +900,71 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                   <div className="cot-field" style={{marginTop:10}}><label>Descripción del producto</label>
                     <div className="cot-catalog-field">
                       <textarea rows={3} value={r.descr} onFocus={()=>setCatalogOpenId(r.id)} onChange={e=>{updateR(r.id,"descr",e.target.value);setCatalogOpenId(r.id);debouncedFetchPriceIntel(r.id,e.target.value);}} placeholder="Descripción completa del producto"/>
-                      {catalogOpenId === r.id && catalogMatches(r.descr).length > 0 && (
+                      {showSuggestions && (
                         <div className="cot-catalog-menu">
-                          <span className="cot-catalog-menu__title">Productos del Share Kit</span>
-                          {catalogMatches(r.descr).map(product => (
-                            <button type="button" key={product.id} onClick={()=>selectCatalogProduct(r.id, product)}>
-                              <strong>{product.name}</strong>
-                              <small>{[product.sku, product.brand || product.line, product.base_price ? `Base ${fARS(product.base_price)}` : ""].filter(Boolean).join(" · ")}</small>
-                            </button>
-                          ))}
+                          {catalogSuggestions.length > 0 && (
+                            <section>
+                              <span className="cot-catalog-menu__title">Catálogo interno · Share Kit</span>
+                              {catalogSuggestions.map(product => (
+                                <button type="button" key={product.id} onClick={()=>selectCatalogProduct(r.id, product)}>
+                                  <strong>{product.name}</strong>
+                                  <small>{[product.sku, product.brand || product.line, product.base_price ? `Costo base ${fARS(product.base_price)}` : ""].filter(Boolean).join(" · ")}</small>
+                                  {product.speech && <em>{product.speech}</em>}
+                                </button>
+                              ))}
+                            </section>
+                          )}
+                          {(intel?.loading || marketSuggestions.length > 0) && (
+                            <section className="cot-market-menu">
+                              <span className="cot-catalog-menu__title">Inteligencia de mercado · descripciones históricas</span>
+                              {intel?.loading ? (
+                                <p className="cot-market-menu__loading">Buscando referencias comparables…</p>
+                              ) : marketSuggestions.map(reference => (
+                                <button type="button" key={reference.key} onClick={()=>selectMarketReference(r.id, reference)}>
+                                  <strong>{reference.description}</strong>
+                                  <small>
+                                    {[
+                                      `Sugerido ${fARS(reference.suggested)}`,
+                                      `Base ${fmtDate(reference.minRow?.tenders?.end_date)}`,
+                                      reference.minRow?.tenders?.institution,
+                                      reference.minRow?.empresa,
+                                      `${reference.refs} ref.`,
+                                    ].filter(Boolean).join(" · ")}
+                                  </small>
+                                </button>
+                              ))}
+                            </section>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
                   {(() => {
-                    const intel = priceIntel[r.id];
                     if (!intel) return null;
                     if (intel.loading) return <div className="cot-pi-loading">Consultando inteligencia de precios…</div>;
-                    if (!intel.minMarket) return null;
-                    const status = getPriceStatus(calc?.pvARSc, intel.minMarket);
+                    const selected = intel.selected;
+                    if (!selected?.minMarket) return marketSuggestions.length
+                      ? <div className="cot-pi-hint">Seleccioná una referencia histórica para consultar precio sugerido, fecha y origen.</div>
+                      : null;
+                    const status = getPriceStatus(calc?.pvARSc, selected.minMarket);
                     const labels = { ok:"✅ Competitivo", cerca:"⚠ Revisar precio", riesgo:"🔴 Riesgo precio" };
                     return (
                       <div className={`cot-pi-badge cot-pi-badge--${status || "neutral"}`}>
                         <div className="cot-pi-head">
                           <span className="cot-pi-status">{labels[status] || "📊 Referencia mercado"}</span>
-                          <span className="cot-pi-refs">{intel.refs} referencias de mercado</span>
+                          <span className="cot-pi-refs">{selected.refs} referencias comparables</span>
                         </div>
+                        <p className="cot-pi-description">{selected.description}</p>
                         <div className="cot-pi-data">
-                          <span>Mín. mercado <strong>{fARS(intel.minMarket)}</strong></span>
-                          {intel.lastOwn && <span>Última propia <strong>{fARS(intel.lastOwn)}</strong></span>}
-                          <span>Sugerido <strong>{fARS(intel.suggested)}</strong></span>
+                          <span>Mín. mercado <strong>{fARS(selected.minMarket)}</strong></span>
+                          <span>Fecha base <strong>{fmtDate(selected.minRow?.tenders?.end_date)}</strong></span>
+                          <span>Origen <strong>{selected.minRow?.tenders?.institution || "Sin institución"}</strong></span>
+                          <span>Empresa <strong>{selected.minRow?.empresa || "Sin empresa"}</strong></span>
+                          {selected.lastOwn && <span>Última propia <strong>{fARS(selected.lastOwn)} · {fmtDate(selected.lastOwnRow?.tenders?.end_date)}</strong></span>}
+                          <span>Sugerido <strong>{fARS(selected.suggested)}</strong></span>
                         </div>
-                        <button type="button" className="cot-pi-use" onClick={() => useSuggestedPrice(r.id, intel.suggested)}>
-                          Usar precio sugerido · {fARS(intel.suggested)}
+                        <button type="button" className="cot-pi-use" onClick={() => applySuggestedPrice(r.id, selected.suggested)}>
+                          Usar precio sugerido · {fARS(selected.suggested)}
                         </button>
                       </div>
                     );
