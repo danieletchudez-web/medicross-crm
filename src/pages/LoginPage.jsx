@@ -36,10 +36,16 @@ function makeCaptchaQuestion() {
   return { label: `${a} + ${b}`, answer: String(a + b) };
 }
 
-export default function LoginPage() {
-  const [mode, setMode]         = useState("login");
+function hasRecoveryIntent() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("recovery") === "1" || window.location.hash.includes("type=recovery");
+}
+
+export default function LoginPage({ initialMode, onRecoveryComplete }) {
+  const [mode, setMode]         = useState(() => initialMode || (hasRecoveryIntent() ? "recovery" : "login"));
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading]   = useState(false);
   const [message, setMessage]   = useState(null);
@@ -49,11 +55,11 @@ export default function LoginPage() {
   const needsCaptcha = ["login", "register", "reset"].includes(mode);
   const captchaOk = captchaAnswer.trim() === captchaQuestion.answer;
   const strongPassword = useMemo(() => isStrongPassword(password), [password]);
+  const passwordConfirmed = password.length > 0 && password === confirmPassword;
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) setMode("recovery");
-  }, []);
+    if (initialMode === "recovery" || hasRecoveryIntent()) setMode("recovery");
+  }, [initialMode]);
 
   useEffect(() => {
     setCaptchaAnswer("");
@@ -140,8 +146,10 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
 
+    const recoveryUrl = new URL(window.location.origin);
+    recoveryUrl.searchParams.set("recovery", "1");
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: recoveryUrl.toString(),
     });
 
     if (error) {
@@ -161,6 +169,19 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
 
+    if (!passwordConfirmed) {
+      setMessage({ type: "error", text: "Las contraseñas no coinciden." });
+      setLoading(false);
+      return;
+    }
+
+    const { data: { session: recoverySession } } = await supabase.auth.getSession();
+    if (!recoverySession) {
+      setMessage({ type: "error", text: "El enlace venció o ya fue utilizado. Solicitá un nuevo email de recuperación." });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
@@ -169,9 +190,13 @@ export default function LoginPage() {
       return;
     }
 
-    setMessage({ type: "success", text: "Contraseña actualizada correctamente." });
+    setMessage({ type: "success", text: "Contraseña actualizada correctamente. Ya podés ingresar con tu nueva clave." });
     setLoading(false);
-    setTimeout(() => { window.location.href = window.location.origin; }, 1500);
+    setTimeout(async () => {
+      await supabase.auth.signOut();
+      onRecoveryComplete?.();
+      window.location.replace(window.location.origin);
+    }, 1500);
   }
 
   const titles = {
@@ -272,8 +297,9 @@ export default function LoginPage() {
         {mode === "recovery" && (
           <form onSubmit={handleNewPassword} style={s.form}>
             <input type="password" placeholder="Nueva contraseña segura" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} style={s.input} />
+            <input type="password" placeholder="Repetí la nueva contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={10} style={s.input} />
             <PasswordChecklist password={password} />
-            <button style={s.button} disabled={loading || !strongPassword}>{loading ? "Guardando..." : "Guardar nueva contraseña"}</button>
+            <button style={s.button} disabled={loading || !strongPassword || !passwordConfirmed}>{loading ? "Guardando..." : "Guardar nueva contraseña"}</button>
           </form>
         )}
 

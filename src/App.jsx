@@ -62,6 +62,11 @@ function canOpenPageForProfile(profile, pageId, isMobile = false) {
   return canOpenModule(profile, pageId, isMobile);
 }
 
+function hasPasswordRecoveryIntent() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("recovery") === "1" || window.location.hash.includes("type=recovery");
+}
+
 function buildPendingProfile(user, reason = "profile_missing") {
   return {
     id: user?.id || null,
@@ -118,6 +123,7 @@ export default function App() {
   const [crmData,      setCrmData]      = useState(null);
   const [transitionKey, setTransitionKey] = useState(0);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(() => hasPasswordRecoveryIntent());
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const routeLoadingTimer = useRef(null);
   // Pages that have been visited at least once (stay mounted forever after)
@@ -126,7 +132,12 @@ export default function App() {
   useEffect(() => {
     init();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, s) => { setSession(s); if (s?.user) loadProfile(s.user); else setProfile(null); }
+      async (event, s) => {
+        if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
+        setSession(s);
+        if (s?.user) loadProfile(s.user);
+        else setProfile(null);
+      }
     );
     return () => {
       subscription.unsubscribe();
@@ -233,6 +244,10 @@ export default function App() {
   }
 
   if (loading) return <FullPageLoader label="Trabajando…" />;
+
+  if (passwordRecovery) {
+    return <LoginPage initialMode="recovery" onRecoveryComplete={() => setPasswordRecovery(false)} />;
+  }
 
   if (!session) return <LoginPage />;
 
