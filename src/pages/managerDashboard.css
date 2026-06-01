@@ -149,7 +149,6 @@
   flex-shrink: 0;
 }
 .dash-comparison__actions button,
-.dash-metrics-toggle,
 .dash-detail-gate button,
 .dash-exec-action {
   border: 1px solid rgba(37,99,235,.18);
@@ -163,7 +162,6 @@
   transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
 }
 .dash-comparison__actions button:hover,
-.dash-metrics-toggle:hover,
 .dash-detail-gate button:hover,
 .dash-exec-action:hover {
   border-color: rgba(37,99,235,.36);
@@ -421,6 +419,7 @@
   flex: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: stretch;
   gap: 8px;
   min-width: 0;
 }
@@ -480,6 +479,7 @@
   box-shadow: var(--shadow-xs);
   padding: 13px 14px;
   display: flex;
+  align-items: center;
   gap: 12px;
   min-width: 0;
   min-height: 84px;
@@ -827,9 +827,6 @@
   align-items: center;
   gap: 8px;
 }
-.dash-metrics-toggle {
-  padding: 7px 11px;
-}
 .dash-kpi-toggle {
   display: inline-flex;
   align-items: center;
@@ -953,7 +950,6 @@
   .dash-next-action__body { align-items: flex-start; }
   .dash-kpi-section__head { align-items: flex-start; flex-direction: column; }
   .dash-kpi-section__controls { align-items: stretch; flex-direction: column; width: 100%; }
-  .dash-metrics-toggle { width: 100%; }
   .dash-kpi-toggle { width: 100%; justify-content: space-between; }
   .dash-kpi-toggle button { flex: 1; text-align: center; }
   .dash-primary-kpis       { grid-template-columns: repeat(2, 1fr); gap: 8px; }
