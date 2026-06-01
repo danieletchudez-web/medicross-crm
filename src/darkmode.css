@@ -1158,7 +1158,6 @@
 }
 
 [data-theme="dark"] .dash-exec-action,
-[data-theme="dark"] .dash-metrics-toggle,
 [data-theme="dark"] .dash-comparison__actions button,
 [data-theme="dark"] .dash-detail-gate button,
 [data-theme="dark"] .dash-hero-cta {
@@ -1168,7 +1167,6 @@
 }
 
 [data-theme="dark"] .dash-exec-action:hover,
-[data-theme="dark"] .dash-metrics-toggle:hover,
 [data-theme="dark"] .dash-comparison__actions button:hover,
 [data-theme="dark"] .dash-detail-gate button:hover,
 [data-theme="dark"] .dash-hero-cta:hover {

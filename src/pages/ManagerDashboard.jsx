@@ -230,7 +230,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
   const [campaigns, setCampaigns]         = useState([]);
   const [loading, setLoading]             = useState(true);
   const [dashboardMode, setDashboardMode] = useState(() => localStorage.getItem("medicross-dashboard-mode") || "executive");
-  const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [comparisonExpanded, setComparisonExpanded] = useState(false);
   const [comparisonPeriod, setComparisonPeriod] = useState("month");
 
@@ -431,7 +430,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
     }).length
   ), [visits]);
 
-  const showOperationalMetrics = dashboardMode === "complete" || metricsExpanded;
   const showDetailedPanels = dashboardMode === "complete";
 
   function pipelineByStage() {
@@ -677,11 +675,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
               <strong>Métricas operativas</strong>
             </div>
             <div className="dash-kpi-section__controls">
-              {dashboardMode === "executive" && (
-                <button className="dash-metrics-toggle" onClick={() => setMetricsExpanded((expanded) => !expanded)}>
-                  {metricsExpanded ? "Ocultar métricas" : "Ver métricas"}
-                </button>
-              )}
               <div className="dash-kpi-toggle" role="group" aria-label="Nivel de detalle del dashboard">
                 <button
                   type="button"
@@ -701,10 +694,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             </div>
           </div>
 
-          {showOperationalMetrics && (
-            <>
-              {/* FILA 2 — KPIs secundarios */}
-              <section className="dash-kpi-grid">
+          {/* FILA 2 — KPIs secundarios */}
+          <section className="dash-kpi-grid">
                 <Kpi label="Opps. abiertas"   value={metrics.openOpps}   tooltip="Cantidad de oportunidades que no están Ganadas ni Perdidas. Refleja el tamaño activo del pipeline."/>
                 <Kpi label="Hot deals"        value={metrics.hotDeals}   accent="amber" tooltip="Oportunidades con probabilidad de cierre ≥70%. Son las más cercanas a convertirse en venta. Priorizalas esta semana."/>
                 <Kpi label="Sin próx. acción" value={metrics.noAction}   accent="red"   tooltip="Oportunidades abiertas sin próxima acción definida. Si no hay acción planificada, el negocio se enfría. Asigná un paso concreto a cada una."/>
@@ -713,10 +704,10 @@ export default function ManagerDashboard({ profile, onNavigate }) {
                 <Kpi label="Ticket promedio"  value={compactMoney(metrics.avgDeal)} tooltip="Monto promedio por oportunidad abierta. Pipeline total ÷ cantidad de oportunidades abiertas."/>
                 <Kpi label="Días en pipeline" value={`${metrics.avgDaysInPipeline}d`} tooltip="Promedio de días que llevan abiertas las oportunidades desde su creación. Ciclos muy largos pueden indicar estancamiento."/>
                 <Kpi label="Con probabilidad" value={`${metrics.forecastRatio}%`} accent={metrics.forecastRatio < 50 ? "red" : metrics.forecastRatio < 80 ? "amber" : undefined} tooltip="Porcentaje de oportunidades abiertas que tienen cargado un % de probabilidad. Sin probabilidad no hay forecast confiable."/>
-              </section>
+          </section>
 
-              {/* FILA 3 — Insights */}
-              <section className="dash-insights-grid">
+          {/* FILA 3 — Insights */}
+          <section className="dash-insights-grid">
                 <InsightCard
                   label="Conversión al pipeline"
                   value={`${metrics.convRate}%`}
@@ -745,9 +736,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
                   tone="blue"
                   tooltip="Total de visitas comerciales registradas en los últimos 7 días por todo el equipo. Refleja el nivel de actividad y presencia en el mercado."
                 />
-              </section>
-            </>
-          )}
+          </section>
         </div>
 
         {showDetailedPanels ? (
