@@ -462,6 +462,7 @@
 .dash-exec-action {
   width: fit-content;
   margin-top: 12px;
+  align-self: center;
   border-color: #185fa5;
   background: #185fa5;
   color: #ffffff;
