@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
@@ -106,6 +106,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [catalog,        setCatalog]       = useState([]);
   const [catalogOpenId,  setCatalogOpenId] = useState(null);
   const [expirationDays, setExpirationDays] = useState(30);
+  const [priceIntel,    setPriceIntel]    = useState({});
+  const priceTimers = useRef({});
 
   useEffect(() => {
     loadVendedores();
@@ -174,6 +176,52 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       .maybeSingle();
     const configured = Number(data?.value?.days);
     if (configured > 0) setExpirationDays(configured);
+  }
+
+  /* ── Price Intelligence ── */
+  function getPriceStatus(pvARSc, minMarket) {
+    if (!pvARSc || !minMarket) return null;
+    const diff = (pvARSc - minMarket) / minMarket * 100;
+    if (diff <= 0) return "ok";
+    if (diff <= 8) return "cerca";
+    return "riesgo";
+  }
+
+  async function fetchPriceIntel(rowId, descr) {
+    if (!descr || descr.trim().length < 3) {
+      setPriceIntel(prev => { const n = {...prev}; delete n[rowId]; return n; });
+      return;
+    }
+    setPriceIntel(prev => ({ ...prev, [rowId]: { loading: true } }));
+    const { data } = await supabase
+      .from("tender_comparativas")
+      .select("precio_unitario,empresa,es_nuestra_oferta")
+      .ilike("descripcion", `%${descr.trim()}%`)
+      .limit(60);
+    const valids = (data || []).filter(r => Number(r.precio_unitario) >= 1);
+    if (!valids.length) {
+      setPriceIntel(prev => ({ ...prev, [rowId]: { loading: false, refs: 0 } }));
+      return;
+    }
+    const prices  = valids.map(r => Number(r.precio_unitario));
+    const ownRows = valids.filter(r => r.es_nuestra_oferta);
+    const minMarket = Math.min(...prices);
+    const lastOwn   = ownRows.length ? Math.max(...ownRows.map(r => Number(r.precio_unitario))) : null;
+    const suggested = Math.round(minMarket * 1.02);
+    setPriceIntel(prev => ({ ...prev, [rowId]: { loading: false, minMarket, lastOwn, suggested, refs: valids.length } }));
+  }
+
+  function debouncedFetchPriceIntel(rowId, descr) {
+    clearTimeout(priceTimers.current[rowId]);
+    priceTimers.current[rowId] = setTimeout(() => fetchPriceIntel(rowId, descr), 650);
+  }
+
+  function useSuggestedPrice(rowId, suggested) {
+    setRenglones(prev => prev.map(r => r.id === rowId
+      ? { ...r, modoManual: "manual", pvManual: String(suggested) }
+      : r
+    ));
+    showToast("Precio sugerido de mercado aplicado ✓");
   }
 
   async function getNextQuoteNumber() {
@@ -245,6 +293,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       costo: product.base_price ? String(product.base_price) : row.costo,
     } : row));
     setCatalogOpenId(null);
+    debouncedFetchPriceIntel(rowId, product.name || "");
   };
   const addR    = () => setRenglones(prev => [...prev, emptyR()]);
   const removeR = (id) => {
@@ -738,7 +787,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                   </div>
                   <div className="cot-field" style={{marginTop:10}}><label>Descripción del producto</label>
                     <div className="cot-catalog-field">
-                      <textarea rows={3} value={r.descr} onFocus={()=>setCatalogOpenId(r.id)} onChange={e=>{updateR(r.id,"descr",e.target.value);setCatalogOpenId(r.id);}} placeholder="Descripción completa del producto"/>
+                      <textarea rows={3} value={r.descr} onFocus={()=>setCatalogOpenId(r.id)} onChange={e=>{updateR(r.id,"descr",e.target.value);setCatalogOpenId(r.id);debouncedFetchPriceIntel(r.id,e.target.value);}} placeholder="Descripción completa del producto"/>
                       {catalogOpenId === r.id && catalogMatches(r.descr).length > 0 && (
                         <div className="cot-catalog-menu">
                           <span className="cot-catalog-menu__title">Productos del Share Kit</span>
@@ -752,6 +801,30 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                       )}
                     </div>
                   </div>
+                  {(() => {
+                    const intel = priceIntel[r.id];
+                    if (!intel) return null;
+                    if (intel.loading) return <div className="cot-pi-loading">Consultando inteligencia de precios…</div>;
+                    if (!intel.minMarket) return null;
+                    const status = getPriceStatus(calc?.pvARSc, intel.minMarket);
+                    const labels = { ok:"✅ Competitivo", cerca:"⚠ Revisar precio", riesgo:"🔴 Riesgo precio" };
+                    return (
+                      <div className={`cot-pi-badge cot-pi-badge--${status || "neutral"}`}>
+                        <div className="cot-pi-head">
+                          <span className="cot-pi-status">{labels[status] || "📊 Referencia mercado"}</span>
+                          <span className="cot-pi-refs">{intel.refs} referencias de mercado</span>
+                        </div>
+                        <div className="cot-pi-data">
+                          <span>Mín. mercado <strong>{fARS(intel.minMarket)}</strong></span>
+                          {intel.lastOwn && <span>Última propia <strong>{fARS(intel.lastOwn)}</strong></span>}
+                          <span>Sugerido <strong>{fARS(intel.suggested)}</strong></span>
+                        </div>
+                        <button type="button" className="cot-pi-use" onClick={() => useSuggestedPrice(r.id, intel.suggested)}>
+                          Usar precio sugerido · {fARS(intel.suggested)}
+                        </button>
+                      </div>
+                    );
+                  })()}
                   <div className="cot-divider"/>
                   <div className="cot-grid-3">
                     <div className="cot-field"><label>Moneda</label>

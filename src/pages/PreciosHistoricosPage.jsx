@@ -113,6 +113,8 @@ function saveBusqueda(q) {
 }
 
 function MarketEvolutionChart({ data }) {
+  const [hovered, setHovered] = useState(null);
+
   if (!data || data.length === 0) {
     return (
       <div className="ph-empty-chart">
@@ -146,21 +148,29 @@ function MarketEvolutionChart({ data }) {
   }
 
   const W = 760;
-  const H = 260;
-  const PAD_X = 46;
-  const PAD_Y = 28;
+  const H = 280;
+  const PAD_X = 74;
+  const PAD_Y = 30;
+  const CHART_W = W - PAD_X - 16;
+  const CHART_H = H - PAD_Y * 2;
   const seriesKeys = ["min", "avg", "max", "own"];
+
   const values = data
     .flatMap(point => seriesKeys.map(key => point[key]))
     .filter(value => Number.isFinite(value) && value > 0);
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
-  const range = maxVal - minVal || 1;
+  const range  = maxVal - minVal || 1;
 
-  const xFor = index => PAD_X + (index / Math.max(data.length - 1, 1)) * (W - PAD_X * 2);
+  const xFor = index => PAD_X + (index / Math.max(data.length - 1, 1)) * CHART_W;
   const yFor = value => {
     if (!Number.isFinite(value) || value <= 0) return null;
-    return PAD_Y + (1 - (value - minVal) / range) * (H - PAD_Y * 2);
+    return PAD_Y + (1 - (value - minVal) / range) * CHART_H;
+  };
+  const fmtAxis = n => {
+    if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000)    return `$${Math.round(n / 1000)}K`;
+    return `$${Math.round(n)}`;
   };
   const pathFor = key => data
     .map((point, index) => {
@@ -168,36 +178,121 @@ function MarketEvolutionChart({ data }) {
       if (y === null) return null;
       return `${index === 0 ? "M" : "L"} ${xFor(index).toFixed(1)} ${y.toFixed(1)}`;
     })
-    .filter(Boolean)
-    .join(" ");
-  const colors = {
-    min: "#10b981",
-    avg: "#3b82f6",
-    max: "#ef4444",
-    own: "#0f2444",
+    .filter(Boolean).join(" ");
+
+  const areaFor = key => {
+    const pts = data.map((point, index) => {
+      const y = yFor(point[key]);
+      return y === null ? null : { x: xFor(index), y };
+    }).filter(Boolean);
+    if (pts.length < 2) return "";
+    const top    = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+    const bottom = `L ${pts[pts.length - 1].x.toFixed(1)} ${(PAD_Y + CHART_H).toFixed(1)} L ${pts[0].x.toFixed(1)} ${(PAD_Y + CHART_H).toFixed(1)} Z`;
+    return `${top} ${bottom}`;
   };
+
+  const colors = { min: "#10b981", avg: "#3b82f6", max: "#ef4444", own: "#0f2444" };
+
+  // Trend calculation
+  const firstMin = data[0]?.min;
+  const lastMin  = data[data.length - 1]?.min;
+  const trendPct = firstMin && lastMin ? Math.round((lastMin - firstMin) / firstMin * 100) : null;
+  const trendDir = trendPct === null ? null : trendPct > 3 ? "up" : trendPct < -3 ? "down" : "flat";
 
   return (
     <div className="ph-chart-wrap">
+      {trendPct !== null && (
+        <div className="ph-chart-trend">
+          <span className={`ph-chart-trend__pill ph-chart-trend__pill--${trendDir}`}>
+            {trendDir === "up" ? `↑ +${trendPct}%` : trendDir === "down" ? `↓ ${trendPct}%` : "→ Estable"}
+          </span>
+          <span className="ph-chart-trend__label">
+            variación del precio mínimo ({data[0].date.slice(0, 7)} → {data[data.length - 1].date.slice(0, 7)})
+          </span>
+        </div>
+      )}
       <svg className="ph-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Evolución de precios de mercado">
+        {/* Area fills */}
+        <path d={areaFor("min")} fill="#10b981" fillOpacity="0.07"/>
+        <path d={areaFor("own")} fill="#0f2444" fillOpacity="0.04"/>
+
+        {/* Y-axis labels + grid */}
         {[0, 1, 2, 3].map(i => {
-          const y = PAD_Y + i * ((H - PAD_Y * 2) / 3);
-          return <line key={i} x1={PAD_X} x2={W - PAD_X} y1={y} y2={y} className="ph-chart-grid"/>;
+          const y     = PAD_Y + i * (CHART_H / 3);
+          const value = maxVal - (i / 3) * range;
+          return (
+            <g key={i}>
+              <line x1={PAD_X} x2={PAD_X + CHART_W} y1={y} y2={y} className="ph-chart-grid"/>
+              <text x={PAD_X - 6} y={y + 4} textAnchor="end" className="ph-chart-yaxis">{fmtAxis(value)}</text>
+            </g>
+          );
         })}
+
+        {/* Series lines */}
         {seriesKeys.map(key => (
-          <path key={key} d={pathFor(key)} fill="none" stroke={colors[key]} strokeWidth={key === "own" ? 3 : 2.4}
+          <path key={key} d={pathFor(key)} fill="none" stroke={colors[key]}
+            strokeWidth={key === "own" ? 2.8 : 2}
+            strokeDasharray={key === "avg" ? "5 3" : undefined}
             strokeLinecap="round" strokeLinejoin="round" className="ph-chart-line"/>
         ))}
+
+        {/* Dots + hover */}
         {data.map((point, index) => (
           <g key={`${point.date}-${index}`}>
             {seriesKeys.map(key => {
               const y = yFor(point[key]);
               if (y === null) return null;
-              return <circle key={key} cx={xFor(index)} cy={y} r={key === "own" ? 4 : 3} fill={colors[key]} className="ph-chart-dot"/>;
+              const active = hovered?.date === point.date;
+              return (
+                <circle key={key} cx={xFor(index)} cy={y}
+                  r={active ? 5.5 : (key === "own" ? 4 : 3)}
+                  fill={colors[key]} className="ph-chart-dot"
+                  style={{ transition: "r 0.1s" }}
+                />
+              );
             })}
-            <text x={xFor(index)} y={H - 4} textAnchor="middle" className="ph-chart-label">{fmtDate(point.date)}</text>
+            {/* Invisible hover target */}
+            <rect x={xFor(index) - 14} y={PAD_Y} width={28} height={CHART_H}
+              fill="transparent" style={{ cursor: "crosshair" }}
+              onMouseEnter={() => setHovered(point)}
+              onMouseLeave={() => setHovered(null)}
+            />
+            <text x={xFor(index)} y={H - 5} textAnchor="middle" className="ph-chart-label">
+              {fmtDate(point.date)}
+            </text>
           </g>
         ))}
+
+        {/* Tooltip */}
+        {hovered && (() => {
+          const idx = data.findIndex(p => p.date === hovered.date);
+          const tx  = xFor(idx);
+          const rows = seriesKeys.map(key => ({
+            key, color: colors[key],
+            label: { min:"Mínimo", avg:"Promedio", max:"Máximo", own:"Nuestra empresa" }[key],
+            value: hovered[key],
+          })).filter(r => r.value);
+          const ttW = 148, ttH = 18 + rows.length * 17;
+          const ttX = tx + ttW + 14 > W ? tx - ttW - 8 : tx + 10;
+          const ttY = Math.max(PAD_Y, Math.min(H - PAD_Y - ttH - 4, PAD_Y + 10));
+          return (
+            <g style={{ pointerEvents: "none" }}>
+              <rect x={ttX} y={ttY} width={ttW} height={ttH} rx={7}
+                fill="white" stroke="#e2e8f0" strokeWidth={1}
+                style={{ filter: "drop-shadow(0 2px 8px rgba(15,23,42,0.13))" }}
+              />
+              <text x={ttX + 10} y={ttY + 13} className="ph-chart-tooltip-date">{fmtDate(hovered.date)}</text>
+              {rows.map((r, i) => (
+                <g key={r.key}>
+                  <circle cx={ttX + 11} cy={ttY + 22 + i * 17} r={4} fill={r.color}/>
+                  <text x={ttX + 20} y={ttY + 26 + i * 17} className="ph-chart-tooltip-row">
+                    {r.label}: {fullMoney(r.value)}
+                  </text>
+                </g>
+              ))}
+            </g>
+          );
+        })()}
       </svg>
       <div className="ph-chart-legend">
         <span><i style={{ background:"#10b981" }}/>Mínimo</span>

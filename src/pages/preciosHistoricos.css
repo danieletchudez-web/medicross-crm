@@ -569,8 +569,53 @@
 
 .ph-chart {
   width: 100%;
-  height: 260px;
+  height: 280px;
   display: block;
+}
+
+/* Y-axis labels */
+.ph-chart-yaxis {
+  fill: #94a3b8;
+  font-size: 9.5px;
+  font-family: "DM Mono", monospace;
+}
+
+/* Trend summary row above chart */
+.ph-chart-trend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ph-chart-trend__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: "DM Mono", monospace;
+}
+.ph-chart-trend__pill--up   { background: #fef2f2; color: #dc2626; }
+.ph-chart-trend__pill--down { background: #f0fdf4; color: #15803d; }
+.ph-chart-trend__pill--flat { background: #f8fafc; color: #475569; }
+.ph-chart-trend__label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+/* Tooltip text inside SVG */
+.ph-chart-tooltip-date {
+  fill: #64748b;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+.ph-chart-tooltip-row {
+  fill: #0f172a;
+  font-size: 9px;
+  font-family: "DM Sans", system-ui, sans-serif;
 }
 
 .ph-chart-grid {
