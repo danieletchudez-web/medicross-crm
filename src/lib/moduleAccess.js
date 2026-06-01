@@ -19,6 +19,26 @@ export function getEffectiveModules(profile, isMobile = false) {
 export function canOpenModule(profile, moduleId, isMobile = false) {
   if (profile?.role === "super_admin") return true;
   if (moduleId === "adminUsers") return false;
-  if (moduleId === "managerDashboard") return true;
   return getEffectiveModules(profile, isMobile).includes(moduleId);
+}
+
+const DEFAULT_MODULE_ORDER = [
+  "managerDashboard",
+  "sellerDashboard",
+  "todayActions",
+  "visits",
+  "calendar",
+  "accounts",
+  "opportunities",
+  "products",
+  "campaigns",
+  "tenders",
+  "cotizador",
+  "importer",
+  "salesAnalytics",
+];
+
+export function getFirstOpenModule(profile, isMobile = false) {
+  if (profile?.role === "super_admin") return "managerDashboard";
+  return DEFAULT_MODULE_ORDER.find(moduleId => canOpenModule(profile, moduleId, isMobile)) || null;
 }

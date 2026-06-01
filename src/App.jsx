@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
-import { canOpenModule } from "./lib/moduleAccess";
+import { canOpenModule, getFirstOpenModule } from "./lib/moduleAccess";
 
 import LoginPage    from "./pages/LoginPage";
 import CRMAssistant from "./components/CRMAssistant";
@@ -55,6 +55,12 @@ const FALLBACK_PROFILE = {
   is_active: false,
   allowed_modules: [],
 };
+
+function canOpenPageForProfile(profile, pageId, isMobile = false) {
+  if (["notifications","settings"].includes(pageId)) return true;
+  if (pageId === "accountDetail") return canOpenModule(profile, "accounts", isMobile);
+  return canOpenModule(profile, pageId, isMobile);
+}
 
 function buildPendingProfile(user, reason = "profile_missing") {
   return {
@@ -138,6 +144,20 @@ export default function App() {
     media.addEventListener?.("change", onChange);
     return () => media.removeEventListener?.("change", onChange);
   }, []);
+
+  useEffect(() => {
+    if (!session || !profile?.approved || profile.is_active === false) return;
+    if (canOpenPageForProfile(profile, page, isMobileViewport)) return;
+    const fallbackPage = getFirstOpenModule(profile, isMobileViewport) || "settings";
+    setPage(fallbackPage);
+    localStorage.setItem("crm_current_page", fallbackPage);
+    setMounted(prev => {
+      if (prev.has(fallbackPage)) return prev;
+      const next = new Set(prev);
+      next.add(fallbackPage);
+      return next;
+    });
+  }, [session, profile, page, isMobileViewport]);
 
   // Silently preload the most visited modules after auth resolves
   useEffect(() => {
@@ -240,8 +260,11 @@ export default function App() {
   }
 
   function navigate(p, data) {
+    const targetPage = canOpenPageForProfile(safeProfile, p, isMobileViewport)
+      ? p
+      : getFirstOpenModule(safeProfile, isMobileViewport) || "settings";
     setNavigateData(data || null);
-    if (p !== page) {
+    if (targetPage !== page) {
       setRouteLoading(true);
       if (routeLoadingTimer.current) clearTimeout(routeLoadingTimer.current);
       routeLoadingTimer.current = setTimeout(() => {
@@ -249,25 +272,25 @@ export default function App() {
         routeLoadingTimer.current = null;
       }, 520);
     }
-    setPage(p);
+    setPage(targetPage);
     setTransitionKey((key) => key + 1);
-    localStorage.setItem("crm_current_page", p);
+    localStorage.setItem("crm_current_page", targetPage);
     // Add to mounted set so the page stays alive after first visit
     setMounted(prev => {
-      if (prev.has(p)) return prev;
+      if (prev.has(targetPage)) return prev;
       const next = new Set(prev);
-      next.add(p);
+      next.add(targetPage);
       return next;
     });
   }
 
   function canOpenPage(pageId) {
-    if (["notifications","settings"].includes(pageId)) return true;
-    if (pageId === "accountDetail") return canOpenModule(safeProfile, "accounts", isMobileViewport);
-    return canOpenModule(safeProfile, pageId, isMobileViewport);
+    return canOpenPageForProfile(safeProfile, pageId, isMobileViewport);
   }
 
-  const currentPage = canOpenPage(page) ? page : "managerDashboard";
+  const currentPage = canOpenPage(page)
+    ? page
+    : getFirstOpenModule(safeProfile, isMobileViewport) || "settings";
   const pageProps   = { profile: safeProfile, onNavigate: navigate, pageKey: transitionKey };
 
   // A page should be in the DOM if it's the current page OR was previously visited

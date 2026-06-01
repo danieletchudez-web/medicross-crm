@@ -24,7 +24,7 @@ import {
   Target,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
-import { canOpenModule } from "../lib/moduleAccess";
+import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
 import useNotificationCount from "../hooks/useNotificationCount";
 import "./Sidebar.css";
 import logoImg from "../assets/logo.jpg";
@@ -168,6 +168,7 @@ export default function Sidebar({ profile, onNavigate }) {
   const canSee = module => {
     return canOpenModule(profile, module, isMobileViewport);
   };
+  const homeModule = getFirstOpenModule(profile, isMobileViewport) || "settings";
 
   async function logout() {
     await supabase.auth.signOut();
@@ -227,9 +228,9 @@ export default function Sidebar({ profile, onNavigate }) {
         {/* Brand / logo */}
         <div
           className="sidebar-brand"
-          onClick={() => handleNavigate("managerDashboard")}
+          onClick={() => handleNavigate(homeModule)}
           style={{ cursor: "pointer" }}
-          aria-label="Dashboard"
+          aria-label="Ir al inicio"
         >
           <img src={logoImg} alt="MediCross Productos Médicos" className="sidebar-brand__img" />
           <span className="sidebar-brand__mark">M</span>
