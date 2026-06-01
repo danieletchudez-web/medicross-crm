@@ -412,14 +412,21 @@
 .dash-insight__sub   { font-size: 11px; font-weight: 500; color: var(--text-tertiary); }
 
 .dash-decisions {
-  display: grid;
-  grid-template-columns: 260px 1fr;
+  display: flex;
   gap: 12px;
   align-items: stretch;
   margin-top: 2px;
 }
+.dash-decisions__cards {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 .dash-decisions__head {
-  grid-row: 1 / -1;
+  flex-shrink: 0;
+  width: 260px;
   background:
     linear-gradient(135deg, rgba(24,95,165,.08), transparent),
     #ffffff;
@@ -896,7 +903,8 @@
   .dash-primary-kpis  { grid-template-columns: repeat(2, 1fr); }
   .dash-kpi-grid      { grid-template-columns: repeat(4, 1fr); }
   .dash-insights-grid { grid-template-columns: repeat(2, 1fr); }
-  .dash-decisions     { grid-template-columns: 1fr; }
+  .dash-decisions     { flex-direction: column; }
+  .dash-decisions__head { width: 100%; }
   .dash-main-grid, .dash-chart-grid { grid-template-columns: 1fr; }
   .dash-bottom-grid   { grid-template-columns: 1fr; }
 }

@@ -656,15 +656,17 @@ export default function ManagerDashboard({ profile, onNavigate }) {
               Ejecutar acción
             </button>
           </div>
-          {todayDecisions.map((item, index) => (
-            <article key={`${item.title}-${index}`} className={`dash-decision-card dash-decision-card--${item.tone}`}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <strong>{item.title}</strong>
-                <p>{item.text}</p>
-              </div>
-            </article>
-          ))}
+          <div className="dash-decisions__cards">
+            {todayDecisions.map((item, index) => (
+              <article key={`${item.title}-${index}`} className={`dash-decision-card dash-decision-card--${item.tone}`}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         {/* KPIs COLAPSABLES — fila 2 y 3 */}
