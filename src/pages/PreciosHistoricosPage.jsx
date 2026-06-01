@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
-  ArrowRight, Building2, CalendarDays, Calculator, Clock3,
-  Database, FileSpreadsheet, History, ShieldCheck,
+  AlertTriangle, ArrowRight, Building2, CalendarDays, Calculator, CheckCircle2,
+  Clock3, Database, FileSpreadsheet, History, ShieldCheck, Upload, X,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
+import {
+  bacTenderNotes, comparativaSignature, isExternalBacTender, parseBacComparativaFile,
+} from "../lib/bacComparativa";
 import "./preciosHistoricos.css";
 
 function fmtDate(d) {
@@ -323,52 +326,55 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [marketSort, setMarketSort] = useState({ key: "fecha", dir: "desc" });
   const [marketPage, setMarketPage] = useState(1);
   const [analysisView, setAnalysisView] = useState("resumen");
+  const [bacPreview, setBacPreview] = useState(null);
+  const [bacImporting, setBacImporting] = useState(false);
+  const [bacSaving, setBacSaving] = useState(false);
   const inputRef   = useRef(null);
+  const bacFileRef = useRef(null);
   const debounceRef = useRef(null);
   const marketPageSize = 10;
+  const canImportBac = profile?.role === "super_admin" || profile?.role === "manager";
 
   useEffect(() => { setRecientes(getBusquedasRecientes()); }, []);
 
-  useEffect(() => {
-    async function loadLatestRows() {
-      setLatestLoading(true);
+  const loadLatestRows = useCallback(async () => {
+    setLatestLoading(true);
 
-      const { data: recentTenders, error: tendersError } = await supabase
-        .from("tenders")
-        .select("id")
-        .order("end_date", { ascending:false, nullsFirst:false })
-        .limit(40);
+    const { data: recentTenders, error: tendersError } = await supabase
+      .from("tenders")
+      .select("id")
+      .order("end_date", { ascending:false, nullsFirst:false })
+      .limit(40);
 
-      if (tendersError) console.error(tendersError);
-      const recentTenderIds = (recentTenders || []).map(tender => tender.id);
+    if (tendersError) console.error(tendersError);
+    const recentTenderIds = (recentTenders || []).map(tender => tender.id);
 
-      if (!recentTenderIds.length) {
-        setLatestRows([]);
-        setLatestLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("tender_comparativas")
-        .select(`
-          id, renglon, descripcion, empresa, es_nuestra_oferta,
-          precio_unitario, cantidad, total_ars, adjudicado, moneda,
-          tender_id,
-          tenders:tender_id (
-            id, institution, process_number, process_name,
-            end_date, jurisdiction, operational_status
-          )
-        `)
-        .in("tender_id", recentTenderIds)
-        .limit(500);
-
-      if (error) console.error(error);
-      setLatestRows(data || []);
+    if (!recentTenderIds.length) {
+      setLatestRows([]);
       setLatestLoading(false);
+      return;
     }
 
-    loadLatestRows();
+    const { data, error } = await supabase
+      .from("tender_comparativas")
+      .select(`
+        id, renglon, descripcion, empresa, es_nuestra_oferta,
+        precio_unitario, cantidad, total_ars, adjudicado, moneda,
+        tender_id,
+        tenders:tender_id (
+          id, institution, process_number, process_name,
+          end_date, jurisdiction, operational_status, notes
+        )
+      `)
+      .in("tender_id", recentTenderIds)
+      .limit(500);
+
+    if (error) console.error(error);
+    setLatestRows(data || []);
+    setLatestLoading(false);
   }, []);
+
+  useEffect(() => { loadLatestRows(); }, [loadLatestRows]);
 
   const buscar = useCallback(async (q = query) => {
     if (!q.trim()) return;
@@ -386,7 +392,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         tender_id,
         tenders:tender_id (
           id, institution, process_number, process_name,
-          end_date, jurisdiction, operational_status
+          end_date, jurisdiction, operational_status, notes
         )
       `)
       .ilike("descripcion", `%${q.trim()}%`)
@@ -417,6 +423,125 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   };
 
   const elegirSugerencia = (s) => { setQuery(s); buscar(s); };
+
+  function closeBacPreview() {
+    if (bacSaving) return;
+    setBacPreview(null);
+    if (bacFileRef.current) bacFileRef.current.value = "";
+  }
+
+  async function handleBacFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBacImporting(true);
+    try {
+      const preview = await parseBacComparativaFile(file, isOwnCompany);
+      setBacPreview(preview);
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo procesar el archivo BAC: " + error.message);
+      if (bacFileRef.current) bacFileRef.current.value = "";
+    }
+    setBacImporting(false);
+  }
+
+  function updateBacMetadata(field, value) {
+    setBacPreview((prev) => prev ? ({
+      ...prev,
+      metadata: { ...prev.metadata, [field]: value },
+    }) : prev);
+  }
+
+  async function confirmBacImport() {
+    if (!bacPreview) return;
+    const metadata = bacPreview.metadata;
+    if (!metadata.institution?.trim() || !metadata.processNumber?.trim() || !metadata.referenceDate) {
+      alert("Revisá institución, número de proceso y fecha de apertura antes de importar.");
+      return;
+    }
+
+    setBacSaving(true);
+    let createdTenderId = null;
+    try {
+      const normalizedInstitution = normalizeProductText(metadata.institution);
+      const { data: matchingTenders, error: lookupError } = await supabase
+        .from("tenders")
+        .select("id,institution,process_number,end_date,notes")
+        .eq("process_number", metadata.processNumber.trim());
+      if (lookupError) throw lookupError;
+
+      let tender = (matchingTenders || []).find((item) =>
+        normalizeProductText(item.institution) === normalizedInstitution
+      );
+
+      if (!tender) {
+        const payload = {
+          jurisdiction: metadata.jurisdiction?.trim() || "CABA",
+          institution: metadata.institution.trim(),
+          process_type: "Comparativa BAC",
+          process_number: metadata.processNumber.trim(),
+          tender_type: "Original",
+          process_name: metadata.processName?.trim() || `Comparativa BAC ${metadata.processNumber.trim()}`,
+          expedient_number: metadata.expedientNumber?.trim() || null,
+          detection_date: metadata.referenceDate,
+          end_date: metadata.referenceDate,
+          validity_status: "Finalizada",
+          operational_status: "Finalizada",
+          documentation_status: "Pendiente",
+          billing_status: "Pendiente",
+          delivery_status: "Pendiente",
+          priority: "Media",
+          notes: bacTenderNotes(bacPreview.fileName),
+          owner_id: profile?.id || null,
+          updated_at: new Date().toISOString(),
+        };
+        const { data, error } = await supabase.from("tenders").insert([payload]).select("id").single();
+        if (error) throw error;
+        tender = data;
+        createdTenderId = data.id;
+      }
+
+      const { data: existingRows, error: rowsError } = await supabase
+        .from("tender_comparativas")
+        .select("renglon,descripcion,empresa,precio_unitario,cantidad")
+        .eq("tender_id", tender.id);
+      if (rowsError) throw rowsError;
+
+      const known = new Set((existingRows || []).map(comparativaSignature));
+      const insertRows = bacPreview.rows
+        .filter((row) => !known.has(comparativaSignature(row)))
+        .map((row) => ({ ...row, tender_id: tender.id }));
+
+      if (insertRows.length) {
+        const { error } = await supabase.from("tender_comparativas").insert(insertRows);
+        if (error) throw error;
+      }
+
+      await supabase.from("tender_logs").insert([{
+        tender_id: tender.id,
+        action: "comparativa_bac",
+        description: `Comparativa BAC importada desde Inteligencia de Precios: ${bacPreview.fileName}. ${insertRows.length} referencias nuevas.`,
+        user_name: profile?.full_name || profile?.email || "Usuario",
+        created_at: new Date().toISOString(),
+      }]);
+
+      const duplicates = bacPreview.rows.length - insertRows.length + bacPreview.discardedDuplicates;
+      alert(insertRows.length
+        ? `Importación completada: ${insertRows.length} referencias agregadas${duplicates ? ` y ${duplicates} duplicadas omitidas` : ""}.`
+        : "El archivo ya estaba importado. No se agregaron referencias duplicadas.");
+      setBacPreview(null);
+      if (bacFileRef.current) bacFileRef.current.value = "";
+      await loadLatestRows();
+    } catch (error) {
+      console.error(error);
+      if (createdTenderId) {
+        await supabase.from("tender_comparativas").delete().eq("tender_id", createdTenderId);
+        await supabase.from("tenders").delete().eq("id", createdTenderId);
+      }
+      alert("No se pudo guardar la comparativa BAC: " + error.message);
+    }
+    setBacSaving(false);
+  }
 
   const latestQuotes = useMemo(() => {
     const grouped = {};
@@ -1002,12 +1127,22 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               Historial de precios por producto en todas las licitaciones cargadas
             </p>
           </div>
-          <button onClick={() => onNavigate("tenders")}
-            style={{padding:"7px 14px",borderRadius:8,border:"1px solid #e2e8f0",background:"#fff",
-              fontSize:12.5,fontWeight:500,cursor:"pointer",color:"#334155",fontFamily:"inherit",
-              display:"flex",alignItems:"center",gap:6}}>
-            ← Volver a Licitaciones
-          </button>
+          <div className="ph-header-actions">
+            {canImportBac && (
+              <>
+                <button className="ph-import-bac" type="button"
+                  onClick={() => bacFileRef.current?.click()} disabled={bacImporting}>
+                  <Upload size={15}/>
+                  {bacImporting ? "Leyendo archivo…" : "Subir comparativa BAC"}
+                </button>
+                <input ref={bacFileRef} type="file" accept=".xlsx,.xls"
+                  onChange={handleBacFile} style={{display:"none"}}/>
+              </>
+            )}
+            <button className="ph-back-button" type="button" onClick={() => onNavigate("tenders")}>
+              ← Volver a Licitaciones
+            </button>
+          </div>
         </div>
 
         {/* BUSCADOR */}
@@ -1220,10 +1355,16 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               <div className="ph-latest-empty">
                 <FileSpreadsheet size={25}/>
                 <strong>Sin comparativas recientes</strong>
-                <span>Importá un Excel BAC desde Licitaciones para comenzar a construir el historial.</span>
-                <button type="button" onClick={() => onNavigate("tenders")}>
-                  Ir a Licitaciones <ArrowRight size={15}/>
-                </button>
+                <span>Importá una comparativa oficial de BAC para comenzar a construir el historial de mercado.</span>
+                {canImportBac ? (
+                  <button type="button" onClick={() => bacFileRef.current?.click()}>
+                    Subir comparativa BAC <Upload size={15}/>
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => onNavigate("tenders")}>
+                    Ir a Licitaciones <ArrowRight size={15}/>
+                  </button>
+                )}
               </div>
             )}
 
@@ -1245,6 +1386,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                     <p>{shortText(quote.tender?.process_name || quote.products[0]?.description, 112)}</p>
 
                     <div className="ph-latest-card__meta">
+                      {isExternalBacTender(quote.tender) && <span className="ph-source-bac">Referencia BAC</span>}
                       <span>{quote.products.length} producto{quote.products.length !== 1 ? "s" : ""}</span>
                       <span>{quote.companiesCount} empresa{quote.companiesCount !== 1 ? "s" : ""}</span>
                       <span>{quote.rows.length} referencia{quote.rows.length !== 1 ? "s" : ""}</span>
@@ -1760,6 +1902,12 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                     {grupo.tender.jurisdiction}
                   </span>
                 )}
+                {isExternalBacTender(grupo.tender) && (
+                  <span style={{fontSize:10,background:"rgba(245,158,11,.2)",
+                    color:"#fde68a",padding:"2px 8px",borderRadius:20,fontWeight:800}}>
+                    Referencia BAC
+                  </span>
+                )}
                 <button onClick={() => onNavigate("tenders")}
                   style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(255,255,255,.25)",
                     background:"rgba(255,255,255,.12)",color:"#fff",fontSize:11,cursor:"pointer",
@@ -1879,6 +2027,110 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         ))}
 
       </div>
+
+      {bacPreview && (
+        <div className="ph-bac-backdrop" role="presentation"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) closeBacPreview(); }}>
+          <section className="ph-bac-modal" role="dialog" aria-modal="true" aria-labelledby="ph-bac-title">
+            <header className="ph-bac-modal__head">
+              <div>
+                <span className="ph-eyebrow"><FileSpreadsheet size={14}/> Comparativa oficial BAC</span>
+                <h3 id="ph-bac-title">Revisar importación de mercado</h3>
+                <p>{bacPreview.fileName}</p>
+              </div>
+              <button type="button" onClick={closeBacPreview} disabled={bacSaving}
+                aria-label="Cerrar vista previa"><X size={18}/></button>
+            </header>
+
+            <div className="ph-bac-modal__body">
+              <div className="ph-bac-notice">
+                <CheckCircle2 size={19}/>
+                <div>
+                  <strong>Se registrará como referencia externa BAC</strong>
+                  <span>No exige participación propia y alimenta Inteligencia de Precios sin modificar cotizaciones comerciales.</span>
+                </div>
+              </div>
+
+              <div className="ph-bac-fields">
+                <label>
+                  <span>Institución *</span>
+                  <input value={bacPreview.metadata.institution}
+                    onChange={(e) => updateBacMetadata("institution", e.target.value)}/>
+                </label>
+                <label>
+                  <span>Número de proceso *</span>
+                  <input value={bacPreview.metadata.processNumber}
+                    onChange={(e) => updateBacMetadata("processNumber", e.target.value)}/>
+                </label>
+                <label>
+                  <span>Fecha de apertura *</span>
+                  <input type="date" value={bacPreview.metadata.referenceDate}
+                    onChange={(e) => updateBacMetadata("referenceDate", e.target.value)}/>
+                </label>
+                <label>
+                  <span>Jurisdicción</span>
+                  <input value={bacPreview.metadata.jurisdiction}
+                    onChange={(e) => updateBacMetadata("jurisdiction", e.target.value)}/>
+                </label>
+                <label className="ph-bac-fields__wide">
+                  <span>Nombre del proceso</span>
+                  <input value={bacPreview.metadata.processName}
+                    onChange={(e) => updateBacMetadata("processName", e.target.value)}/>
+                </label>
+                <label className="ph-bac-fields__wide">
+                  <span>Expediente</span>
+                  <input value={bacPreview.metadata.expedientNumber}
+                    onChange={(e) => updateBacMetadata("expedientNumber", e.target.value)}/>
+                </label>
+              </div>
+
+              <div className="ph-bac-summary">
+                <article><strong>{bacPreview.rows.length}</strong><span>referencias válidas</span></article>
+                <article><strong>{bacPreview.companyCount}</strong><span>empresas detectadas</span></article>
+                <article><strong>{bacPreview.itemCount}</strong><span>renglones comparados</span></article>
+                <article>
+                  <strong>{bacPreview.discardedDuplicates}</strong>
+                  <span>duplicadas dentro del archivo</span>
+                </article>
+              </div>
+
+              <div className="ph-bac-preview">
+                <div className="ph-bac-preview__head">
+                  <strong>Vista previa de referencias</strong>
+                  <span>Primeras {Math.min(5, bacPreview.rows.length)} filas</span>
+                </div>
+                {bacPreview.rows.slice(0, 5).map((row, index) => (
+                  <div className="ph-bac-preview__row" key={`${comparativaSignature(row)}-${index}`}>
+                    <span>R{row.renglon || "—"}</span>
+                    <div>
+                      <strong>{row.empresa}</strong>
+                      <small>{shortText(row.descripcion, 92)}</small>
+                    </div>
+                    <b>{fullMoney(row.precio_unitario)}</b>
+                  </div>
+                ))}
+              </div>
+
+              {bacPreview.discardedDuplicates > 0 && (
+                <div className="ph-bac-warning">
+                  <AlertTriangle size={17}/>
+                  Se omitirán {bacPreview.discardedDuplicates} filas repetidas dentro del archivo.
+                </div>
+              )}
+            </div>
+
+            <footer className="ph-bac-modal__foot">
+              <button className="ph-bac-cancel" type="button" onClick={closeBacPreview} disabled={bacSaving}>
+                Cancelar
+              </button>
+              <button className="ph-bac-confirm" type="button" onClick={confirmBacImport} disabled={bacSaving}>
+                <Upload size={16}/>
+                {bacSaving ? "Importando…" : "Confirmar importación"}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
     </Layout>
   );
 }

@@ -9,10 +9,8 @@ import {
   Image,
   Paperclip,
   Pencil,
-  Play,
   RefreshCw,
   Search,
-  Square,
   Timer,
   Trash2,
   X,
@@ -114,13 +112,6 @@ function useMobile() {
   return isMobile;
 }
 
-function formatElapsed(totalSeconds) {
-  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-  const seconds = String(totalSeconds % 60).padStart(2, "0");
-  return `${hours}:${minutes}:${seconds}`;
-}
-
 function ContactPicker({ f, setF, accounts, onCreateContact }) {
   const account = accounts.find(item => item.id === f.account_id);
   const contacts = Array.isArray(account?.contacts) ? account.contacts : [];
@@ -218,28 +209,8 @@ function AttachmentPicker({ f, setF }) {
   );
 }
 
-function VisitTimer({ f, elapsed, onStart, onFinish }) {
-  const running = Boolean(f.started_at && !f.ended_at);
-  return (
-    <div className={`vf-timer ${running ? "vf-timer--running" : ""}`}>
-      <div className="vf-timer__readout">
-        <Timer size={17}/>
-        <div>
-          <span>Tiempo de visita</span>
-          <strong>{running ? formatElapsed(elapsed) : f.duration_minutes ? `${f.duration_minutes} min` : "Sin iniciar"}</strong>
-        </div>
-      </div>
-      {running ? (
-        <button type="button" className="vf-timer__btn vf-timer__btn--stop" onClick={onFinish}><Square size={13}/> Finalizar visita</button>
-      ) : (
-        <button type="button" className="vf-timer__btn" onClick={onStart}><Play size={13}/> Iniciar visita</button>
-      )}
-    </div>
-  );
-}
-
 /* ── VisitForm DESKTOP ─────────────────────────────────────────────── */
-function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial,onCreateContact,elapsed,onStartTimer,onFinishTimer}) {
+function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial,onCreateContact}) {
   return (
     <div className="vf-wrap">
       <div className="vf-section">
@@ -272,8 +243,6 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
           </div>
         </div>
       </div>
-
-      <VisitTimer f={f} elapsed={elapsed} onStart={onStartTimer} onFinish={onFinishTimer}/>
 
       <div className="vf-section">
         <span className="vf-section__label">Fecha, tipo y estado</span>
@@ -353,7 +322,7 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
 }
 
 /* ── VisitFormMobile ───────────────────────────────────────────────── */
-function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial,onCreateContact,elapsed,onStartTimer,onFinishTimer}) {
+function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,onToggleMaterial,onCreateContact}) {
   const [step, setStep] = useState(1);
   const stepLabels = ["¿Con quién?","¿Qué pasó?","¿Qué sigue?"];
   return (
@@ -397,7 +366,6 @@ function VisitFormMobile({f,setF,isEdit,onSubmit,onCancel,accounts,products,load
               <select value={f.priority} onChange={e=>setF({...f,priority:e.target.value})}>
                 {PRIORITY_OPTIONS.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
           </div>
-          <VisitTimer f={f} elapsed={elapsed} onStart={onStartTimer} onFinish={onFinishTimer}/>
           <div className="vf-actions">
             {onCancel&&<button type="button" className="vf-btn vf-btn--cancel" onClick={onCancel}>Cancelar</button>}
             <button type="button" className="vf-btn vf-btn--save" onClick={()=>setStep(2)}>Siguiente →</button>
@@ -474,27 +442,8 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
   const [attentionOnly,setAttentionOnly]= useState(false);
   const [quickOpen,    setQuickOpen]    = useState(false);
   const [quickForm,    setQuickForm]    = useState({account_id:"",product_id:"",result:""});
-  const [elapsed,      setElapsed]      = useState(0);
 
   useEffect(()=>{ loadData(); },[]);
-  useEffect(()=>{
-    const stored = localStorage.getItem("medicross_visit_timer");
-    if (!stored) return;
-    try {
-      const timer = JSON.parse(stored);
-      if (!timer.started_at) return;
-      setForm(current=>({...current,started_at:timer.started_at,ended_at:""}));
-    } catch { localStorage.removeItem("medicross_visit_timer"); }
-  },[]);
-
-  useEffect(()=>{
-    const startedAt = form.started_at;
-    if (!startedAt || form.ended_at) { setElapsed(0); return; }
-    const update = () => setElapsed(Math.max(0,Math.floor((Date.now()-new Date(startedAt).getTime())/1000)));
-    update();
-    const timer = window.setInterval(update,1000);
-    return () => window.clearInterval(timer);
-  },[form.ended_at,form.started_at]);
 
   async function loadData() {
     const [vRes,aRes,pRes] = await Promise.all([
@@ -532,7 +481,6 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
       try {
         const attachments = await uploadAttachments(data.id,form.attachments,form.pending_files);
         if (attachments.length) await supabase.from("visits").update({attachments}).eq("id",data.id);
-        localStorage.removeItem("medicross_visit_timer");
         setForm({...EMPTY_FORM,materials:[],present_contacts:[],attachments:[],pending_files:[]});
         setActiveTab("history");
         await loadData();
@@ -578,20 +526,6 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
     if (error) { alert("Error: "+error.message); return; }
     setAccounts(current=>current.map(item=>item.id===account.id?{...item,contacts}:item));
     setTargetForm({...targetForm,present_contacts:[...(targetForm.present_contacts||[]),contact],contact_name:""});
-  }
-
-  function startTimer(targetForm,setTargetForm) {
-    const started_at = new Date().toISOString();
-    localStorage.setItem("medicross_visit_timer",JSON.stringify({started_at}));
-    setTargetForm({...targetForm,started_at,ended_at:"",duration_minutes:""});
-  }
-
-  function finishTimer(targetForm,setTargetForm) {
-    if (!targetForm.started_at) return;
-    const ended_at = new Date().toISOString();
-    const duration_minutes = Math.max(1,Math.ceil((new Date(ended_at)-new Date(targetForm.started_at))/60000));
-    localStorage.removeItem("medicross_visit_timer");
-    setTargetForm({...targetForm,ended_at,duration_minutes});
   }
 
   function startEdit(v) {
@@ -767,10 +701,7 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
               <FormComponent f={form} setF={setForm} isEdit={false}
                 accounts={accounts} products={products} loading={loading}
                 onToggleMaterial={toggleMaterialNew}
-                onCreateContact={createContact}
-                elapsed={elapsed}
-                onStartTimer={()=>startTimer(form,setForm)}
-                onFinishTimer={()=>finishTimer(form,setForm)}/>
+                onCreateContact={createContact}/>
             </form>
           </section>
         )}
@@ -825,10 +756,7 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
                         onSubmit={()=>saveEdit(v.id)} onCancel={cancelEdit}
                         accounts={accounts} products={products} loading={loading}
                         onToggleMaterial={toggleMaterialEdit}
-                        onCreateContact={createContact}
-                        elapsed={0}
-                        onStartTimer={()=>startTimer(editForm,setEditForm)}
-                        onFinishTimer={()=>finishTimer(editForm,setEditForm)}/>
+                        onCreateContact={createContact}/>
                     ) : (
                       <>
                         {alert && (
