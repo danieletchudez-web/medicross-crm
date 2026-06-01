@@ -209,6 +209,27 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   }
 
   const totalGeneral = renglones.reduce((s, r) => s + (calcR(r, parseN(tc))?.sub || 0), 0);
+  const hasMeaningfulQuoteData = Boolean(
+    sourceTenderId ||
+    fechaApert.trim() ||
+    nroLicit.trim() ||
+    institucion.trim() ||
+    plazoVenta.trim() ||
+    mantOferta.trim() ||
+    formaCobro.trim() ||
+    renglones.some((row) => [
+      row.empresa,
+      row.renglon,
+      row.subitem,
+      row.codigo,
+      row.marca,
+      row.descr,
+      row.costo,
+      row.tcInd,
+      row.pvManual,
+      row.catalog_product_id,
+    ].some((value) => String(value || "").trim()))
+  );
 
   const updateR = (id, key, val) => setRenglones(prev => prev.map(r => r.id === id ? {...r, [key]: val} : r));
   const catalogMatches = (query) => {
@@ -370,6 +391,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   }
 
   async function saveCotizacion({ silent = false } = {}) {
+    if (!hasMeaningfulQuoteData) {
+      if (!silent) showToast("Completá al menos un dato de la cotización antes de guardar.", "err");
+      return { ok: false, reason: "empty_quote" };
+    }
     setSaving(true);
     try {
       if (docId) {
@@ -740,7 +765,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
             <button className="cot-btn cot-btn--ghost" onClick={abrirPapelera} style={{color:"#dc2626"}}>🗑 Papelera</button>
             <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>+ Nueva</button>
             <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>⬇ PDF</button>
-            <button className="cot-btn cot-btn--primary" onClick={guardar} disabled={saving}>
+            <button className="cot-btn cot-btn--primary" onClick={guardar} disabled={saving || !hasMeaningfulQuoteData} title={!hasMeaningfulQuoteData ? "Completá al menos un dato antes de guardar" : "Guardar cotización"}>
               {saving?"Guardando…":"💾 Guardar"}
             </button>
           </div>
@@ -951,7 +976,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
         <div className="cot-actions-bottom">
           <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>+ Nueva cotización</button>
           <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>⬇ Exportar PDF</button>
-          <button className="cot-btn cot-btn--primary" onClick={guardar} disabled={saving}>
+          <button className="cot-btn cot-btn--primary" onClick={guardar} disabled={saving || !hasMeaningfulQuoteData} title={!hasMeaningfulQuoteData ? "Completá al menos un dato antes de guardar" : "Guardar cotización"}>
             {saving?"Guardando…":"💾 Guardar cotización"}
           </button>
         </div>
