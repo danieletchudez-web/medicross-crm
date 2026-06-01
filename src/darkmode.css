@@ -520,6 +520,22 @@
 [data-theme="dark"] .admin-mobile-card  { background: #161b22 !important; border-color: #21262d !important; }
 [data-theme="dark"] .mobile-admin-row label { color: #484f58 !important; }
 
+/* ── Goals card (Metas comerciales) ─────────────────────────────────────── */
+[data-theme="dark"] .adm-goals-card    { background: #161b22 !important; border-color: #21262d !important; box-shadow: none !important; }
+[data-theme="dark"] .adm-goals-head h3 { color: #e6edf3 !important; }
+[data-theme="dark"] .adm-goals-head p  { color: #8b949e !important; }
+[data-theme="dark"] .adm-goals-head span,
+[data-theme="dark"] .adm-goal-field span { color: #484f58 !important; }
+[data-theme="dark"] .adm-goal-row      { background: #0d1117 !important; border-color: #21262d !important; }
+[data-theme="dark"] .adm-goal-row.pending { background: #1a1200 !important; border-color: #78350f !important; }
+[data-theme="dark"] .adm-goals-controls select,
+[data-theme="dark"] .adm-goals-controls input,
+[data-theme="dark"] .adm-goal-field input { background: #0d1117 !important; border-color: #21262d !important; color: #e6edf3 !important; }
+[data-theme="dark"] .adm-goals-controls select:focus,
+[data-theme="dark"] .adm-goals-controls input:focus,
+[data-theme="dark"] .adm-goal-field input:focus { border-color: #58a6ff !important; background: #161b22 !important; }
+[data-theme="dark"] .adm-discard-btn   { background: #21262d !important; border-color: #30363d !important; color: #8b949e !important; }
+
 /* ── Normalización final de modo oscuro ────────────────────────────────────
    Capa de cierre para módulos nuevos y componentes compartidos. Mantiene
    contraste alto sin cambiar estructura ni datos renderizados. */
