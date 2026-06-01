@@ -14,7 +14,7 @@
   transform: translateX(-50%);
   padding: 10px 22px; border-radius: 99px;
   font-size: 13px; font-weight: 600;
-  z-index: 2000; pointer-events: none; white-space: nowrap;
+  z-index: 6000; pointer-events: none; white-space: nowrap;
   animation: cotToastIn .25s ease;
   box-shadow: 0 4px 16px rgba(0,0,0,.15);
 }
@@ -335,6 +335,12 @@
   display: flex; align-items: center; gap: 7px; color: #64748b;
   font-size: 12px; font-weight: 600; white-space: nowrap;
 }
+.cot-template-feedback {
+  margin: 0; padding: 10px 16px; border-bottom: 1px solid rgba(15,36,68,.07);
+  font-size: 12px; font-weight: 600;
+}
+.cot-template-feedback--ok { background: #f0fdf4; color: #166534; }
+.cot-template-feedback--err { background: #fef2f2; color: #991b1b; }
 .cot-template-item {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
   padding: 13px 14px; margin-bottom: 8px; border: 1px solid rgba(15,36,68,.09);

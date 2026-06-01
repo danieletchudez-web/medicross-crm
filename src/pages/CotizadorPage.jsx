@@ -107,6 +107,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [templateGlobal,setTemplateGlobal]= useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [savingTemplate,   setSavingTemplate]   = useState(false);
+  const [templateFeedback, setTemplateFeedback] = useState(null);
   const [histSearch,    setHistSearch]    = useState("");
   const [loadingHist,   setLoadingHist]   = useState(false);
   const [catalog,        setCatalog]       = useState([]);
@@ -292,14 +293,20 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
   async function abrirTemplates() {
     setLoadingTemplates(true);
+    setTemplateFeedback(null);
     setShowTemplates(true);
     const { data, error } = await supabase
       .from("quote_templates")
       .select("*")
       .order("is_global", { ascending: false })
       .order("updated_at", { ascending: false });
-    if (error) showToast("No se pudieron cargar las plantillas: " + error.message, "err");
-    else setTemplates(data || []);
+    if (error) {
+      const msg = "No se pudieron cargar las plantillas: " + error.message;
+      setTemplateFeedback({ type: "err", msg });
+      showToast(msg, "err");
+    } else {
+      setTemplates(data || []);
+    }
     setLoadingTemplates(false);
   }
 
@@ -319,10 +326,16 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       .select()
       .single();
     setSavingTemplate(false);
-    if (error) { showToast("No se pudo guardar la plantilla: " + error.message, "err"); return; }
+    if (error) {
+      const msg = "No se pudo guardar la plantilla: " + error.message;
+      setTemplateFeedback({ type: "err", msg });
+      showToast(msg, "err");
+      return;
+    }
     setTemplates(prev => [data, ...prev]);
     setTemplateName("");
     setTemplateGlobal(false);
+    setTemplateFeedback({ type: "ok", msg: `Plantilla “${name}” guardada correctamente.` });
     showToast(`Plantilla “${name}” guardada.`);
   }
 
@@ -1004,6 +1017,11 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                 {savingTemplate ? "Guardando…" : "Guardar actual"}
               </button>
             </div>
+            {templateFeedback && (
+              <p className={`cot-template-feedback cot-template-feedback--${templateFeedback.type}`}>
+                {templateFeedback.msg}
+              </p>
+            )}
             <div className="cot-modal__body">
               {loadingTemplates ? (
                 <p className="cot-template-empty">Cargando…</p>
