@@ -1215,3 +1215,65 @@
 [data-theme="dark"] .dash-hot-score {
   background: #273244 !important;
 }
+
+[data-theme="dark"] .bi-context-line,
+[data-theme="dark"] .bi-support-card,
+[data-theme="dark"] .bi-collections-card,
+[data-theme="dark"] .bi-forecast-card,
+[data-theme="dark"] .bi-detail-gate {
+  background: #151c25 !important;
+  border-color: #273244 !important;
+  color: #edf5ff !important;
+}
+
+[data-theme="dark"] .bi-context-item {
+  border-color: #273244 !important;
+}
+
+[data-theme="dark"] .bi-context-item span,
+[data-theme="dark"] .bi-support-card span,
+[data-theme="dark"] .bi-support-card small,
+[data-theme="dark"] .bi-section-head span,
+[data-theme="dark"] .bi-collection-stat span,
+[data-theme="dark"] .bi-collection-stat small,
+[data-theme="dark"] .bi-forecast-summary span,
+[data-theme="dark"] .bi-detail-gate p {
+  color: #a8b5c6 !important;
+}
+
+[data-theme="dark"] .bi-context-item strong,
+[data-theme="dark"] .bi-support-card strong,
+[data-theme="dark"] .bi-section-head strong,
+[data-theme="dark"] .bi-forecast-summary strong,
+[data-theme="dark"] .bi-detail-gate strong {
+  color: #f3f8ff !important;
+}
+
+[data-theme="dark"] .bi-view-toggle,
+[data-theme="dark"] .bi-icon-btn {
+  background: #0f1722 !important;
+  border-color: #303c50 !important;
+  color: #c8d6e6 !important;
+}
+
+[data-theme="dark"] .bi-view-toggle button {
+  color: #a8b5c6 !important;
+}
+
+[data-theme="dark"] .bi-view-toggle button.active {
+  background: #185fa5 !important;
+  color: #fff !important;
+}
+
+[data-theme="dark"] .bi-progress {
+  background: #273244 !important;
+}
+
+[data-theme="dark"] .bi-detail-gate {
+  border-left-color: #185fa5 !important;
+}
+
+[data-theme="dark"] .bi-detail-gate button {
+  background: #185fa5 !important;
+  color: #fff !important;
+}

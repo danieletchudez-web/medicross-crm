@@ -105,42 +105,6 @@ function Tooltip({ text }) {
   );
 }
 
-/* ── Gauge SVG ──────────────────────────────────────────────────────── */
-function ForecastGauge({ forecast, target, coverage }) {
-  const pct   = Math.min(100, Math.max(0, coverage));
-  const angle = -135 + (pct / 100) * 270;
-  const color = pct >= 80 ? "#10b981" : pct >= 50 ? "#f59e0b" : "#ef4444";
-  const label = pct >= 80 ? "En objetivo" : pct >= 50 ? "En progreso" : "Bajo objetivo";
-
-  function describeArc(cx, cy, r, s, e) {
-    const toRad = (d) => (d * Math.PI) / 180;
-    const x1 = cx + r * Math.cos(toRad(s)), y1 = cy + r * Math.sin(toRad(s));
-    const x2 = cx + r * Math.cos(toRad(e)), y2 = cy + r * Math.sin(toRad(e));
-    return `M ${x1} ${y1} A ${r} ${r} 0 ${e - s > 180 ? 1 : 0} 1 ${x2} ${y2}`;
-  }
-
-  return (
-    <div className="gauge-wrap">
-      <svg viewBox="0 0 200 130" className="gauge-svg">
-        <path d={describeArc(100,110,75,-135,135)} fill="none" stroke="#e8ecf2" strokeWidth="14" strokeLinecap="round"/>
-        {pct > 0 && <path d={describeArc(100,110,75,-135,-135+(pct/100)*270)} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" style={{filter:`drop-shadow(0 0 6px ${color}55)`}}/>}
-        <line x1="100" y1="110" x2={100+60*Math.cos(((angle-90)*Math.PI)/180)} y2={110+60*Math.sin(((angle-90)*Math.PI)/180)} stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-        <circle cx="100" cy="110" r="5" fill={color}/>
-        <text x="100" y="90"  textAnchor="middle" fontSize="22" fontWeight="800" fill="#0f172a" fontFamily="DM Sans">{pct}%</text>
-        <text x="100" y="106" textAnchor="middle" fontSize="9"  fontWeight="600" fill="#94a3b8" fontFamily="DM Sans">{label}</text>
-        <text x="8"   y="124" textAnchor="middle" fontSize="8" fill="#94a3b8" fontFamily="DM Mono">0%</text>
-        <text x="100" y="16"  textAnchor="middle" fontSize="8" fill="#94a3b8" fontFamily="DM Mono">50%</text>
-        <text x="192" y="124" textAnchor="middle" fontSize="8" fill="#94a3b8" fontFamily="DM Mono">100%</text>
-      </svg>
-      <div className="gauge-vals">
-        <div className="gauge-val"><span>Ponderado</span><strong>{compactMoney(forecast)}</strong></div>
-        <div className="gauge-divider"/>
-        <div className="gauge-val"><span>Objetivo</span><strong>{compactMoney(target)}</strong></div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Probability panel ──────────────────────────────────────────────── */
 function ProbabilityPanel({ probabilityRef, total }) {
   return (
@@ -400,7 +364,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
     });
     const top = projectTemperature[0];
     if (top) rows.push({
-      tone: top.score >= 75 ? "danger" : "success",
+      tone: top.score >= 75 ? "success" : "warning",
       title: top.name,
       text: `${top.client} · ${top.stage} · score ${top.score}`,
     });
@@ -544,11 +508,6 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             <div className="dash-wordmark"><span className="dash-wordmark-dot"/>Soluciones Médicas</div>
             <h1 className="dash-title">Centro de Ventas</h1>
             <p className="dash-subtitle">Pipeline · Forecast ponderado · Campañas · Probabilidad de cierre</p>
-            <div className={`dash-hero-status dash-hero-status--${decision.tone}`}>
-              <span>{decision.icon}</span>
-              <strong>{decision.title}</strong>
-              <small>{decision.text}</small>
-            </div>
           </div>
           <div className="dash-hero-metrics">
             <div><span>Pipeline</span><strong>{compactMoney(metrics.pipeline)}</strong></div>
@@ -602,26 +561,8 @@ export default function ManagerDashboard({ profile, onNavigate }) {
           )}
         </section>
 
-        {/* PRIMARY KPIs — fila 1 */}
+        {/* Indicadores complementarios: evitan repetir la foto ejecutiva del hero. */}
         <section className="dash-primary-kpis">
-          <PrimaryKpi
-            label="Pipeline abierto"
-            value={money(metrics.pipeline)}
-            sub="Total oportunidades activas"
-            accent="blue"
-            progress={metrics.target > 0 ? Math.min(100, Math.round((metrics.pipeline / metrics.target) * 100)) : 0}
-            meta={`${metrics.openOpps} oportunidades`}
-            tooltip="Suma total del monto de todas las oportunidades abiertas (excluye Ganado y Perdido). Representa el potencial máximo de ventas en curso."
-          />
-          <PrimaryKpi
-            label="Forecast ponderado"
-            value={money(metrics.forecast)}
-            sub="Pipeline × probabilidad"
-            accent="blue"
-            progress={metrics.coverage}
-            meta={`${metrics.forecastRatio}% con probabilidad`}
-            tooltip="Cada oportunidad abierta multiplicada por su % de probabilidad de cierre. Ejemplo: $100M al 60% aporta $60M al forecast. Es la estimación realista de lo que se va a cobrar."
-          />
           <PrimaryKpi
             label="Objetivo campañas"
             value={money(metrics.target)}
@@ -632,13 +573,31 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             tooltip="Suma de los objetivos económicos de todas las campañas activas. Es la meta que el equipo comercial debe alcanzar."
           />
           <PrimaryKpi
-            label="Cobertura"
-            value={`${metrics.coverage}%`}
-            sub="Forecast ponderado vs objetivo"
-            accent={metrics.coverage >= 80 ? "green" : metrics.coverage >= 50 ? "yellow" : "red"}
-            progress={metrics.coverage}
-            meta={metrics.coverage >= 80 ? "En zona saludable" : metrics.coverage >= 50 ? "Requiere atención" : "Riesgo comercial"}
-            tooltip="Forecast ponderado ÷ Objetivo de campañas. Indica qué porcentaje del objetivo ya está cubierto con el pipeline actual. Verde ≥80%, amarillo ≥50%, rojo <50%."
+            label="Oportunidades abiertas"
+            value={metrics.openOpps}
+            sub="Negocios activos en seguimiento"
+            accent="blue"
+            progress={metrics.openOpps > 0 ? 100 : 0}
+            meta={`${metrics.noAction} sin próxima acción`}
+            tooltip="Cantidad de oportunidades que no están Ganadas ni Perdidas. El detalle de seguimiento aparece más abajo en Salud del pipeline."
+          />
+          <PrimaryKpi
+            label="Hot deals"
+            value={metrics.hotDeals}
+            sub="Probabilidad de cierre ≥70%"
+            accent={metrics.hotDeals > 0 ? "green" : "slate"}
+            progress={metrics.openOpps > 0 ? Math.round((metrics.hotDeals / metrics.openOpps) * 100) : 0}
+            meta="Priorizar cierre"
+            tooltip="Oportunidades activas con probabilidad de cierre igual o superior al 70%. Son los negocios que conviene mover primero."
+          />
+          <PrimaryKpi
+            label="Visitas esta semana"
+            value={weeklyVisits}
+            sub="Actividad de los últimos 7 días"
+            accent="blue"
+            progress={weeklyVisits > 0 ? 100 : 0}
+            meta={`${metrics.visits} registradas`}
+            tooltip="Total de visitas comerciales registradas en los últimos 7 días por el equipo."
           />
         </section>
 
@@ -694,48 +653,32 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             </div>
           </div>
 
-          {/* FILA 2 — KPIs secundarios */}
-          <section className="dash-kpi-grid">
+          <section className="dash-metric-band">
+            <div className="dash-metric-band__head">
+              <span>Pipeline</span>
+              <strong>Seguimiento y alertas</strong>
+            </div>
+            <div className="dash-kpi-grid dash-kpi-grid--pipeline">
                 <Kpi label="Opps. abiertas"   value={metrics.openOpps}   tooltip="Cantidad de oportunidades que no están Ganadas ni Perdidas. Refleja el tamaño activo del pipeline."/>
                 <Kpi label="Hot deals"        value={metrics.hotDeals}   accent="amber" tooltip="Oportunidades con probabilidad de cierre ≥70%. Son las más cercanas a convertirse en venta. Priorizalas esta semana."/>
                 <Kpi label="Sin próx. acción" value={metrics.noAction}   accent="red"   tooltip="Oportunidades abiertas sin próxima acción definida. Si no hay acción planificada, el negocio se enfría. Asigná un paso concreto a cada una."/>
                 <Kpi label="Vencidas"         value={metrics.overdue}    accent="red"   tooltip="Oportunidades cuya fecha esperada de cierre ya pasó. Requieren revisión urgente: actualizar fecha o cambiar etapa."/>
+            </div>
+          </section>
+
+          <section className="dash-metric-band">
+            <div className="dash-metric-band__head">
+              <span>Eficiencia</span>
+              <strong>Calidad y velocidad comercial</strong>
+            </div>
+            <div className="dash-kpi-grid dash-kpi-grid--efficiency">
                 <Kpi label="Win rate"         value={`${metrics.winRate}%`} tooltip="Porcentaje de oportunidades ganadas sobre el total de cerradas (Ganado + Perdido). Mide la efectividad de cierre del equipo."/>
                 <Kpi label="Ticket promedio"  value={compactMoney(metrics.avgDeal)} tooltip="Monto promedio por oportunidad abierta. Pipeline total ÷ cantidad de oportunidades abiertas."/>
                 <Kpi label="Días en pipeline" value={`${metrics.avgDaysInPipeline}d`} tooltip="Promedio de días que llevan abiertas las oportunidades desde su creación. Ciclos muy largos pueden indicar estancamiento."/>
                 <Kpi label="Con probabilidad" value={`${metrics.forecastRatio}%`} accent={metrics.forecastRatio < 50 ? "red" : metrics.forecastRatio < 80 ? "amber" : undefined} tooltip="Porcentaje de oportunidades abiertas que tienen cargado un % de probabilidad. Sin probabilidad no hay forecast confiable."/>
-          </section>
-
-          {/* FILA 3 — Insights */}
-          <section className="dash-insights-grid">
-                <InsightCard
-                  label="Conversión al pipeline"
-                  value={`${metrics.convRate}%`}
-                  sub="Lead → Cotización o superior"
-                  tone={metrics.convRate >= 40 ? "green" : metrics.convRate >= 20 ? "amber" : "red"}
-                  tooltip="Porcentaje de leads que avanzaron a etapa de Cotización, Negociación o Ganado. Mide la calidad del proceso comercial desde el primer contacto."
-                />
-                <InsightCard
-                  label="Días promedio en pipeline"
-                  value={`${metrics.avgDaysInPipeline} días`}
-                  sub="Desde creación hasta hoy"
-                  tone={metrics.avgDaysInPipeline <= 30 ? "green" : metrics.avgDaysInPipeline <= 60 ? "amber" : "red"}
-                  tooltip="Tiempo promedio que una oportunidad lleva abierta. Verde ≤30 días, amarillo ≤60 días, rojo >60 días. Ciclos largos reducen la velocidad de cierre."
-                />
-                <InsightCard
-                  label="Con probabilidad cargada"
-                  value={`${metrics.forecastRatio}%`}
-                  sub="Opps. con % de cierre definido"
-                  tone={metrics.forecastRatio >= 80 ? "green" : metrics.forecastRatio >= 50 ? "amber" : "red"}
-                  tooltip="Porcentaje de oportunidades abiertas que tienen asignado un % de probabilidad de cierre. Sin este dato el forecast ponderado no es confiable."
-                />
-                <InsightCard
-                  label="Visitas esta semana"
-                  value={weeklyVisits}
-                  sub="Últimos 7 días del equipo"
-                  tone="blue"
-                  tooltip="Total de visitas comerciales registradas en los últimos 7 días por todo el equipo. Refleja el nivel de actividad y presencia en el mercado."
-                />
+                <Kpi label="Conversión"        value={`${metrics.convRate}%`} accent={metrics.convRate < 20 ? "red" : metrics.convRate < 40 ? "amber" : "green"} tooltip="Porcentaje de leads que avanzaron a Cotización, Negociación o Ganado. Mide la calidad del proceso desde el primer contacto."/>
+                <Kpi label="Visitas semana"   value={weeklyVisits} tooltip="Total de visitas comerciales registradas en los últimos 7 días por el equipo."/>
+            </div>
           </section>
         </div>
 
@@ -749,24 +692,10 @@ export default function ManagerDashboard({ profile, onNavigate }) {
             </section>
 
             {/* CHART PANELS */}
-            <section className="dash-chart-grid">
+            <section className="dash-chart-grid dash-chart-grid--compact">
               <Panel title="Pipeline por etapa" subtitle="Monto total en cada fase">
                 <canvas ref={pipelineRef}/>
               </Panel>
-
-              <article className="dash-panel">
-                <header className="dash-panel__header">
-                  <div>
-                    <h3 className="dash-panel__title">Cobertura de forecast</h3>
-                    <p className="dash-panel__sub">Pipeline ponderado vs objetivo de campañas</p>
-                  </div>
-                  <span className="dash-panel__metric">{metrics.coverage}%</span>
-                </header>
-                <div className="dash-chart-box dash-chart-box--gauge">
-                  <ForecastGauge forecast={metrics.forecast} target={metrics.target} coverage={metrics.coverage}/>
-                </div>
-              </article>
-
               <StageDistributionPanel opps={filteredOpps}/>
             </section>
 
@@ -829,26 +758,6 @@ function Kpi({ label, value, accent, tooltip }) {
         {tooltip && <Tooltip text={tooltip}/>}
       </div>
       <strong className="dash-kpi__value" title={String(value)}>{value}</strong>
-    </article>
-  );
-}
-
-function InsightCard({ label, value, sub, tone = "blue", tooltip }) {
-  const colors = {
-    green: { border: "#10b981", bg: "rgba(16,185,129,0.06)", text: "#059669" },
-    amber: { border: "#f59e0b", bg: "rgba(245,158,11,0.06)", text: "#d97706" },
-    red:   { border: "#ef4444", bg: "rgba(239,68,68,0.06)",  text: "#dc2626" },
-    blue:  { border: "#3b82f6", bg: "rgba(59,130,246,0.06)", text: "#2563eb" },
-  };
-  const c = colors[tone] || colors.blue;
-  return (
-    <article className="dash-insight" style={{ borderTopColor: c.border, background: c.bg }}>
-      <div className="dash-insight__header">
-        <span className="dash-insight__label">{label}</span>
-        {tooltip && <Tooltip text={tooltip}/>}
-      </div>
-      <strong className="dash-insight__value" style={{ color: c.text }}>{value}</strong>
-      <span className="dash-insight__sub">{sub}</span>
     </article>
   );
 }
@@ -925,7 +834,7 @@ function HotProjects({ rows }) {
               </div>
               <div className="dash-hot-row__meta">
                 <span>{money(p.forecast)}</span>
-                <em className={p.score>=75?"badge badge--red":p.score>=50?"badge badge--amber":"badge badge--green"}>{p.score}</em>
+                <em className={p.score>=75?"badge badge--green":p.score>=50?"badge badge--amber":"badge"}>{p.score}</em>
               </div>
             </div>
           ))}

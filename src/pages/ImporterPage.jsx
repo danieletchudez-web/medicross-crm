@@ -1,5 +1,20 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import {
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  Cloud,
+  FileSpreadsheet,
+  History,
+  Package,
+  Pencil,
+  ReceiptText,
+  Target,
+  Trophy,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import Sidebar from "../components/Sidebar";
 import "./ImporterPage.css";
@@ -182,6 +197,28 @@ function monthLabel(date) {
     .replace(/^\w/, c => c.toUpperCase());
 }
 
+function monthKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date)) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function previousMonthKey(key) {
+  const [year, month] = String(key).split("-").map(Number);
+  return monthKey(new Date(year, month - 2, 1));
+}
+
+function AlertIcon({ kind }) {
+  const icons = {
+    alert: AlertTriangle,
+    ok: CheckCircle2,
+    users: Users,
+    wallet: WalletCards,
+  };
+  const Icon = icons[kind] || AlertTriangle;
+  return <Icon size={15} aria-hidden="true"/>;
+}
+
 function plural(n, one, many) {
   return Number(n) === 1 ? one : many;
 }
@@ -209,9 +246,14 @@ export default function ImporterPage({ profile, onNavigate }) {
   const [filterMes,      setFilterMes]      = useState("todos");
   const [filterImport,   setFilterImport]   = useState("todos");
   const [chartMode,      setChartMode]      = useState("acumulado");
+  const [biMode,         setBiMode]         = useState(() => {
+    try { return localStorage.getItem("medicross-bi-mode") || "executive"; } catch { return "executive"; }
+  });
+  const [forecastEditing, setForecastEditing] = useState(false);
+  const [clientRankExpanded, setClientRankExpanded] = useState(false);
 
   const lineRef = useRef(null), ticketRef = useRef(null);
-  const lineMonthRef = useRef(null), donutRef = useRef(null);
+  const donutRef = useRef(null);
 
   const currentYearFcast = useMemo(
     () => Object.values(forecastInputs).reduce((s, v) => s + Number(v || 0), 0),
@@ -220,8 +262,13 @@ export default function ImporterPage({ profile, onNavigate }) {
 
   useEffect(() => { loadBI(); }, []);
   useEffect(() => {
-    if (!loadingBI && sales.length > 0 && tab === "dashboard") setTimeout(renderCharts, 120);
-  }, [loadingBI, sales, filterVendedor, filterUnidad, filterMes, filterImport, tab, chartMode]);
+    if (loadingBI || sales.length === 0 || tab !== "dashboard") return undefined;
+    const timer = setTimeout(renderCharts, 120);
+    return () => clearTimeout(timer);
+  }, [loadingBI, sales, filterVendedor, filterUnidad, filterMes, filterImport, tab, chartMode, biMode]);
+  useEffect(() => {
+    try { localStorage.setItem("medicross-bi-mode", biMode); } catch { /* UI preference is optional */ }
+  }, [biMode]);
 
   async function loadBI() {
     setLoadingBI(true);
@@ -301,31 +348,40 @@ export default function ImporterPage({ profile, onNavigate }) {
       const next = { ...forecastInputs, [forecastMonth]: n };
       setForecastInputs(next);
       localStorage.setItem("bi_forecast_monthly", JSON.stringify(next));
+      setForecastEditing(false);
     }
   }
 
-  const filteredSales = useMemo(() => sales.filter(s => {
+  const contextualSales = useMemo(() => sales.filter(s => {
     if (filterVendedor !== "todos" && s.vendedor !== filterVendedor) return false;
     if (filterUnidad   !== "todas" && s.unidad_negocio !== filterUnidad) return false;
-    if (filterImport   !== "todos" && s.import_id !== filterImport) return false;
-    if (filterMes !== "todos") {
-      const d = new Date(s.fecha); if (isNaN(d)) return false;
-      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      if (k !== filterMes) return false;
-    }
+    if (filterImport   !== "todos" && String(s.import_id) !== String(filterImport)) return false;
     return true;
-  }), [sales, filterVendedor, filterUnidad, filterMes, filterImport]);
+  }), [sales, filterVendedor, filterUnidad, filterImport]);
+
+  const filteredSales = useMemo(() => contextualSales.filter(s => (
+    filterMes === "todos" || monthKey(s.fecha) === filterMes
+  )), [contextualSales, filterMes]);
 
   const vendedores = useMemo(() => [...new Set(sales.map(s => s.vendedor).filter(Boolean))], [sales]);
   const unidades   = useMemo(() => [...new Set(sales.map(s => s.unidad_negocio).filter(Boolean))], [sales]);
   const meses      = useMemo(() => {
     const set = new Set(sales.map(s => {
       if (!s.fecha) return null;
-      const d = new Date(s.fecha); if (isNaN(d)) return null;
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return monthKey(s.fecha);
     }).filter(Boolean));
     return [...set].sort().reverse();
   }, [sales]);
+
+  const selectedPeriod = useMemo(() => {
+    const key = filterMes !== "todos" ? filterMes : monthKey(new Date());
+    const [year, month] = key.split("-").map(Number);
+    return {
+      key,
+      label: monthLabel(new Date(year, month - 1, 1)),
+      previousKey: previousMonthKey(key),
+    };
+  }, [filterMes]);
 
   const kpis = useMemo(() => {
     const safeN = v => { const n = Number(v); return isFinite(n) ? n : 0; };
@@ -352,20 +408,12 @@ export default function ImporterPage({ profile, onNavigate }) {
     const mejorVend = Object.entries(byVend).sort((a, b) => b[1] - a[1])[0];
     const mejorUnit = Object.entries(byUnit).sort((a, b) => b[1] - a[1])[0];
 
-    const now      = new Date();
-    const nowM     = now.getMonth(), nowY = now.getFullYear();
-    const prevM    = nowM === 0 ? 11 : nowM - 1;
-    const prevY    = nowM === 0 ? nowY - 1 : nowY;
-
-    const thisMonth = filteredSales
-      .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === nowM && d.getFullYear() === nowY; })
-      .reduce((s, r) => s + safeN(r.total_venta), 0);
-    const thisMonthRows = filteredSales
-      .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === nowM && d.getFullYear() === nowY; });
+    const thisMonthRows = contextualSales.filter(s => monthKey(s.fecha) === selectedPeriod.key);
+    const thisMonth = thisMonthRows.reduce((s, r) => s + safeN(r.total_venta), 0);
     const thisMonthComprobantes = new Set(thisMonthRows.map(r => r.comprobante).filter(Boolean)).size;
     const thisMonthTickets = thisMonthComprobantes || thisMonthRows.filter(r => safeN(r.total_venta) > 0).length;
-    const prevMonth = filteredSales
-      .filter(s => { const d = new Date(s.fecha); return !isNaN(d) && d.getMonth() === prevM && d.getFullYear() === prevY; })
+    const prevMonth = contextualSales
+      .filter(s => monthKey(s.fecha) === selectedPeriod.previousKey)
       .reduce((s, r) => s + safeN(r.total_venta), 0);
 
     const momChange = prevMonth > 0 ? ((thisMonth - prevMonth) / prevMonth) * 100 : null;
@@ -390,7 +438,7 @@ export default function ImporterPage({ profile, onNavigate }) {
     const cantMeses       = monthEntries.length;
     const promedioMensual = cantMeses > 0 ? total / cantMeses : 0;
 
-    const fcastKey  = String(nowM + 1).padStart(2, "0");
+    const fcastKey  = selectedPeriod.key.slice(5);
     const fcast     = Number(forecastInputs[fcastKey] || 0);
     const fcastPct  = fcast > 0 ? safePct(thisMonth, fcast) : null;
 
@@ -404,11 +452,12 @@ export default function ImporterPage({ profile, onNavigate }) {
       total, hasCosto, costoTotal, margenTotal, ventasConCosto,
       tickets, clientes, productos, avgTicket,
       mejorVend, mejorUnit, momChange, thisMonth, thisMonthTickets, prevMonth,
+      periodLabel: selectedPeriod.label,
       sparkData, fcast, fcastPct,
       mejorMes, cantMeses, promedioMensual,
       pendienteCobro, pendienteCount, cobrada,
     };
-  }, [filteredSales, forecastInputs]);
+  }, [filteredSales, contextualSales, forecastInputs, selectedPeriod]);
 
   const topClientes = useMemo(() => {
     const byC = {};
@@ -416,7 +465,23 @@ export default function ImporterPage({ profile, onNavigate }) {
       if (!s.cliente) return;
       const v = Number(s.total_venta); byC[s.cliente] = (byC[s.cliente] || 0) + (isFinite(v) ? v : 0);
     });
-    return Object.entries(byC).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    return Object.entries(byC).sort((a, b) => b[1] - a[1]);
+  }, [filteredSales]);
+
+  const visibleTopClientes = clientRankExpanded ? topClientes : topClientes.slice(0, 5);
+
+  const activeFilterCount = [
+    filterMes !== "todos",
+    filterVendedor !== "todos",
+    filterUnidad !== "todas",
+    filterImport !== "todos",
+  ].filter(Boolean).length;
+
+  const filteredDateRange = useMemo(() => {
+    const dates = filteredSales.map(s => new Date(s.fecha)).filter(d => !isNaN(d)).sort((a, b) => a - b);
+    if (dates.length === 0) return "Sin fechas";
+    const format = d => d.toLocaleDateString("es-AR");
+    return `${format(dates[0])} - ${format(dates[dates.length - 1])}`;
   }, [filteredSales]);
 
   const estadoEntries = useMemo(() => {
@@ -429,16 +494,16 @@ export default function ImporterPage({ profile, onNavigate }) {
   const alertas = useMemo(() => {
     const list = [];
     if (kpis.momChange !== null && kpis.momChange < -5)
-      list.push({ type: "danger", icon: "📉", title: "Caída de ventas", desc: `Las ventas cayeron ${Math.abs(kpis.momChange).toFixed(1).replace(".", ",")}% vs. el mes anterior.`, val: `${kpis.momChange.toFixed(1).replace(".", ",")}%` });
+      list.push({ type: "danger", icon: "alert", title: "Caída de ventas", desc: `Las ventas cayeron ${Math.abs(kpis.momChange).toFixed(1).replace(".", ",")}% vs. el mes anterior.`, val: `${kpis.momChange.toFixed(1).replace(".", ",")}%` });
     if (kpis.fcastPct !== null && kpis.fcastPct < 90)
-      list.push({ type: "warning", icon: "⚠", title: "Forecast en riesgo", desc: `Cumplimiento del ${kpis.fcastPct}% del forecast mensual.`, val: `${kpis.fcastPct}%` });
+      list.push({ type: "warning", icon: "alert", title: "Forecast en riesgo", desc: `Cumplimiento del ${kpis.fcastPct}% del forecast mensual.`, val: `${kpis.fcastPct}%` });
     const sinCompra60 = new Set(filteredSales.filter(s => { const d = new Date(s.fecha); return !isNaN(d) && (new Date() - d) > 60 * 86400000; }).map(s => s.cliente)).size;
     if (sinCompra60 > 0)
-      list.push({ type: "info", icon: "👥", title: "Clientes inactivos", desc: `${sinCompra60} clientes sin compras en más de 60 días.`, val: String(sinCompra60) });
+      list.push({ type: "info", icon: "users", title: "Clientes inactivos", desc: `${sinCompra60} clientes sin compras en más de 60 días.`, val: String(sinCompra60) });
     if (kpis.pendienteCount > 0)
-      list.push({ type: "warning", icon: "⏳", title: "Facturas pendientes de cobro", desc: `${kpis.pendienteCount} facturas por ${compact(kpis.pendienteCobro)} sin cobrar.`, val: `${safePct(kpis.pendienteCobro, kpis.total)}%` });
+      list.push({ type: "warning", icon: "wallet", title: "Facturas pendientes de cobro", desc: `${kpis.pendienteCount} facturas por ${compact(kpis.pendienteCobro)} sin cobrar.`, val: `${safePct(kpis.pendienteCobro, kpis.total)}%` });
     if (list.length === 0)
-      list.push({ type: "info", icon: "✓", title: "Sin alertas", desc: "Todos los indicadores dentro de parámetros.", val: "OK" });
+      list.push({ type: "info", icon: "ok", title: "Sin alertas", desc: "Todos los indicadores dentro de parámetros.", val: "OK" });
     return list;
   }, [kpis, filteredSales]);
 
@@ -468,7 +533,7 @@ export default function ImporterPage({ profile, onNavigate }) {
     rows.push({
       tone: kpis.fcastPct !== null && kpis.fcastPct < 70 ? "danger" : kpis.fcastPct !== null && kpis.fcastPct < 95 ? "warning" : "success",
       title: kpis.fcastPct !== null ? `Forecast ${kpis.fcastPct}%` : "Forecast pendiente",
-      text: kpis.fcastPct !== null ? `Mes actual contra forecast: ${compact(kpis.fcast)}.` : "Cargá forecast mensual para medir cobertura.",
+      text: kpis.fcastPct !== null ? `${kpis.periodLabel} contra forecast: ${compact(kpis.fcast)}.` : "Cargá forecast mensual para medir cobertura.",
     });
     if (kpis.pendienteCount > 0) rows.push({
       tone: "danger",
@@ -490,7 +555,7 @@ export default function ImporterPage({ profile, onNavigate }) {
 
   function renderCharts() {
     const Chart = window.Chart; if (!Chart) return;
-    [lineRef, lineMonthRef, ticketRef, donutRef].forEach(r => { if (r.current?.chartInstance) r.current.chartInstance.destroy(); });
+    [lineRef, ticketRef, donutRef].forEach(r => { if (r.current?.chartInstance) r.current.chartInstance.destroy(); });
     const byMonth = {};
     filteredSales.forEach(s => {
       if (!s.fecha) return; const d = new Date(s.fecha); if (isNaN(d)) return;
@@ -512,28 +577,6 @@ export default function ImporterPage({ profile, onNavigate }) {
         type: "line",
         data: { labels: mKeys, datasets: [{ data: cData, borderColor: "#3b82f6", backgroundColor: grad, fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: "#3b82f6", pointBorderColor: "#fff", pointBorderWidth: 2 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tOpts }, scales: { x: sX, y: sY } },
-      });
-    }
-    if (lineMonthRef.current && mKeys.length > 0) {
-      const monthlyData = mKeys.map(k => byMonth[k]);
-      const maxVal = Math.max(...monthlyData, 1);
-      lineMonthRef.current.chartInstance = new Chart(lineMonthRef.current, {
-        type: "bar",
-        data: {
-          labels: mKeys,
-          datasets: [{
-            label: "Ventas mensuales",
-            data: monthlyData,
-            backgroundColor: monthlyData.map(v => (v/maxVal)>=0.8?"rgba(16,185,129,0.7)":(v/maxVal)>=0.5?"rgba(59,130,246,0.6)":"rgba(59,130,246,0.25)"),
-            borderColor: monthlyData.map(v => (v/maxVal)>=0.8?"#10b981":"#3b82f6"),
-            borderWidth: 1.5, borderRadius: 6, borderSkipped: false,
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend:{display:false}, tooltip:{...tOpts,callbacks:{label:ctx=>" "+compact(ctx.raw)}} },
-          scales: { x:{...sX,ticks:{...sX.ticks,maxRotation:45,minRotation:0}}, y:sY }
-        }
       });
     }
     const byMonthTicket = {};
@@ -592,14 +635,20 @@ export default function ImporterPage({ profile, onNavigate }) {
           <div className="bi-header__left">
             <div className="bi-header__tabs">
               {[
-                { k: "dashboard", l: "Dashboard BI" },
+                { k: "dashboard", l: "Dashboard BI", icon: BarChart3 },
                 ...( ["super_admin","manager"].includes(profile?.role) ? [
-                  { k: "import",  l: "📥 Importar Excel" },
-                  { k: "history", l: "📋 Historial"      },
+                  { k: "import",  l: "Importar Excel", icon: FileSpreadsheet },
+                  { k: "history", l: "Historial", icon: History },
                 ] : [] ),
-              ].map(t => (
-                <button key={t.k} className={`bi-header__tab ${tab === t.k ? "active" : ""}`} onClick={() => setTab(t.k)}>{t.l}</button>
-              ))}
+              ].map(t => {
+                const Icon = t.icon;
+                return (
+                  <button key={t.k} className={`bi-header__tab ${tab === t.k ? "active" : ""}`} onClick={() => setTab(t.k)}>
+                    <Icon size={14} aria-hidden="true"/>
+                    {t.l}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="bi-header__right">
@@ -607,7 +656,7 @@ export default function ImporterPage({ profile, onNavigate }) {
               <span className="bi-header__sync">
                 <span className="bi-sync-dot"/>
                 Última importación: {new Date(lastImport.created_at).toLocaleDateString("es-AR")} {new Date(lastImport.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                <span style={{ color: "#10b981", marginLeft: 4 }}>☁</span>
+                <Cloud size={14} aria-hidden="true" style={{ color: "#10b981", marginLeft: 4 }}/>
               </span>
             )}
             <div className="bi-header__avatar">{(profile?.full_name || "U").slice(0, 1).toUpperCase()}</div>
@@ -628,7 +677,55 @@ export default function ImporterPage({ profile, onNavigate }) {
                 </div>
               ) : (
                 <>
-                  {/* HERO — formato numérico mejorado */}
+                  {/* Filtros de contexto */}
+                  <div className="bi-filters bi-filters--compact">
+                    <FilterGroup label="Período" value={filterMes} onChange={setFilterMes}>
+                      <option value="todos">Todo el período</option>
+                      {meses.map(m => {
+                        const [year, month] = m.split("-").map(Number);
+                        return <option key={m} value={m}>{monthLabel(new Date(year, month - 1, 1))}</option>;
+                      })}
+                    </FilterGroup>
+                    <FilterGroup label="Vendedores" value={filterVendedor} onChange={setFilterVendedor}>
+                      <option value="todos">Todos los vendedores</option>
+                      {vendedores.map(v => <option key={v} value={v}>{v}</option>)}
+                    </FilterGroup>
+                    <FilterGroup label="Unidades" value={filterUnidad} onChange={setFilterUnidad}>
+                      <option value="todas">Todas las unidades</option>
+                      {unidades.map(u => <option key={u} value={u}>{u}</option>)}
+                    </FilterGroup>
+                    <FilterGroup label="Importación" value={filterImport} onChange={setFilterImport}>
+                      <option value="todos">Todas</option>
+                      {imports.map(i => <option key={i.id} value={i.id}>{i.filename}</option>)}
+                    </FilterGroup>
+                  </div>
+
+                  <section className="bi-context-line">
+                    <div className="bi-context-item">
+                      <span>Período analizado</span>
+                      <strong>{filterMes === "todos" ? "Histórico completo" : kpis.periodLabel}</strong>
+                    </div>
+                    <div className="bi-context-item">
+                      <span>Rango de datos</span>
+                      <strong>{filteredDateRange}</strong>
+                    </div>
+                    <div className="bi-context-item">
+                      <span>Registros visibles</span>
+                      <strong>{filteredSales.length.toLocaleString("es-AR")} · {activeFilterCount} filtros activos</strong>
+                    </div>
+                    <div className="bi-view-toggle" aria-label="Nivel de detalle">
+                      {[
+                        { key: "executive", label: "Ejecutivo" },
+                        { key: "complete", label: "Completo" },
+                      ].map(mode => (
+                        <button key={mode.key} className={biMode === mode.key ? "active" : ""} onClick={() => setBiMode(mode.key)}>
+                          {mode.label}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Resumen ejecutivo */}
                   <div className="bi-hero">
                     {/* Bloque principal */}
                     <div className="bi-hero__block bi-hero__block--main">
@@ -643,40 +740,19 @@ export default function ImporterPage({ profile, onNavigate }) {
 
                     <div className="bi-hero__sep"/>
                     <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">FACTURADO MES ACTUAL</span>
+                      <span className="bi-hero__eyebrow">FACTURADO {kpis.periodLabel}</span>
                       <strong className="bi-hero__val">{compact(kpis.thisMonth)}</strong>
                       <span className="bi-hero__scale">{scaleLabel(kpis.thisMonth)}</span>
                       <span className="bi-hero__meta">
-                        {monthLabel(new Date())} · {kpis.thisMonthTickets} {plural(kpis.thisMonthTickets, "factura", "facturas")}
+                        {kpis.thisMonthTickets} {plural(kpis.thisMonthTickets, "factura", "facturas")} · anterior {compact(kpis.prevMonth)}
                       </span>
                     </div>
 
                     <div className="bi-hero__sep"/>
 
-                    {/* Mejor mes */}
-                    <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">MEJOR MES</span>
-                      <strong className="bi-hero__val">{compact(kpis.mejorMes?.valor || 0)}</strong>
-                      <span className="bi-hero__scale">{scaleLabel(kpis.mejorMes?.valor || 0)}</span>
-                      <span className="bi-hero__meta">{kpis.mejorMes?.mes || "—"}</span>
-                    </div>
-
-                    <div className="bi-hero__sep"/>
-
-                    {/* Promedio mensual */}
-                    <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">PROMEDIO MENSUAL</span>
-                      <strong className="bi-hero__val">{compact(kpis.promedioMensual || 0)}</strong>
-                      <span className="bi-hero__scale">{scaleLabel(kpis.promedioMensual || 0)}</span>
-                      <span className="bi-hero__meta">{kpis.cantMeses || 0} meses con datos</span>
-                    </div>
-
-
-                    <div className="bi-hero__sep"/>
-
                     {/* Forecast */}
                     <div className="bi-hero__block">
-                      <span className="bi-hero__eyebrow">MES ACTUAL VS. FORECAST</span>
+                      <span className="bi-hero__eyebrow">{kpis.periodLabel} VS. FORECAST</span>
                       <strong className="bi-hero__val">{kpis.fcastPct !== null ? `${kpis.fcastPct}%` : "—"}</strong>
                       {kpis.fcast > 0 && (
                         <>
@@ -720,90 +796,55 @@ export default function ImporterPage({ profile, onNavigate }) {
                     ))}
                   </section>
 
-                  {/* Filtros */}
-                  <div className="bi-filters bi-filters--compact">
-                    <FilterGroup label="Período" value={filterMes} onChange={setFilterMes}>
-                      <option value="todos">Todo el período</option>
-                      {meses.map(m => <option key={m} value={m}>{m}</option>)}
-                    </FilterGroup>
-                    <FilterGroup label="Vendedores" value={filterVendedor} onChange={setFilterVendedor}>
-                      <option value="todos">Todos los vendedores</option>
-                      {vendedores.map(v => <option key={v} value={v}>{v}</option>)}
-                    </FilterGroup>
-                    <FilterGroup label="Unidades" value={filterUnidad} onChange={setFilterUnidad}>
-                      <option value="todas">Todas las unidades</option>
-                      {unidades.map(u => <option key={u} value={u}>{u}</option>)}
-                    </FilterGroup>
-                    <FilterGroup label="Importación" value={filterImport} onChange={setFilterImport}>
-                      <option value="todos">Todas</option>
-                      {imports.map(i => <option key={i.id} value={i.id}>{i.filename}</option>)}
-                    </FilterGroup>
-                  </div>
+                  <section className="bi-support-grid" aria-label="Indicadores complementarios">
+                    <article className="bi-support-card">
+                      <span className="bi-support-card__icon bi-support-card__icon--amber"><Trophy size={16}/></span>
+                      <div><span>Mejor mes</span><strong>{kpis.mejorMes ? compact(kpis.mejorMes.valor) : "—"}</strong><small>{kpis.mejorMes?.mes || "Sin datos"}</small></div>
+                    </article>
+                    <article className="bi-support-card">
+                      <span className="bi-support-card__icon bi-support-card__icon--blue"><Target size={16}/></span>
+                      <div><span>Promedio mensual</span><strong>{compact(kpis.promedioMensual)}</strong><small>{kpis.cantMeses} {plural(kpis.cantMeses, "mes analizado", "meses analizados")}</small></div>
+                    </article>
+                    <article className="bi-support-card">
+                      <span className="bi-support-card__icon bi-support-card__icon--violet"><ReceiptText size={16}/></span>
+                      <div><span>Ticket promedio</span><strong>{compact(kpis.avgTicket)}</strong><small>{kpis.tickets} {plural(kpis.tickets, "factura única", "facturas únicas")}</small></div>
+                    </article>
+                    <article className="bi-support-card">
+                      <span className="bi-support-card__icon bi-support-card__icon--green"><Package size={16}/></span>
+                      <div><span>Productos activos</span><strong>{kpis.productos}</strong><small>{kpis.clientes} {plural(kpis.clientes, "cliente", "clientes")}</small></div>
+                    </article>
+                  </section>
 
-                  {/* KPI CARDS */}
-                  <div className="bi-kpi-row">
-                    <div className="bi-kpi bi-kpi--wide">
-                      <div className="bi-kpi__head">
-                        <span className="bi-kpi__icon" style={{ background: "rgba(245,158,11,.1)" }}>🏆</span>
-                        <span className="bi-kpi__label">TOP 5 CLIENTES</span>
+                  <section className="bi-collections-band">
+                    <article className="bi-collections-card">
+                      <div className="bi-section-head">
+                        <span className="bi-support-card__icon bi-support-card__icon--red"><WalletCards size={16}/></span>
+                        <div><span>Cobranzas</span><strong>Estado de cobro del período</strong></div>
                       </div>
-                      <div className="bi-top3">
-                        {Object.entries(
-                          filteredSales.reduce((acc, s) => {
-                            if (!s.cliente) return acc;
-                            const v = Number(s.total_venta);
-                            acc[s.cliente] = (acc[s.cliente] || 0) + (isFinite(v) ? v : 0);
-                            return acc;
-                          }, {})
-                        ).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([nombre, total], i) => (
-                          <div key={nombre} className="bi-top3__row">
-                            <span className="bi-top3__pos" style={{ color: ["#f59e0b","#94a3b8","#cd7c3a","#64748b","#64748b"][i] }}>#{i+1}</span>
-                            <span className="bi-top3__name" title={nombre}>{nombre}</span>
-                            <span className="bi-top3__val">{compact(total)}</span>
-                          </div>
-                        ))}
+                      <div className="bi-collections-grid">
+                        <div className="bi-collection-stat">
+                          <span>Pendiente</span>
+                          <strong className="c-red">{compact(kpis.pendienteCobro)}</strong>
+                          <small>{kpis.pendienteCount} {plural(kpis.pendienteCount, "factura", "facturas")} · {safePct(kpis.pendienteCobro, kpis.total)}% del total</small>
+                        </div>
+                        <div className="bi-collection-progress">
+                          <div className="bi-kpi__bar-label"><span>Cobrado</span><span>{compact(kpis.cobrada)}</span></div>
+                          <div className="bi-progress"><div className="bi-progress__fill bi-progress__fill--green" style={{ width: `${Math.min(100, safePct(kpis.cobrada, kpis.total))}%` }}/></div>
+                          <div className="bi-kpi__bar-label"><span>Pendiente</span><span className="c-red">{safePct(kpis.pendienteCobro, kpis.total)}%</span></div>
+                          <div className="bi-progress"><div className="bi-progress__fill bi-progress__fill--red" style={{ width: `${Math.min(100, safePct(kpis.pendienteCobro, kpis.total))}%` }}/></div>
+                        </div>
                       </div>
-                    </div>
+                    </article>
 
-                    <div className="bi-kpi">
-                      <div className="bi-kpi__head">
-                        <span className="bi-kpi__icon" style={{ background: "rgba(59,130,246,.1)" }}>🎯</span>
-                        <span className="bi-kpi__label">TICKET PROMEDIO</span>
-                      </div>
-                      <strong className="bi-kpi__val" style={{ color: "#3b82f6" }}>{compact(kpis.avgTicket)}</strong>
-                      <span className="bi-kpi__sub">{kpis.tickets} facturas únicas</span>
-                      <div className="bi-kpi__divider"/>
-                      <div className="bi-kpi__stat-row">
-                        <div className="bi-kpi__stat"><span>Clientes</span><strong>{kpis.clientes}</strong></div>
-                        <div className="bi-kpi__stat"><span>Productos</span><strong>{kpis.productos}</strong></div>
-                        <div className="bi-kpi__stat"><span>Meses</span><strong>{kpis.cantMeses}</strong></div>
-                      </div>
-                    </div>
-
-                    <div className="bi-kpi">
-                      <div className="bi-kpi__head">
-                        <span className="bi-kpi__icon" style={{ background: "rgba(239,68,68,.1)" }}>⏳</span>
-                        <span className="bi-kpi__label">PENDIENTE DE COBRO</span>
-                      </div>
-                      <strong className="bi-kpi__val" style={{ color: "#ef4444" }}>{compact(kpis.pendienteCobro)}</strong>
-                      <span className="bi-kpi__sub">{kpis.pendienteCount} facturas · {safePct(kpis.pendienteCobro, kpis.total)}% del total</span>
-                      <div className="bi-kpi__divider"/>
-                      <div className="bi-kpi__bar-label"><span>Cobrado</span><span>{compact(kpis.cobrada)}</span></div>
-                      <div style={{ height: 5, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ width: `${Math.min(100, safePct(kpis.cobrada, kpis.total))}%`, height: "100%", background: "#10b981", borderRadius: 999 }}/>
-                      </div>
-                      <div className="bi-kpi__bar-label" style={{ marginTop: 3 }}>
-                        <span>Pendiente</span><span style={{ color: "#ef4444" }}>{safePct(kpis.pendienteCobro, kpis.total)}%</span>
-                      </div>
-                      <div style={{ height: 5, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ width: `${Math.min(100, safePct(kpis.pendienteCobro, kpis.total))}%`, height: "100%", background: "#ef4444", borderRadius: 999 }}/>
-                      </div>
-                    </div>
-
-                    <div className="bi-kpi bi-kpi--forecast">
-                      <div className="bi-kpi__head">
-                        <span className="bi-kpi__icon" style={{ background: "rgba(99,102,241,.1)" }}>📋</span>
-                        <span className="bi-kpi__label">FORECAST MENSUAL</span>
+                    <article className="bi-forecast-card">
+                      <div className="bi-section-head">
+                        <span className="bi-support-card__icon bi-support-card__icon--violet"><Target size={16}/></span>
+                        <div><span>Forecast mensual</span><strong>Objetivo comercial cargado</strong></div>
+                        {profile?.role === "super_admin" && (
+                          <button className="bi-icon-btn" onClick={() => setForecastEditing(prev => !prev)} title="Editar forecast">
+                            <Pencil size={14}/>
+                          </button>
+                        )}
                       </div>
                       <div className="bi-forecast-row">
                         <select className="bi-forecast-select" value={forecastMonth} onChange={e => setForecastMonth(e.target.value)}>
@@ -813,9 +854,8 @@ export default function ImporterPage({ profile, onNavigate }) {
                           })}
                         </select>
                       </div>
-                      {/* Solo super_admin puede editar el forecast */}
-                      {profile?.role === "super_admin" && (
-                        <div className="bi-forecast-row" style={{ marginTop: 4 }}>
+                      {forecastEditing && profile?.role === "super_admin" && (
+                        <div className="bi-forecast-row">
                           <input
                             className="bi-forecast-input"
                             value={forecastInputs[forecastMonth] || ""}
@@ -827,25 +867,18 @@ export default function ImporterPage({ profile, onNavigate }) {
                         </div>
                       )}
                       {forecastInputs[forecastMonth] ? (
-                        <>
-                          <div className="bi-kpi__divider"/>
-                          <div className="bi-kpi__bar-label">
-                            <span>Forecast</span>
-                            <span style={{ color: "#6366f1" }}>{compact(Number(forecastInputs[forecastMonth]))}</span>
-                          </div>
-                          <div style={{ height: 5, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
-                            <div style={{ width: `${Math.min(100, kpis.fcastPct || 0)}%`, height: "100%", background: "#6366f1", borderRadius: 999 }}/>
-                          </div>
-                          <span className="bi-kpi__sub" style={{ color: "#6366f1" }}>{kpis.fcastPct || 0}% cumplido</span>
-                        </>
+                        <div className="bi-forecast-summary">
+                          <strong>{compact(Number(forecastInputs[forecastMonth]))}</strong>
+                          <span>{kpis.fcastPct || 0}% cumplido · total anual {compact(currentYearFcast)}</span>
+                          <div className="bi-progress"><div className="bi-progress__fill bi-progress__fill--violet" style={{ width: `${Math.min(100, kpis.fcastPct || 0)}%` }}/></div>
+                        </div>
                       ) : (
-                        <span className="bi-kpi__sub" style={{ color: "#94a3b8" }}>
-                          {profile?.role === "super_admin" ? "Ingresá el forecast para este mes" : "Sin forecast cargado"}
+                        <span className="bi-kpi__sub">
+                          {profile?.role === "super_admin" ? "Sin forecast cargado. Usá el lápiz para editar." : "Sin forecast cargado"}
                         </span>
                       )}
-                      {currentYearFcast > 0 && <span className="bi-kpi__sub" style={{ color: "#94a3b8", fontSize: 10 }}>Total anual: {compact(currentYearFcast)}</span>}
-                    </div>
-                  </div>
+                    </article>
+                  </section>
 
                   {/* CHARTS ROW 1 */}
                   <div className="bi-row bi-row--70-30">
@@ -879,105 +912,110 @@ export default function ImporterPage({ profile, onNavigate }) {
                     </div>
                   </div>
 
-                  {/* CHARTS ROW 2 */}
-                  <div className="bi-row bi-row--50-50">
-                    <div className="bi-panel">
-                      <div className="bi-panel__hd">
-                        <div><h3>Ventas mensuales</h3><p>Volumen por mes — color según performance</p></div>
-                        <Tooltip text="Barras por mes con color según performance: verde = mejor mes, azul = normal, azul claro = bajo. Detectá estacionalidad y tendencia de crecimiento."/>
+                  {biMode === "complete" ? (
+                    <>
+                      <div className="bi-row bi-row--single">
+                        <div className="bi-panel">
+                          <div className="bi-panel__hd">
+                            <div><h3>Ticket promedio por mes</h3><p>Valor promedio por comprobante</p></div>
+                            <Tooltip text="Monto promedio por factura cada mes. Si sube, tus operaciones son más grandes. Si baja, puede indicar más clientes chicos o descuentos. Calculado sobre comprobantes únicos."/>
+                          </div>
+                          <div style={{ height: 240, padding: "10px 14px 14px" }}><canvas ref={ticketRef}/></div>
+                        </div>
                       </div>
-                      <div style={{ height: 240, padding: "10px 14px 14px" }}><canvas ref={lineMonthRef}/></div>
-                    </div>
-                    <div className="bi-panel">
-                      <div className="bi-panel__hd">
-                        <div><h3>Ticket promedio por mes</h3><p>Valor promedio por comprobante</p></div>
-                        <Tooltip text="Monto promedio por factura cada mes. Si sube, tus operaciones son más grandes. Si baja, puede indicar más clientes chicos o descuentos. Calculado sobre comprobantes únicos."/>
-                      </div>
-                      <div style={{ height: 240, padding: "10px 14px 14px" }}><canvas ref={ticketRef}/></div>
-                    </div>
-                  </div>
 
-                  {/* BOTTOM ROW */}
-                  <div className="bi-row bi-row--33-33-33">
-                    <div className="bi-panel">
-                      <div className="bi-panel__hd">
-                        <div><h3>Ranking de clientes</h3><p>Top clientes por volumen facturado</p></div>
-                        <span className="bi-badge">{topClientes.length} clientes</span>
-                      </div>
-                      <div className="bi-ranking">
-                        {topClientes.map(([cliente, total], i) => {
-                          const maxV = topClientes[0]?.[1] || 1;
-                          return (
-                            <div key={cliente} className="bi-rank-row">
-                              <span className="bi-rank-num" style={{ color: i < 3 ? PAL[i] : "#94a3b8" }}>#{i+1}</span>
-                              <div className="bi-rank-mid">
-                                <span className="bi-rank-name" title={cliente}>{cliente}</span>
-                                <div className="bi-rank-bar-bg"><div className="bi-rank-bar-fill" style={{ width: `${safePct(total, maxV)}%`, background: PAL[i % PAL.length] }}/></div>
-                              </div>
-                              <span className="bi-rank-val">{compact(total)}</span>
+                      <div className="bi-row bi-row--33-33-33">
+                        <div className="bi-panel">
+                          <div className="bi-panel__hd">
+                            <div><h3>Ranking de clientes</h3><p>Volumen facturado por cliente</p></div>
+                            <div className="bi-panel__actions">
+                              <span className="bi-badge">{topClientes.length} clientes</span>
+                              {topClientes.length > 5 && <button className="bi-link" onClick={() => setClientRankExpanded(prev => !prev)}>{clientRankExpanded ? "Ver menos" : "Ver todos"}</button>}
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="bi-panel">
-                      <div className="bi-panel__hd"><div><h3>Alertas inteligentes</h3></div></div>
-                      <div className="bi-alertas">
-                        {alertas.map((a, i) => (
-                          <div key={i} className={`bi-alerta bi-alerta--${a.type}`}>
-                            <span className="bi-alerta__ico">{a.icon}</span>
-                            <div className="bi-alerta__body"><strong>{a.title}</strong><p>{a.desc}</p></div>
-                            <span className={`bi-alerta__val ${a.type}`}>{a.val}</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="bi-ranking">
+                            {visibleTopClientes.map(([cliente, total], i) => {
+                              const maxV = topClientes[0]?.[1] || 1;
+                              return (
+                                <div key={cliente} className="bi-rank-row">
+                                  <span className="bi-rank-num" style={{ color: i < 3 ? PAL[i] : "#94a3b8" }}>#{i+1}</span>
+                                  <div className="bi-rank-mid">
+                                    <span className="bi-rank-name" title={cliente}>{cliente}</span>
+                                    <div className="bi-rank-bar-bg"><div className="bi-rank-bar-fill" style={{ width: `${safePct(total, maxV)}%`, background: PAL[i % PAL.length] }}/></div>
+                                  </div>
+                                  <span className="bi-rank-val">{compact(total)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
 
-                    <div className="bi-panel">
-                      <div className="bi-panel__hd"><div><h3>Insights automáticos</h3><p>Calculados con datos reales</p></div></div>
-                      <div className="bi-insights">
-                        {insights.map((ins, i) => (
-                          <div key={i} className="bi-insight">
-                            <span className="bi-insight__ico">{ins.icon}</span>
-                            <p>
-                              {ins.parts.map((part, idx) => (
-                                typeof part === "string"
-                                  ? <span key={idx}>{part}</span>
-                                  : <strong key={idx}>{part.strong}</strong>
+                        <div className="bi-panel">
+                          <div className="bi-panel__hd"><div><h3>Alertas inteligentes</h3><p>Desvíos que requieren seguimiento</p></div></div>
+                          <div className="bi-alertas">
+                            {alertas.map((a, i) => (
+                              <div key={i} className={`bi-alerta bi-alerta--${a.type}`}>
+                                <span className="bi-alerta__ico"><AlertIcon kind={a.icon}/></span>
+                                <div className="bi-alerta__body"><strong>{a.title}</strong><p>{a.desc}</p></div>
+                                <span className={`bi-alerta__val ${a.type}`}>{a.val}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bi-panel">
+                          <div className="bi-panel__hd"><div><h3>Insights automáticos</h3><p>Lecturas calculadas con datos reales</p></div></div>
+                          <div className="bi-insights">
+                            {insights.map((ins, i) => (
+                              <div key={i} className="bi-insight">
+                                <span className="bi-insight__ico">{ins.icon}</span>
+                                <p>
+                                  {ins.parts.map((part, idx) => (
+                                    typeof part === "string"
+                                      ? <span key={idx}>{part}</span>
+                                      : <strong key={idx}>{part.strong}</strong>
+                                  ))}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bi-panel">
+                        <div className="bi-panel__hd">
+                          <div><h3>Últimas importaciones</h3><p>Trazabilidad de la fuente de datos</p></div>
+                          {["super_admin","manager"].includes(profile?.role) && (
+                            <button className="bi-link" onClick={() => setTab("history")}>Ver historial →</button>
+                          )}
+                        </div>
+                        <div className="bi-tbl-wrap">
+                          <table className="bi-tbl">
+                            <thead><tr><th>Fecha</th><th>Archivo</th><th>Filas procesadas</th><th>Estado</th><th>Errores</th></tr></thead>
+                            <tbody>
+                              {imports.slice(0, 4).map(imp => (
+                                <tr key={imp.id}>
+                                  <td>{new Date(imp.created_at).toLocaleDateString("es-AR")} {new Date(imp.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}</td>
+                                  <td><strong>{imp.filename}</strong></td>
+                                  <td>{imp.rows_ok.toLocaleString("es-AR")} filas</td>
+                                  <td><span className={`bi-status ${imp.rows_error > 0 ? "warn" : "ok"}`}>{imp.rows_error > 0 ? "Advertencias" : "Exitoso"}</span></td>
+                                  <td className={imp.rows_error > 0 ? "c-red" : "c-green"}>{imp.rows_error}</td>
+                                </tr>
                               ))}
-                            </p>
-                          </div>
-                        ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* ÚLTIMAS IMPORTACIONES */}
-                  <div className="bi-panel">
-                    <div className="bi-panel__hd">
-                      <div><h3>Últimas importaciones</h3></div>
-                      {["super_admin","manager"].includes(profile?.role) && (
-                        <button className="bi-link" onClick={() => setTab("history")}>Ver historial →</button>
-                      )}
-                    </div>
-                    <div className="bi-tbl-wrap">
-                      <table className="bi-tbl">
-                        <thead><tr><th>Fecha</th><th>Archivo</th><th>Filas procesadas</th><th>Estado</th><th>Errores</th></tr></thead>
-                        <tbody>
-                          {imports.slice(0, 4).map(imp => (
-                            <tr key={imp.id}>
-                              <td>{new Date(imp.created_at).toLocaleDateString("es-AR")} {new Date(imp.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}</td>
-                              <td><strong>{imp.filename}</strong></td>
-                              <td>{imp.rows_ok.toLocaleString("es-AR")} filas</td>
-                              <td><span className={`bi-status ${imp.rows_error > 0 ? "warn" : "ok"}`}>{imp.rows_error > 0 ? "Advertencias" : "Exitoso"}</span></td>
-                              <td className={imp.rows_error > 0 ? "c-red" : "c-green"}>{imp.rows_error}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                    </>
+                  ) : (
+                    <section className="bi-detail-gate">
+                      <div>
+                        <strong>Profundización analítica disponible</strong>
+                        <p>Abrí la vista completa para revisar ticket mensual, ranking de clientes, alertas, insights e importaciones.</p>
+                      </div>
+                      <button onClick={() => setBiMode("complete")}>Ver análisis completo</button>
+                    </section>
+                  )}
                 </>
               )}
             </>
