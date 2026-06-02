@@ -93,7 +93,7 @@
 
 .ph-decision-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 9px;
 }
 
@@ -220,6 +220,104 @@
   font-style: normal;
   line-height: 1.35;
 }
+
+.ph-quick-read {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin: 6px 0 14px;
+  padding: 14px 15px;
+  border: 1px solid rgba(24, 95, 165, .16);
+  border-left: 5px solid #185fa5;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .72);
+}
+
+.ph-quick-read--green { border-left-color: #10b981; }
+.ph-quick-read--amber { border-left-color: #f59e0b; }
+.ph-quick-read--red { border-left-color: #ef4444; }
+
+.ph-quick-read strong {
+  display: block;
+  margin-top: 3px;
+  color: #0f2444;
+  font-size: 18px;
+  letter-spacing: -.25px;
+}
+
+.ph-quick-read p {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.ph-quick-read__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.ph-quick-read__actions span {
+  color: #64748b;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.ph-quick-read__actions button {
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f2444;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 9px 12px;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.ph-quick-read__actions button:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 18px rgba(24, 95, 165, .12);
+  transform: translateY(-1px);
+}
+
+.ph-quick-read__actions .primary {
+  border-color: #185fa5;
+  background: #185fa5;
+  color: #fff;
+}
+
+.ph-product-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 10px;
+}
+
+.ph-mini-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: #eef2f7;
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.ph-mini-pill--green { background: #dcfce7; color: #166534; }
+.ph-mini-pill--amber { background: #fef3c7; color: #92400e; }
+.ph-mini-pill--red { background: #fee2e2; color: #991b1b; }
+.ph-mini-pill--blue { background: #dbeafe; color: #185fa5; }
+.ph-mini-pill--gray { background: #f1f5f9; color: #64748b; }
 
 .ph-evidence {
   margin-top: 12px;
@@ -997,6 +1095,32 @@
   color: #991b1b;
 }
 
+.ph-chip--green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ph-chip--amber,
+.ph-chip--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ph-chip--red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ph-chip--blue,
+.ph-chip--profile {
+  background: #dbeafe;
+  color: #185fa5;
+}
+
+.ph-table td .ph-chip + .ph-chip {
+  margin-left: 5px;
+}
+
 .ph-detail-title {
   padding: 4px 2px 0;
 }
@@ -1277,7 +1401,8 @@
   .ph-evidence__head,
   .ph-panel__head,
   .ph-history-tools,
-  .ph-simple-decision {
+  .ph-simple-decision,
+  .ph-quick-read {
     flex-direction: column;
     align-items: stretch;
   }
@@ -1295,6 +1420,15 @@
 
   .ph-simple-decision {
     display: flex;
+  }
+
+  .ph-quick-read {
+    display: flex;
+  }
+
+  .ph-quick-read__actions {
+    justify-content: flex-start;
+    max-width: none;
   }
 
   .ph-view-tabs {
@@ -1378,6 +1512,7 @@
 [data-theme="dark"] .ph-evidence,
 [data-theme="dark"] .ph-evidence-grid article,
 [data-theme="dark"] .ph-simple-decision,
+[data-theme="dark"] .ph-quick-read,
 [data-theme="dark"] .ph-view-tabs {
   background: #0d1117;
   border-color: #30363d;
@@ -1385,6 +1520,7 @@
 }
 
 [data-theme="dark"] .ph-simple-decision__price,
+[data-theme="dark"] .ph-quick-read__actions button,
 [data-theme="dark"] .ph-latest-card__products button,
 [data-theme="dark"] .ph-more-metrics summary,
 [data-theme="dark"] .ph-view-tabs button:hover {
@@ -1393,6 +1529,7 @@
 }
 
 [data-theme="dark"] .ph-simple-decision strong,
+[data-theme="dark"] .ph-quick-read strong,
 [data-theme="dark"] .ph-decision-card strong,
 [data-theme="dark"] .ph-market-snapshot strong,
 [data-theme="dark"] .ph-competitive-summary strong,
@@ -1404,6 +1541,8 @@
 }
 
 [data-theme="dark"] .ph-simple-decision p,
+[data-theme="dark"] .ph-quick-read p,
+[data-theme="dark"] .ph-quick-read__actions span,
 [data-theme="dark"] .ph-decision-card small,
 [data-theme="dark"] .ph-market-snapshot small,
 [data-theme="dark"] .ph-competitive-summary small,
@@ -1509,9 +1648,16 @@
 
 [data-theme="dark"] .ph-rank-bar,
 [data-theme="dark"] .ph-participation i,
-[data-theme="dark"] .ph-chip {
+[data-theme="dark"] .ph-chip,
+[data-theme="dark"] .ph-mini-pill {
   background: #21262d;
   color: #8b949e;
+}
+
+[data-theme="dark"] .ph-quick-read__actions .primary {
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
 }
 
 .ph-header-actions,

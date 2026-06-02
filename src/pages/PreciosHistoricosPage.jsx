@@ -94,6 +94,103 @@ function productKey(row) {
   return normalizeProductText(row?.descripcion).slice(0, 160) || `renglon-${row?.renglon || "s/d"}`;
 }
 
+const TOKEN_STOPWORDS = new Set([
+  "con", "del", "para", "por", "las", "los", "una", "uno", "sus", "sin",
+  "modelo", "tipo", "unidad", "unidades", "set", "kit", "de", "la", "el",
+]);
+
+function productTokens(value) {
+  return normalizeProductText(value)
+    .split(" ")
+    .filter(token => token.length > 2 && !TOKEN_STOPWORDS.has(token));
+}
+
+function productMatch(row, q) {
+  const tokens = [...new Set(productTokens(q))];
+  if (!tokens.length) return { score: 100, label: "Referencia", tone: "blue" };
+  const description = normalizeProductText(row?.descripcion);
+  const matched = tokens.filter(token => description.includes(token)).length;
+  const exactBonus = description.includes(normalizeProductText(q)) ? 18 : 0;
+  const score = Math.min(100, Math.round((matched / tokens.length) * 82 + exactBonus));
+  if (score >= 78) return { score, label: "Coincidencia alta", tone: "green" };
+  if (score >= 45) return { score, label: "Coincidencia media", tone: "amber" };
+  return { score, label: "Coincidencia baja", tone: "red" };
+}
+
+function median(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function percentile(values, pct) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const idx = (sorted.length - 1) * pct;
+  const low = Math.floor(idx);
+  const high = Math.ceil(idx);
+  if (low === high) return sorted[low];
+  return sorted[low] + (sorted[high] - sorted[low]) * (idx - low);
+}
+
+function priceQualityMap(rowsList) {
+  const valid = rowsList
+    .map(row => ({ row, price: comparablePrice(row) }))
+    .filter(item => item.price !== null);
+  const map = new Map();
+  valid.forEach(({ row }) => map.set(row.id, { suspicious: false, reason: "" }));
+  if (valid.length < 4) return map;
+
+  const prices = valid.map(item => item.price);
+  const med = median(prices);
+  const q1 = percentile(prices, .25);
+  const q3 = percentile(prices, .75);
+  const iqr = q1 !== null && q3 !== null ? q3 - q1 : 0;
+  const lowLimit = Math.max(1, Math.min(med * .28, iqr ? q1 - iqr * 3 : med * .28));
+  const highLimit = Math.max(med * 5, iqr ? q3 + iqr * 3 : med * 5);
+
+  valid.forEach(({ row, price }) => {
+    const tooLow = price < lowLimit;
+    const tooHigh = price > highLimit;
+    if (tooLow || tooHigh) {
+      map.set(row.id, {
+        suspicious: true,
+        reason: tooLow
+          ? "Precio muy por debajo del rango comparable"
+          : "Precio muy por encima del rango comparable",
+      });
+    }
+  });
+  return map;
+}
+
+function reliableRows(rowsList, quality = priceQualityMap(rowsList)) {
+  const withPrice = rowsList.filter(row => comparablePrice(row) !== null);
+  const clean = withPrice.filter(row => !quality.get(row.id)?.suspicious);
+  return clean.length ? clean : withPrice;
+}
+
+function quantityProfile(rowsList) {
+  const quantities = rowsList
+    .map(row => Number(row.cantidad || 0))
+    .filter(value => Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b);
+  if (!quantities.length) return { label: "Cantidad sin informar", tone: "gray", detail: "No se puede validar escala de compra." };
+  const min = quantities[0];
+  const max = quantities[quantities.length - 1];
+  const med = median(quantities);
+  const mixed = quantities.length > 1 && max >= Math.max(min * 4, min + 100);
+  return {
+    min, max, med,
+    label: mixed ? "Cantidades no homogéneas" : "Cantidades comparables",
+    tone: mixed ? "amber" : "green",
+    detail: mixed
+      ? `Rango ${min} a ${max}. Revisar precio unitario por escala.`
+      : `Cantidad típica ${Math.round(med || min)}.`,
+  };
+}
+
 function shortText(value, max = 110) {
   const text = String(value || "Sin descripción").trim();
   return text.length > max ? `${text.slice(0, max)}…` : text;
@@ -621,7 +718,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     });
 
     return Object.values(groups).map(group => {
-      const valid = group.rows
+      const quality = priceQualityMap(group.rows);
+      const reliable = reliableRows(group.rows, quality);
+      const valid = reliable
         .map(row => ({ row, price: comparablePrice(row) }))
         .filter(item => item.price !== null);
       const ownRows = valid.filter(item => isOwnOffer(item.row)).map(item => item.row);
@@ -648,12 +747,15 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         ...group,
         refs: group.rows.length,
         validRefs: valid.length,
+        suspiciousRefs: group.rows.filter(row => quality.get(row.id)?.suspicious).length,
         minRow: minItem?.row || null,
         minPrice,
         lastOwn,
         lastComp,
         diff,
         status,
+        match: productMatch(group.rows[0], query),
+        quantity: quantityProfile(valid.map(item => item.row)),
         institutionsCount: group.institutions.size,
         companiesCount: group.companies.size,
       };
@@ -661,7 +763,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       if (b.latestDate !== a.latestDate) return b.latestDate.localeCompare(a.latestDate);
       return b.validRefs - a.validRefs;
     });
-  }, [baseFilteredRows]);
+  }, [baseFilteredRows, query]);
 
   const activeProductKey = productGroups.some(group => group.key === selectedProductKey)
     ? selectedProductKey
@@ -676,6 +778,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       ? baseFilteredRows.filter(row => productKey(row) === activeProductKey)
       : baseFilteredRows
   ), [baseFilteredRows, activeProductKey]);
+
+  const priceQuality = useMemo(() => priceQualityMap(filteredRows), [filteredRows]);
+
+  const analysisRows = useMemo(() => reliableRows(filteredRows, priceQuality), [filteredRows, priceQuality]);
 
   useEffect(() => {
     setMarketPage(1);
@@ -700,12 +806,12 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   }, [filteredRows]);
 
   const metricas = useMemo(() => {
-    if (!filteredRows.length) return null;
-    const nuestras     = filteredRows.filter(isOwnOffer);
-    const licitaciones = new Set(filteredRows.map(r => r.tender_id)).size;
-    const empresas     = new Set(filteredRows.map(r => r.empresa)).size;
+    if (!analysisRows.length) return null;
+    const nuestras     = analysisRows.filter(isOwnOffer);
+    const licitaciones = new Set(analysisRows.map(r => r.tender_id)).size;
+    const empresas     = new Set(analysisRows.map(r => r.empresa)).size;
     const byTenderReng = {};
-    filteredRows.forEach(r => {
+    analysisRows.forEach(r => {
       const key = `${r.tender_id}_${r.renglon}`;
       if (!byTenderReng[key]) byTenderReng[key] = [];
       byTenderReng[key].push(r);
@@ -738,14 +844,14 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       tendencia  = { pct: Number(pct), subiendo: Number(pct) > 0 };
     }
     const conteoEmpresas = {};
-    filteredRows.filter(r => !isOwnOffer(r)).forEach(r => {
+    analysisRows.filter(r => !isOwnOffer(r)).forEach(r => {
       conteoEmpresas[r.empresa] = (conteoEmpresas[r.empresa] || 0) + 1;
     });
     const topCompetidores = Object.entries(conteoEmpresas)
       .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([nombre, veces]) => ({ nombre, veces }));
     return { licitaciones, empresas, nuestras: nuestras.length, avgNuestro,
       preciosNuestros, minimoCount, totalRenglones, tendencia, topCompetidores };
-  }, [filteredRows]);
+  }, [analysisRows]);
 
   function precioMinRenglon(filas) {
     const precios = filas.map(comparablePrice).filter(p => p !== null);
@@ -755,7 +861,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const showFocusedAnalysis = Boolean(activeProductKey);
 
   const decision = useMemo(() => {
-    const validRows = filteredRows
+    const validRows = analysisRows
       .map(r => ({ ...r, precioComparable: comparablePrice(r) }))
       .filter(r => r.precioComparable !== null);
     if (!validRows.length) return null;
@@ -783,9 +889,19 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     }, {})).sort((a, b) => rowDate(b).localeCompare(rowDate(a))).slice(0, 5);
 
     const refs = validRows.length;
-    const confianza = refs >= 8 && (antiguedad === null || antiguedad <= 180)
+    const suspiciousCount = filteredRows.filter(row => priceQuality.get(row.id)?.suspicious).length;
+    const quantity = quantityProfile(validRows);
+    const lowMatchCount = validRows.filter(row => productMatch(row, query).score < 45).length;
+    const confianzaScore = Math.max(0,
+      (refs >= 8 ? 40 : refs >= 3 ? 25 : 10)
+      + (antiguedad === null ? 8 : antiguedad <= 90 ? 30 : antiguedad <= 180 ? 20 : antiguedad <= 365 ? 10 : 0)
+      + (quantity.tone === "green" ? 15 : quantity.tone === "amber" ? 6 : 0)
+      - (suspiciousCount ? 12 : 0)
+      - (lowMatchCount ? 10 : 0)
+    );
+    const confianza = confianzaScore >= 72
       ? { level: "Alta", color: "#059669", bg: "#dcfce7" }
-      : refs >= 3 && (antiguedad === null || antiguedad <= 365)
+      : confianzaScore >= 43
         ? { level: "Media", color: "#d97706", bg: "#fef3c7" }
         : { level: "Baja", color: "#dc2626", bg: "#fee2e2" };
 
@@ -827,6 +943,14 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     const detalleFuenteSugerido = fuenteSugerido
       ? `${tipoFuenteSugerido} · ${fmtDate(fechaFuenteSugerido)}${diasFuenteSugerido !== null ? ` · hace ${diasFuenteSugerido} días` : ""}`
       : "Sin fecha de referencia";
+    const scopeParts = [];
+    if (institutionFilter) scopeParts.push(`Institución: ${institutionFilter}`);
+    if (jurisdictionFilter) scopeParts.push(`Jurisdicción: ${jurisdictionFilter}`);
+    if (companyFilter) scopeParts.push(`Empresa: ${companyFilter}`);
+    const scopeLabel = scopeParts.length ? scopeParts.join(" · ") : "Mercado general comparable";
+    const rangoSugerido = sugerido
+      ? { min: Math.round(sugerido * 0.98), max: Math.round(sugerido * 1.03) }
+      : null;
     const motivo = ultimaAdjudicada
       ? "Basado en la última adjudicación registrada, con 2% de colchón operativo."
       : minimoMercado
@@ -838,6 +962,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     return {
       validRows,
       refs,
+      suspiciousCount,
+      quantity,
+      lowMatchCount,
       propias,
       competencia,
       competidores,
@@ -854,17 +981,19 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       diasFuenteSugerido,
       vigenciaSugerido,
       detalleFuenteSugerido,
+      scopeLabel,
+      rangoSugerido,
       motivo,
       confianza,
       estado,
       diffMercado,
       antiguedad,
     };
-  }, [filteredRows]);
+  }, [analysisRows, filteredRows, priceQuality, query, institutionFilter, jurisdictionFilter, companyFilter]);
 
   const marketTrend = useMemo(() => {
     const byDate = {};
-    filteredRows.forEach(row => {
+    analysisRows.forEach(row => {
       const price = comparablePrice(row);
       const date = rowDate(row);
       if (price === null || !date) return;
@@ -881,11 +1010,11 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         own: avg(point.own),
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredRows]);
+  }, [analysisRows]);
 
   const competitiveIntel = useMemo(() => {
     const byGroup = {};
-    const competitorRows = filteredRows.filter(row => !isOwnOffer(row));
+    const competitorRows = analysisRows.filter(row => !isOwnOffer(row));
     competitorRows.forEach(row => {
       const key = `${row.tender_id}_${row.renglon}`;
       if (!byGroup[key]) byGroup[key] = [];
@@ -942,11 +1071,11 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       adjudicaciones: [...ranking].sort((a, b) => b.adjudicaciones - a.adjudicaciones || b.refs - a.refs).slice(0, 5),
       minimos: [...ranking].sort((a, b) => b.minimos - a.minimos || b.refs - a.refs).slice(0, 5),
     };
-  }, [filteredRows]);
+  }, [analysisRows]);
 
   const marketRows = useMemo(() => {
     const byGroup = {};
-    filteredRows.forEach(row => {
+    analysisRows.forEach(row => {
       const key = `${row.tender_id}_${row.renglon}`;
       if (!byGroup[key]) byGroup[key] = [];
       byGroup[key].push(row);
@@ -960,6 +1089,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       const min = minByGroup[`${row.tender_id}_${row.renglon}`];
       const price = comparablePrice(row);
       const diff = price !== null && min ? Number(((price - min) / min * 100).toFixed(1)) : null;
+      const quality = priceQuality.get(row.id) || { suspicious: false, reason: "" };
       return {
         id: row.id,
         row,
@@ -977,6 +1107,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         adjudicado: Boolean(row.adjudicado),
         diff,
         min,
+        quality,
+        match: productMatch(row, query),
       };
     }).filter(item => {
       if (!q) return true;
@@ -998,6 +1130,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         case "cantidad": return item.cantidad;
         case "total": return item.total;
         case "resultado": return item.resultado;
+        case "calidad": return item.match.score;
         case "adjudicado": return item.adjudicado ? 1 : 0;
         case "diff": return item.diff ?? Number.POSITIVE_INFINITY;
         default: return item.fecha || "";
@@ -1011,7 +1144,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
       return String(av).localeCompare(String(bv)) * dir;
     });
-  }, [filteredRows, marketSearch, marketSort]);
+  }, [analysisRows, filteredRows, marketSearch, marketSort, priceQuality, query]);
 
   const marketTotalPages = Math.max(1, Math.ceil(marketRows.length / marketPageSize));
   const marketPageRows = marketRows.slice((marketPage - 1) * marketPageSize, marketPage * marketPageSize);
@@ -1042,6 +1175,18 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         text: decision.diffMercado === null
           ? "Falta una cotización propia comparable."
           : "Diferencia de la última referencia propia contra mínimo mercado.",
+      },
+      {
+        label: "Calidad del dato",
+        value: decision.suspiciousCount ? `${decision.suspiciousCount} revisar` : "Sin alertas",
+        text: decision.suspiciousCount
+          ? "Se detectaron importes fuera de rango y no se usan para sugerir precio."
+          : "No se detectaron outliers relevantes en la muestra analizada.",
+      },
+      {
+        label: "Escala de compra",
+        value: decision.quantity.label,
+        text: decision.quantity.detail,
       },
       {
         label: "Recomendación",
@@ -1107,6 +1252,35 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       tone: "red",
     };
   }, [decision]);
+
+  const copySuggestedPrice = useCallback(async () => {
+    if (!decision?.sugerido) return;
+    const text = [
+      `Precio sugerido: ${fullMoney(decision.sugerido)}`,
+      `Rango operativo: ${decision.rangoSugerido ? `${fullMoney(decision.rangoSugerido.min)} a ${fullMoney(decision.rangoSugerido.max)}` : "—"}`,
+      `Base: ${decision.detalleFuenteSugerido}`,
+      `Alcance: ${decision.scopeLabel}`,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Precio sugerido copiado.");
+    } catch {
+      alert(text);
+    }
+  }, [decision]);
+
+  const openCotizadorWithReference = useCallback(() => {
+    if (decision?.sugerido) {
+      localStorage.setItem("mc_price_intel_reference", JSON.stringify({
+        price: decision.sugerido,
+        range: decision.rangoSugerido,
+        source: decision.detalleFuenteSugerido,
+        scope: decision.scopeLabel,
+        savedAt: new Date().toISOString(),
+      }));
+    }
+    onNavigate("cotizador");
+  }, [decision, onNavigate]);
 
   return (
     <Layout title="Inteligencia de Precios" profile={profile} onNavigate={onNavigate}>
@@ -1521,6 +1695,19 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                       minHeight:38,marginBottom:10}}>
                       {shortText(group.title, 92)}
                     </div>
+                    <div className="ph-product-flags">
+                      <span className={`ph-mini-pill ph-mini-pill--${group.match.tone}`}>
+                        {group.match.label} · {group.match.score}%
+                      </span>
+                      <span className={`ph-mini-pill ph-mini-pill--${group.quantity.tone}`}>
+                        {group.quantity.label}
+                      </span>
+                      {group.suspiciousRefs > 0 && (
+                        <span className="ph-mini-pill ph-mini-pill--red">
+                          {group.suspiciousRefs} dato{group.suspiciousRefs !== 1 ? "s" : ""} a revisar
+                        </span>
+                      )}
+                    </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",
                       gap:8}}>
                       <div style={{background:"#f8fafc",border:"1px solid #eef2f7",
@@ -1580,6 +1767,27 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               </div>
             </div>
 
+            <div className={`ph-quick-read ph-quick-read--${quickDecision?.tone || "blue"}`}>
+              <div>
+                <span className="ph-eyebrow">Lectura en 5 segundos</span>
+                <strong>{decision.estado.label}</strong>
+                <p>
+                  Precio sugerido {decision.sugerido ? fullMoney(decision.sugerido) : "sin dato"}.
+                  {" "}Base {decision.tipoFuenteSugerido.toLowerCase()} del {fmtDate(decision.fechaFuenteSugerido)}.
+                  {" "}{decision.scopeLabel}.
+                </p>
+              </div>
+              <div className="ph-quick-read__actions">
+                {decision.rangoSugerido && (
+                  <span>
+                    Rango operativo {fullMoney(decision.rangoSugerido.min)}–{fullMoney(decision.rangoSugerido.max)}
+                  </span>
+                )}
+                <button type="button" onClick={copySuggestedPrice}>Copiar referencia</button>
+                <button type="button" className="primary" onClick={openCotizadorWithReference}>Abrir cotizador</button>
+              </div>
+            </div>
+
             <div className="ph-decision-grid">
               <article className={`ph-decision-card ph-decision-card--primary ph-decision-card--${quickDecision?.tone || "blue"}`}>
                 <span>Precio sugerido</span>
@@ -1600,6 +1808,14 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 <span>Base de recomendación</span>
                 <strong>{fmtDate(decision.fechaFuenteSugerido)}</strong>
                 <small>{decision.detalleFuenteSugerido}</small>
+              </article>
+              <article className="ph-decision-card">
+                <span>Calidad del dato</span>
+                <strong>{decision.quantity.label}</strong>
+                <small>
+                  {decision.quantity.detail}
+                  {decision.suspiciousCount ? ` · ${decision.suspiciousCount} referencia a revisar` : ""}
+                </small>
               </article>
             </div>
 
@@ -1762,6 +1978,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                         <th>Participación</th>
                         <th>Mínimos</th>
                         <th>Adjudicaciones</th>
+                        <th>Perfil</th>
                         <th>Última actividad</th>
                       </tr>
                     </thead>
@@ -1770,6 +1987,13 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                         const diff = item.lastPrice !== null && decision.minimoMercado
                           ? Number(((item.lastPrice - decision.minimoMercado) / decision.minimoMercado * 100).toFixed(1))
                           : null;
+                        const profile = item.minimos > 0
+                          ? "Agresivo en precio"
+                          : item.adjudicaciones > 0
+                            ? "Gana adjudicaciones"
+                            : item.participation >= 30
+                              ? "Alta presencia"
+                              : "Seguimiento";
                         return (
                           <tr key={item.name}>
                             <td><strong>{item.name}</strong><small>{item.refs} referencia{item.refs !== 1 ? "s" : ""}</small></td>
@@ -1783,6 +2007,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                             </td>
                             <td>{item.minimos}</td>
                             <td>{item.adjudicaciones || "—"}</td>
+                            <td><span className="ph-chip ph-chip--profile">{profile}</span></td>
                             <td>{fmtDate(item.lastDate)}</td>
                           </tr>
                         );
@@ -1822,7 +2047,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                         ["fecha","Fecha"],["institucion","Institución"],["jurisdiccion","Jurisdicción"],
                         ["expediente","Expediente"],["renglon","Renglón"],["empresa","Empresa"],
                         ["precio","Precio unitario"],["cantidad","Cantidad"],["total","Total"],
-                        ["resultado","Resultado"],["adjudicado","Adjudicado"],["diff","Dif. vs mínimo"],
+                        ["resultado","Resultado"],["calidad","Calidad"],["adjudicado","Adjudicado"],["diff","Dif. vs mínimo"],
                       ].map(([key, label]) => (
                         <th key={key}>
                           <button onClick={() => sortMarketBy(key)}>
@@ -1845,6 +2070,16 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                         <td>{item.cantidad || "—"}</td>
                         <td className="ph-money">{fullMoney(item.total)}</td>
                         <td><span className="ph-chip">{item.resultado}</span></td>
+                        <td>
+                          <span className={`ph-chip ph-chip--${item.match.tone}`}>
+                            {item.match.score}%
+                          </span>
+                          {item.quality.suspicious && (
+                            <span className="ph-chip ph-chip--warn" title={item.quality.reason}>
+                              Revisar
+                            </span>
+                          )}
+                        </td>
                         <td>{item.adjudicado ? <span className="ph-chip ph-chip--ok">Sí</span> : <span className="ph-muted">—</span>}</td>
                         <td>
                           {item.diff === null
