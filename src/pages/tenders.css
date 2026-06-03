@@ -17,6 +17,7 @@
 }
 
 .tn-page {
+  --tn-page-x: 24px;
   padding: 18px 24px 40px;
   display: flex; flex-direction: column; gap: 14px;
   font-family: "DM Sans", system-ui, sans-serif;
@@ -285,6 +286,14 @@
 .tn-grid__empty { padding: 48px; text-align: center; color: var(--tn-text3); font-size: 13px; }
 
 @media (min-width: 901px) {
+  .tn-grid-wrap {
+    margin-left: calc(var(--tn-page-x) * -1);
+    width: calc(100% + var(--tn-page-x));
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
   .tn-grid__th:nth-child(4),
   .tn-grid__td:nth-child(4) {
     position: sticky;

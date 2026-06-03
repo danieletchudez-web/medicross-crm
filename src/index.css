@@ -337,6 +337,16 @@ button, input, select, textarea { font-family: inherit; }
   overflow-x: hidden;
 }
 
+.main-content:has(.tn-page),
+.page-enter:has(.tn-page) {
+  background: #f0f2f5;
+}
+
+[data-theme="dark"] .main-content:has(.tn-page),
+[data-theme="dark"] .page-enter:has(.tn-page) {
+  background: #0d1117;
+}
+
 /* ─── Page header ────────────────────────────────────────────────────── */
 .page-header {
   background: var(--card);
