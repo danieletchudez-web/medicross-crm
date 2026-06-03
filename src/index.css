@@ -327,6 +327,8 @@ button, input, select, textarea { font-family: inherit; }
   display: flex;
   background: var(--bg);
   overflow-x: hidden;
+  position: relative;
+  isolation: isolate;
 }
 
 .main-content {
@@ -335,6 +337,38 @@ button, input, select, textarea { font-family: inherit; }
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+@media (min-width: 769px) {
+  .app-shell::before {
+    content: "";
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 240px;
+    background: linear-gradient(
+      180deg,
+      #ffffff 0 48px,
+      #162d50 48px,
+      #0d1e35 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app-shell:has(.sidebar--collapsed)::before {
+    width: 72px;
+    background: linear-gradient(180deg, #162d50 0%, #0d1e35 100%);
+  }
+
+  .main-content {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .app-shell::before { width: 200px; }
+  .app-shell:has(.sidebar--collapsed)::before { width: 72px; }
 }
 
 .main-content:has(.tn-page),

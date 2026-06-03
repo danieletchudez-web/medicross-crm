@@ -36,6 +36,7 @@
   width: 240px;
   min-width: 240px;
   height: 100vh;
+  min-height: 100vh;
   position: sticky;
   top: 0;
   display: grid;
@@ -54,6 +55,13 @@
   transition: width var(--sb-dur) var(--sb-ease),
               min-width var(--sb-dur) var(--sb-ease),
               box-shadow .4s ease;
+}
+
+@supports (height: 100dvh) {
+  .sidebar {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
 }
 
 .sidebar:not(.sidebar--collapsed) {
