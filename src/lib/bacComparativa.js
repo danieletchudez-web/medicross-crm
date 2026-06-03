@@ -74,6 +74,10 @@ export function comparativaSignature(row) {
 }
 
 export async function parseBacComparativaFile(file, isOwnCompany = () => false) {
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`Archivo demasiado grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Máximo permitido: 50 MB.`);
+  }
   const XLSX = await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm");
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });

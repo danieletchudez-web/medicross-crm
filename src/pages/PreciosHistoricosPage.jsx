@@ -404,6 +404,128 @@ function MarketEvolutionChart({ data }) {
   );
 }
 
+function ProductComparisonChart({ groups }) {
+  const items = (groups || [])
+    .map(group => ({
+      key: group.key,
+      title: group.title,
+      min: group.minPrice,
+      own: comparablePrice(group.lastOwn),
+      suggested: group.minPrice ? Math.round(group.minPrice * 1.02) : null,
+      date: group.latestDate,
+      refs: group.validRefs,
+      status: group.status,
+      diff: group.diff,
+    }))
+    .filter(item => item.min || item.own || item.suggested)
+    .slice(0, 8);
+
+  if (items.length < 2) {
+    return (
+      <div className="ph-empty-chart">
+        Seleccioná al menos dos productos/renglones para comparar precios.
+      </div>
+    );
+  }
+
+  const W = 760;
+  const H = 280;
+  const PAD_X = 78;
+  const PAD_Y = 34;
+  const CHART_W = W - PAD_X - 22;
+  const CHART_H = H - PAD_Y * 2 - 14;
+  const series = ["min", "own", "suggested"];
+  const values = items
+    .flatMap(item => series.map(key => item[key]))
+    .filter(value => Number.isFinite(value) && value > 0);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const range = maxVal - minVal || 1;
+  const xFor = index => PAD_X + (index / Math.max(items.length - 1, 1)) * CHART_W;
+  const yFor = value => {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return PAD_Y + (1 - (value - minVal) / range) * CHART_H;
+  };
+  const fmtAxis = n => {
+    if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `$${Math.round(n / 1000)}K`;
+    return `$${Math.round(n)}`;
+  };
+  const colors = { min: "#10b981", own: "#0f2444", suggested: "#2563eb" };
+  const labels = { min: "Mínimo", own: "Oferta propia", suggested: "Sugerido" };
+  const pathFor = key => items
+    .map((item, index) => {
+      const y = yFor(item[key]);
+      if (y === null) return null;
+      return `${index === 0 ? "M" : "L"} ${xFor(index).toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className="ph-compare">
+      <div className="ph-compare__notice">
+        Comparación orientativa: validá descripción, modelo y cantidad antes de usar una referencia como precio final.
+      </div>
+      <svg className="ph-chart ph-chart--compare" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Comparación de productos seleccionados">
+        {[0, 1, 2, 3].map(i => {
+          const y = PAD_Y + i * (CHART_H / 3);
+          const value = maxVal - (i / 3) * range;
+          return (
+            <g key={i}>
+              <line x1={PAD_X} x2={PAD_X + CHART_W} y1={y} y2={y} className="ph-chart-grid"/>
+              <text x={PAD_X - 7} y={y + 4} textAnchor="end" className="ph-chart-yaxis">{fmtAxis(value)}</text>
+            </g>
+          );
+        })}
+
+        {series.map(key => (
+          <path key={key} d={pathFor(key)} fill="none" stroke={colors[key]}
+            strokeWidth={key === "suggested" ? 2.8 : 2.2}
+            strokeDasharray={key === "suggested" ? "5 4" : undefined}
+            strokeLinecap="round" strokeLinejoin="round" className="ph-chart-line"/>
+        ))}
+
+        {items.map((item, index) => (
+          <g key={item.key}>
+            {series.map(key => {
+              const y = yFor(item[key]);
+              if (y === null) return null;
+              return <circle key={key} cx={xFor(index)} cy={y} r={key === "suggested" ? 4.6 : 4} fill={colors[key]} className="ph-chart-dot"/>;
+            })}
+            <text x={xFor(index)} y={H - 18} textAnchor="middle" className="ph-chart-label">
+              {`P${index + 1}`}
+            </text>
+            <text x={xFor(index)} y={H - 5} textAnchor="middle" className="ph-chart-label ph-chart-label--date">
+              {fmtDate(item.date)}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      <div className="ph-chart-legend">
+        {series.map(key => <span key={key}><i style={{ background: colors[key] }}/>{labels[key]}</span>)}
+      </div>
+
+      <div className="ph-compare-list">
+        {items.map((item, index) => (
+          <article key={item.key}>
+            <div className="ph-compare-list__top">
+              <span>P{index + 1}</span>
+              <strong>{shortText(item.title, 74)}</strong>
+            </div>
+            <div className="ph-compare-list__metrics">
+              <small>Mínimo <b>{item.min ? fullMoney(item.min) : "—"}</b></small>
+              <small>Propia <b>{item.own ? fullMoney(item.own) : "—"}</b></small>
+              <small>Sugerido <b>{item.suggested ? fullMoney(item.suggested) : "—"}</b></small>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [query,    setQuery]    = useState("");
   const [desde,    setDesde]    = useState("");
@@ -419,6 +541,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [jurisdictionFilter, setJurisdictionFilter] = useState("");
   const [companyFilter, setCompanyFilter] = useState("");
   const [selectedProductKey, setSelectedProductKey] = useState("");
+  const [compareProductKeys, setCompareProductKeys] = useState([]);
   const [marketSearch, setMarketSearch] = useState("");
   const [marketSort, setMarketSort] = useState({ key: "fecha", dir: "desc" });
   const [marketPage, setMarketPage] = useState(1);
@@ -500,6 +623,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     if (desde) result = result.filter(r => r.tenders?.end_date && r.tenders.end_date >= desde);
     if (hasta) result = result.filter(r => r.tenders?.end_date && r.tenders.end_date <= hasta);
     setSelectedProductKey("");
+    setCompareProductKeys([]);
     setRows(result);
     setLoading(false);
   }, [query, desde, hasta]);
@@ -515,6 +639,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     setQuery(""); setDesde(""); setHasta("");
     setInstitutionFilter(""); setJurisdictionFilter(""); setCompanyFilter("");
     setSelectedProductKey("");
+    setCompareProductKeys([]);
     setRows([]); setSearched(false); setShowSug(false);
     inputRef.current?.focus();
   };
@@ -610,8 +735,12 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         .map((row) => ({ ...row, tender_id: tender.id }));
 
       if (insertRows.length) {
-        const { error } = await supabase.from("tender_comparativas").insert(insertRows);
-        if (error) throw error;
+        const CHUNK_SIZE = 2000;
+        for (let i = 0; i < insertRows.length; i += CHUNK_SIZE) {
+          const chunk = insertRows.slice(i, i + CHUNK_SIZE);
+          const { error } = await supabase.from("tender_comparativas").insert(chunk);
+          if (error) throw error;
+        }
       }
 
       await supabase.from("tender_logs").insert([{
@@ -772,6 +901,24 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       : "";
 
   const focusedProduct = productGroups.find(group => group.key === activeProductKey) || null;
+  const selectedCompareGroups = useMemo(
+    () => productGroups.filter(group => compareProductKeys.includes(group.key)),
+    [productGroups, compareProductKeys]
+  );
+  const compareMode = selectedCompareGroups.length >= 2;
+
+  useEffect(() => {
+    const validKeys = new Set(productGroups.map(group => group.key));
+    setCompareProductKeys(prev => prev.filter(key => validKeys.has(key)));
+  }, [productGroups]);
+
+  const toggleCompareProduct = useCallback((key) => {
+    setCompareProductKeys(prev => (
+      prev.includes(key)
+        ? prev.filter(item => item !== key)
+        : [...prev, key]
+    ));
+  }, []);
 
   const filteredRows = useMemo(() => (
     activeProductKey
