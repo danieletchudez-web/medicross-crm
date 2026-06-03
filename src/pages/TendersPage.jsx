@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
+import { bacTenderNotes, comparativaSignature, parseBacComparativaFile } from "../lib/bacComparativa";
 import "./tenders.css";
 
 /* ─── Constantes ─────────────────────────────────────────────────────── */
@@ -40,6 +41,18 @@ const EMPTY_FORM = {
 };
 
 const EMPTY_COMPETITOR = { name:"", price:"", notes:"" };
+
+const SOURCE_PRESETS = [
+  { id:"bac", label:"BAC / cuadro comparativo", jurisdiction:"CABA", process_type:"Comparativa BAC", notes:"Fuente BAC. Completar sólo si se va a participar." },
+  { id:"pba", label:"Provincia / PBA", jurisdiction:"PBA", process_type:"Licitación pública", notes:"Carga rápida desde portal provincial." },
+  { id:"nacion", label:"Nación", jurisdiction:"NACIÓN", process_type:"Licitación pública", notes:"Carga rápida desde portal nacional." },
+  { id:"privada", label:"Institución privada", jurisdiction:"", process_type:"Compra privada", notes:"Solicitud directa de institución privada." },
+];
+
+const EMPTY_QUICK_TENDER = {
+  source:"bac", institution:"", process_number:"", end_date:"",
+  process_name:"", portal_link:"", internal_owner:"", notes:"",
+};
 
 const today = () => new Date().toISOString().slice(0,10);
 
@@ -172,6 +185,56 @@ function normalizeSelect(val, options, fallback) {
   if (!val) return fallback;
   if (options.includes(val)) return val;
   return options.find(o => o.toUpperCase() === val.toUpperCase()) || fallback;
+}
+
+function normalizeKey(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+}
+
+function tenderDisplayTitle(t) {
+  return t?.process_name || t?.process_number || t?.institution || "Licitación sin título";
+}
+
+function getTenderCompleteness(t) {
+  const missing = [];
+  if (!t?.institution) missing.push("institución");
+  if (!t?.process_number && !t?.expedient_number) missing.push("proceso/expediente");
+  if (!t?.process_name) missing.push("objeto");
+  if (!t?.end_date) missing.push("vencimiento");
+  if (!t?.internal_owner) missing.push("responsable");
+  if (!t?.next_action) missing.push("próxima acción");
+  if (t?.documentation_status !== "Completa") missing.push("documentación");
+  const score = Math.max(0, Math.round(((7 - missing.length) / 7) * 100));
+  const status = score >= 86 ? "Lista para cotizar" : score >= 58 ? "Completar datos clave" : "Borrador operativo";
+  return { score, missing, status };
+}
+
+function suggestPriority(t) {
+  const days = daysUntil(t?.end_date);
+  const amount = Number(t?.purchase_order_amount || 0);
+  if (days !== null && days <= 3) return "Crítica";
+  if ((days !== null && days <= 7) || amount >= 25000000) return "Alta";
+  return "Media";
+}
+
+function findTenderDuplicates(source, rows, excludeId = null) {
+  const process = normalizeKey(source?.process_number);
+  const expedient = normalizeKey(source?.expedient_number);
+  const institution = normalizeKey(source?.institution);
+  return rows.filter(row => {
+    if (excludeId && row.id === excludeId) return false;
+    const rowProcess = normalizeKey(row.process_number);
+    const rowExpedient = normalizeKey(row.expedient_number);
+    const rowInstitution = normalizeKey(row.institution);
+    if (process && rowProcess && process === rowProcess) return true;
+    if (expedient && rowExpedient && expedient === rowExpedient) return true;
+    return institution && process && rowInstitution === institution && rowProcess === process;
+  });
 }
 
 function fileIcon(name) {
@@ -963,6 +1026,180 @@ function Comparativa({ tenderId, tenderInfo }) {
   );
 }
 
+function TenderOperationalSummary({ form }) {
+  const readiness = getTenderCompleteness(form);
+  const days = daysUntil(form.end_date);
+  const tone = readiness.score >= 86 ? "ready" : readiness.score >= 58 ? "warn" : "draft";
+  return (
+    <div className={`tn-readiness tn-readiness--${tone}`}>
+      <div className="tn-readiness__score">
+        <strong>{readiness.score}%</strong>
+        <span>{readiness.status}</span>
+      </div>
+      <div className="tn-readiness__body">
+        <div className="tn-readiness__bar"><span style={{ width:`${readiness.score}%` }}/></div>
+        <div className="tn-readiness__meta">
+          <span>{form.end_date ? `Vence ${fmtDate(form.end_date)}${days !== null ? ` · ${days < 0 ? "vencida" : days === 0 ? "hoy" : `${days}d`}` : ""}` : "Sin vencimiento"}</span>
+          <span>{form.internal_owner || "Sin responsable"}</span>
+        </div>
+        {readiness.missing.length > 0 ? (
+          <div className="tn-readiness__chips">
+            {readiness.missing.map(item => <span key={item} className="tn-readiness__chip">Falta {item}</span>)}
+          </div>
+        ) : (
+          <div className="tn-readiness__chips"><span className="tn-readiness__chip tn-readiness__chip--ok">Ficha lista para avanzar</span></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QuickTenderModal({ show, value, setValue, duplicates, saving, onClose, onSave }) {
+  if (!show) return null;
+  const selectedPreset = SOURCE_PRESETS.find(p => p.id === value.source) || SOURCE_PRESETS[0];
+  const setQ = (key, next) => setValue(prev => ({ ...prev, [key]: next }));
+
+  return (
+    <div className="tn-overlay" onClick={e=>{if(e.target.classList.contains("tn-overlay"))onClose();}}>
+      <div className="tn-modal tn-modal--compact">
+        <div className="tn-modal__header">
+          <div>
+            <h3>⚡ Carga rápida de licitación</h3>
+            <span style={{fontSize:11.5,color:"#94a3b8"}}>Registrá lo mínimo para no perder la oportunidad. Después completás la ficha.</span>
+          </div>
+          <button className="tn-modal__close" onClick={onClose}>✕</button>
+        </div>
+        <div className="tn-modal__body">
+          <div className="tn-source-pills">
+            {SOURCE_PRESETS.map(preset => (
+              <button
+                key={preset.id}
+                className={`tn-source-pill ${value.source === preset.id ? "tn-source-pill--active" : ""}`}
+                onClick={() => setValue(prev => ({ ...prev, source:preset.id }))}
+                type="button"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          {duplicates.length > 0 && (
+            <div className="tn-duplicate-box">
+              <strong>Posible duplicado detectado</strong>
+              {duplicates.slice(0,3).map(row => (
+                <span key={row.id}>{row.institution || "—"} · {row.process_number || row.expedient_number || "sin proceso"} · {row.operational_status || "—"}</span>
+              ))}
+            </div>
+          )}
+
+          <div className="tn-form-grid">
+            <div className="tn-field">
+              <label>Hospital / institución *</label>
+              <input value={value.institution} onChange={e=>setQ("institution",e.target.value.toUpperCase())} placeholder="EJ: HOSPITAL ITALIANO"/>
+            </div>
+            <div className="tn-field">
+              <label>N° proceso</label>
+              <input value={value.process_number} onChange={e=>setQ("process_number",e.target.value.toUpperCase())} placeholder="EJ: 431-0786-LPU26"/>
+            </div>
+            <div className="tn-field">
+              <label>Vencimiento / apertura</label>
+              <input type="date" value={value.end_date} onChange={e=>setQ("end_date",e.target.value)}/>
+            </div>
+            <div className="tn-field">
+              <label>Responsable</label>
+              <input value={value.internal_owner} onChange={e=>setQ("internal_owner",e.target.value)} placeholder="Nombre del responsable"/>
+            </div>
+          </div>
+          <div className="tn-form-grid tn-form-grid--1">
+            <div className="tn-field">
+              <label>Objeto / producto buscado</label>
+              <input value={value.process_name} onChange={e=>setQ("process_name",e.target.value)} placeholder="Ej: adquisición de agujas, filtros, stents..."/>
+            </div>
+            <div className="tn-field">
+              <label>Link fuente</label>
+              <input value={value.portal_link} onChange={e=>setQ("portal_link",e.target.value)} placeholder="https://..."/>
+            </div>
+            <div className="tn-field">
+              <label>Nota rápida</label>
+              <textarea rows={3} value={value.notes} onChange={e=>setQ("notes",e.target.value)} placeholder={selectedPreset.notes}/>
+            </div>
+          </div>
+        </div>
+        <div className="tn-modal__footer">
+          <span style={{fontSize:11,color:"#94a3b8"}}>Queda como borrador operativo hasta completar datos clave.</span>
+          <div style={{display:"flex",gap:8}}>
+            <button className="tn-btn tn-btn--ghost" onClick={onClose}>Cancelar</button>
+            <button className="tn-btn" onClick={() => onSave(false)} disabled={saving}>Guardar borrador</button>
+            <button className="tn-btn tn-btn--primary" onClick={() => onSave(true)} disabled={saving}>{saving ? "Guardando..." : "Guardar y completar"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BacImportModal({ preview, setPreview, saving, onClose, onConfirm }) {
+  if (!preview) return null;
+  const meta = preview.metadata || {};
+  const setMeta = (key, next) => setPreview(prev => ({ ...prev, metadata:{ ...(prev.metadata || {}), [key]: next } }));
+  const sample = preview.rows.slice(0, 5);
+
+  return (
+    <div className="tn-overlay" onClick={e=>{if(e.target.classList.contains("tn-overlay"))onClose();}}>
+      <div className="tn-modal" style={{maxWidth:980}}>
+        <div className="tn-modal__header">
+          <div>
+            <h3>⬆ Importar comparativa BAC</h3>
+            <span style={{fontSize:11.5,color:"#94a3b8"}}>{preview.fileName}</span>
+          </div>
+          <button className="tn-modal__close" onClick={onClose}>✕</button>
+        </div>
+        <div className="tn-modal__body">
+          <div className="tn-bac-metrics">
+            <div className="tn-bac-metric"><span>Empresas</span><strong>{preview.companyCount}</strong></div>
+            <div className="tn-bac-metric"><span>Renglones</span><strong>{preview.itemCount}</strong></div>
+            <div className="tn-bac-metric"><span>Precios</span><strong>{preview.rows.length}</strong></div>
+            <div className="tn-bac-metric"><span>Duplicados internos</span><strong>{preview.discardedDuplicates}</strong></div>
+          </div>
+
+          <div className="tn-form-grid">
+            <div className="tn-field"><label>Institución *</label><input value={meta.institution || ""} onChange={e=>setMeta("institution", e.target.value.toUpperCase())}/></div>
+            <div className="tn-field"><label>N° proceso</label><input value={meta.processNumber || ""} onChange={e=>setMeta("processNumber", e.target.value.toUpperCase())}/></div>
+            <div className="tn-field"><label>Expediente</label><input value={meta.expedientNumber || ""} onChange={e=>setMeta("expedientNumber", e.target.value.toUpperCase())}/></div>
+            <div className="tn-field"><label>Fecha referencia</label><input type="date" value={meta.referenceDate || ""} onChange={e=>setMeta("referenceDate", e.target.value)}/></div>
+          </div>
+          <div className="tn-field">
+            <label>Nombre del proceso</label>
+            <input value={meta.processName || ""} onChange={e=>setMeta("processName", e.target.value)}/>
+          </div>
+
+          <div className="tn-bac-sample">
+            <div className="tn-bac-sample__head">
+              <strong>Vista previa</strong>
+              <span>{preview.rows.length} referencias detectadas</span>
+            </div>
+            {sample.map((row, index) => (
+              <div className="tn-bac-sample__row" key={`${row.renglon}-${row.empresa}-${index}`}>
+                <span>R{row.renglon}</span>
+                <strong>{row.empresa}</strong>
+                <em>{row.descripcion || "Sin descripción"}</em>
+                <b>{comparableMoney(row.precio_unitario)}</b>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="tn-modal__footer">
+          <span style={{fontSize:11,color:"#94a3b8"}}>Se crea o actualiza una licitación de referencia y se agregan sólo renglones nuevos.</span>
+          <div style={{display:"flex",gap:8}}>
+            <button className="tn-btn tn-btn--ghost" onClick={onClose}>Cancelar</button>
+            <button className="tn-btn tn-btn--primary" onClick={onConfirm} disabled={saving}>{saving ? "Importando..." : "Importar comparativa"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── MODAL LICITACIÓN ─────────────────────────────────────────────── */
 function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTab,
   saving, onClose, onSave, onDelete, onCotizador }) {
@@ -1013,6 +1250,8 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
         </div>
 
         <div className="tn-modal__body">
+          <TenderOperationalSummary form={form} />
+
           {/* TAB DATOS */}
           <div style={{display:activeTab==="datos"?"":"none"}}>
             <div className="tn-form-section">
@@ -1172,6 +1411,11 @@ export default function TendersPage({ profile, onNavigate }) {
   const [globalQ,      setGlobalQ]      = useState("");
   const [attachCounts, setAttachCounts] = useState({});
   const [alerts,       setAlerts]       = useState([]);
+  const [showQuick,    setShowQuick]    = useState(false);
+  const [quickForm,    setQuickForm]    = useState({...EMPTY_QUICK_TENDER});
+  const [viewMode,     setViewMode]     = useState("all");
+  const [bacPreview,   setBacPreview]   = useState(null);
+  const [bacSaving,    setBacSaving]    = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("tn_dismissed_alerts") || "{}");
@@ -1181,6 +1425,7 @@ export default function TendersPage({ profile, onNavigate }) {
     } catch { return new Set(); }
   });
   const prevStatusRef = useRef(null);
+  const bacFileRef = useRef(null);
 
   useEffect(() => { loadTenders(); }, []);
 
@@ -1237,20 +1482,40 @@ export default function TendersPage({ profile, onNavigate }) {
     const adjMontos  = tenders.filter(t=>ESTADOS_GANADOS.includes(t.operational_status)).reduce((s,t)=>s+Number(t.monto_adjudicado||t.purchase_order_amount||0),0);
     const proxVencer = tenders.filter(t=>{if(CERRADAS.includes(t.operational_status))return false;const d=daysUntil(t.end_date);return d!==null&&d>=0&&d<=7;}).length;
     const sinAccion  = tenders.filter(t=>EN_CURSO.includes(t.operational_status)&&!t.next_action).length;
+    const pendientesCarga = activas.filter(t => getTenderCompleteness(t).score < 86).length;
+    const listasCotizar = activas.filter(t => getTenderCompleteness(t).score >= 86).length;
     const ganadas    = tenders.filter(t=>ESTADOS_GANADOS.includes(t.operational_status)).length;
     const perdidas   = tenders.filter(t=>t.operational_status==="Perdida / No adjudicada").length;
     const total      = tenders.filter(t=>ESTADOS_GANADOS.includes(t.operational_status)||t.operational_status==="Perdida / No adjudicada").length;
     const tasaCierre = total>0?Math.round(ganadas/total*100):null;
-    return {activas:activas.length,montoTotal,adjMontos,proxVencer,sinAccion,ganadas,perdidas,total:tenders.length,tasaCierre};
+    return {activas:activas.length,montoTotal,adjMontos,proxVencer,sinAccion,pendientesCarga,listasCotizar,ganadas,perdidas,total:tenders.length,tasaCierre};
   }, [tenders]);
+
+  const tenderInsights = useMemo(() => tenders.map(t => ({ t, readiness:getTenderCompleteness(t) })), [tenders]);
+  const pendingRows = useMemo(() => tenderInsights
+    .filter(({t,readiness}) => EN_CURSO.includes(t.operational_status) && readiness.score < 86)
+    .sort((a,b) => a.readiness.score - b.readiness.score)
+    .slice(0,4), [tenderInsights]);
+  const readyRows = useMemo(() => tenderInsights
+    .filter(({t,readiness}) => EN_CURSO.includes(t.operational_status) && readiness.score >= 86)
+    .sort((a,b) => (daysUntil(a.t.end_date) ?? 999) - (daysUntil(b.t.end_date) ?? 999))
+    .slice(0,4), [tenderInsights]);
+  const quickDuplicates = useMemo(() => findTenderDuplicates(quickForm, tenders), [quickForm, tenders]);
 
   const filtered = useMemo(() => {
     let rows = [...tenders];
+    if (viewMode === "pending") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && getTenderCompleteness(t).score < 86);
+    if (viewMode === "ready") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && getTenderCompleteness(t).score >= 86);
+    if (viewMode === "urgent") rows = rows.filter(t => {
+      if (CERRADAS.includes(t.operational_status)) return false;
+      const d = daysUntil(t.end_date);
+      return d !== null && d >= 0 && d <= 7;
+    });
     if (globalQ) { const q=globalQ.toLowerCase(); rows=rows.filter(t=>Object.values(t).some(v=>v&&String(v).toLowerCase().includes(q))); }
     Object.entries(colFilters).forEach(([k,v])=>{if(!v)return;rows=rows.filter(t=>String(t[k]||"").toLowerCase().includes(v.toLowerCase()));});
     rows.sort((a,b)=>{const av=a[sortCol]||"",bv=b[sortCol]||"";return sortDir==="asc"?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));});
     return rows;
-  }, [tenders,globalQ,colFilters,sortCol,sortDir]);
+  }, [tenders,viewMode,globalQ,colFilters,sortCol,sortDir]);
 
   const setColFilter    = (k,v) => setColFilters(prev=>({...prev,[k]:v}));
   const toggleSort      = (k) => {if(sortCol===k)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortCol(k);setSortDir("asc");}};
@@ -1270,6 +1535,141 @@ export default function TendersPage({ profile, onNavigate }) {
     setActiveTab("datos");
     prevStatusRef.current=null;
     setShowForm(true);
+  }
+
+  function openQuick() {
+    setQuickForm({
+      ...EMPTY_QUICK_TENDER,
+      internal_owner: profile?.full_name || profile?.email || "",
+    });
+    setShowQuick(true);
+  }
+
+  async function saveQuickTender(openAfter = false) {
+    if (!quickForm.institution?.trim()) { alert("Ingresá el hospital o institución."); return; }
+    if (quickDuplicates.length > 0 && !confirm("Hay una licitación parecida ya cargada. ¿Querés guardar esta carga rápida igualmente?")) return;
+    setSaving(true);
+    const preset = SOURCE_PRESETS.find(p => p.id === quickForm.source) || SOURCE_PRESETS[0];
+    const payload = {
+      jurisdiction:preset.jurisdiction || null,
+      institution:quickForm.institution.trim().toUpperCase(),
+      process_type:preset.process_type,
+      process_number:quickForm.process_number.trim() || null,
+      tender_type:"Original",
+      process_name:quickForm.process_name.trim() || null,
+      expedient_number:null,
+      detection_date:today(),
+      end_date:quickForm.end_date || null,
+      validity_status:"En análisis",
+      operational_status:"En análisis",
+      documentation_status:"Pendiente",
+      billing_status:"Pendiente",
+      delivery_status:"Pendiente",
+      priority:suggestPriority(quickForm),
+      portal_link:quickForm.portal_link || null,
+      internal_owner:quickForm.internal_owner || profile?.full_name || profile?.email || null,
+      next_action:"Completar ficha y definir estrategia",
+      notes:[preset.notes, quickForm.notes].filter(Boolean).join("\n") || null,
+      owner_id:profile?.id || null,
+      updated_at:new Date().toISOString(),
+    };
+    const { data:newRow, error } = await supabase.from("tenders").insert([payload]).select().single();
+    setSaving(false);
+    if (error) { alert("Error: " + error.message); return; }
+    await logEvent(newRow.id, "carga_rapida", `Carga rápida: ${newRow.institution} · ${newRow.process_number || "sin proceso"}`, null, null);
+    setShowQuick(false);
+    await loadTenders();
+    if (openAfter) openEdit(newRow);
+  }
+
+  async function handleBacFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const parsed = await parseBacComparativaFile(file, isOwnCompany);
+      setBacPreview(parsed);
+    } catch (err) {
+      console.error(err);
+      alert("No pude leer el archivo BAC: " + err.message);
+    } finally {
+      if (bacFileRef.current) bacFileRef.current.value = "";
+    }
+  }
+
+  async function confirmBacImport() {
+    if (!bacPreview) return;
+    if (!bacPreview.metadata?.institution?.trim()) {
+      alert("Completá la institución antes de importar.");
+      return;
+    }
+    setBacSaving(true);
+    try {
+      const meta = bacPreview.metadata;
+      let tender = null;
+      const processNumber = meta.processNumber?.trim() || "";
+      if (processNumber) {
+        const { data } = await supabase.from("tenders").select("*").eq("process_number", processNumber).limit(1);
+        tender = data?.[0] || null;
+      }
+      if (!tender) {
+        tender = tenders.find(row => {
+          const sameInstitution = normalizeKey(row.institution) === normalizeKey(meta.institution);
+          const sameProcess = processNumber && normalizeKey(row.process_number) === normalizeKey(processNumber);
+          const sameName = !processNumber && normalizeKey(row.process_name) === normalizeKey(meta.processName);
+          return sameInstitution && (sameProcess || sameName);
+        }) || null;
+      }
+      if (!tender) {
+        const { data:newTender, error } = await supabase.from("tenders").insert([{
+          jurisdiction:meta.jurisdiction || "CABA",
+          institution:meta.institution.trim().toUpperCase(),
+          process_type:"Comparativa BAC",
+          process_number:processNumber || null,
+          tender_type:"Original",
+          process_name:meta.processName || `Comparativa BAC ${processNumber || bacPreview.fileName}`,
+          expedient_number:meta.expedientNumber || null,
+          detection_date:meta.referenceDate || today(),
+          end_date:meta.referenceDate || null,
+          validity_status:"Finalizada",
+          operational_status:"Finalizada",
+          documentation_status:"Pendiente",
+          billing_status:"Pendiente",
+          delivery_status:"Pendiente",
+          priority:"Media",
+          notes:bacTenderNotes(bacPreview.fileName),
+          owner_id:profile?.id || null,
+          updated_at:new Date().toISOString(),
+        }]).select().single();
+        if (error) throw error;
+        tender = newTender;
+        await logEvent(tender.id, "comparativa_bac", `Referencia BAC importada: ${bacPreview.fileName}`, null, null);
+      }
+
+      const { data:existingRows = [], error:rowsError } = await supabase
+        .from("tender_comparativas")
+        .select("renglon,descripcion,empresa,precio_unitario,cantidad")
+        .eq("tender_id", tender.id);
+      if (rowsError) throw rowsError;
+      const signatures = new Set((existingRows || []).map(comparativaSignature));
+      const toInsert = bacPreview.rows
+        .filter(row => !signatures.has(comparativaSignature(row)))
+        .map(row => ({ ...row, tender_id:tender.id }));
+
+      for (let index = 0; index < toInsert.length; index += 500) {
+        const batch = toInsert.slice(index, index + 500);
+        const { error } = await supabase.from("tender_comparativas").insert(batch);
+        if (error) throw error;
+      }
+      await logEvent(tender.id, "comparativa_bac", `${toInsert.length} precios BAC agregados desde ${bacPreview.fileName}`, null, null);
+      setBacPreview(null);
+      await loadTenders();
+      alert(`Comparativa importada. ${toInsert.length} referencias nuevas agregadas.`);
+    } catch (err) {
+      console.error(err);
+      alert("Error al importar comparativa BAC: " + err.message);
+    } finally {
+      setBacSaving(false);
+    }
   }
 
   function openEdit(t, e) {
@@ -1304,6 +1704,8 @@ export default function TendersPage({ profile, onNavigate }) {
 
   async function saveTender() {
     if (!form.institution?.trim()) { alert("Ingresá el hospital o institución."); return; }
+    const duplicates = findTenderDuplicates(form, tenders, editData?.id);
+    if (duplicates.length > 0 && !confirm("Ya existe una licitación parecida cargada. ¿Querés guardar de todos modos?")) return;
     setSaving(true);
     const payload = {
       jurisdiction:form.jurisdiction||null,institution:form.institution||null,
@@ -1511,6 +1913,7 @@ export default function TendersPage({ profile, onNavigate }) {
             <p>{kpis.activas} en seguimiento · {filtered.length} visible{filtered.length!==1?"s":""}{hasFilters?" (filtrado)":""}</p>
           </div>
           <div className="tn-header__actions">
+            <input ref={bacFileRef} type="file" accept=".xlsx,.xls" className="tn-hidden-input" onChange={handleBacFile}/>
             {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
             {selected.size > 0 && <span style={{fontSize:12,fontWeight:700,color:"#0f2444"}}>{selected.size} selec.</span>}
             <button className="tn-btn tn-btn--ghost" onClick={exportToExcel}>⬇ {selected.size>0?`Exportar (${selected.size})`:"Exportar"}</button>
@@ -1518,7 +1921,51 @@ export default function TendersPage({ profile, onNavigate }) {
             <button className="tn-btn tn-btn--ghost tn-btn--inteligencia" onClick={() => onNavigate("preciosHistoricos")}>
               📈 Inteligencia de precios
             </button>
-            <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
+            <button className="tn-btn tn-btn--ghost" onClick={() => bacFileRef.current?.click()}>⬆ Subir comparativa BAC</button>
+            <button className="tn-btn tn-btn--ghost" onClick={openQuick}>⚡ Carga rápida</button>
+            <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Formulario completo</button>
+          </div>
+        </div>
+
+        <div className="tn-workbench">
+          <div className="tn-workbench-card tn-workbench-card--primary">
+            <span className="tn-workbench-eyebrow">Mesa de licitaciones</span>
+            <h3>Cargar menos, decidir antes</h3>
+            <p>Registrá procesos en borrador, completá sólo los campos críticos y usá comparativas BAC como base de inteligencia.</p>
+            <div className="tn-workbench-actions">
+              <button className="tn-btn tn-btn--primary" onClick={openQuick}>⚡ Carga rápida</button>
+              <button className="tn-btn" onClick={() => bacFileRef.current?.click()}>⬆ Importar BAC</button>
+            </div>
+          </div>
+
+          <div className="tn-workbench-card">
+            <div className="tn-workbench-head"><span>Para completar</span><strong>{kpis.pendientesCarga}</strong></div>
+            <div className="tn-workbench-list">
+              {pendingRows.length ? pendingRows.map(({t,readiness}) => (
+                <button key={t.id} className="tn-workbench-item" onClick={() => openEdit(t)}>
+                  <span>
+                    <strong>{t.institution || "Sin institución"}</strong>
+                    <em>{tenderDisplayTitle(t)}</em>
+                  </span>
+                  <b>{readiness.score}%</b>
+                </button>
+              )) : <p className="tn-workbench-empty">Sin pendientes críticos.</p>}
+            </div>
+          </div>
+
+          <div className="tn-workbench-card">
+            <div className="tn-workbench-head"><span>Listas para cotizar</span><strong>{kpis.listasCotizar}</strong></div>
+            <div className="tn-workbench-list">
+              {readyRows.length ? readyRows.map(({t}) => (
+                <button key={t.id} className="tn-workbench-item" onClick={() => openEdit(t)}>
+                  <span>
+                    <strong>{t.institution || "Sin institución"}</strong>
+                    <em>{tenderDisplayTitle(t)}</em>
+                  </span>
+                  <b>{daysUntil(t.end_date) ?? "—"}d</b>
+                </button>
+              )) : <p className="tn-workbench-empty">Todavía no hay fichas listas.</p>}
+            </div>
           </div>
         </div>
 
@@ -1529,23 +1976,23 @@ export default function TendersPage({ profile, onNavigate }) {
             <span className="tn-kpi__val">{kpis.activas}</span>
             <span className="tn-kpi__sub">{compactMoney(kpis.montoTotal)} potencial</span>
           </div>
+          <div className={`tn-kpi ${kpis.pendientesCarga>0?"tn-kpi--warn":"tn-kpi--gray"}`}>
+            <span className="tn-kpi__icon">🧩</span>
+            <span className="tn-kpi__label">Para completar</span>
+            <span className="tn-kpi__val">{kpis.pendientesCarga}</span>
+            <span className="tn-kpi__sub">requieren datos clave</span>
+          </div>
           <div className={`tn-kpi ${kpis.proxVencer>0?"tn-kpi--danger":"tn-kpi--gray"}`}>
             <span className="tn-kpi__icon">⏰</span>
             <span className="tn-kpi__label">Vencen en ≤7 días</span>
             <span className="tn-kpi__val">{kpis.proxVencer}</span>
             <span className="tn-kpi__sub">atención urgente</span>
           </div>
-          <div className={`tn-kpi ${kpis.sinAccion>0?"tn-kpi--warn":"tn-kpi--gray"}`}>
-            <span className="tn-kpi__icon">⚡</span>
-            <span className="tn-kpi__label">Sin próxima acción</span>
-            <span className="tn-kpi__val">{kpis.sinAccion}</span>
-            <span className="tn-kpi__sub">de activas</span>
-          </div>
           <div className="tn-kpi tn-kpi--green">
-            <span className="tn-kpi__icon">💰</span>
-            <span className="tn-kpi__label">Monto adjudicado</span>
-            <span className="tn-kpi__val">{compactMoney(kpis.adjMontos)}</span>
-            <span className="tn-kpi__sub">{kpis.ganadas} ganadas · {kpis.tasaCierre!==null?kpis.tasaCierre+"%":"—"} cierre</span>
+            <span className="tn-kpi__icon">✅</span>
+            <span className="tn-kpi__label">Listas para cotizar</span>
+            <span className="tn-kpi__val">{kpis.listasCotizar}</span>
+            <span className="tn-kpi__sub">fichas completas</span>
           </div>
           <div className="tn-kpi tn-kpi--gray">
             <span className="tn-kpi__icon">📊</span>
@@ -1553,6 +2000,24 @@ export default function TendersPage({ profile, onNavigate }) {
             <span className="tn-kpi__val">{kpis.total}</span>
             <span className="tn-kpi__sub">{kpis.perdidas} perdidas</span>
           </div>
+        </div>
+
+        <div className="tn-view-tabs">
+          {[
+            ["all", "Todas"],
+            ["pending", `Para completar (${kpis.pendientesCarga})`],
+            ["ready", `Listas (${kpis.listasCotizar})`],
+            ["urgent", `Urgentes (${kpis.proxVencer})`],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={`tn-view-tab ${viewMode === key ? "tn-view-tab--active" : ""}`}
+              onClick={() => setViewMode(key)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         <div className="tn-search-bar">
@@ -1616,6 +2081,22 @@ export default function TendersPage({ profile, onNavigate }) {
         activeTab={activeTab} setActiveTab={setActiveTab} saving={saving}
         onClose={() => setShowForm(false)} onSave={saveTender}
         onDelete={deleteTender} onCotizador={abrirCotizador}
+      />
+      <QuickTenderModal
+        show={showQuick}
+        value={quickForm}
+        setValue={setQuickForm}
+        duplicates={quickDuplicates}
+        saving={saving}
+        onClose={() => setShowQuick(false)}
+        onSave={saveQuickTender}
+      />
+      <BacImportModal
+        preview={bacPreview}
+        setPreview={setBacPreview}
+        saving={bacSaving}
+        onClose={() => setBacPreview(null)}
+        onConfirm={confirmBacImport}
       />
     </Layout>
   );
