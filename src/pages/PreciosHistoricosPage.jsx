@@ -847,6 +847,77 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       .slice(0, 8);
   }, [latestRows]);
 
+  const latestProductGroups = useMemo(() => {
+    const groups = {};
+    latestRows.forEach(row => {
+      const key = productKey(row);
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          title: row.descripcion || "Sin descripción",
+          rows: [],
+          latestDate: "",
+          institutions: new Set(),
+          companies: new Set(),
+        };
+      }
+      groups[key].rows.push(row);
+      if (rowDate(row) > groups[key].latestDate) {
+        groups[key].latestDate = rowDate(row);
+        groups[key].title = row.descripcion || groups[key].title;
+      }
+      if (row.tenders?.institution) groups[key].institutions.add(row.tenders.institution);
+      if (row.empresa) groups[key].companies.add(row.empresa);
+    });
+
+    return Object.values(groups).map(group => {
+      const quality = priceQualityMap(group.rows);
+      const reliable = reliableRows(group.rows, quality);
+      const valid = reliable
+        .map(row => ({ row, price: comparablePrice(row) }))
+        .filter(item => item.price !== null);
+      const ownRows = valid.filter(item => isOwnOffer(item.row)).map(item => item.row);
+      const compRows = valid.filter(item => !isOwnOffer(item.row)).map(item => item.row);
+      const minItem = valid.length
+        ? valid.reduce((best, item) => item.price < best.price ? item : best, valid[0])
+        : null;
+      const lastOwn = newestRow(ownRows);
+      const lastComp = newestRow(compRows);
+      const ownPrice = comparablePrice(lastOwn);
+      const minPrice = minItem?.price || null;
+      const diff = ownPrice !== null && minPrice
+        ? Number(((ownPrice - minPrice) / minPrice * 100).toFixed(1))
+        : null;
+      const status = ownPrice === null || !minPrice
+        ? { label: "Sin referencia propia", color: "#64748b", bg: "#f1f5f9" }
+        : ownPrice <= minPrice
+          ? { label: "Competitivo", color: "#059669", bg: "#dcfce7" }
+          : diff <= 8
+            ? { label: "Cerca", color: "#d97706", bg: "#fef3c7" }
+            : { label: "Revisar precio", color: "#dc2626", bg: "#fee2e2" };
+
+      return {
+        ...group,
+        refs: group.rows.length,
+        validRefs: valid.length,
+        suspiciousRefs: group.rows.filter(row => quality.get(row.id)?.suspicious).length,
+        minRow: minItem?.row || null,
+        minPrice,
+        lastOwn,
+        lastComp,
+        diff,
+        status,
+        match: productMatch(group.rows[0], query || group.title),
+        quantity: quantityProfile(valid.map(item => item.row)),
+        institutionsCount: group.institutions.size,
+        companiesCount: group.companies.size,
+      };
+    }).sort((a, b) => {
+      if (b.latestDate !== a.latestDate) return b.latestDate.localeCompare(a.latestDate);
+      return b.validRefs - a.validRefs;
+    });
+  }, [latestRows, query]);
+
   const filterOptions = useMemo(() => {
     const institutions = [...new Set(rows.map(r => r.tenders?.institution).filter(Boolean))].sort();
     const jurisdictions = [...new Set(rows.map(r => r.tenders?.jurisdiction).filter(Boolean))].sort();
@@ -939,16 +1010,17 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       : "";
 
   const focusedProduct = productGroups.find(group => group.key === activeProductKey) || null;
+  const compareSourceGroups = productGroups.length ? productGroups : latestProductGroups;
   const selectedCompareGroups = useMemo(
-    () => productGroups.filter(group => compareProductKeys.includes(group.key)),
-    [productGroups, compareProductKeys]
+    () => compareSourceGroups.filter(group => compareProductKeys.includes(group.key)),
+    [compareSourceGroups, compareProductKeys]
   );
   const compareMode = selectedCompareGroups.length >= 2;
 
   useEffect(() => {
-    const validKeys = new Set(productGroups.map(group => group.key));
+    const validKeys = new Set(compareSourceGroups.map(group => group.key));
     setCompareProductKeys(prev => prev.filter(key => validKeys.has(key)));
-  }, [productGroups]);
+  }, [compareSourceGroups]);
 
   const toggleCompareProduct = useCallback((key) => {
     setCompareProductKeys(prev => (
@@ -1697,11 +1769,21 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 <span className="ph-eyebrow ph-latest__eyebrow"><History size={14}/>Actividad reciente</span>
                 <h3>Últimas cotizaciones comparadas</h3>
                 <p>
-                  Abrí un producto reciente para analizar precios de mercado o usá el buscador
-                  para consultar cualquier referencia histórica.
+                  Abrí un producto reciente para analizar precios de mercado, o marcá dos o más
+                  para comparar tendencia y rango operativo.
                 </p>
               </div>
-              {!latestLoading && <span className="ph-pill">{latestQuotes.length} licitaciones</span>}
+              {!latestLoading && (
+                <div className="ph-latest-actions">
+                  {compareProductKeys.length > 0 && (
+                    <>
+                      <span>{compareProductKeys.length} seleccionado{compareProductKeys.length !== 1 ? "s" : ""}</span>
+                      <button type="button" onClick={() => setCompareProductKeys([])}>Limpiar</button>
+                    </>
+                  )}
+                  <span className="ph-pill">{latestQuotes.length} licitaciones</span>
+                </div>
+              )}
             </div>
 
             {latestLoading && (
@@ -1756,12 +1838,25 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                     </div>
 
                     <div className="ph-latest-card__products">
-                      {quote.products.slice(0, 3).map(product => (
-                        <button key={product.key} type="button" onClick={() => elegirSugerencia(product.description)}>
-                          <span>{shortText(product.description, 64)}</span>
-                          <ArrowRight size={13}/>
-                        </button>
-                      ))}
+                      {quote.products.slice(0, 3).map(product => {
+                        const checked = compareProductKeys.includes(product.key);
+                        return (
+                          <div key={product.key} className={`ph-latest-product-row ${checked ? "is-checked" : ""}`}>
+                            <button type="button" onClick={() => elegirSugerencia(product.description)}>
+                              <span>{shortText(product.description, 64)}</span>
+                              <ArrowRight size={13}/>
+                            </button>
+                            <label className="ph-compare-check ph-compare-check--compact" title="Seleccionar para comparar">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleCompareProduct(product.key)}
+                              />
+                              Comparar
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {quote.products.length > 3 && (
@@ -1769,6 +1864,20 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                     )}
                   </article>
                 ))}
+              </div>
+            )}
+
+            {!latestLoading && compareMode && (
+              <div className="ph-latest-compare">
+                <div className="ph-latest-compare__head">
+                  <div>
+                    <span className="ph-eyebrow">Comparación rápida</span>
+                    <h3>Tendencia entre productos seleccionados</h3>
+                    <p>Lectura inicial con las referencias recientes. Para profundizar, abrí cada producto o usá el buscador.</p>
+                  </div>
+                  <span className="ph-pill">{selectedCompareGroups.length} productos</span>
+                </div>
+                <ProductComparisonChart groups={selectedCompareGroups}/>
               </div>
             )}
           </section>

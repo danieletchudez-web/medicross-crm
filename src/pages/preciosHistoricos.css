@@ -1318,6 +1318,32 @@
   line-height: 1.5;
 }
 
+.ph-latest-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ph-latest-actions > span:not(.ph-pill) {
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 900;
+}
+
+.ph-latest-actions button {
+  padding: 7px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #185fa5;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 900;
+}
+
 .ph-latest-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1420,6 +1446,22 @@
   gap: 6px;
 }
 
+.ph-latest-product-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 3px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  transition: border-color .18s ease, background .18s ease;
+}
+
+.ph-latest-product-row.is-checked {
+  border-color: rgba(37, 99, 235, .22);
+  background: rgba(239, 246, 255, .82);
+}
+
 .ph-latest-card__products button {
   display: flex;
   align-items: center;
@@ -1456,6 +1498,41 @@
 
 .ph-latest-card__products svg {
   flex: 0 0 auto;
+}
+
+.ph-compare-check--compact {
+  padding: 7px 8px;
+  font-size: 10px;
+}
+
+.ph-latest-compare {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, .72), rgba(255, 255, 255, .96));
+}
+
+.ph-latest-compare__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.ph-latest-compare__head h3 {
+  margin: 4px 0 0;
+  color: #0f2444;
+  font-size: 18px;
+  letter-spacing: -.28px;
+}
+
+.ph-latest-compare__head p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12.5px;
 }
 
 .ph-latest-card small {
@@ -1613,6 +1690,22 @@
     flex-direction: column;
   }
 
+  .ph-latest-actions {
+    justify-content: flex-start;
+  }
+
+  .ph-latest-product-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ph-compare-check--compact {
+    justify-content: center;
+  }
+
+  .ph-latest-compare__head {
+    flex-direction: column;
+  }
+
   .ph-selection-actions {
     justify-content: flex-start;
   }
@@ -1638,7 +1731,8 @@
 
 [data-theme="dark"] .ph-exec,
 [data-theme="dark"] .ph-panel,
-[data-theme="dark"] .ph-latest {
+[data-theme="dark"] .ph-latest,
+[data-theme="dark"] .ph-latest-compare {
   background: #161b22;
   border-color: #30363d;
   box-shadow: none;
@@ -1653,6 +1747,7 @@
 [data-theme="dark"] .ph-exec__head h3,
 [data-theme="dark"] .ph-panel__head h3,
 [data-theme="dark"] .ph-latest__head h3,
+[data-theme="dark"] .ph-latest-compare__head h3,
 [data-theme="dark"] .ph-latest-card__institution strong,
 [data-theme="dark"] .ph-latest-empty strong,
 [data-theme="dark"] .ph-detail-title h3,
@@ -1665,6 +1760,7 @@
 
 [data-theme="dark"] .ph-exec__head p,
 [data-theme="dark"] .ph-latest__head p,
+[data-theme="dark"] .ph-latest-compare__head p,
 [data-theme="dark"] .ph-latest-card > p,
 [data-theme="dark"] .ph-kpi small,
 [data-theme="dark"] .ph-insight small,
@@ -1697,6 +1793,7 @@
 [data-theme="dark"] .ph-simple-decision__price,
 [data-theme="dark"] .ph-quick-read__actions button,
 [data-theme="dark"] .ph-selection-actions button,
+[data-theme="dark"] .ph-latest-actions button,
 [data-theme="dark"] .ph-compare-check,
 [data-theme="dark"] .ph-latest-card__products button,
 [data-theme="dark"] .ph-more-metrics summary,
@@ -1723,6 +1820,7 @@
 [data-theme="dark"] .ph-quick-read p,
 [data-theme="dark"] .ph-quick-read__actions span,
 [data-theme="dark"] .ph-selection-actions > span,
+[data-theme="dark"] .ph-latest-actions > span:not(.ph-pill),
 [data-theme="dark"] .ph-compare-list__metrics small,
 [data-theme="dark"] .ph-decision-card small,
 [data-theme="dark"] .ph-market-snapshot small,
@@ -1753,6 +1851,11 @@
 [data-theme="dark"] .ph-latest-card__meta span {
   background: rgba(47, 129, 247, .12);
   color: #93c5fd;
+}
+
+[data-theme="dark"] .ph-latest-product-row.is-checked {
+  border-color: rgba(47, 129, 247, .38);
+  background: rgba(47, 129, 247, .08);
 }
 
 [data-theme="dark"] .ph-latest-card__products button {
