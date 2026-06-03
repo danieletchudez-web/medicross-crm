@@ -549,11 +549,19 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [bacPreview, setBacPreview] = useState(null);
   const [bacImporting, setBacImporting] = useState(false);
   const [bacSaving, setBacSaving] = useState(false);
+  const [importProgress, setImportProgress] = useState({ isActive: false, currentChunk: 0, totalChunks: 0, rowsProcessed: 0, totalRows: 0, currentStep: "inicio" });
+  const [toast, setToast] = useState(null);
+  const [confirmLargeImport, setConfirmLargeImport] = useState(null);
   const inputRef   = useRef(null);
   const bacFileRef = useRef(null);
   const debounceRef = useRef(null);
   const marketPageSize = 10;
   const canImportBac = profile?.role === "super_admin" || profile?.role === "manager";
+
+  function showToast(msg, type = "info") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), type === "error" ? 5000 : 3500);
+  }
 
   useEffect(() => { setRecientes(getBusquedasRecientes()); }, []);
 
@@ -661,7 +669,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       setBacPreview(preview);
     } catch (error) {
       console.error(error);
-      alert("No se pudo procesar el archivo BAC: " + error.message);
+      showToast("No se pudo procesar el archivo BAC: " + error.message, "err");
       if (bacFileRef.current) bacFileRef.current.value = "";
     }
     setBacImporting(false);
@@ -678,13 +686,26 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     if (!bacPreview) return;
     const metadata = bacPreview.metadata;
     if (!metadata.institution?.trim() || !metadata.processNumber?.trim() || !metadata.referenceDate) {
-      alert("Revisá institución, número de proceso y fecha de apertura antes de importar.");
+      showToast("Revisá institución, número de proceso y fecha de apertura antes de importar.", "err");
       return;
     }
 
+    if (bacPreview.rows.length > 5000) {
+      setConfirmLargeImport({ rows: bacPreview.rows.length });
+      return;
+    }
+
+    await proceedWithImport();
+  }
+
+  async function proceedWithImport() {
+    if (!bacPreview) return;
+    const metadata = bacPreview.metadata;
     setBacSaving(true);
     let createdTenderId = null;
     try {
+      setImportProgress({ isActive: true, currentChunk: 0, totalChunks: 0, rowsProcessed: 0, totalRows: 0, currentStep: "validando" });
+
       const normalizedInstitution = normalizeProductText(metadata.institution);
       const { data: matchingTenders, error: lookupError } = await supabase
         .from("tenders")
@@ -695,6 +716,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       let tender = (matchingTenders || []).find((item) =>
         normalizeProductText(item.institution) === normalizedInstitution
       );
+
+      setImportProgress(p => ({ ...p, currentStep: "buscando" }));
 
       if (!tender) {
         const payload = {
@@ -736,10 +759,23 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
       if (insertRows.length) {
         const CHUNK_SIZE = 2000;
+        const totalChunks = Math.ceil(insertRows.length / CHUNK_SIZE);
+        setImportProgress({ isActive: true, currentChunk: 0, totalChunks, rowsProcessed: 0, totalRows: insertRows.length, currentStep: "importando" });
+
         for (let i = 0; i < insertRows.length; i += CHUNK_SIZE) {
+          const chunkIdx = Math.floor(i / CHUNK_SIZE);
           const chunk = insertRows.slice(i, i + CHUNK_SIZE);
           const { error } = await supabase.from("tender_comparativas").insert(chunk);
           if (error) throw error;
+
+          setImportProgress({
+            isActive: true,
+            currentChunk: chunkIdx + 1,
+            totalChunks,
+            rowsProcessed: Math.min((chunkIdx + 1) * CHUNK_SIZE, insertRows.length),
+            totalRows: insertRows.length,
+            currentStep: "importando"
+          });
         }
       }
 
@@ -752,9 +788,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       }]);
 
       const duplicates = bacPreview.rows.length - insertRows.length + bacPreview.discardedDuplicates;
-      alert(insertRows.length
+      const msg = insertRows.length
         ? `Importación completada: ${insertRows.length} referencias agregadas${duplicates ? ` y ${duplicates} duplicadas omitidas` : ""}.`
-        : "El archivo ya estaba importado. No se agregaron referencias duplicadas.");
+        : "El archivo ya estaba importado. No se agregaron referencias duplicadas.";
+      showToast(msg, "ok");
       setBacPreview(null);
       if (bacFileRef.current) bacFileRef.current.value = "";
       await loadLatestRows();
@@ -764,8 +801,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         await supabase.from("tender_comparativas").delete().eq("tender_id", createdTenderId);
         await supabase.from("tenders").delete().eq("id", createdTenderId);
       }
-      alert("No se pudo guardar la comparativa BAC: " + error.message);
+      showToast("No se pudo guardar la comparativa BAC: " + error.message, "err");
     }
+    setImportProgress({ isActive: false, currentChunk: 0, totalChunks: 0, rowsProcessed: 0, totalRows: 0, currentStep: "inicio" });
     setBacSaving(false);
   }
 
@@ -938,6 +976,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     setAnalysisView("resumen");
   }, [activeProductKey, rows.length]);
 
+  useEffect(() => {
+    if (compareMode) setAnalysisView("resumen");
+  }, [compareMode]);
+
   const agrupado = useMemo(() => {
     const map = {};
     filteredRows.forEach(r => {
@@ -1005,7 +1047,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     return precios.length ? Math.min(...precios) : null;
   }
 
-  const showFocusedAnalysis = Boolean(activeProductKey);
+  const showFocusedAnalysis = Boolean(activeProductKey || compareMode);
 
   const decision = useMemo(() => {
     const validRows = analysisRows
@@ -1776,6 +1818,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               setJurisdictionFilter("");
               setCompanyFilter("");
               setSelectedProductKey("");
+              setCompareProductKeys([]);
             }}
               style={{padding:"8px 13px",borderRadius:9,border:"1px solid #bfdbfe",
                 background:"#eff6ff",fontSize:12.5,fontWeight:800,cursor:"pointer",
@@ -1793,34 +1836,53 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               <div>
                 <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",
                   letterSpacing:".7px",color:"#94a3b8",marginBottom:4}}>
-                  Paso 1 · Elegí el producto exacto
+                  Paso 1 · Elegí o compará productos
                 </div>
                 <h3 style={{margin:0,fontSize:18,color:"#0f2444",letterSpacing:"-.35px"}}>
                   {productGroups.length} producto{productGroups.length !== 1 ? "s" : ""} encontrado{productGroups.length !== 1 ? "s" : ""}
                 </h3>
                 <p style={{margin:"5px 0 0",fontSize:12.5,color:"#64748b",lineHeight:1.45}}>
-                  La búsqueda puede traer varios renglones distintos. Seleccioná uno para ver precio sugerido, última oferta propia y competidores.
+                  Seleccioná uno para análisis profundo o marcá dos o más para comparar tendencia, mínimo, oferta propia y precio sugerido.
                 </p>
               </div>
-              {focusedProduct && (
-                <button onClick={() => setSelectedProductKey("")}
-                  disabled={productGroups.length === 1}
-                  style={{padding:"8px 12px",borderRadius:9,border:"1px solid #e2e8f0",
-                    background:productGroups.length === 1 ? "#f8fafc" : "#fff",
-                    color:productGroups.length === 1 ? "#94a3b8" : "#64748b",
-                    fontSize:12,fontWeight:800,cursor:productGroups.length === 1 ? "default" : "pointer",
-                    fontFamily:"inherit"}}>
-                  Ver todos
-                </button>
-              )}
+              <div className="ph-selection-actions">
+                {compareProductKeys.length > 0 && (
+                  <span>{compareProductKeys.length} seleccionado{compareProductKeys.length !== 1 ? "s" : ""}</span>
+                )}
+                {compareProductKeys.length > 0 && (
+                  <button type="button" onClick={() => setCompareProductKeys([])}>
+                    Limpiar comparación
+                  </button>
+                )}
+                {focusedProduct && (
+                  <button onClick={() => setSelectedProductKey("")}
+                    disabled={productGroups.length === 1}
+                    style={{padding:"8px 12px",borderRadius:9,border:"1px solid #e2e8f0",
+                      background:productGroups.length === 1 ? "#f8fafc" : "#fff",
+                      color:productGroups.length === 1 ? "#94a3b8" : "#64748b",
+                      fontSize:12,fontWeight:800,cursor:productGroups.length === 1 ? "default" : "pointer",
+                      fontFamily:"inherit"}}>
+                    Ver todos
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",
               gap:10}}>
               {productGroups.slice(0, 12).map(group => {
                 const active = group.key === activeProductKey;
+                const checked = compareProductKeys.includes(group.key);
                 return (
-                  <button key={group.key} onClick={() => setSelectedProductKey(group.key)}
+                  <article key={group.key} role="button" tabIndex={0}
+                    onClick={() => setSelectedProductKey(group.key)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedProductKey(group.key);
+                      }
+                    }}
+                    className={`ph-product-option${active ? " is-active" : ""}${checked ? " is-checked" : ""}`}
                     style={{textAlign:"left",border:active?"1px solid #185fa5":"1px solid #e2e8f0",
                       borderTop:active?"4px solid #185fa5":"4px solid #e2e8f0",
                       background:active?"#eff6ff":"#fff",borderRadius:11,padding:"13px 14px",
@@ -1833,10 +1895,23 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                         whiteSpace:"nowrap"}}>
                         {group.status.label}
                       </span>
-                      <span style={{fontSize:10.5,color:"#94a3b8",fontWeight:800,
-                        whiteSpace:"nowrap"}}>
-                        {group.validRefs} refs.
-                      </span>
+                      <div className="ph-product-option__right">
+                        <span style={{fontSize:10.5,color:"#94a3b8",fontWeight:800,
+                          whiteSpace:"nowrap"}}>
+                          {group.validRefs} refs.
+                        </span>
+                        <label className="ph-compare-check" onClick={(event) => event.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              if (!activeProductKey) setSelectedProductKey(group.key);
+                              toggleCompareProduct(group.key);
+                            }}
+                          />
+                          <span>Comparar</span>
+                        </label>
+                      </div>
                     </div>
                     <div style={{fontSize:13.5,fontWeight:800,color:"#0f2444",lineHeight:1.35,
                       minHeight:38,marginBottom:10}}>
@@ -1882,7 +1957,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                       <span>{group.companiesCount} empresa{group.companiesCount !== 1 ? "s" : ""}</span>
                       <span>{fmtDate(group.latestDate)}</span>
                     </div>
-                  </button>
+                  </article>
                 );
               })}
             </div>
@@ -2058,12 +2133,18 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               <section className="ph-panel ph-panel--wide">
                 <div className="ph-panel__head">
                   <div>
-                    <span className="ph-eyebrow">Evolución de mercado</span>
-                    <h3>Precio mínimo, promedio, máximo y oferta propia</h3>
+                    <span className="ph-eyebrow">{compareMode ? "Comparación de seleccionados" : "Evolución de mercado"}</span>
+                    <h3>{compareMode ? "Tendencia comparativa por producto" : "Precio mínimo, promedio, máximo y oferta propia"}</h3>
                   </div>
-                  <span className="ph-pill">{marketTrend.length} fechas</span>
+                  <span className="ph-pill">
+                    {compareMode
+                      ? `${selectedCompareGroups.length} productos`
+                      : `${marketTrend.length} fechas`}
+                  </span>
                 </div>
-                <MarketEvolutionChart data={marketTrend}/>
+                {compareMode
+                  ? <ProductComparisonChart groups={selectedCompareGroups}/>
+                  : <MarketEvolutionChart data={marketTrend}/>}
               </section>
 
               <section className="ph-panel">
@@ -2511,6 +2592,57 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               </button>
             </footer>
           </section>
+        </div>
+      )}
+
+      {confirmLargeImport && (
+        <div className="ph-confirm-overlay" onClick={() => setConfirmLargeImport(null)}>
+          <div className="ph-confirm-modal" onClick={e => e.stopPropagation()}>
+            <h3>⚠️ Archivo grande detectado</h3>
+            <p>Este archivo contiene aproximadamente <strong>{confirmLargeImport.rows}</strong> referencias de precio.</p>
+            <p className="ph-confirm-note">Estimado: {Math.ceil(confirmLargeImport.rows / 1000) * 5} segundos de importación.</p>
+            <div className="ph-confirm-actions">
+              <button type="button" className="ph-btn ph-btn--secondary" onClick={() => setConfirmLargeImport(null)}>
+                Cancelar
+              </button>
+              <button type="button" className="ph-btn ph-btn--primary" onClick={() => {
+                setConfirmLargeImport(null);
+                proceedWithImport();
+              }}>
+                Continuar importación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {importProgress.isActive && (
+        <div className="ph-progress-overlay">
+          <div className="ph-progress-modal">
+            <h3>Importando referencias BAC</h3>
+            <div className="ph-progress-info">
+              {importProgress.currentStep === "validando" && <span>Validando metadatos...</span>}
+              {importProgress.currentStep === "buscando" && <span>Buscando licitación...</span>}
+              {importProgress.currentStep === "importando" && (
+                <span>Chunk {importProgress.currentChunk}/{importProgress.totalChunks}: {importProgress.rowsProcessed}/{importProgress.totalRows} referencias</span>
+              )}
+            </div>
+            <div className="ph-progress-bar">
+              <div
+                className="ph-progress-fill"
+                style={{ width: `${(importProgress.rowsProcessed / importProgress.totalRows) * 100}%` }}
+              />
+            </div>
+            <p className="ph-progress-pct">
+              {Math.round((importProgress.rowsProcessed / importProgress.totalRows) * 100)}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`ph-toast ph-toast--${toast.type}`}>
+          {toast.msg}
         </div>
       )}
     </Layout>
