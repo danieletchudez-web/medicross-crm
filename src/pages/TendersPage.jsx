@@ -25,6 +25,22 @@ const EN_CURSO = ["En análisis","Cotizada","Presentada","Adjudicada",
 const ESTADOS_GANADOS = ["Adjudicada","Orden de compra recibida","En ejecución",
                          "Entrega parcial","Entregada","Facturada","Cobrada","Finalizada"];
 
+function isTenderLost(t) {
+  return t?.resultado === "perdida" || t?.operational_status === "Perdida / No adjudicada";
+}
+
+function isTenderWon(t) {
+  if (isTenderLost(t)) return false;
+  return t?.resultado === "ganada" || ESTADOS_GANADOS.includes(t?.operational_status);
+}
+
+function operationalStatusFromResult(form) {
+  const current = normalizeSelect(form?.operational_status, ESTADOS, "En análisis");
+  if (form?.resultado === "perdida") return "Perdida / No adjudicada";
+  if (form?.resultado === "ganada") return ESTADOS_GANADOS.includes(current) ? current : "Adjudicada";
+  return current;
+}
+
 const EMPTY_FORM = {
   jurisdiction:"", institution:"", process_type:"", process_number:"",
   tender_type:"Original", process_name:"", expedient_number:"",
@@ -531,6 +547,12 @@ function Competitors({ tenderId }) {
 function ResultadoBox({ form, setForm }) {
   const estado = form.resultado;
   const cls    = estado==="ganada"?"ganada":estado==="perdida"?"perdida":"pendiente";
+  const updateResultado = (resultado) => {
+    setForm(p => {
+      const next = { ...p, resultado };
+      return { ...next, operational_status: operationalStatusFromResult(next) };
+    });
+  };
   return (
     <div className={`tn-resultado-box tn-resultado-box--${cls}`}>
       <div>
@@ -541,7 +563,7 @@ function ResultadoBox({ form, setForm }) {
       <div className="tn-form-grid">
         <div className="tn-field">
           <label>Resultado final</label>
-          <select value={form.resultado} onChange={e=>setForm(p=>({...p,resultado:e.target.value}))}>
+          <select value={form.resultado} onChange={e=>updateResultado(e.target.value)}>
             <option value="">Pendiente</option>
             <option value="ganada">✅ Ganada / Adjudicada</option>
             <option value="perdida">❌ Perdida / No adjudicada</option>
@@ -1477,37 +1499,37 @@ export default function TendersPage({ profile, onNavigate }) {
   }
 
   const kpis = useMemo(() => {
-    const activas    = tenders.filter(t => EN_CURSO.includes(t.operational_status));
+    const activas    = tenders.filter(t => EN_CURSO.includes(t.operational_status) && !isTenderLost(t));
     const montoTotal = activas.reduce((s,t) => s+Number(t.purchase_order_amount||0), 0);
-    const adjMontos  = tenders.filter(t=>ESTADOS_GANADOS.includes(t.operational_status)).reduce((s,t)=>s+Number(t.monto_adjudicado||t.purchase_order_amount||0),0);
-    const proxVencer = tenders.filter(t=>{if(CERRADAS.includes(t.operational_status))return false;const d=daysUntil(t.end_date);return d!==null&&d>=0&&d<=7;}).length;
-    const sinAccion  = tenders.filter(t=>EN_CURSO.includes(t.operational_status)&&!t.next_action).length;
+    const adjMontos  = tenders.filter(isTenderWon).reduce((s,t)=>s+Number(t.monto_adjudicado||t.purchase_order_amount||0),0);
+    const proxVencer = activas.filter(t=>{const d=daysUntil(t.end_date);return d!==null&&d>=0&&d<=7;}).length;
+    const sinAccion  = activas.filter(t=>!t.next_action).length;
     const pendientesCarga = activas.filter(t => getTenderCompleteness(t).score < 86).length;
     const listasCotizar = activas.filter(t => getTenderCompleteness(t).score >= 86).length;
-    const ganadas    = tenders.filter(t=>ESTADOS_GANADOS.includes(t.operational_status)).length;
-    const perdidas   = tenders.filter(t=>t.operational_status==="Perdida / No adjudicada").length;
-    const total      = tenders.filter(t=>ESTADOS_GANADOS.includes(t.operational_status)||t.operational_status==="Perdida / No adjudicada").length;
-    const tasaCierre = total>0?Math.round(ganadas/total*100):null;
+    const ganadas    = tenders.filter(isTenderWon).length;
+    const perdidas   = tenders.filter(isTenderLost).length;
+    const cerradasConResultado = tenders.filter(t=>isTenderWon(t)||isTenderLost(t)).length;
+    const tasaCierre = cerradasConResultado>0?Math.round(ganadas/cerradasConResultado*100):null;
     return {activas:activas.length,montoTotal,adjMontos,proxVencer,sinAccion,pendientesCarga,listasCotizar,ganadas,perdidas,total:tenders.length,tasaCierre};
   }, [tenders]);
 
   const tenderInsights = useMemo(() => tenders.map(t => ({ t, readiness:getTenderCompleteness(t) })), [tenders]);
   const pendingRows = useMemo(() => tenderInsights
-    .filter(({t,readiness}) => EN_CURSO.includes(t.operational_status) && readiness.score < 86)
+    .filter(({t,readiness}) => EN_CURSO.includes(t.operational_status) && !isTenderLost(t) && readiness.score < 86)
     .sort((a,b) => a.readiness.score - b.readiness.score)
     .slice(0,4), [tenderInsights]);
   const readyRows = useMemo(() => tenderInsights
-    .filter(({t,readiness}) => EN_CURSO.includes(t.operational_status) && readiness.score >= 86)
+    .filter(({t,readiness}) => EN_CURSO.includes(t.operational_status) && !isTenderLost(t) && readiness.score >= 86)
     .sort((a,b) => (daysUntil(a.t.end_date) ?? 999) - (daysUntil(b.t.end_date) ?? 999))
     .slice(0,4), [tenderInsights]);
   const quickDuplicates = useMemo(() => findTenderDuplicates(quickForm, tenders), [quickForm, tenders]);
 
   const filtered = useMemo(() => {
     let rows = [...tenders];
-    if (viewMode === "pending") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && getTenderCompleteness(t).score < 86);
-    if (viewMode === "ready") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && getTenderCompleteness(t).score >= 86);
+    if (viewMode === "pending") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && !isTenderLost(t) && getTenderCompleteness(t).score < 86);
+    if (viewMode === "ready") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && !isTenderLost(t) && getTenderCompleteness(t).score >= 86);
     if (viewMode === "urgent") rows = rows.filter(t => {
-      if (CERRADAS.includes(t.operational_status)) return false;
+      if (CERRADAS.includes(t.operational_status) || isTenderLost(t)) return false;
       const d = daysUntil(t.end_date);
       return d !== null && d >= 0 && d <= 7;
     });
@@ -1707,6 +1729,7 @@ export default function TendersPage({ profile, onNavigate }) {
     const duplicates = findTenderDuplicates(form, tenders, editData?.id);
     if (duplicates.length > 0 && !confirm("Ya existe una licitación parecida cargada. ¿Querés guardar de todos modos?")) return;
     setSaving(true);
+    const operationalStatus = operationalStatusFromResult(form);
     const payload = {
       jurisdiction:form.jurisdiction||null,institution:form.institution||null,
       process_type:form.process_type||null,process_number:form.process_number||null,
@@ -1718,7 +1741,7 @@ export default function TendersPage({ profile, onNavigate }) {
       detection_date:form.detection_date||null,start_date:form.start_date||null,end_date:form.end_date||null,
       validity_status:form.validity_status||null,execution_policy:form.execution_policy||null,
       bridge_ot:form.bridge_ot||null,internal_owner:form.internal_owner||null,
-      product_line:form.product_line||null,operational_status:form.operational_status||"En análisis",
+      product_line:form.product_line||null,operational_status:operationalStatus,
       next_action:form.next_action||null,next_action_date:form.next_action_date||null,
       documentation_status:form.documentation_status||"Pendiente",
       documentation_pending_detail:form.documentation_pending_detail||null,
@@ -1732,8 +1755,8 @@ export default function TendersPage({ profile, onNavigate }) {
     if (editData) {
       const {error}=await supabase.from("tenders").update(payload).eq("id",editData.id);
       if (error){alert("Error: "+error.message);setSaving(false);return;}
-      if (prevStatusRef.current&&prevStatusRef.current!==form.operational_status)
-        await logEvent(editData.id,"estado","Cambio de estado",prevStatusRef.current,form.operational_status);
+      if (prevStatusRef.current&&prevStatusRef.current!==operationalStatus)
+        await logEvent(editData.id,"estado","Cambio de estado",prevStatusRef.current,operationalStatus);
     } else {
       const {data:newRow,error}=await supabase.from("tenders").insert([payload]).select().single();
       if (error){alert("Error: "+error.message);setSaving(false);return;}
