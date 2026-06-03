@@ -1612,6 +1612,23 @@
   .ph-latest__head {
     flex-direction: column;
   }
+
+  .ph-selection-actions {
+    justify-content: flex-start;
+  }
+
+  .ph-product-option__right {
+    align-items: flex-start;
+  }
+
+  .ph-compare__notice {
+    border-radius: 12px;
+    line-height: 1.35;
+  }
+
+  .ph-compare-list__metrics {
+    grid-template-columns: 1fr;
+  }
 }
 
 [data-theme="dark"] .ph-page {
@@ -1663,6 +1680,7 @@
 [data-theme="dark"] .ph-decision-card,
 [data-theme="dark"] .ph-market-snapshot > div,
 [data-theme="dark"] .ph-market-snapshot article,
+[data-theme="dark"] .ph-compare-list article,
 [data-theme="dark"] .ph-competitive-summary article,
 [data-theme="dark"] .ph-latest-card,
 [data-theme="dark"] .ph-latest-empty,
@@ -1678,6 +1696,8 @@
 
 [data-theme="dark"] .ph-simple-decision__price,
 [data-theme="dark"] .ph-quick-read__actions button,
+[data-theme="dark"] .ph-selection-actions button,
+[data-theme="dark"] .ph-compare-check,
 [data-theme="dark"] .ph-latest-card__products button,
 [data-theme="dark"] .ph-more-metrics summary,
 [data-theme="dark"] .ph-view-tabs button:hover {
@@ -1689,6 +1709,8 @@
 [data-theme="dark"] .ph-quick-read strong,
 [data-theme="dark"] .ph-decision-card strong,
 [data-theme="dark"] .ph-market-snapshot strong,
+[data-theme="dark"] .ph-compare-list__top strong,
+[data-theme="dark"] .ph-compare-list__metrics b,
 [data-theme="dark"] .ph-competitive-summary strong,
 [data-theme="dark"] .ph-competitor-table td:first-child strong,
 [data-theme="dark"] .ph-evidence__head strong,
@@ -1700,6 +1722,8 @@
 [data-theme="dark"] .ph-simple-decision p,
 [data-theme="dark"] .ph-quick-read p,
 [data-theme="dark"] .ph-quick-read__actions span,
+[data-theme="dark"] .ph-selection-actions > span,
+[data-theme="dark"] .ph-compare-list__metrics small,
 [data-theme="dark"] .ph-decision-card small,
 [data-theme="dark"] .ph-market-snapshot small,
 [data-theme="dark"] .ph-competitive-summary small,
@@ -1719,6 +1743,11 @@
   border-color: rgba(47, 129, 247, .42);
   background: rgba(47, 129, 247, .12);
   color: #93c5fd;
+}
+
+[data-theme="dark"] .ph-compare__notice {
+  background: rgba(245, 158, 11, .12);
+  color: #fbbf24;
 }
 
 [data-theme="dark"] .ph-latest-card__meta span {
