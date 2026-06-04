@@ -70,32 +70,57 @@ function safeExternalUrl(value) {
   return /^https?:\/\//i.test(text) ? text : "";
 }
 
-function bacProcessUrl(tender) {
-  const direct = [
+function directBacProcessUrl(tender) {
+  return [
     tender?.portal_link,
     tender?.bac_url,
+    tender?.bac_detail_url,
+    tender?.detail_url,
+    tender?.process_url,
+    tender?.pliego_url,
     tender?.source_url,
     tender?.external_url,
     tender?.url,
-  ].map(safeExternalUrl).find(Boolean);
+  ].map(safeExternalUrl).find(Boolean) || "";
+}
+
+function bacProcessUrl(tender) {
+  const direct = directBacProcessUrl(tender);
   if (direct) return direct;
 
   const number = tenderProcessNumber(tender);
   if (!number) return "";
-  return `${BAC_PROCESS_SEARCH_URL}?proceso=${encodeURIComponent(number)}`;
+  return BAC_PROCESS_SEARCH_URL;
+}
+
+async function copyTextToClipboard(text) {
+  if (!text || typeof navigator === "undefined" || !navigator.clipboard?.writeText) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function BacProcessLink({ tender, children, className = "" }) {
-  const url = bacProcessUrl(tender);
+  const direct = directBacProcessUrl(tender);
+  const number = tenderProcessNumber(tender);
+  const url = direct || (number ? BAC_PROCESS_SEARCH_URL : "");
   if (!url) return <span className={className}>{children}</span>;
+  const title = direct ? "Abrir proceso en BAC" : "Abrir BAC y copiar número de proceso";
   return (
     <a
       className={className}
       href={url}
       target="_blank"
       rel="noreferrer"
-      title="Abrir referencia en BAC"
-      onClick={(event) => event.stopPropagation()}>
+      title={title}
+      aria-label={title}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!direct && number) copyTextToClipboard(number);
+      }}>
       <span>{children}</span>
       <ExternalLink size={12}/>
     </a>
@@ -1585,13 +1610,15 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const copySuggestedPrice = useCallback(async () => {
     if (!decision?.sugerido) return;
     const sourceTender = decision.fuenteSugerido?.tenders;
+    const processNumber = tenderProcessNumber(sourceTender);
+    const directLink = directBacProcessUrl(sourceTender);
     const text = [
       `Precio sugerido: ${fullMoney(decision.sugerido)}`,
       `Rango operativo: ${decision.rangoSugerido ? `${fullMoney(decision.rangoSugerido.min)} a ${fullMoney(decision.rangoSugerido.max)}` : "—"}`,
       `Base: ${decision.detalleFuenteSugerido}`,
-      `Nº proceso: ${tenderProcessNumber(sourceTender) || "—"}`,
+      `Nº proceso: ${processNumber || "—"}`,
       `Institución: ${sourceTender?.institution || "—"}`,
-      `Link BAC: ${bacProcessUrl(sourceTender) || "—"}`,
+      `Link BAC: ${directLink || (processNumber ? `${BAC_PROCESS_SEARCH_URL} (buscar Nº ${processNumber})` : "—")}`,
       `Alcance: ${decision.scopeLabel}`,
     ].join("\n");
     try {
@@ -1613,7 +1640,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       `Institución: ${tender?.institution || "—"}`,
       `Proceso: ${tender?.process_name || "—"}`,
       `Fecha: ${fmtDate(tender?.end_date)}`,
-      `Link BAC: ${bacProcessUrl(tender) || "—"}`,
+      `Link BAC: ${directBacProcessUrl(tender) || `${BAC_PROCESS_SEARCH_URL} (buscar Nº ${number})`}`,
     ].join("\n");
     try {
       await navigator.clipboard.writeText(text);
