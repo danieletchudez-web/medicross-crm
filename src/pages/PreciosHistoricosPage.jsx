@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   AlertTriangle, ArrowRight, Building2, CalendarDays, Calculator, CheckCircle2,
-  Clock3, Database, FileSpreadsheet, History, ShieldCheck, Upload, X,
+  Clock3, Copy, Database, FileSpreadsheet, History, ShieldCheck, Upload, X,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
@@ -41,6 +41,26 @@ function pctVsMin(value, min) {
 
 function rowDate(row) {
   return row?.tenders?.end_date || "";
+}
+
+function tenderProcessNumber(tender) {
+  return tender?.process_number || tender?.expedient_number || "";
+}
+
+function tenderProcessLabel(tender) {
+  const number = tenderProcessNumber(tender);
+  if (!number) return "Sin Nº proceso";
+  return `${isExternalBacTender(tender) ? "BAC" : "Proceso"} ${number}`;
+}
+
+function tenderTraceText(tender) {
+  if (!tender) return "Sin origen";
+  const pieces = [
+    tenderProcessNumber(tender) ? `Nº ${tenderProcessNumber(tender)}` : "",
+    tender.institution || "",
+    tender.end_date ? fmtDate(tender.end_date) : "",
+  ].filter(Boolean);
+  return pieces.join(" · ") || "Sin trazabilidad";
 }
 
 function newestRow(rowsList) {
@@ -552,6 +572,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [importProgress, setImportProgress] = useState({ isActive: false, currentChunk: 0, totalChunks: 0, rowsProcessed: 0, totalRows: 0, currentStep: "inicio" });
   const [toast, setToast] = useState(null);
   const [confirmLargeImport, setConfirmLargeImport] = useState(null);
+  const [copiedProcess, setCopiedProcess] = useState("");
   const inputRef   = useRef(null);
   const bacFileRef = useRef(null);
   const debounceRef = useRef(null);
@@ -885,6 +906,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       const lastComp = newestRow(compRows);
       const ownPrice = comparablePrice(lastOwn);
       const minPrice = minItem?.price || null;
+      const traceRow = minItem?.row || lastOwn || lastComp || newestRow(group.rows);
       const diff = ownPrice !== null && minPrice
         ? Number(((ownPrice - minPrice) / minPrice * 100).toFixed(1))
         : null;
@@ -905,6 +927,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         minPrice,
         lastOwn,
         lastComp,
+        traceRow,
+        processNumber: tenderProcessNumber(traceRow?.tenders),
+        processLabel: tenderProcessLabel(traceRow?.tenders),
         diff,
         status,
         match: productMatch(group.rows[0], query || group.title),
@@ -970,6 +995,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       const lastComp = newestRow(compRows);
       const ownPrice = comparablePrice(lastOwn);
       const minPrice = minItem?.price || null;
+      const traceRow = minItem?.row || lastOwn || lastComp || newestRow(group.rows);
       const diff = ownPrice !== null && minPrice
         ? Number(((ownPrice - minPrice) / minPrice * 100).toFixed(1))
         : null;
@@ -990,6 +1016,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         minPrice,
         lastOwn,
         lastComp,
+        traceRow,
+        processNumber: tenderProcessNumber(traceRow?.tenders),
+        processLabel: tenderProcessLabel(traceRow?.tenders),
         diff,
         status,
         match: productMatch(group.rows[0], query),
@@ -1516,10 +1545,13 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
   const copySuggestedPrice = useCallback(async () => {
     if (!decision?.sugerido) return;
+    const sourceTender = decision.fuenteSugerido?.tenders;
     const text = [
       `Precio sugerido: ${fullMoney(decision.sugerido)}`,
       `Rango operativo: ${decision.rangoSugerido ? `${fullMoney(decision.rangoSugerido.min)} a ${fullMoney(decision.rangoSugerido.max)}` : "—"}`,
       `Base: ${decision.detalleFuenteSugerido}`,
+      `Nº proceso: ${tenderProcessNumber(sourceTender) || "—"}`,
+      `Institución: ${sourceTender?.institution || "—"}`,
       `Alcance: ${decision.scopeLabel}`,
     ].join("\n");
     try {
@@ -1529,6 +1561,29 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       alert(text);
     }
   }, [decision]);
+
+  const copyTenderProcess = useCallback(async (tender) => {
+    const number = tenderProcessNumber(tender);
+    if (!number) {
+      alert("Esta referencia no tiene número de proceso cargado.");
+      return;
+    }
+    const text = [
+      `${isExternalBacTender(tender) ? "Proceso BAC" : "Nº proceso"}: ${number}`,
+      `Institución: ${tender?.institution || "—"}`,
+      `Proceso: ${tender?.process_name || "—"}`,
+      `Fecha: ${fmtDate(tender?.end_date)}`,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedProcess(number);
+      window.setTimeout(() => {
+        setCopiedProcess((current) => current === number ? "" : current);
+      }, 1600);
+    } catch {
+      alert(text);
+    }
+  }, []);
 
   const openCotizadorWithReference = useCallback(() => {
     if (decision?.sugerido) {
@@ -2039,6 +2094,21 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                         </span>
                       )}
                     </div>
+                    <div className="ph-product-process">
+                      <FileSpreadsheet size={13}/>
+                      <span>{group.processLabel}</span>
+                      <em>{tenderTraceText(group.traceRow?.tenders)}</em>
+                      {group.processNumber && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            copyTenderProcess(group.traceRow?.tenders);
+                          }}>
+                          <Copy size={12}/> {copiedProcess === group.processNumber ? "Copiado" : "Copiar"}
+                        </button>
+                      )}
+                    </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",
                       gap:8}}>
                       <div style={{background:"#f8fafc",border:"1px solid #eef2f7",
@@ -2107,6 +2177,18 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                   {" "}Base {decision.tipoFuenteSugerido.toLowerCase()} del {fmtDate(decision.fechaFuenteSugerido)}.
                   {" "}{decision.scopeLabel}.
                 </p>
+                {decision.fuenteSugerido?.tenders && (
+                  <div className="ph-reference-line">
+                    <FileSpreadsheet size={14}/>
+                    <span>{tenderProcessLabel(decision.fuenteSugerido.tenders)}</span>
+                    <small>{tenderTraceText(decision.fuenteSugerido.tenders)}</small>
+                    {tenderProcessNumber(decision.fuenteSugerido.tenders) && (
+                      <button type="button" onClick={() => copyTenderProcess(decision.fuenteSugerido.tenders)}>
+                        <Copy size={12}/> {copiedProcess === tenderProcessNumber(decision.fuenteSugerido.tenders) ? "Copiado" : "Copiar Nº"}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="ph-quick-read__actions">
                 {decision.rangoSugerido && (
@@ -2128,17 +2210,23 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               <article className="ph-decision-card">
                 <span>Mínimo de mercado</span>
                 <strong>{decision.minimoMercado ? fullMoney(decision.minimoMercado) : "—"}</strong>
-                <small>{decision.minimoRow?.empresa || "Sin empresa comparable"}</small>
+                <small>
+                  {decision.minimoRow?.empresa || "Sin empresa comparable"}
+                  {decision.minimoRow?.tenders ? ` · ${tenderProcessLabel(decision.minimoRow.tenders)}` : ""}
+                </small>
               </article>
               <article className="ph-decision-card">
                 <span>Última oferta propia</span>
                 <strong>{decision.ultimaPropia ? comparableMoney(decision.ultimaPropia) : "—"}</strong>
-                <small>{decision.ultimaPropia ? `${fmtDate(rowDate(decision.ultimaPropia))} · ${decision.ultimaPropia.tenders?.institution || "Sin institución"}` : "Sin cotización propia comparable"}</small>
+                <small>{decision.ultimaPropia ? tenderTraceText(decision.ultimaPropia.tenders) : "Sin cotización propia comparable"}</small>
               </article>
               <article className="ph-decision-card">
                 <span>Base de recomendación</span>
                 <strong>{fmtDate(decision.fechaFuenteSugerido)}</strong>
-                <small>{decision.detalleFuenteSugerido}</small>
+                <small>
+                  {decision.detalleFuenteSugerido}
+                  {decision.fuenteSugerido?.tenders ? ` · ${tenderProcessLabel(decision.fuenteSugerido.tenders)}` : ""}
+                </small>
               </article>
               <article className="ph-decision-card">
                 <span>Calidad del dato</span>
@@ -2181,9 +2269,17 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 </article>
                 <article>
                   <FileSpreadsheet size={17}/>
-                  <span>Origen del dato</span>
-                  <strong>{decision.fuenteSugerido?.tenders?.institution || "Sin institución"}</strong>
-                  <small>{decision.fuenteSugerido?.tenders?.process_number || "Sin expediente"}</small>
+                  <span>Nº proceso BAC</span>
+                  <strong>{tenderProcessNumber(decision.fuenteSugerido?.tenders) || "—"}</strong>
+                  <small>{decision.fuenteSugerido?.tenders?.institution || "Sin institución"}</small>
+                  {tenderProcessNumber(decision.fuenteSugerido?.tenders) && (
+                    <button
+                      type="button"
+                      className="ph-evidence-copy"
+                      onClick={() => copyTenderProcess(decision.fuenteSugerido?.tenders)}>
+                      <Copy size={12}/> {copiedProcess === tenderProcessNumber(decision.fuenteSugerido?.tenders) ? "Copiado" : "Copiar Nº"}
+                    </button>
+                  )}
                 </article>
               </div>
             </details>
@@ -2369,7 +2465,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               </div>
               <div className="ph-history-tools">
                 <input value={marketSearch} onChange={e => setMarketSearch(e.target.value)}
-                  placeholder="Filtrar por institución, empresa, expediente, resultado..."/>
+                  placeholder="Filtrar por institución, empresa, Nº proceso, resultado..."/>
                 <div className="ph-pagination">
                   <button disabled={marketPage <= 1} onClick={() => setMarketPage(p => Math.max(1, p - 1))}>Anterior</button>
                   <span>{marketPage} / {marketTotalPages}</span>
@@ -2382,7 +2478,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                     <tr>
                       {[
                         ["fecha","Fecha"],["institucion","Institución"],["jurisdiccion","Jurisdicción"],
-                        ["expediente","Expediente"],["renglon","Renglón"],["empresa","Empresa"],
+                        ["expediente","Nº proceso"],["renglon","Renglón"],["empresa","Empresa"],
                         ["precio","Precio unitario"],["cantidad","Cantidad"],["total","Total"],
                         ["resultado","Resultado"],["calidad","Calidad"],["adjudicado","Adjudicado"],["diff","Dif. vs mínimo"],
                       ].map(([key, label]) => (
