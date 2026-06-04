@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   AlertTriangle, ArrowRight, Building2, CalendarDays, Calculator, CheckCircle2,
-  Clock3, Copy, Database, FileSpreadsheet, History, ShieldCheck, Upload, X,
+  Clock3, Copy, Database, ExternalLink, FileSpreadsheet, History, ShieldCheck, Upload, X,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
@@ -61,6 +61,45 @@ function tenderTraceText(tender) {
     tender.end_date ? fmtDate(tender.end_date) : "",
   ].filter(Boolean);
   return pieces.join(" · ") || "Sin trazabilidad";
+}
+
+const BAC_PROCESS_SEARCH_URL = "https://www.buenosairescompras.gob.ar/BuscarAvanzado.aspx";
+
+function safeExternalUrl(value) {
+  const text = String(value || "").trim();
+  return /^https?:\/\//i.test(text) ? text : "";
+}
+
+function bacProcessUrl(tender) {
+  const direct = [
+    tender?.portal_link,
+    tender?.bac_url,
+    tender?.source_url,
+    tender?.external_url,
+    tender?.url,
+  ].map(safeExternalUrl).find(Boolean);
+  if (direct) return direct;
+
+  const number = tenderProcessNumber(tender);
+  if (!number) return "";
+  return `${BAC_PROCESS_SEARCH_URL}?proceso=${encodeURIComponent(number)}`;
+}
+
+function BacProcessLink({ tender, children, className = "" }) {
+  const url = bacProcessUrl(tender);
+  if (!url) return <span className={className}>{children}</span>;
+  return (
+    <a
+      className={className}
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      title="Abrir referencia en BAC"
+      onClick={(event) => event.stopPropagation()}>
+      <span>{children}</span>
+      <ExternalLink size={12}/>
+    </a>
+  );
 }
 
 function newestRow(rowsList) {
@@ -1552,6 +1591,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       `Base: ${decision.detalleFuenteSugerido}`,
       `Nº proceso: ${tenderProcessNumber(sourceTender) || "—"}`,
       `Institución: ${sourceTender?.institution || "—"}`,
+      `Link BAC: ${bacProcessUrl(sourceTender) || "—"}`,
       `Alcance: ${decision.scopeLabel}`,
     ].join("\n");
     try {
@@ -1573,6 +1613,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
       `Institución: ${tender?.institution || "—"}`,
       `Proceso: ${tender?.process_name || "—"}`,
       `Fecha: ${fmtDate(tender?.end_date)}`,
+      `Link BAC: ${bacProcessUrl(tender) || "—"}`,
     ].join("\n");
     try {
       await navigator.clipboard.writeText(text);
@@ -2096,7 +2137,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                     </div>
                     <div className="ph-product-process">
                       <FileSpreadsheet size={13}/>
-                      <span>{group.processLabel}</span>
+                      <BacProcessLink tender={group.traceRow?.tenders}>
+                        {group.processLabel}
+                      </BacProcessLink>
                       <em>{tenderTraceText(group.traceRow?.tenders)}</em>
                       {group.processNumber && (
                         <button
@@ -2180,7 +2223,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 {decision.fuenteSugerido?.tenders && (
                   <div className="ph-reference-line">
                     <FileSpreadsheet size={14}/>
-                    <span>{tenderProcessLabel(decision.fuenteSugerido.tenders)}</span>
+                    <BacProcessLink tender={decision.fuenteSugerido.tenders}>
+                      {tenderProcessLabel(decision.fuenteSugerido.tenders)}
+                    </BacProcessLink>
                     <small>{tenderTraceText(decision.fuenteSugerido.tenders)}</small>
                     {tenderProcessNumber(decision.fuenteSugerido.tenders) && (
                       <button type="button" onClick={() => copyTenderProcess(decision.fuenteSugerido.tenders)}>
@@ -2270,7 +2315,15 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                 <article>
                   <FileSpreadsheet size={17}/>
                   <span>Nº proceso BAC</span>
-                  <strong>{tenderProcessNumber(decision.fuenteSugerido?.tenders) || "—"}</strong>
+                  {tenderProcessNumber(decision.fuenteSugerido?.tenders) ? (
+                    <BacProcessLink
+                      className="ph-evidence-process"
+                      tender={decision.fuenteSugerido?.tenders}>
+                      {tenderProcessNumber(decision.fuenteSugerido?.tenders)}
+                    </BacProcessLink>
+                  ) : (
+                    <strong>—</strong>
+                  )}
                   <small>{decision.fuenteSugerido?.tenders?.institution || "Sin institución"}</small>
                   {tenderProcessNumber(decision.fuenteSugerido?.tenders) && (
                     <button
