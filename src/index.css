@@ -523,37 +523,38 @@ button, input, select, textarea { font-family: inherit; }
 
 /* ─── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Full-height flex column layout — avoids position:fixed entirely for the
-     main nav, which is broken on iOS Chrome/Safari with any overflow ancestor. */
   html, body, #root {
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #f3f6fb;
   }
 
   .page-keepalive--active {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    min-height: 100dvh;
+    display: block;
   }
 
   .app-shell {
     display: flex !important;
     flex-direction: column !important;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
     max-width: 100vw;
+    background: #f3f6fb;
   }
 
   .main-content {
-    flex: 1 !important;
-    min-height: 0 !important;
+    flex: 1 0 auto !important;
+    min-height: auto !important;
     width: 100%;
     max-width: 100vw;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow: visible !important;
     padding-top: 0 !important;
-    padding-bottom: 16px !important;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    background: #f3f6fb;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -687,7 +688,7 @@ button, input, select, textarea { font-family: inherit; }
   }
 
   .main-content {
-    padding-top: 46px !important;
+    padding-top: 0 !important;
   }
 }
 
