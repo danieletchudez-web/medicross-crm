@@ -664,9 +664,8 @@ button, input, select, textarea { font-family: inherit; }
     will-change: auto !important;
   }
 
-  /* Account for black-translucent status bar in PWA mode */
   .main-content {
-    padding-top: calc(46px + env(safe-area-inset-top, 0px)) !important;
+    padding-top: 46px !important;
   }
 }
 

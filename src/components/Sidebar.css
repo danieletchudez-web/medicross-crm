@@ -1067,21 +1067,20 @@
     width: 100%;
     max-width: 100vw;
     min-width: 0;
-    height: calc(var(--sb-brand-height) + env(safe-area-inset-top, 0px));
+    height: var(--sb-brand-height);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     display: flex;
     flex-direction: row;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     border-right: none;
     border-bottom: 1px solid #e8ecf2;
     overflow: visible;
     z-index: 200;
-    padding: 0 16px env(safe-area-inset-top, 0px) 16px;
-    padding-top: env(safe-area-inset-top, 0px);
+    padding: 0 16px;
     background: #ffffff;
     box-sizing: border-box;
     contain: layout paint;
@@ -1104,7 +1103,6 @@
     min-width: 0;
     overflow: hidden;
     justify-content: flex-start;
-    align-self: flex-end;
   }
 
   .sidebar-brand__img {
@@ -1129,7 +1127,6 @@
     padding: 6px;
     flex-shrink: 0;
     margin-left: 10px;
-    align-self: flex-end;
   }
 
   .sidebar-hamburger span {
@@ -1148,10 +1145,10 @@
   .sidebar-body {
     position: fixed;
     grid-row: auto;
-    top: calc(var(--sb-brand-height) + env(safe-area-inset-top, 0px));
+    top: var(--sb-brand-height);
     left: -280px;
     width: 280px;
-    height: calc(100vh - var(--sb-brand-height) - env(safe-area-inset-top, 0px));
+    height: calc(100vh - var(--sb-brand-height));
     min-height: 0;
     background: linear-gradient(180deg, #162d50 0%, #0d1e35 100%);
     transition: left .32s var(--sb-ease), box-shadow .32s ease;
@@ -1170,7 +1167,7 @@
   .sidebar-overlay {
     display: block;
     position: fixed;
-    inset: calc(var(--sb-brand-height) + env(safe-area-inset-top, 0px)) 0 0 0;
+    inset: var(--sb-brand-height) 0 0 0;
     background: rgba(0,0,0,0.45);
     z-index: 198;
     opacity: 0;
