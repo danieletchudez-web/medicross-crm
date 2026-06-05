@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BarChart3,
   BellRing,
@@ -212,7 +213,7 @@ export default function Sidebar({ profile, onNavigate }) {
 
   const sections = buildSections(orderedIds);
 
-  return (
+  const sidebarContent = (
     <>
       <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
 
@@ -445,4 +446,12 @@ export default function Sidebar({ profile, onNavigate }) {
       )}
     </>
   );
+
+  // On mobile, portal the entire sidebar to document.body to escape
+  // overflow:hidden ancestors that break position:fixed on iOS Chrome/Safari.
+  if (isMobileViewport) {
+    return createPortal(sidebarContent, document.body);
+  }
+
+  return sidebarContent;
 }
