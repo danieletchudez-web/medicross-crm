@@ -24,7 +24,8 @@ body,
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow-x: hidden;
+  /* overflow-x:hidden on html/body breaks position:fixed on iOS Safari/Chrome.
+     Horizontal overflow is handled at .app-shell and .main-content level. */
 }
 
 *,
