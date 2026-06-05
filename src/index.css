@@ -602,10 +602,8 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .page-keepalive--active .main-content {
-  opacity: 0;
   animation: var(--crm-enter-name, crm-fade-slide-up-a) var(--page-enter-duration) var(--page-enter-ease) both;
   will-change: opacity, transform;
-  transform: translate3d(0, 16px, 0);
   backface-visibility: hidden;
 }
 
@@ -636,7 +634,6 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .page-enter {
-  opacity: 0;
   animation: crm-fade-slide-up-a var(--page-enter-duration) var(--page-enter-ease) both;
   will-change: opacity, transform;
   backface-visibility: hidden;
@@ -649,6 +646,24 @@ button, input, select, textarea { font-family: inherit; }
     transform: none;
     filter: none;
     animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* iOS Safari doesn't reliably restart CSS animations after display:none→block.
+     Disable enter animations on mobile so content is always visible. */
+  .page-keepalive--active .main-content,
+  .page-enter {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  /* Account for black-translucent status bar in PWA mode */
+  .main-content {
+    padding-top: calc(46px + env(safe-area-inset-top, 0px)) !important;
   }
 }
 
