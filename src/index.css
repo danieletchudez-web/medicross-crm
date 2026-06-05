@@ -602,8 +602,10 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .page-keepalive--active .main-content {
+  opacity: 0;
   animation: var(--crm-enter-name, crm-fade-slide-up-a) var(--page-enter-duration) var(--page-enter-ease) both;
   will-change: opacity, transform;
+  transform: translate3d(0, 16px, 0);
   backface-visibility: hidden;
 }
 
@@ -634,6 +636,7 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .page-enter {
+  opacity: 0;
   animation: crm-fade-slide-up-a var(--page-enter-duration) var(--page-enter-ease) both;
   will-change: opacity, transform;
   backface-visibility: hidden;
