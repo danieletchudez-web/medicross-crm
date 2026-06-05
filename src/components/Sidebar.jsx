@@ -17,11 +17,9 @@ import {
   LayoutDashboard,
   LogOut,
   Megaphone,
-  Moon,
   PackageOpen,
   Settings,
   ShieldCheck,
-  Sun,
   Target,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
@@ -109,7 +107,6 @@ function buildSections(orderedIds) {
 }
 
 export default function Sidebar({ profile, onNavigate }) {
-  const [dark,       setDark]       = useState(() => localStorage.getItem("theme") === "dark");
   const [editing,    setEditing]    = useState(false);
   const [orderedIds, setOrderedIds] = useState(() => loadOrder() || ALL_IDS);
   const [menuOpen,   setMenuOpen]   = useState(false);
@@ -124,9 +121,9 @@ export default function Sidebar({ profile, onNavigate }) {
   const notificationCount = useNotificationCount(profile?.id);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    localStorage.setItem("theme", dark ? "dark" : "light");
-  }, [dark]);
+    document.documentElement.setAttribute("data-theme", "light");
+    localStorage.removeItem("theme");
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -376,19 +373,6 @@ export default function Sidebar({ profile, onNavigate }) {
           </nav>
 
           <div className="sidebar-footer">
-            <div
-              className="sidebar-theme-toggle"
-              onClick={() => setDark(d => !d)}
-              aria-label={dark ? "Modo claro" : "Modo oscuro"}
-              onMouseEnter={(e) => showTooltip(e, dark ? "Modo claro" : "Modo oscuro")}
-              onMouseLeave={hideTooltip}
-            >
-              <span className="sidebar-theme-toggle__icon">{dark ? <Sun aria-hidden="true"/> : <Moon aria-hidden="true"/>}</span>
-              <span className="sidebar-theme-toggle__label">{dark ? "Modo claro" : "Modo oscuro"}</span>
-              <div className={`sidebar-theme-toggle__switch ${dark ? "on" : ""}`}>
-                <div className="sidebar-theme-toggle__knob"/>
-              </div>
-            </div>
             <button
               type="button"
               className="sidebar-logout"
