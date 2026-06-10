@@ -75,6 +75,7 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
   const [filterCat, setFilterCat]   = useState("todas");
   const [saving, setSaving]         = useState(false);
   const [toast, setToast]           = useState(null);
+  const [formError, setFormError]   = useState("");
 
   useEffect(() => { loadData(); }, []);
 
@@ -105,16 +106,22 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
 
   function openCreate() {
     setForm(EMPTY_FORM);
+    setFormError("");
     setShowForm(true);
   }
 
   function openEdit(eq) {
     setForm({ ...EMPTY_FORM, ...eq });
+    setFormError("");
     setShowForm(true);
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      setFormError("El nombre del equipo es obligatorio.");
+      return;
+    }
+    setFormError("");
     setSaving(true);
     const payload = {
       name: form.name.trim(),
@@ -339,10 +346,20 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
                 <button className="eq-modal-close" onClick={() => setShowForm(false)}>×</button>
               </div>
               <div className="eq-form">
+                {formError && (
+                  <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", color: "#dc2626", fontSize: 13, fontWeight: 600 }}>
+                    ⚠ {formError}
+                  </div>
+                )}
                 <div className="eq-form-row">
                   <div className="eq-field" style={{ gridColumn: "1 / -1" }}>
                     <label>Nombre del equipo *</label>
-                    <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="EchoLaser SoracteLite" />
+                    <input
+                      value={form.name}
+                      onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFormError(""); }}
+                      placeholder="EchoLaser SoracteLite"
+                      style={formError && !form.name.trim() ? { borderColor: "#ef4444" } : undefined}
+                    />
                   </div>
                 </div>
                 <div className="eq-form-row">
