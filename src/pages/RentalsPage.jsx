@@ -328,7 +328,31 @@ export default function RentalsPage({ profile, onNavigate, navigationData, pageK
     }));
   }, [equipment, rentals]);
 
-  const isCan = (role) => ["super_admin","manager"].includes(role);
+  // Devuelve true si el equipo tiene un alquiler activo que solapa con la fecha pedida
+  function hasDateConflict(equipmentId, procedureDate, excludeRentalId = null) {
+    if (!procedureDate || !equipmentId) return false;
+    return rentals.some(r => {
+      if (r.equipment_id !== equipmentId) return false;
+      if (r.id === excludeRentalId) return false;
+      if (["cerrado","cancelado"].includes(r.status)) return false;
+      const from = r.delivery_date || r.procedure_date;
+      const to   = r.retrieval_date || r.procedure_date;
+      if (!from || !to) return false;
+      return procedureDate >= from && procedureDate <= to;
+    });
+  }
+
+  // Clasifica cada equipo para el formulario
+  function equipmentAvailability(eq) {
+    if (["fuera_de_servicio","en_mantenimiento"].includes(eq.status)) {
+      return { disabled: true, label: `(${eq.status.replace("_"," ")})`, tag: "blocked" };
+    }
+    const conflict = hasDateConflict(eq.id, form.procedure_date, form.id);
+    if (conflict) {
+      return { disabled: false, label: "⚠ Conflicto de fecha", tag: "conflict" };
+    }
+    return { disabled: false, label: "✓ Disponible", tag: "ok" };
+  }
 
   return (
     <Layout title="Alquileres" profile={profile} onNavigate={onNavigate} pageKey={pageKey}>
@@ -601,12 +625,20 @@ export default function RentalsPage({ profile, onNavigate, navigationData, pageK
                   <label>Equipo a alquilar *</label>
                   <select value={form.equipment_id} onChange={e => setForm(f => ({ ...f, equipment_id: e.target.value }))}>
                     <option value="">Seleccionar equipo…</option>
-                    {equipment.map(e => (
-                      <option key={e.id} value={e.id} disabled={e.status !== "disponible" && e.id !== form.equipment_id}>
-                        {e.name} — {e.brand} {e.status !== "disponible" && e.id !== form.equipment_id ? `(${e.status})` : "✓ Disponible"}
-                      </option>
-                    ))}
+                    {equipment.map(e => {
+                      const avail = equipmentAvailability(e);
+                      return (
+                        <option key={e.id} value={e.id} disabled={avail.disabled}>
+                          {e.name} — {e.brand} · {avail.label}
+                        </option>
+                      );
+                    })}
                   </select>
+                  {form.equipment_id && equipmentAvailability(equipment.find(e => e.id === form.equipment_id) || {}).tag === "conflict" && (
+                    <p style={{ margin: "6px 0 0", fontSize: 12, color: "#c2410c", fontWeight: 600 }}>
+                      ⚠ Este equipo tiene otro alquiler solapado en esa fecha. Podés reservarlo igual — se verá como conflicto en el calendario.
+                    </p>
+                  )}
                 </div>
               </div>
 
