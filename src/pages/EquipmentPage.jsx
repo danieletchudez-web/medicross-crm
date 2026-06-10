@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./equipment.css";
@@ -76,6 +76,7 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
   const [saving, setSaving]         = useState(false);
   const [toast, setToast]           = useState(null);
   const [formError, setFormError]   = useState("");
+  const modalRef                    = useRef(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -108,12 +109,14 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
     setForm(EMPTY_FORM);
     setFormError("");
     setShowForm(true);
+    setTimeout(() => { if (modalRef.current) modalRef.current.scrollTop = 0; }, 0);
   }
 
   function openEdit(eq) {
     setForm({ ...EMPTY_FORM, ...eq });
     setFormError("");
     setShowForm(true);
+    setTimeout(() => { if (modalRef.current) modalRef.current.scrollTop = 0; }, 0);
   }
 
   async function handleSave() {
@@ -340,7 +343,7 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
         {/* Modal formulario */}
         {showForm && (
           <div className="eq-modal-overlay" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
-            <div className="eq-modal">
+            <div className="eq-modal" ref={modalRef}>
               <div className="eq-modal-head">
                 <h3>{form.id ? "Editar equipo" : "Nuevo equipo"}</h3>
                 <button className="eq-modal-close" onClick={() => setShowForm(false)}>×</button>
