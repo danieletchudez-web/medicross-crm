@@ -23,25 +23,44 @@ function isSameDay(a, b) {
 function startOfMonth(y, m) { return new Date(y, m, 1); }
 function daysInMonth(y, m)  { return new Date(y, m + 1, 0).getDate(); }
 
+const RENTAL_EVENT_COLOR = {
+  entrega:       { bg: "#f0fdf4", text: "#2d7d46", border: "#bbf7d0" },
+  procedimiento: { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
+  retiro:        { bg: "#f5f3ff", text: "#6d28d9", border: "#ddd6fe" },
+  reserva:       { bg: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
+  mantenimiento: { bg: "#fef2f2", text: "#dc2626", border: "#fecaca" },
+};
+
+const RENTAL_EVENT_ICON = {
+  entrega: "📦", procedimiento: "🏥", retiro: "📤", reserva: "📋", mantenimiento: "🔧",
+};
+
 export default function CalendarPage({ profile, onNavigate }) {
   const today  = new Date();
   const [year,   setYear]   = useState(today.getFullYear());
   const [month,  setMonth]  = useState(today.getMonth());
   const [view,   setView]   = useState(() => window.innerWidth <= 600 ? "lista" : "mes");
-  const [visits,   setVisits]   = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [filterUnit,   setFilterUnit]   = useState("todas");
-  const [filterStatus, setFilterStatus] = useState("todas");
+  const [visits,        setVisits]        = useState([]);
+  const [rentalEvents,  setRentalEvents]  = useState([]);
+  const [selected,      setSelected]      = useState(null);
+  const [selectedRental, setSelectedRental] = useState(null);
+  const [filterUnit,    setFilterUnit]    = useState("todas");
+  const [filterStatus,  setFilterStatus]  = useState("todas");
+  const [showRentals,   setShowRentals]   = useState(true);
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [vRes] = await Promise.all([
+    const [vRes, evRes] = await Promise.all([
       supabase.from("visits")
         .select("*, accounts(name), products(name, line)")
         .order("visit_date", { ascending: true }),
+      supabase.from("equipment_calendar_events")
+        .select("*, equipment(name, brand), equipment_rentals(doctor_name, institution, rental_number, status)")
+        .order("event_date", { ascending: true }),
     ]);
     setVisits(vRes.data || []);
+    setRentalEvents(evRes.data || []);
   }
 
   const filtered = useMemo(() => {
@@ -60,7 +79,15 @@ export default function CalendarPage({ profile, onNavigate }) {
   function visitsForDay(d) {
     return filtered.filter((v) => {
       if (!v.visit_date) return false;
-      return isSameDay(new Date(v.visit_date), d);
+      return isSameDay(new Date(v.visit_date + "T00:00:00"), d);
+    });
+  }
+
+  function rentalEventsForDay(d) {
+    if (!showRentals) return [];
+    return rentalEvents.filter((ev) => {
+      if (!ev.event_date) return false;
+      return isSameDay(new Date(ev.event_date + "T00:00:00"), d);
     });
   }
 
@@ -125,13 +152,31 @@ export default function CalendarPage({ profile, onNavigate }) {
       <div
         className={`cal-chip ${compact ? "cal-chip--compact" : ""}`}
         style={{ background: sc.bg, borderColor: sc.border, color: sc.text }}
-        onClick={(e) => { e.stopPropagation(); setSelected(v); }}
+        onClick={(e) => { e.stopPropagation(); setSelected(v); setSelectedRental(null); }}
         title={`${v.accounts?.name} · ${v.visit_type || "—"}`}
       >
         <span className="cal-chip__dot" style={{ background: pd }}/>
         <span className="cal-chip__text">
           {v.visit_time ? v.visit_time.slice(0,5) + " " : ""}
           {v.accounts?.name || "Sin cliente"}
+        </span>
+      </div>
+    );
+  }
+
+  function RentalChip({ ev, compact = false }) {
+    const sc = RENTAL_EVENT_COLOR[ev.event_type] || RENTAL_EVENT_COLOR.reserva;
+    const icon = RENTAL_EVENT_ICON[ev.event_type] || "📌";
+    return (
+      <div
+        className={`cal-chip ${compact ? "cal-chip--compact" : ""}`}
+        style={{ background: sc.bg, borderColor: sc.border, color: sc.text, fontStyle: "normal" }}
+        onClick={(e) => { e.stopPropagation(); setSelectedRental(ev); setSelected(null); }}
+        title={`${icon} ${ev.title || ev.equipment?.name}`}
+      >
+        <span style={{ flexShrink: 0, fontSize: 10 }}>{icon}</span>
+        <span className="cal-chip__text" style={{ fontWeight: 700 }}>
+          {ev.equipment?.name || ev.title}
         </span>
       </div>
     );
@@ -158,8 +203,11 @@ export default function CalendarPage({ profile, onNavigate }) {
               <div key={date.toISOString()} className={`cal-cell ${isToday ? "cal-cell--today" : ""}`}>
                 <div className="cal-cell__num">{date.getDate()}</div>
                 <div className="cal-cell__visits">
-                  {dayVisits.slice(0,3).map((v) => <VisitChip key={v.id} v={v} compact/>)}
-                  {dayVisits.length > 3 && <div className="cal-cell__more">+{dayVisits.length - 3} más</div>}
+                  {rentalEventsForDay(date).slice(0,2).map((ev) => <RentalChip key={ev.id} ev={ev} compact/>)}
+                  {dayVisits.slice(0,2).map((v) => <VisitChip key={v.id} v={v} compact/>)}
+                  {(dayVisits.length + rentalEventsForDay(date).length) > 4 && (
+                    <div className="cal-cell__more">+{dayVisits.length + rentalEventsForDay(date).length - 4} más</div>
+                  )}
                 </div>
               </div>
             );
@@ -186,7 +234,8 @@ export default function CalendarPage({ profile, onNavigate }) {
             const dayVisits = visitsForDay(d);
             return (
               <div key={d.toISOString()} className={`cal-week__col ${isSameDay(d,today)?"today":""}`}>
-                {dayVisits.length === 0
+                {rentalEventsForDay(d).map((ev) => <RentalChip key={ev.id} ev={ev}/>)}
+                {dayVisits.length === 0 && rentalEventsForDay(d).length === 0
                   ? <div className="cal-week__empty">—</div>
                   : dayVisits.map((v) => <VisitChip key={v.id} v={v}/>)}
               </div>
@@ -307,12 +356,66 @@ export default function CalendarPage({ profile, onNavigate }) {
     );
   }
 
+  const rentalEventsThisMonth = useMemo(() => {
+    return rentalEvents.filter(ev => {
+      if (!ev.event_date) return false;
+      const d = new Date(ev.event_date + "T00:00:00");
+      return d.getFullYear() === year && d.getMonth() === month;
+    });
+  }, [rentalEvents, year, month]);
+
   const kpiData = [
-    { icon:"📋", label:`Visitas en ${MONTHS[month]}`, value:monthStats.total,       accent:"#185fa5" },
-    { icon:"🗓", label:"Programadas",                  value:monthStats.programadas,  accent:"#64748b" },
-    { icon:"✅", label:"Realizadas",                   value:monthStats.realizadas,   accent:"#2d7d46" },
-    { icon:"⏳", label:"Pendiente informe",            value:monthStats.pendientes,   accent:"#d97706" },
+    { icon:"📋", label:`Visitas en ${MONTHS[month]}`, value:monthStats.total,              accent:"#185fa5" },
+    { icon:"🗓", label:"Programadas",                  value:monthStats.programadas,         accent:"#64748b" },
+    { icon:"✅", label:"Realizadas",                   value:monthStats.realizadas,          accent:"#2d7d46" },
+    { icon:"⏳", label:"Pendiente informe",            value:monthStats.pendientes,          accent:"#d97706" },
+    { icon:"🏥", label:"Eventos equipos",              value:rentalEventsThisMonth.length,   accent:"#f97316" },
   ];
+
+  function RentalEventModal({ ev, onClose }) {
+    if (!ev) return null;
+    const sc = RENTAL_EVENT_COLOR[ev.event_type] || RENTAL_EVENT_COLOR.reserva;
+    const icon = RENTAL_EVENT_ICON[ev.event_type] || "📌";
+    return (
+      <div className="cal-modal-overlay" onClick={onClose}>
+        <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="cal-modal__header">
+            <div className="cal-modal__title-wrap">
+              <span style={{ fontSize: 20 }}>{icon}</span>
+              <h3 style={{ color: sc.text }}>{ev.title || ev.equipment?.name}</h3>
+            </div>
+            <button className="cal-modal__close" onClick={onClose}>✕</button>
+          </div>
+          <div className="cal-modal__body">
+            <div className="cal-modal__chips">
+              <span className="cal-modal__chip" style={{ background: sc.bg, color: sc.text, borderColor: sc.border }}>
+                {ev.event_type}
+              </span>
+            </div>
+            <div className="cal-modal__grid">
+              <Row label="Equipo"      value={ev.equipment?.name || "—"}/>
+              <Row label="Marca"       value={ev.equipment?.brand || "—"}/>
+              <Row label="Fecha"       value={new Date(ev.event_date + "T00:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}/>
+              {ev.equipment_rentals?.rental_number && <Row label="N° Alquiler" value={ev.equipment_rentals.rental_number}/>}
+              {ev.equipment_rentals?.doctor_name   && <Row label="Médico"      value={ev.equipment_rentals.doctor_name}/>}
+              {ev.equipment_rentals?.institution   && <Row label="Institución" value={ev.equipment_rentals.institution}/>}
+            </div>
+            {ev.description && (
+              <div className="cal-modal__section">
+                <span className="cal-modal__section-label">Descripción</span>
+                <p className="cal-modal__section-text">{ev.description}</p>
+              </div>
+            )}
+          </div>
+          <div className="cal-modal__footer">
+            <button className="cal-modal__btn" onClick={() => { onClose(); onNavigate("rentals"); }}>
+              Ir a Alquileres →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Layout title="Calendario Comercial" profile={profile} onNavigate={onNavigate}>
@@ -374,6 +477,14 @@ export default function CalendarPage({ profile, onNavigate }) {
                 </button>
               ))}
             </div>
+            <button
+              className="cal-view-tab"
+              style={{ background: showRentals ? "#fff7ed" : undefined, color: showRentals ? "#c2410c" : undefined, border: showRentals ? "1px solid #fed7aa" : undefined }}
+              onClick={() => setShowRentals(r => !r)}
+              title="Mostrar/ocultar eventos de equipos"
+            >
+              🏥 Equipos
+            </button>
             <button className="cal-new-btn" onClick={() => onNavigate("visits", { action: "create", source: "calendar" })}>+ Nueva visita</button>
           </div>
         </div>
@@ -393,9 +504,19 @@ export default function CalendarPage({ profile, onNavigate }) {
               {key.replace("_"," ")}
             </span>
           ))}
+          <span className="cal-legend-item" style={{ marginLeft: 12, borderLeft: "1px solid #e8ecf2", paddingLeft: 12 }}>
+            <span style={{ fontSize: 12 }}>🏥 Equipos:</span>
+          </span>
+          {Object.entries(RENTAL_EVENT_COLOR).map(([key, c]) => (
+            <span key={key} className="cal-legend-item">
+              <span className="cal-legend-dot" style={{ background: c.text }}/>
+              {RENTAL_EVENT_ICON[key]} {key}
+            </span>
+          ))}
         </div>
 
-        {selected && <DetailModal v={selected} onClose={() => setSelected(null)}/>}
+        {selected       && <DetailModal v={selected} onClose={() => setSelected(null)}/>}
+        {selectedRental && <RentalEventModal ev={selectedRental} onClose={() => setSelectedRental(null)}/>}
 
         <footer className="cal-footer">
           <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>

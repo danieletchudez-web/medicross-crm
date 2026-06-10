@@ -24,6 +24,9 @@ const CotizadorPage         = lazy(() => import("./pages/CotizadorPage"));
 const PreciosHistoricosPage = lazy(() => import("./pages/PreciosHistoricosPage"));
 const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
+const EquipmentPage         = lazy(() => import("./pages/EquipmentPage"));
+const RentalsPage           = lazy(() => import("./pages/RentalsPage"));
+const RentalDashboardPage   = lazy(() => import("./pages/RentalDashboardPage"));
 
 const ALL_PAGES = [
   { id: "managerDashboard",  Component: ManagerDashboard },
@@ -44,6 +47,9 @@ const ALL_PAGES = [
   { id: "preciosHistoricos", Component: PreciosHistoricosPage },
   { id: "notifications",     Component: NotificationsPage },
   { id: "settings",          Component: SettingsPage },
+  { id: "equipment",         Component: EquipmentPage },
+  { id: "rentals",           Component: RentalsPage },
+  { id: "rentalDashboard",   Component: RentalDashboardPage },
 ];
 
 const FALLBACK_PROFILE = {

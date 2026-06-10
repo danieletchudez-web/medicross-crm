@@ -460,6 +460,16 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
                       <td>
                         <div className="opp-actions">
                           {isOpen && <button className="opp-btn opp-btn--edit" onClick={() => editOpportunity(o)}>Editar</button>}
+                          {isOpen && (
+                            <button
+                              className="opp-btn"
+                              style={{ background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}
+                              onClick={() => onNavigate("rentals", { action: "create", opportunityId: o.id, accountId: o.account_id })}
+                              title="Crear alquiler de equipamiento para esta oportunidad"
+                            >
+                              🏥 Reservar equipo
+                            </button>
+                          )}
                           {isOpen && <button className="opp-btn opp-btn--won"  onClick={() => quickClose(o.id, "Ganado")}>✓ Ganado</button>}
                           {isOpen && <button className="opp-btn opp-btn--lost" onClick={() => quickClose(o.id, "Perdido")}>✗ Perdido</button>}
                           {!isOpen && <button className="opp-btn opp-btn--reopen" onClick={() => reopen(o.id)}>↺ Reabrir</button>}
@@ -506,6 +516,15 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
                   <p className={`opp-temperature opp-temperature--${activityInfo(o).level}`}>{activityInfo(o).label} · sin actividad: {activityInfo(o).days}d</p>
                   <div className="opp-actions">
                     {isOpen && <button className="opp-btn opp-btn--edit" onClick={() => editOpportunity(o)}>Editar</button>}
+                    {isOpen && (
+                      <button
+                        className="opp-btn"
+                        style={{ background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", fontSize: 11 }}
+                        onClick={() => onNavigate("rentals", { action: "create", opportunityId: o.id, accountId: o.account_id })}
+                      >
+                        🏥 Reservar
+                      </button>
+                    )}
                     {isOpen && <button className="opp-btn opp-btn--won" onClick={() => quickClose(o.id, "Ganado")}>Ganado</button>}
                     {isOpen && <button className="opp-btn opp-btn--lost" onClick={() => quickClose(o.id, "Perdido")}>Perdido</button>}
                     {!isOpen && <button className="opp-btn opp-btn--reopen" onClick={() => reopen(o.id)}>Reabrir</button>}
