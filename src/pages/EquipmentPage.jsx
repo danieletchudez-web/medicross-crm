@@ -79,6 +79,9 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
   const modalRef                    = useRef(null);
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (showForm && modalRef.current) modalRef.current.scrollTop = 0;
+  }, [showForm]);
 
   async function loadData() {
     setLoading(true);
@@ -109,14 +112,12 @@ export default function EquipmentPage({ profile, onNavigate, pageKey }) {
     setForm(EMPTY_FORM);
     setFormError("");
     setShowForm(true);
-    setTimeout(() => { if (modalRef.current) modalRef.current.scrollTop = 0; }, 0);
   }
 
   function openEdit(eq) {
     setForm({ ...EMPTY_FORM, ...eq });
     setFormError("");
     setShowForm(true);
-    setTimeout(() => { if (modalRef.current) modalRef.current.scrollTop = 0; }, 0);
   }
 
   async function handleSave() {
