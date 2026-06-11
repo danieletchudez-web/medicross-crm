@@ -321,15 +321,19 @@ button, input, select, textarea { font-family: inherit; }
 
 /* ─── Layout ─────────────────────────────────────────────────────────── */
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   display: flex;
   background: var(--bg);
-  overflow-x: hidden;
+  overflow: hidden;
   position: relative;
   isolation: isolate;
+}
+
+@supports (height: 100dvh) {
+  .app-shell { height: 100dvh; }
 }
 
 .main-content {
@@ -338,6 +342,8 @@ button, input, select, textarea { font-family: inherit; }
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  overflow-y: auto;
+  height: 100%;
 }
 
 @media (min-width: 769px) {
