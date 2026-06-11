@@ -299,8 +299,10 @@ export default function App() {
     });
   }
 
+  const PAGE_IDS = new Set(ALL_PAGES.map(p => p.id));
+
   function canOpenPage(pageId) {
-    return canOpenPageForProfile(safeProfile, pageId, isMobileViewport);
+    return PAGE_IDS.has(pageId) && canOpenPageForProfile(safeProfile, pageId, isMobileViewport);
   }
 
   const currentPage = canOpenPage(page)
