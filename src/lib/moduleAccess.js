@@ -36,9 +36,7 @@ const DEFAULT_MODULE_ORDER = [
   "cotizador",
   "importer",
   "salesAnalytics",
-  "equipment",
-  "rentals",
-  "rentalDashboard",
+
 ];
 
 export function getFirstOpenModule(profile, isMobile = false) {

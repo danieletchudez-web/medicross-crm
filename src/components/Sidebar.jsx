@@ -11,7 +11,6 @@ import {
   ChevronRight,
   CircleDollarSign,
   Clock3,
-  ClipboardList,
   FileText,
   Handshake,
   LayoutDashboard,
@@ -20,9 +19,7 @@ import {
   PackageOpen,
   Settings,
   ShieldCheck,
-  Stethoscope,
   Target,
-  TrendingUp,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
@@ -53,14 +50,6 @@ const MENU_SECTIONS = [
     items: [
       { id: "cotizador", label: "Cotizador",    icon: Calculator },
       { id: "tenders",   label: "Licitaciones", icon: FileText },
-    ],
-  },
-  {
-    label: "ALQUILERES",
-    items: [
-      { id: "equipment",       label: "Equipamientos",    icon: Stethoscope },
-      { id: "rentals",         label: "Alquileres",       icon: ClipboardList },
-      { id: "rentalDashboard", label: "Dashboard Rental", icon: TrendingUp },
     ],
   },
   {
