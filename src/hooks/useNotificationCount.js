@@ -17,15 +17,23 @@ export default function useNotificationCount(profileId) {
       if (active && !error) setCount(unread || 0);
     }
 
-    supabase.rpc("refresh_crm_notifications").then(loadCount);
-    const timer = window.setInterval(loadCount, 60000);
-    window.addEventListener("crm:notifications-updated", loadCount);
+    function onUpdate(e) {
+      // NotificationsPage broadcasts legacyCount when DB table is unavailable
+      if (e.detail?.legacyCount !== undefined) {
+        if (active) setCount(e.detail.legacyCount);
+      } else {
+        loadCount();
+      }
+    }
+
     loadCount();
+    const timer = window.setInterval(loadCount, 60000);
+    window.addEventListener("crm:notifications-updated", onUpdate);
 
     return () => {
       active = false;
       window.clearInterval(timer);
-      window.removeEventListener("crm:notifications-updated", loadCount);
+      window.removeEventListener("crm:notifications-updated", onUpdate);
     };
   }, [profileId]);
 
