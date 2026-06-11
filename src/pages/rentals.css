@@ -428,7 +428,7 @@
   background: #ffffff;
   width: 520px;
   height: 100%;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: 28px 32px;
   box-shadow: -12px 0 48px rgba(15,23,42,0.15);
   animation: ren-modal-slide 0.22s ease;
@@ -436,6 +436,9 @@
   flex-direction: column;
   gap: 20px;
 }
+.ren-modal::-webkit-scrollbar { width: 6px; }
+.ren-modal::-webkit-scrollbar-track { background: #f1f5f9; }
+.ren-modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
 @keyframes ren-modal-slide {
   from { transform: translateX(40px); opacity: 0; }
