@@ -2,9 +2,10 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "./lib/moduleAccess";
 
-import LoginPage    from "./pages/LoginPage";
-import CRMAssistant from "./components/CRMAssistant";
-import DialogSystem from "./components/DialogSystem";
+import LoginPage          from "./pages/LoginPage";
+import CRMAssistant       from "./components/CRMAssistant";
+import DialogSystem       from "./components/DialogSystem";
+import RentalRequestPage  from "./pages/RentalRequestPage";
 
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
@@ -247,6 +248,11 @@ export default function App() {
       }).length;
       setCrmData({ pipeline, forecast, target, openOpps: open.length, hotDeals, noAction, overdue, visits: visits.length, accounts: accounts.length, winRate, coldAccounts, closingThisMonth });
     } catch { /* silent */ }
+  }
+
+  // Public route — no auth required
+  if (window.location.pathname === "/rental-request") {
+    return <RentalRequestPage />;
   }
 
   if (loading) return <FullPageLoader label="Trabajando…" />;

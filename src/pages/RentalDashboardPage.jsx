@@ -77,10 +77,25 @@ export default function RentalDashboardPage({ profile, onNavigate, pageKey }) {
     });
   }, [rentals, periodYear, periodMonth]);
 
+  // Technology breakdown
+  const byTechnology = useMemo(() => {
+    const map = {};
+    periodRentals.forEach(r => {
+      const tech = r.technology || "Otro";
+      if (!map[tech]) map[tech] = { count:0, revenue:0 };
+      map[tech].count++;
+      map[tech].revenue += Number(r.total_amount||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].revenue-a[1].revenue).map(([tech,v])=>({tech,...v}));
+  }, [periodRentals]);
+
+  const TECH_COLOR = { "Farapulse":"#ef4444","EchoLaser":"#6366f1","Ecógrafo":"#0891b2","Fusión de imágenes":"#7c3aed","Otro":"#64748b" };
+
   // KPIs del período
   const kpis = useMemo(() => {
     const billed = periodRentals.filter(r => ["facturado","cerrado"].includes(r.status));
     const active = rentals.filter(r => !["cerrado","cancelado","facturado"].includes(r.status));
+    const pendingBill = rentals.filter(r => r.status === "pendiente_facturacion");
     const totalRevenue = periodRentals.reduce((s, r) => s + Number(r.total_amount || 0), 0);
     const totalCost = periodRentals.reduce((s, r) => s + Number(r.cost_amount || 0), 0);
     const avgMargin = periodRentals.length
@@ -98,6 +113,7 @@ export default function RentalDashboardPage({ profile, onNavigate, pageKey }) {
       profit: totalRevenue - totalCost,
       avgMargin,
       active: active.length,
+      pendingBill: pendingBill.length,
       maintSoon: maintSoon.length,
       daysInMonth,
     };
@@ -217,7 +233,12 @@ export default function RentalDashboardPage({ profile, onNavigate, pageKey }) {
           <div className="rdash-kpi">
             <span className="rdash-kpi__label">Activos ahora</span>
             <span className="rdash-kpi__value rdash-kpi__value--orange">{kpis.active}</span>
-            <span className="rdash-kpi__sub">alquileres en curso</span>
+            <span className="rdash-kpi__sub">casos en curso</span>
+          </div>
+          <div className="rdash-kpi">
+            <span className="rdash-kpi__label">Pend. facturación</span>
+            <span className="rdash-kpi__value" style={{color:kpis.pendingBill>0?"#dc2626":"#10b981"}}>{kpis.pendingBill}</span>
+            <span className="rdash-kpi__sub">requieren factura</span>
           </div>
           <div className="rdash-kpi">
             <span className="rdash-kpi__label">Próx. manten.</span>
@@ -358,6 +379,32 @@ export default function RentalDashboardPage({ profile, onNavigate, pageKey }) {
           </div>
         </div>
 
+        {/* Facturación por tecnología */}
+        {byTechnology.length > 0 && (
+          <div className="rdash-card rdash-card--full">
+            <h3>Facturación por tecnología — {periodLabel}</h3>
+            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+              {byTechnology.map(({tech,count,revenue})=>{
+                const tc = TECH_COLOR[tech]||"#64748b";
+                const maxRev = byTechnology[0].revenue||1;
+                return (
+                  <div key={tech} style={{flex:"1 1 160px",background:"#f8fafc",borderRadius:14,padding:"14px 18px",border:`1px solid ${tc}33`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <div style={{width:10,height:10,borderRadius:"50%",background:tc,flexShrink:0}}/>
+                      <span style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{tech}</span>
+                    </div>
+                    <div style={{fontSize:18,fontWeight:900,color:tc,marginBottom:4}}>{compactMoney(revenue)}</div>
+                    <div style={{fontSize:11,color:"#64748b",marginBottom:8}}>{count} procedimiento{count!==1?"s":""}</div>
+                    <div style={{height:5,background:"#e2e8f0",borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",background:tc,borderRadius:3,width:`${Math.round((revenue/maxRev)*100)}%`}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Rentabilidad + Mantenimientos */}
         <div className="rdash-grid">
           {/* Tabla rentabilidad por procedimiento */}
@@ -381,7 +428,7 @@ export default function RentalDashboardPage({ profile, onNavigate, pageKey }) {
                       const m = Number(r.profit_margin || 0);
                       return (
                         <tr key={r.id}>
-                          <td style={{ fontFamily: "monospace", fontSize: 11, color: "#5b7cfa", fontWeight: 700 }}>{r.rental_number}</td>
+                          <td style={{ fontFamily: "monospace", fontSize: 11, color: "#5b7cfa", fontWeight: 700 }}>{r.case_number||r.rental_number}</td>
                           <td style={{ fontWeight: 600 }}>{r.equipment?.name || "—"}</td>
                           <td style={{ color: "#64748b" }}>{r.doctor_name || "—"}</td>
                           <td style={{ fontWeight: 700 }}>{compactMoney(r.total_amount)}</td>

@@ -731,3 +731,218 @@
   .ren-table td:nth-child(n+5) { display: none; }
   .ren-search { width: 100%; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Rental v2 — New component styles
+═══════════════════════════════════════════════════════════════ */
+
+/* Toast */
+.ren-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 3000;
+  padding: 12px 20px; border-radius: 12px;
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  animation: ren-fade-in 0.2s ease;
+}
+.ren-toast--ok  { background: #0f172a; color: #fff; }
+.ren-toast--err { background: #ef4444; color: #fff; }
+
+/* Status badge (replaces old ren-badge) */
+.ren-status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+
+/* Technology badge */
+.ren-tech-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+}
+
+/* KPI red value */
+.ren-kpi__value--red { color: #dc2626; }
+
+/* Checklist mini (in table) */
+.ren-checklist-mini { display: flex; align-items: center; gap: 6px; min-width: 80px; }
+.ren-checklist-mini__track { flex: 1; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.ren-checklist-mini__fill  { height: 100%; background: #10b981; border-radius: 3px; transition: width 0.3s; }
+.ren-checklist-mini__label { font-size: 11px; color: #64748b; font-weight: 600; }
+
+/* Technology selector in form */
+.ren-tech-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+.ren-tech-option {
+  padding: 7px 14px; border-radius: 20px; border: 2px solid #e2e8f0;
+  background: #fff; font-size: 12px; font-weight: 600; color: #64748b;
+  cursor: pointer; transition: all 0.15s;
+}
+.ren-tech-option:hover { border-color: #cbd5e1; color: #334155; }
+.ren-tech-option.active { font-weight: 800; }
+
+/* Services checkboxes */
+.ren-services-check { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0; }
+.ren-check-option {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 20px; border: 1px solid #e2e8f0;
+  background: #f8fafc; font-size: 12px; font-weight: 500; color: #475569;
+  cursor: pointer; transition: background 0.15s;
+}
+.ren-check-option:hover { background: #f1f5f9; }
+.ren-check-option input { accent-color: #5b7cfa; }
+
+/* Service tags (in detail) */
+.ren-services-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ren-svc-tag {
+  padding: 3px 10px; border-radius: 20px;
+  background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;
+  font-size: 11px; font-weight: 600;
+}
+
+/* ── 360° Detail overlay ───────────────────────────────────── */
+.ren-detail-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15,23,42,0.55);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 20px; overflow-y: auto;
+  animation: ren-fade-in 0.18s ease;
+}
+.ren-detail360 {
+  background: #fff; border-radius: 20px; width: 100%; max-width: 900px;
+  box-shadow: 0 24px 64px rgba(15,23,42,0.2);
+  display: flex; flex-direction: column;
+  animation: eq-modal-up 0.22s ease;
+  flex-shrink: 0;
+}
+
+.ren-detail360-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 28px; border-bottom: 1px solid #e8ecf2; flex-wrap: wrap; gap: 12px;
+}
+.ren-detail360-head-left  { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.ren-detail360-head-right { display: flex; align-items: center; gap: 8px; }
+.ren-detail360-case-num   { font-size: 20px; font-weight: 900; color: #0f172a; }
+
+/* Workflow progress bar */
+.ren-workflow-bar {
+  display: flex; overflow-x: auto; padding: 14px 28px; gap: 0;
+  border-bottom: 1px solid #e8ecf2;
+}
+.ren-workflow-bar::-webkit-scrollbar { height: 4px; }
+.ren-workflow-bar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+.ren-workflow-step {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-width: 72px; padding: 6px 8px; border-radius: 10px; border: 1px solid transparent;
+  font-size: 9px; font-weight: 600; color: #94a3b8; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: all 0.15s;
+}
+.ren-workflow-step__dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; flex-shrink: 0;
+}
+.ren-workflow-step.done  { color: #10b981; }
+.ren-workflow-step.done .ren-workflow-step__dot { background: #10b981; }
+.ren-workflow-step.current { font-weight: 800; }
+
+/* Tabs */
+.ren-detail360-tabs {
+  display: flex; gap: 0; padding: 0 28px; border-bottom: 1px solid #e8ecf2;
+}
+.ren-detail360-tab {
+  padding: 14px 20px; font-size: 13px; font-weight: 600; color: #64748b;
+  background: none; border: none; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color 0.15s;
+}
+.ren-detail360-tab:hover { color: #334155; }
+.ren-detail360-tab.active { color: #5b7cfa; border-bottom-color: #5b7cfa; }
+
+/* Body */
+.ren-detail360-body { padding: 24px 28px; overflow-y: auto; max-height: calc(70vh - 80px); }
+.ren-detail360-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+/* Footer */
+.ren-detail360-footer {
+  display: flex; gap: 10px; padding: 16px 28px;
+  border-top: 1px solid #e8ecf2; flex-wrap: wrap;
+}
+
+/* Checklist */
+.ren-checklist-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 10px;
+}
+.ren-checklist-bar {
+  height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 20px;
+}
+.ren-checklist-bar__fill { height: 100%; background: #10b981; border-radius: 4px; transition: width 0.4s ease; }
+.ren-checklist-list  { display: flex; flex-direction: column; gap: 8px; }
+.ren-checklist-item  {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc;
+  cursor: pointer; transition: background 0.12s;
+}
+.ren-checklist-item:hover { background: #f1f5f9; }
+.ren-checklist-item.done  { background: #f0fdf4; border-color: #bbf7d0; }
+.ren-checklist-item input { accent-color: #10b981; flex-shrink: 0; }
+.ren-checklist-item__label { flex: 1; font-size: 13px; font-weight: 600; color: #334155; }
+.ren-checklist-item.done .ren-checklist-item__label { color: #15803d; text-decoration: line-through; }
+.ren-checklist-item__meta  { font-size: 10px; color: #94a3b8; white-space: nowrap; }
+
+/* Activity timeline */
+.ren-timeline-list  { display: flex; flex-direction: column; gap: 0; }
+.ren-timeline-item  { display: flex; gap: 14px; padding-bottom: 20px; position: relative; }
+.ren-timeline-item::before {
+  content: ""; position: absolute; left: 7px; top: 16px;
+  width: 2px; bottom: 0; background: #e2e8f0;
+}
+.ren-timeline-item:last-child::before { display: none; }
+.ren-timeline-dot   { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; border: 2px solid #fff; box-shadow: 0 0 0 2px currentColor; }
+.ren-timeline-content { flex: 1; }
+.ren-timeline-label { font-size: 13px; font-weight: 700; color: #0f172a; }
+.ren-timeline-comment { font-size: 12px; color: #475569; font-style: italic; margin-top: 3px; }
+.ren-timeline-meta  { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+
+/* Advance state modal */
+.ren-advance-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(15,23,42,0.6);
+  display: flex; align-items: center; justify-content: center;
+  animation: ren-fade-in 0.15s ease;
+}
+.ren-advance-modal {
+  background: #fff; border-radius: 20px; padding: 28px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 24px 64px rgba(15,23,42,0.22);
+  animation: eq-modal-up 0.2s ease;
+}
+.ren-advance-arrow { display: flex; align-items: center; margin-bottom: 4px; flex-wrap: wrap; }
+
+/* Success button */
+.ren-btn-success {
+  padding: 8px 16px; border-radius: 10px; border: none;
+  background: #10b981; color: #fff; font-weight: 700; font-size: 13px;
+  cursor: pointer; transition: background 0.15s;
+}
+.ren-btn-success:hover { background: #059669; }
+
+/* Detail section / row (reused for 360°) */
+.ren-detail360 .ren-detail-section { background: #f8fafc; border-radius: 14px; padding: 16px; }
+.ren-detail360 .ren-detail-section-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+.ren-detail360 .ren-detail-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid #f1f5f9; gap: 10px; }
+.ren-detail360 .ren-detail-row:last-child { border-bottom: none; }
+.ren-detail360 .ren-detail-row__label { font-size: 12px; color: #64748b; font-weight: 500; flex-shrink: 0; }
+.ren-detail360 .ren-detail-row__value { font-size: 12px; color: #0f172a; font-weight: 600; text-align: right; }
+
+@media (max-width: 768px) {
+  .ren-detail360 { max-width: 100%; border-radius: 16px; }
+  .ren-detail360-grid { grid-template-columns: 1fr; }
+  .ren-workflow-bar { padding: 10px 16px; }
+  .ren-workflow-step { min-width: 60px; font-size: 8px; }
+  .ren-detail360-tabs { padding: 0 16px; }
+  .ren-detail360-body { padding: 16px; }
+  .ren-detail360-footer { padding: 12px 16px; }
+  .ren-tech-selector { gap: 6px; }
+  .ren-tech-option { padding: 6px 12px; font-size: 11px; }
+}
