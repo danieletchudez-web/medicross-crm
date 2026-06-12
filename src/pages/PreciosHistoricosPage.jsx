@@ -2145,9 +2145,9 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
                         </label>
                       </div>
                     </div>
-                    <div style={{fontSize:13.5,fontWeight:800,color:"#0f2444",lineHeight:1.35,
-                      minHeight:38,marginBottom:10}}>
-                      {shortText(group.title, 92)}
+                    <div style={{fontSize:13,fontWeight:800,color:"#0f2444",lineHeight:1.4,
+                      marginBottom:10}}>
+                      {group.title}
                     </div>
                     <div className="ph-product-flags">
                       <span className={`ph-mini-pill ph-mini-pill--${group.match.tone}`}>
