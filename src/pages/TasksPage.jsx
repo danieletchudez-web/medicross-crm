@@ -287,7 +287,7 @@ export default function TasksPage({ profile, onNavigate }) {
             <EmptyState
               title="Sin tareas"
               text={filter === "activas" ? "No hay tareas activas. Creá una para empezar." : "No hay tareas en esta categoría."}
-              action={{ label: "+ Nueva tarea", onClick: () => openNew() }}
+              action={<button className="tk-btn tk-btn--primary" style={{marginTop:8}} onClick={() => openNew()}>+ Nueva tarea</button>}
             />
           ) : filtered.map(task => {
             const due     = dueBadge(task.due_date, task.status);
