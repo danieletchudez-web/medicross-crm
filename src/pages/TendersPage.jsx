@@ -1780,17 +1780,75 @@ export default function TendersPage({ profile, onNavigate }) {
     if (editData?.id===id) setShowForm(false);
   }
 
-  function exportToExcel() {
-    const rows=filtered.filter(t=>selected.size===0||selected.has(t.id));
-    if (!rows.length){alert("No hay filas para exportar.");return;}
-    const headers=["Jurisdicción","Hospital/Institución","N° Proceso","Nombre Proceso","Expediente","Tipo Proceso","Tipo","Detección","Vencimiento","Estado Operativo","Prioridad","Monto estimado ($)","Monto adjudicado ($)","Resultado","Motivo pérdida","Competidor ganador","Responsable","Línea Producto","Próxima Acción","Fecha Próx. Acción","Documentación","Detalle doc. pendiente","Facturación","Entrega","N° OC","Fecha OC","Inicio","Póliza","OT Bridge","Plazo","Sector","Portal","Observaciones"];
-    const keys=["jurisdiction","institution","process_number","process_name","expedient_number","process_type","tender_type","detection_date","end_date","operational_status","priority","purchase_order_amount","monto_adjudicado","resultado","motivo_perdida","competitor_winner","internal_owner","product_line","next_action","next_action_date","documentation_status","documentation_pending_detail","billing_status","delivery_status","purchase_order_number","purchase_order_date","start_date","execution_policy","bridge_ot","contract_term","requesting_sector","portal_link","notes"];
-    const sep=";";
-    const csv=[headers.join(sep),...rows.map(r=>keys.map(k=>{const v=String(r[k]||"").replace(/"/g,'""').replace(/\n/g," ");return `"${v}"`;}).join(sep))].join("\n");
-    const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`licitaciones_${today()}.csv`;a.click();
-  }
+  async function exportToExcel() {
+    const rows = filtered.filter(t => selected.size === 0 || selected.has(t.id));
+    if (!rows.length) { alert("No hay filas para exportar."); return; }
 
+    const XLSX = await import("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm");
+
+    const COLS = [
+      { h: "Jurisdicción",          k: "jurisdiction",                 w: 16 },
+      { h: "Hospital / Inst.",       k: "institution",                  w: 32 },
+      { h: "N° Proceso",             k: "process_number",               w: 20 },
+      { h: "Nombre Proceso",         k: "process_name",                 w: 48 },
+      { h: "Expediente",             k: "expedient_number",             w: 24 },
+      { h: "Tipo Proceso",           k: "process_type",                 w: 18 },
+      { h: "Tipo",                   k: "tender_type",                  w: 12 },
+      { h: "Detección",              k: "detection_date",               w: 14 },
+      { h: "Vencimiento",            k: "end_date",                     w: 14 },
+      { h: "Estado Operativo",       k: "operational_status",           w: 22 },
+      { h: "Prioridad",              k: "priority",                     w: 12 },
+      { h: "Monto OC ($)",           k: "purchase_order_amount",        w: 16 },
+      { h: "Monto Adjudicado ($)",   k: "monto_adjudicado",             w: 20 },
+      { h: "Resultado",              k: "resultado",                    w: 14 },
+      { h: "Motivo Pérdida",         k: "motivo_perdida",               w: 28 },
+      { h: "Competidor Ganador",     k: "competitor_winner",            w: 24 },
+      { h: "Responsable",            k: "internal_owner",               w: 20 },
+      { h: "Línea Producto",         k: "product_line",                 w: 20 },
+      { h: "Próxima Acción",         k: "next_action",                  w: 36 },
+      { h: "Fecha Próx. Acción",     k: "next_action_date",             w: 18 },
+      { h: "Documentación",          k: "documentation_status",         w: 18 },
+      { h: "Doc. Pendiente",         k: "documentation_pending_detail", w: 32 },
+      { h: "Facturación",            k: "billing_status",               w: 16 },
+      { h: "Entrega",                k: "delivery_status",              w: 16 },
+      { h: "N° OC",                  k: "purchase_order_number",        w: 16 },
+      { h: "Fecha OC",               k: "purchase_order_date",          w: 14 },
+      { h: "Sector Solicitante",     k: "requesting_sector",            w: 22 },
+      { h: "Póliza",                 k: "execution_policy",             w: 14 },
+      { h: "OT Bridge",              k: "bridge_ot",                    w: 14 },
+      { h: "Plazo",                  k: "contract_term",                w: 12 },
+      { h: "Observaciones",          k: "notes",                        w: 40 },
+    ];
+
+    const headerRow = COLS.map(c => c.h);
+    const dataRows  = rows.map(r =>
+      COLS.map(c => {
+        const v = r[c.k];
+        if (v === null || v === undefined || v === "") return "";
+        if (c.k === "purchase_order_amount" || c.k === "monto_adjudicado") return Number(v) || "";
+        return String(v).replace(/\n/g, " ").trim();
+      })
+    );
+
+    const ws = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
+    ws["!cols"] = COLS.map(c => ({ wch: c.w }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Licitaciones");
+
+    const wsInfo = XLSX.utils.aoa_to_sheet([
+      ["Exportación de Licitaciones — MediCross CRM"],
+      [],
+      ["Fecha", new Date().toLocaleDateString("es-AR")],
+      ["Filas exportadas", rows.length],
+      ["Filtro activo", hasFilters ? "Sí" : "No"],
+      ["Selección", selected.size > 0 ? `${selected.size} seleccionadas` : "Todas las visibles"],
+    ]);
+    wsInfo["!cols"] = [{ wch: 28 }, { wch: 24 }];
+    XLSX.utils.book_append_sheet(wb, wsInfo, "Info");
+
+    XLSX.writeFile(wb, `licitaciones_${today()}.xlsx`);
+  }
   async function abrirCotizador(t, e) {
     e?.stopPropagation();
     const src=t||{id:editData?.id,institution:form.institution,process_number:form.process_number,detection_date:form.detection_date,end_date:form.end_date,internal_owner:form.internal_owner};
@@ -1939,7 +1997,10 @@ export default function TendersPage({ profile, onNavigate }) {
             <input ref={bacFileRef} type="file" accept=".xlsx,.xls" className="tn-hidden-input" onChange={handleBacFile}/>
             {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
             {selected.size > 0 && <span style={{fontSize:12,fontWeight:700,color:"#0f2444"}}>{selected.size} selec.</span>}
-            <button className="tn-btn tn-btn--ghost" onClick={exportToExcel}>⬇ {selected.size>0?`Exportar (${selected.size})`:"Exportar"}</button>
+            <button className="tn-btn tn-btn--export" onClick={exportToExcel} title={selected.size>0?`Exportar ${selected.size} seleccionadas`:`Exportar ${filtered.length} licitaciones`}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              {selected.size > 0 ? `Excel (${selected.size})` : "Excel"}
+            </button>
             <button className="tn-btn tn-btn--refresh" onClick={loadTenders} title="Actualizar">↻</button>
             <button className="tn-btn tn-btn--ghost tn-btn--inteligencia" onClick={() => onNavigate("preciosHistoricos")}>
               📈 Inteligencia de precios

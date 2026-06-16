@@ -91,6 +91,15 @@
 .tn-btn--danger:hover { background: #fef2f2; }
 .tn-btn--sm      { padding: 4px 10px; font-size: 11.5px; border-radius: 6px; }
 
+/* Botón exportar Excel */
+.tn-btn--export {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-color: #d1fae5; background: #f0fdf4; color: #15803d;
+  font-weight: 700;
+}
+.tn-btn--export:hover { background: #dcfce7; border-color: #86efac; color: #166534; }
+.tn-btn--export svg  { flex-shrink: 0; }
+
 /* Botón actualizar — ícono limpio sin borde destacado */
 .tn-btn--refresh {
   border-color: transparent; background: transparent;
