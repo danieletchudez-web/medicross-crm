@@ -34,6 +34,12 @@ const STAGE_COLOR = {
 function money(value) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(Number(value || 0));
 }
+function moneyCompact(value) {
+  const n = Number(value || 0);
+  if (n >= 1_000_000) return `$ ${(n / 1_000_000).toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`;
+  if (n >= 1_000)     return `$ ${(n / 1_000).toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
+  return `$ ${n.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`;
+}
 
 function activityInfo(opportunity) {
   const value = [opportunity.last_movement_at, opportunity.updated_at, opportunity.created_at]
@@ -243,11 +249,11 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
 
         {/* KPIs */}
         <section className="opp-kpis">
-          <MetricKpi label="Pipeline abierto"   value={money(metrics.pipeline)} />
-          <MetricKpi label="Forecast ponderado" value={money(metrics.forecast)} sub="Monto x probabilidad" />
+          <MetricKpi label="Pipeline abierto"   value={moneyCompact(metrics.pipeline)} sub={money(metrics.pipeline)} />
+          <MetricKpi label="Forecast ponderado" value={moneyCompact(metrics.forecast)} sub="Monto x probabilidad" />
           <MetricKpi label="Opps. abiertas"     value={metrics.open} />
           <MetricKpi label="Sin próxima acción" value={metrics.noAction} accent="red" />
-          <MetricKpi label="Ganadas"            value={metrics.won}  accent="green" sub={metrics.won > 0 ? money(metrics.wonAmount) : undefined} />
+          <MetricKpi label="Ganadas"            value={metrics.won}  accent="green" sub={metrics.won > 0 ? moneyCompact(metrics.wonAmount) : undefined} />
           <MetricKpi label="Perdidas"           value={metrics.lost} accent="slate" />
           <MetricKpi
             label="Win rate"
