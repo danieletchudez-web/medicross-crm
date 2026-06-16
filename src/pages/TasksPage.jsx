@@ -76,30 +76,35 @@ export default function TasksPage({ profile, onNavigate }) {
 
   async function load() {
     setLoading(true);
-    const [tasksRes, profilesRes, accountsRes, oppsRes, tendersRes, campaignsRes] = await Promise.all([
-      supabase.from("tasks").select(`
-        id, title, description, status, priority, due_date,
-        assigned_to, created_by, account_id, opportunity_id, tender_id, campaign_id,
-        completed_at, created_at, updated_at,
-        profiles!tasks_assigned_to_fkey(id, full_name),
-        accounts(id, name),
-        opportunities(id, name),
-        tenders(id, institution, process_name),
-        campaigns(id, name)
-      `).order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name").order("full_name"),
-      supabase.from("accounts").select("id, name").order("name").limit(300),
-      supabase.from("opportunities").select("id, name").not("stage","in","(Ganado,Perdido)").order("name").limit(200),
-      supabase.from("tenders").select("id, institution, process_name, process_number").order("created_at", { ascending: false }).limit(200),
-      supabase.from("campaigns").select("id, name").order("name").limit(100),
-    ]);
-    setTasks(tasksRes.data || []);
-    setProfiles(profilesRes.data || []);
-    setAccounts(accountsRes.data || []);
-    setOpportunities(oppsRes.data || []);
-    setTenders(tendersRes.data || []);
-    setCampaigns(campaignsRes.data || []);
-    setLoading(false);
+    try {
+      const [tasksRes, profilesRes, accountsRes, oppsRes, tendersRes, campaignsRes] = await Promise.all([
+        supabase.from("tasks").select(`
+          id, title, description, status, priority, due_date,
+          assigned_to, created_by, account_id, opportunity_id, tender_id, campaign_id,
+          completed_at, created_at, updated_at,
+          profiles!tasks_assigned_to_fkey(id, full_name),
+          accounts(id, name),
+          opportunities(id, name),
+          tenders(id, institution, process_name),
+          campaigns(id, name)
+        `).order("created_at", { ascending: false }),
+        supabase.from("profiles").select("id, full_name").order("full_name"),
+        supabase.from("accounts").select("id, name").order("name").limit(300),
+        supabase.from("opportunities").select("id, name").order("name").limit(200),
+        supabase.from("tenders").select("id, institution, process_name, process_number").order("created_at", { ascending: false }).limit(200),
+        supabase.from("campaigns").select("id, name").order("name").limit(100),
+      ]);
+      setTasks(tasksRes.data || []);
+      setProfiles(profilesRes.data || []);
+      setAccounts(accountsRes.data || []);
+      setOpportunities(oppsRes.data || []);
+      setTenders(tendersRes.data || []);
+      setCampaigns(campaignsRes.data || []);
+    } catch (err) {
+      console.error("Tasks load error:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function showToastMsg(msg) { setToast(msg); setTimeout(() => setToast(""), 2800); }
