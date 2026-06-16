@@ -1,10 +1,29 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "./lib/moduleAccess";
 
 import LoginPage          from "./pages/LoginPage";
 import CRMAssistant       from "./components/CRMAssistant";
 import DialogSystem       from "./components/DialogSystem";
+
+class PageErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err) { console.error("[PageErrorBoundary]", err); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", flexDirection: "column", gap: 12, color: "#64748b", fontFamily: "sans-serif" }}>
+          <p style={{ fontSize: 15, fontWeight: 600 }}>Error al cargar este módulo.</p>
+          <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#5b7cfa", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+            Recargar
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
@@ -59,7 +78,7 @@ const FALLBACK_PROFILE = {
 };
 
 function canOpenPageForProfile(profile, pageId, isMobile = false) {
-  if (["notifications","settings"].includes(pageId)) return true;
+  if (["notifications","settings","tasks"].includes(pageId)) return true;
   if (pageId === "accountDetail") return canOpenModule(profile, "accounts", isMobile);
   return canOpenModule(profile, pageId, isMobile);
 }
@@ -334,9 +353,11 @@ export default function App() {
             style={isActive ? { "--crm-enter-name": transitionKey % 2 === 0 ? "crm-fade-slide-up-a" : "crm-fade-slide-up-b" } : undefined}
             aria-hidden={!isActive}
           >
-            <Suspense fallback={isActive ? <FullPageLoader /> : <></>}>
-              <Component {...pageProps} {...extraProps} />
-            </Suspense>
+            <PageErrorBoundary>
+              <Suspense fallback={isActive ? <FullPageLoader /> : <></>}>
+                <Component {...pageProps} {...extraProps} />
+              </Suspense>
+            </PageErrorBoundary>
           </div>
         );
       })}
