@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CalendarPlus,
   ChartPie,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
@@ -56,6 +57,7 @@ const MENU_SECTIONS = [
     label: "OPERACIONES",
     items: [
       { id: "notifications", label: "Centro de Alertas", icon: BellRing },
+      { id: "tasks",         label: "Tareas",             icon: CheckSquare },
       { id: "todayActions",  label: "Acciones Hoy",      icon: Clock3 },
       { id: "visits",        label: "Visitas",            icon: Handshake },
       { id: "calendar",      label: "Calendario",         icon: CalendarDays },

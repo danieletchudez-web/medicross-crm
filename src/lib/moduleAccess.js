@@ -36,7 +36,9 @@ const DEFAULT_MODULE_ORDER = [
   "cotizador",
   "importer",
   "salesAnalytics",
-
+  "tasks",
+  "notifications",
+  "settings",
 ];
 
 export function getFirstOpenModule(profile, isMobile = false) {

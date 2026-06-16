@@ -23,6 +23,7 @@ const TendersPage           = lazy(() => import("./pages/TendersPage"));
 const CotizadorPage         = lazy(() => import("./pages/CotizadorPage"));
 const PreciosHistoricosPage = lazy(() => import("./pages/PreciosHistoricosPage"));
 const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
+const TasksPage             = lazy(() => import("./pages/TasksPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
 
 const ALL_PAGES = [
@@ -43,6 +44,7 @@ const ALL_PAGES = [
   { id: "cotizador",         Component: CotizadorPage },
   { id: "preciosHistoricos", Component: PreciosHistoricosPage },
   { id: "notifications",     Component: NotificationsPage },
+  { id: "tasks",             Component: TasksPage },
   { id: "settings",          Component: SettingsPage },
 ];
 
