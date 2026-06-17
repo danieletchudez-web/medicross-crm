@@ -19,6 +19,14 @@ export function getEffectiveModules(profile, isMobile = false) {
 export function canOpenModule(profile, moduleId, isMobile = false) {
   if (profile?.role === "super_admin") return true;
   if (moduleId === "adminUsers") return false;
+
+  if (moduleId === "preciosHistoricos") {
+    const modules = getEffectiveModules(profile, isMobile);
+    return modules.includes("preciosHistoricos")
+      || modules.includes("tenders")
+      || modules.includes("cotizador");
+  }
+
   return getEffectiveModules(profile, isMobile).includes(moduleId);
 }
 

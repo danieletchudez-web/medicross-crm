@@ -37,7 +37,7 @@ const CATEGORY_ICONS = {
   "Usuarios":      "👤",
 };
 
-const ALL_CATEGORIES = ["Todas", "Oportunidades", "Licitaciones", "Visitas", "Cotizaciones", "Clientes"];
+const ALL_CATEGORIES = ["Todas", "Oportunidades", "Licitaciones", "Visitas", "Cotizaciones", "Clientes", "Usuarios"];
 
 async function loadLegacyAlerts() {
   const [visitsRes, oppsRes, tendersRes, profilesRes, quotesRes, accountsRes, visitDatesRes] =

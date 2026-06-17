@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./adminUsers.css";
@@ -22,19 +22,22 @@ const MODULES = [
   { id: "calendar",         label: "Calendario"            },
   { id: "tenders",          label: "Licitaciones"          },
   { id: "cotizador",        label: "Cotizador"             },
+  { id: "preciosHistoricos",label: "Inteligencia de precios"},
+  { id: "tasks",            label: "Tareas"                },
+  { id: "notifications",    label: "Centro de Alertas"     },
   { id: "adminUsers",       label: "Administración"        },
 ];
 
 const SELLER_MODULES = [
   "managerDashboard","importer","salesAnalytics",
   "accounts","products","opportunities","campaigns",
-  "todayActions","visits","calendar","tenders","cotizador",
+  "todayActions","visits","calendar","tenders","cotizador","preciosHistoricos",
 ];
 
 const MANAGER_MODULES = [
   "managerDashboard","importer","salesAnalytics",
   "accounts","products","opportunities","campaigns",
-  "todayActions","visits","calendar","tenders","cotizador","adminUsers",
+  "todayActions","visits","calendar","tenders","cotizador","preciosHistoricos","adminUsers",
 ];
 
 const FULL_MODULES = MODULES.map(m => m.id);
@@ -45,7 +48,7 @@ const MOBILE_BI_MODULES = ["managerDashboard","importer","salesAnalytics"];
 
 const READ_ONLY_MODULES = [
   "managerDashboard","salesAnalytics","accounts","products","opportunities",
-  "campaigns","todayActions","visits","calendar","tenders","cotizador",
+  "campaigns","todayActions","visits","calendar","tenders","cotizador","preciosHistoricos",
 ];
 
 const QUOTES_MODULES = ["accounts","products","opportunities","tenders","cotizador","preciosHistoricos"];
@@ -245,9 +248,33 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   const [deleteTarget,setDeleteTarget]= useState(null);
   const [auditLogs,   setAuditLogs]   = useState([]);
   const [drafts,      setDrafts]      = useState({});
+  const [pendingNotice, setPendingNotice] = useState(null);
   const canAdminUsers = profile?.role === "super_admin";
+  const pendingCountRef = useRef(0);
 
   useEffect(() => { loadUsers(); loadAuditLogs(); }, []);
+
+  useEffect(() => {
+    if (!canAdminUsers) return;
+    const channel = supabase
+      .channel("admin-users-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => { loadUsers(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [canAdminUsers]);
+
+  useEffect(() => {
+    if (!pendingNotice) return;
+    const timer = window.setTimeout(() => setPendingNotice(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [pendingNotice]);
 
   async function loadUsers() {
     setLoading(true);
@@ -271,6 +298,25 @@ export default function AdminUsersPage({ profile, onNavigate }) {
   const archivedUsers = useMemo(() => users.filter(u => u.is_active === false),  [users]);
   const pendingUsers  = useMemo(() => activeUsers.filter(u => !u.approved), [activeUsers]);
   const approvedUsers = useMemo(() => activeUsers.filter(u => u.approved),  [activeUsers]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (pendingCountRef.current === 0 && pendingUsers.length > 0) {
+      pendingCountRef.current = pendingUsers.length;
+      return;
+    }
+    if (pendingUsers.length > pendingCountRef.current) {
+      const added = pendingUsers.length - pendingCountRef.current;
+      setPendingNotice({
+        count: added,
+        message: added === 1
+          ? "Hay 1 nuevo usuario pendiente de aprobación."
+          : `Hay ${added} nuevos usuarios pendientes de aprobación.`,
+      });
+      setUserView("pending");
+    }
+    pendingCountRef.current = pendingUsers.length;
+  }, [loading, pendingUsers.length]);
 
   const filteredUsers = useMemo(() => {
     const source = userView === "archived" ? archivedUsers : userView === "pending" ? pendingUsers : approvedUsers;
@@ -473,6 +519,42 @@ export default function AdminUsersPage({ profile, onNavigate }) {
             {loading ? "Actualizando..." : "Actualizar"}
           </button>
         </section>
+
+        {pendingNotice && (
+          <section
+            style={{
+              marginBottom: 16,
+              padding: "12px 14px",
+              borderRadius: 12,
+              background: "#fff7ed",
+              border: "1px solid #fdba74",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <div>
+              <strong style={{ color: "#9a5b00", display: "block" }}>Nuevo usuario pendiente</strong>
+              <span style={{ color: "#b45309", fontSize: 13 }}>{pendingNotice.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUserView("pending")}
+              style={{
+                background: "#f59e0b",
+                color: "#fff",
+                border: "none",
+                borderRadius: 10,
+                padding: "8px 12px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Revisar ahora
+            </button>
+          </section>
+        )}
 
         {/* KPIs */}
         <section className="admin-kpi-grid">
