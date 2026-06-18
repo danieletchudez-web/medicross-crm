@@ -25,6 +25,7 @@ import {
 import { supabase } from "../lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
 import useNotificationCount from "../hooks/useNotificationCount";
+import useTaskAlerts from "../hooks/useTaskAlerts";
 import "./Sidebar.css";
 import logoImg from "../assets/logo.jpg";
 
@@ -120,6 +121,7 @@ export default function Sidebar({ profile, onNavigate }) {
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const dragIdx = useRef(null);
   const notificationCount = useNotificationCount(profile?.id);
+  const { count: taskAlertCount } = useTaskAlerts(profile?.id);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", "light");
@@ -351,6 +353,7 @@ export default function Sidebar({ profile, onNavigate }) {
                         <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                         <span className="sidebar-nav__label">{item.label}</span>
                         {item.id === "notifications" && notificationCount > 0 && <span className="sidebar-nav__badge">{notificationCount > 99 ? "99+" : notificationCount}</span>}
+                        {item.id === "tasks" && taskAlertCount > 0 && <span className="sidebar-nav__badge sidebar-nav__badge--red">{taskAlertCount > 9 ? "9+" : taskAlertCount}</span>}
                       </button>
                       {editing && (
                         <button

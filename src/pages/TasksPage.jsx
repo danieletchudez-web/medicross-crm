@@ -83,6 +83,8 @@ export default function TasksPage({ profile, onNavigate }) {
   const [form,         setForm]         = useState(EMPTY_FORM);
   const [saving,       setSaving]       = useState(false);
   const [toast,        setToast]        = useState("");
+  const [viewMode,     setViewMode]     = useState("list");
+  const [draggingId,   setDraggingId]   = useState(null);
 
   useEffect(() => { load(); }, []);
 
@@ -219,6 +221,26 @@ export default function TasksPage({ profile, onNavigate }) {
     }
   }
 
+  async function handleDrop(targetStatus) {
+    if (!draggingId) return;
+    const task = tasks.find(t => t.id === draggingId);
+    if (!task || task.status === targetStatus || task.created_by !== profile?.id) {
+      setDraggingId(null);
+      return;
+    }
+    setTasks(prev => prev.map(t => t.id === draggingId ? { ...t, status: targetStatus } : t));
+    const upd = {
+      status: targetStatus,
+      completed_at: targetStatus === "completada" ? new Date().toISOString() : null,
+    };
+    const { error } = await supabase.from("tasks").update(upd).eq("id", draggingId);
+    if (error) {
+      setTasks(prev => prev.map(t => t.id === draggingId ? { ...t, status: task.status } : t));
+      showToastMsg("No se pudo mover la tarea");
+    }
+    setDraggingId(null);
+  }
+
   const filtered = useMemo(() => {
     let list = tasks;
     if (filter === "activas")    list = list.filter(t => t.status === "pendiente" || t.status === "en_progreso");
@@ -283,7 +305,15 @@ export default function TasksPage({ profile, onNavigate }) {
         <ModuleHeader
           title="Tareas"
           subtitle={`${kpis.activas} activa${kpis.activas !== 1 ? "s" : ""} · ${tasks.length} en total`}
-          actions={<button className="tk-btn tk-btn--primary" onClick={() => openNew()}>+ Nueva tarea</button>}
+          actions={
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div className="tk-view-toggle">
+                <button className={`tk-view-btn${viewMode === "list" ? " active" : ""}`} onClick={() => setViewMode("list")} title="Lista">☰ Lista</button>
+                <button className={`tk-view-btn${viewMode === "kanban" ? " active" : ""}`} onClick={() => setViewMode("kanban")} title="Kanban">⊞ Kanban</button>
+              </div>
+              <button className="tk-btn tk-btn--primary" onClick={() => openNew()}>+ Nueva tarea</button>
+            </div>
+          }
         />
 
         <section className="tk-kpis">
@@ -348,7 +378,75 @@ export default function TasksPage({ profile, onNavigate }) {
           </div>
         )}
 
-        <div className="tk-list">
+        {viewMode === "kanban" && (
+          <div className="tk-kanban">
+            {STATUSES.map(status => {
+              const colTasks = tasks.filter(t => t.status === status);
+              return (
+                <div
+                  key={status}
+                  className={`tk-kanban-col tk-kanban-col--${STATUS_COLOR[status]}${draggingId ? " tk-kanban-col--drop-target" : ""}`}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={() => handleDrop(status)}
+                >
+                  <div className="tk-kanban-col__header">
+                    <span className={`tk-kanban-col__dot tk-kanban-col__dot--${STATUS_COLOR[status]}`} />
+                    <span className="tk-kanban-col__title">{STATUS_LABEL[status]}</span>
+                    <span className="tk-kanban-col__count">{colTasks.length}</span>
+                  </div>
+                  <div className="tk-kanban-cards">
+                    {colTasks.length === 0 && (
+                      <div className="tk-kanban-empty">Sin tareas</div>
+                    )}
+                    {colTasks.map(task => {
+                      const due     = dueBadge(task.due_date, task.status);
+                      const pColor  = PRIO_COLOR[task.priority] || "#94a3b8";
+                      const link    = linkLabel(task, accounts, opportunities, tenders, campaigns);
+                      const assignee = profiles.find(p => p.id === task.assigned_to);
+                      const initials = assignee?.full_name
+                        ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
+                        : null;
+                      const isOwner  = task.created_by === profile?.id;
+                      const daysDue  = daysUntil(task.due_date);
+                      const isOverdue = !["completada","cancelada"].includes(task.status) && daysDue !== null && daysDue < 0;
+                      const isDueToday = !["completada","cancelada"].includes(task.status) && daysDue === 0;
+
+                      return (
+                        <div
+                          key={task.id}
+                          className={`tk-kanban-card${isOverdue ? " tk-kanban-card--overdue" : ""}${isDueToday ? " tk-kanban-card--today" : ""}${draggingId === task.id ? " tk-kanban-card--dragging" : ""}`}
+                          draggable={isOwner}
+                          onDragStart={() => isOwner && setDraggingId(task.id)}
+                          onDragEnd={() => setDraggingId(null)}
+                          style={{ borderLeftColor: pColor, cursor: isOwner ? "grab" : "default" }}
+                          onClick={() => isOwner && openEdit(task)}
+                        >
+                          <div className="tk-kanban-card__title">{task.title}</div>
+                          <div className="tk-kanban-card__meta">
+                            <span className="tk-prio-badge" style={{ color: pColor, background: PRIO_BG[task.priority] }}>{PRIO_LABEL[task.priority]}</span>
+                            {link && <span className="tk-meta-tag tk-meta-tag--link">{link.icon} {link.text}</span>}
+                          </div>
+                          <div className="tk-kanban-card__footer">
+                            {task.due_date && (
+                              <span className="tk-meta-tag" style={{ fontSize: 11 }}>
+                                📅 {new Date(task.due_date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                              </span>
+                            )}
+                            {due && <span className={`tk-due tk-due--${due.cls}`}>{due.label}</span>}
+                            {initials && <span className="tk-avatar" style={{ marginLeft: "auto" }} title={assignee?.full_name}>{initials}</span>}
+                          </div>
+                          {!isOwner && <div className="tk-kanban-card__lock" title="Solo el creador puede mover esta tarea">🔒</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {viewMode === "list" && <div className="tk-list">
           {loading ? (
             <EmptyState title="Cargando tareas…" text="" />
           ) : filtered.length === 0 ? (
@@ -418,7 +516,7 @@ export default function TasksPage({ profile, onNavigate }) {
               </div>
             );
           })}
-        </div>
+        </div>}
       </div>
 
       {/* Drawer */}

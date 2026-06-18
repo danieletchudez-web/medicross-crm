@@ -5,6 +5,8 @@ import { canOpenModule, getFirstOpenModule } from "./lib/moduleAccess";
 import LoginPage          from "./pages/LoginPage";
 import CRMAssistant       from "./components/CRMAssistant";
 import DialogSystem       from "./components/DialogSystem";
+import TaskAlertBanner    from "./components/TaskAlertBanner";
+import useTaskAlerts      from "./hooks/useTaskAlerts";
 
 class PageErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
@@ -147,6 +149,7 @@ export default function App() {
   const [passwordRecovery, setPasswordRecovery] = useState(() => hasPasswordRecoveryIntent());
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const routeLoadingTimer = useRef(null);
+  const { alerts: taskAlerts } = useTaskAlerts(profile?.id ?? null);
   // Pages that have been visited at least once (stay mounted forever after)
   const [mounted,      setMounted]      = useState(() => new Set([localStorage.getItem("crm_current_page") || "managerDashboard"]));
 
@@ -363,6 +366,7 @@ export default function App() {
       })}
       {routeLoading && <FullPageLoader label="Preparando módulo…" overlay />}
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
+      <TaskAlertBanner alerts={taskAlerts} onNavigate={navigate} />
       <DialogSystem />
     </>
   );

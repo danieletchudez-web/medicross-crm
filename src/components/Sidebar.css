@@ -510,6 +510,13 @@
   line-height: 1;
   box-shadow: 0 3px 10px rgba(239, 68, 68, 0.28);
 }
+.sidebar-nav__badge--red {
+  animation: badge-pulse 1.8s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 3px 10px rgba(239,68,68,.28); }
+  50%       { box-shadow: 0 0 0 4px rgba(239,68,68,.18); }
+}
 
 /* ─── Edit mode ──────────────────────────────────────────────────────── */
 .sidebar-edit-btn {
