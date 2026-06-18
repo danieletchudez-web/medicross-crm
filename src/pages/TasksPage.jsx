@@ -46,11 +46,23 @@ const EMPTY_FORM = {
   account_id: "", opportunity_id: "", tender_id: "", campaign_id: "",
 };
 
-function linkLabel(task) {
-  if (task.accounts)      return { icon: "🏥", text: task.accounts.name };
-  if (task.opportunities) return { icon: "🎯", text: task.opportunities.name };
-  if (task.tenders)       return { icon: "📋", text: task.tenders.institution || task.tenders.process_name };
-  if (task.campaigns)     return { icon: "📣", text: task.campaigns.name };
+function linkLabel(task, accounts, opportunities, tenders, campaigns) {
+  if (task.account_id) {
+    const a = accounts.find(x => x.id === task.account_id);
+    return a ? { icon: "🏥", text: a.name } : { icon: "🏥", text: "Cliente" };
+  }
+  if (task.opportunity_id) {
+    const o = opportunities.find(x => x.id === task.opportunity_id);
+    return o ? { icon: "🎯", text: o.name } : { icon: "🎯", text: "Oportunidad" };
+  }
+  if (task.tender_id) {
+    const t = tenders.find(x => x.id === task.tender_id);
+    return t ? { icon: "📋", text: t.institution || t.process_name } : { icon: "📋", text: "Licitación" };
+  }
+  if (task.campaign_id) {
+    const c = campaigns.find(x => x.id === task.campaign_id);
+    return c ? { icon: "📣", text: c.name } : { icon: "📣", text: "Campaña" };
+  }
   return null;
 }
 
@@ -93,21 +105,14 @@ export default function TasksPage({ profile, onNavigate }) {
     setLoading(true);
     try {
       const [tasksRes, profilesRes, accountsRes, oppsRes, tendersRes, campaignsRes] = await Promise.all([
-        supabase.from("tasks").select(`
-          id, title, description, status, priority, due_date,
-          assigned_to, created_by, account_id, opportunity_id, tender_id, campaign_id,
-          completed_at, created_at, updated_at,
-          accounts(id, name),
-          opportunities(id, name),
-          tenders(id, institution, process_name),
-          campaigns(id, name)
-        `).order("created_at", { ascending: false }),
+        supabase.from("tasks").select("*").order("created_at", { ascending: false }),
         supabase.from("profiles").select("id, full_name").order("full_name"),
         supabase.from("accounts").select("id, name").order("name").limit(300),
         supabase.from("opportunities").select("id, name").order("name").limit(200),
         supabase.from("tenders").select("id, institution, process_name, process_number").order("created_at", { ascending: false }).limit(200),
         supabase.from("campaigns").select("id, name").order("name").limit(100),
       ]);
+      if (tasksRes.error) console.error("tasks query error:", tasksRes.error);
       setTasks(tasksRes.data || []);
       setProfiles(profilesRes.data || []);
       setAccounts(accountsRes.data || []);
@@ -321,7 +326,7 @@ export default function TasksPage({ profile, onNavigate }) {
             const due     = dueBadge(task.due_date, task.status);
             const done    = task.status === "completada";
             const pColor  = PRIO_COLOR[task.priority] || "#94a3b8";
-            const link    = linkLabel(task);
+            const link    = linkLabel(task, accounts, opportunities, tenders, campaigns);
             const assignee = profiles.find(p => p.id === task.assigned_to);
             const initials = assignee?.full_name
               ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
