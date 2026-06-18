@@ -332,18 +332,20 @@ export default function TasksPage({ profile, onNavigate }) {
               ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
               : null;
             const assigneeName = assignee?.full_name || null;
+            const isOwner = task.created_by === profile?.id;
 
             return (
               <div key={task.id} className={`tk-item${done ? " tk-item--done" : ""}`} style={{ borderLeftColor: pColor }}>
                 <button
                   className={`tk-check${done ? " tk-check--done" : ""}`}
-                  onClick={() => toggleComplete(task)}
-                  title={done ? "Marcar pendiente" : "Marcar completada"}
+                  onClick={() => isOwner && toggleComplete(task)}
+                  title={!isOwner ? "Solo el creador puede modificar esta tarea" : done ? "Marcar pendiente" : "Marcar completada"}
+                  style={!isOwner ? { cursor: "default", opacity: 0.4 } : {}}
                 >
                   {done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                 </button>
 
-                <div className="tk-item__body" onClick={() => openEdit(task)}>
+                <div className="tk-item__body" onClick={() => isOwner && openEdit(task)} style={!isOwner ? { cursor: "default" } : {}}>
                   <div className="tk-item__title">{task.title}</div>
                   {task.description && <div className="tk-item__desc">{task.description}</div>}
                   <div className="tk-item__meta">
@@ -365,10 +367,12 @@ export default function TasksPage({ profile, onNavigate }) {
                     {STATUS_LABEL[task.status]}
                   </span>
                   {initials && <span className="tk-avatar" title={assigneeName}>{initials}</span>}
-                  <div className="tk-item__actions">
-                    <button className="tk-action-btn" onClick={() => openEdit(task)} title="Editar">✎</button>
-                    <button className="tk-action-btn tk-action-btn--del" onClick={() => deleteTask(task.id)} title="Eliminar">✕</button>
-                  </div>
+                  {isOwner && (
+                    <div className="tk-item__actions">
+                      <button className="tk-action-btn" onClick={() => openEdit(task)} title="Editar">✎</button>
+                      <button className="tk-action-btn tk-action-btn--del" onClick={() => deleteTask(task.id)} title="Eliminar">✕</button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
