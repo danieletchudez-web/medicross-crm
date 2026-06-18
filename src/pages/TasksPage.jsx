@@ -74,6 +74,21 @@ export default function TasksPage({ profile, onNavigate }) {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("tasks-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks" },
+        () => load()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   async function load() {
     setLoading(true);
     try {
@@ -159,31 +174,45 @@ export default function TasksPage({ profile, onNavigate }) {
       campaign_id:    form.link_type === "campaign_id"    ? form.campaign_id    || null : null,
       completed_at:   form.status === "completada" ? new Date().toISOString() : null,
     };
-    if (editing) {
-      await supabase.from("tasks").update(payload).eq("id", editing);
-      showToastMsg("Tarea actualizada");
-    } else {
-      payload.created_by = profile?.id || null;
-      await supabase.from("tasks").insert([payload]);
-      showToastMsg("Tarea creada");
+
+    try {
+      if (editing) {
+        const { error } = await supabase.from("tasks").update(payload).eq("id", editing);
+        if (error) throw error;
+        showToastMsg("Tarea actualizada");
+      } else {
+        payload.created_by = profile?.id || null;
+        const { error } = await supabase.from("tasks").insert([payload]);
+        if (error) throw error;
+        showToastMsg("Tarea creada");
+      }
+      await load();
+      closeForm();
+    } catch (err) {
+      console.error("Tasks save error:", err);
+      showToastMsg("No se pudo guardar la tarea");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    closeForm();
-    load();
   }
 
   async function toggleComplete(task) {
     const isDone = task.status === "completada";
     const upd = { status: isDone ? "pendiente" : "completada", completed_at: isDone ? null : new Date().toISOString() };
-    await supabase.from("tasks").update(upd).eq("id", task.id);
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...upd } : t));
+    const { error } = await supabase.from("tasks").update(upd).eq("id", task.id);
+    if (!error) {
+      await load();
+      showToastMsg(isDone ? "Tarea marcada como pendiente" : "Tarea completada");
+    }
   }
 
   async function deleteTask(id) {
     if (!window.confirm("¿Eliminar esta tarea?")) return;
-    await supabase.from("tasks").delete().eq("id", id);
-    setTasks(prev => prev.filter(t => t.id !== id));
-    showToastMsg("Tarea eliminada");
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    if (!error) {
+      await load();
+      showToastMsg("Tarea eliminada");
+    }
   }
 
   const filtered = useMemo(() => {
