@@ -97,7 +97,6 @@ export default function TasksPage({ profile, onNavigate }) {
           id, title, description, status, priority, due_date,
           assigned_to, created_by, account_id, opportunity_id, tender_id, campaign_id,
           completed_at, created_at, updated_at,
-          profiles!tasks_assigned_to_fkey(id, full_name),
           accounts(id, name),
           opportunities(id, name),
           tenders(id, institution, process_name),
@@ -323,9 +322,11 @@ export default function TasksPage({ profile, onNavigate }) {
             const done    = task.status === "completada";
             const pColor  = PRIO_COLOR[task.priority] || "#94a3b8";
             const link    = linkLabel(task);
-            const initials = task.profiles?.full_name
-              ? task.profiles.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
+            const assignee = profiles.find(p => p.id === task.assigned_to);
+            const initials = assignee?.full_name
+              ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
               : null;
+            const assigneeName = assignee?.full_name || null;
 
             return (
               <div key={task.id} className={`tk-item${done ? " tk-item--done" : ""}`} style={{ borderLeftColor: pColor }}>
@@ -358,7 +359,7 @@ export default function TasksPage({ profile, onNavigate }) {
                   <span className={`tk-status-badge tk-status-badge--${STATUS_COLOR[task.status]}`}>
                     {STATUS_LABEL[task.status]}
                   </span>
-                  {initials && <span className="tk-avatar" title={task.profiles?.full_name}>{initials}</span>}
+                  {initials && <span className="tk-avatar" title={assigneeName}>{initials}</span>}
                   <div className="tk-item__actions">
                     <button className="tk-action-btn" onClick={() => openEdit(task)} title="Editar">✎</button>
                     <button className="tk-action-btn tk-action-btn--del" onClick={() => deleteTask(task.id)} title="Eliminar">✕</button>
