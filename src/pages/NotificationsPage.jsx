@@ -29,6 +29,7 @@ function levelFor(severity) {
 }
 
 const CATEGORY_ICONS = {
+  "Tareas":        "✅",
   "Oportunidades": "🎯",
   "Licitaciones":  "📋",
   "Visitas":       "🤝",
@@ -37,10 +38,10 @@ const CATEGORY_ICONS = {
   "Usuarios":      "👤",
 };
 
-const ALL_CATEGORIES = ["Todas", "Oportunidades", "Licitaciones", "Visitas", "Cotizaciones", "Clientes", "Usuarios"];
+const ALL_CATEGORIES = ["Todas", "Tareas", "Oportunidades", "Licitaciones", "Visitas", "Cotizaciones", "Clientes", "Usuarios"];
 
-async function loadLegacyAlerts() {
-  const [visitsRes, oppsRes, tendersRes, profilesRes, quotesRes, accountsRes, visitDatesRes] =
+async function loadLegacyAlerts(profileId) {
+  const [visitsRes, oppsRes, tendersRes, profilesRes, quotesRes, accountsRes, visitDatesRes, tasksRes] =
     await Promise.all([
       supabase.from("visits")
         .select("id,account_id,visit_date,status,next_action_date,accounts(name)")
@@ -66,9 +67,31 @@ async function loadLegacyAlerts() {
         .select("account_id,visit_date")
         .order("visit_date", { ascending: false })
         .limit(500),
+      profileId
+        ? supabase.from("tasks")
+            .select("id,title,due_date,status")
+            .in("status", ["pendiente","en_progreso"])
+            .not("due_date", "is", null)
+            .or(`created_by.eq.${profileId},assigned_to.eq.${profileId}`)
+        : Promise.resolve({ data: [] }),
     ]);
 
   const rows = [];
+
+  // ── Tareas ────────────────────────────────────────────────
+  (tasksRes.data || []).forEach(t => {
+    const d = daysUntil(t.due_date);
+    if (d === null) return;
+    if (d < 0) {
+      rows.push({ type: "Tareas", level: "red", title: t.title, detail: `Vencida hace ${Math.abs(d)} día${Math.abs(d)!==1?"s":""}`, page: "tasks" });
+    } else if (d === 0) {
+      rows.push({ type: "Tareas", level: "red", title: t.title, detail: "Vence hoy", page: "tasks" });
+    } else if (d === 1) {
+      rows.push({ type: "Tareas", level: "amber", title: t.title, detail: "Vence mañana", page: "tasks" });
+    } else if (d <= 3) {
+      rows.push({ type: "Tareas", level: "amber", title: t.title, detail: `Vence en ${d} días`, page: "tasks" });
+    }
+  });
 
   // ── Visitas ──────────────────────────────────────────────
   (visitsRes.data || []).forEach(v => {
@@ -124,7 +147,7 @@ async function loadLegacyAlerts() {
 
   // ── Licitaciones ─────────────────────────────────────────
   (tendersRes.data || []).forEach(t => {
-    const closed = ["cobrada","finalizada","perdida"].includes(t.operational_status);
+    const closed = ["cobrada","finalizada","perdida"].includes(t.operational_status?.toLowerCase());
     if (closed) return;
     const d = daysUntil(t.end_date);
     if (d !== null && d < 0) {
@@ -142,11 +165,11 @@ async function loadLegacyAlerts() {
         page: "tenders",
       });
     }
-    if (!t.next_action) {
+    if (!t.next_action && !t.operational_status) {
       rows.push({
         type: "Licitaciones", level: "slate",
         title: t.institution || t.process_name || "Licitación",
-        detail: `Estado: ${t.operational_status || "Sin seguimiento"}`,
+        detail: "Sin seguimiento registrado",
         page: "tenders",
       });
     }
@@ -236,7 +259,23 @@ export default function NotificationsPage({ profile, onNavigate }) {
       computed = (result.data || []).map(row => ({ ...row, level: levelFor(row.severity), type: row.category }));
     } else {
       setPersistent(false);
-      computed = await loadLegacyAlerts();
+      computed = await loadLegacyAlerts(profile?.id);
+    }
+
+    // Siempre agrega alertas de tareas propias (independiente del modo)
+    if (profile?.id) {
+      const tRes = await supabase.from("tasks")
+        .select("id,title,due_date,status")
+        .in("status", ["pendiente","en_progreso"])
+        .not("due_date", "is", null)
+        .or(`created_by.eq.${profile.id},assigned_to.eq.${profile.id}`);
+      (tRes.data || []).forEach(t => {
+        const d = daysUntil(t.due_date);
+        if (d === null || d > 3) return;
+        const detail = d < 0 ? `Vencida hace ${Math.abs(d)} día${Math.abs(d)!==1?"s":""}` : d === 0 ? "Vence hoy" : d === 1 ? "Vence mañana" : `Vence en ${d} días`;
+        const level  = d <= 0 ? "red" : "amber";
+        computed = [{ type: "Tareas", level, title: t.title, detail, page: "tasks" }, ...computed];
+      });
     }
 
     setAlerts(computed);

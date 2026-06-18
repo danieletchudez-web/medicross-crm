@@ -248,12 +248,18 @@ export default function TasksPage({ profile, onNavigate }) {
     });
   }, [tasks, filter, prioFilter, assignFilter, search]);
 
-  const kpis = useMemo(() => ({
-    activas:     tasks.filter(t => t.status === "pendiente" || t.status === "en_progreso").length,
-    vencidas:    tasks.filter(t => ["pendiente","en_progreso"].includes(t.status) && daysUntil(t.due_date) !== null && daysUntil(t.due_date) < 0).length,
-    hoy:         tasks.filter(t => ["pendiente","en_progreso"].includes(t.status) && daysUntil(t.due_date) === 0).length,
-    completadas: tasks.filter(t => t.status === "completada").length,
-  }), [tasks]);
+  const kpis = useMemo(() => {
+    const active = t => ["pendiente","en_progreso"].includes(t.status);
+    const d = t => daysUntil(t.due_date);
+    return {
+      activas:     tasks.filter(active).length,
+      vencidas:    tasks.filter(t => active(t) && d(t) !== null && d(t) < 0).length,
+      hoy:         tasks.filter(t => active(t) && d(t) === 0).length,
+      manana:      tasks.filter(t => active(t) && d(t) === 1).length,
+      en3dias:     tasks.filter(t => active(t) && d(t) !== null && d(t) >= 2 && d(t) <= 3).length,
+      completadas: tasks.filter(t => t.status === "completada").length,
+    };
+  }, [tasks]);
 
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -313,6 +319,35 @@ export default function TasksPage({ profile, onNavigate }) {
           </div>
         </div>
 
+        {!loading && (kpis.vencidas > 0 || kpis.hoy > 0 || kpis.manana > 0 || kpis.en3dias > 0) && (
+          <div className="tk-due-alerts">
+            {kpis.vencidas > 0 && (
+              <div className="tk-due-alert tk-due-alert--red">
+                <span className="tk-due-alert__icon">⚠️</span>
+                <span><strong>{kpis.vencidas}</strong> tarea{kpis.vencidas !== 1 ? "s" : ""} vencida{kpis.vencidas !== 1 ? "s" : ""}</span>
+              </div>
+            )}
+            {kpis.hoy > 0 && (
+              <div className="tk-due-alert tk-due-alert--amber">
+                <span className="tk-due-alert__icon">🔔</span>
+                <span><strong>{kpis.hoy}</strong> vence{kpis.hoy !== 1 ? "n" : ""} hoy</span>
+              </div>
+            )}
+            {kpis.manana > 0 && (
+              <div className="tk-due-alert tk-due-alert--orange">
+                <span className="tk-due-alert__icon">⏰</span>
+                <span><strong>{kpis.manana}</strong> vence{kpis.manana !== 1 ? "n" : ""} mañana</span>
+              </div>
+            )}
+            {kpis.en3dias > 0 && (
+              <div className="tk-due-alert tk-due-alert--blue">
+                <span className="tk-due-alert__icon">📅</span>
+                <span><strong>{kpis.en3dias}</strong> vence{kpis.en3dias !== 1 ? "n" : ""} en 3 días</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="tk-list">
           {loading ? (
             <EmptyState title="Cargando tareas…" text="" />
@@ -334,8 +369,14 @@ export default function TasksPage({ profile, onNavigate }) {
             const assigneeName = assignee?.full_name || null;
             const isOwner = task.created_by === profile?.id;
 
+            const daysDue = daysUntil(task.due_date);
+            const rowCls = done ? " tk-item--done"
+              : daysDue !== null && daysDue < 0  ? " tk-item--overdue"
+              : daysDue === 0                     ? " tk-item--due-today"
+              : "";
+
             return (
-              <div key={task.id} className={`tk-item${done ? " tk-item--done" : ""}`} style={{ borderLeftColor: pColor }}>
+              <div key={task.id} className={`tk-item${rowCls}`} style={{ borderLeftColor: pColor }}>
                 <button
                   className={`tk-check${done ? " tk-check--done" : ""}`}
                   onClick={() => isOwner && toggleComplete(task)}

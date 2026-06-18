@@ -48,6 +48,30 @@
 }
 .tk-search:focus { outline: none; border-color: #5b7cfa; box-shadow: 0 0 0 3px rgba(91,124,250,.12); }
 
+/* Due alerts banner */
+.tk-due-alerts {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.tk-due-alert {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  border: 1.5px solid transparent;
+  animation: tk-pulse-in .3s ease;
+}
+.tk-due-alert__icon { font-size: 16px; }
+.tk-due-alert--red    { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+.tk-due-alert--amber  { background: #fffbeb; color: #b45309; border-color: #fcd34d; }
+.tk-due-alert--orange { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
+.tk-due-alert--blue   { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; }
+
+@keyframes tk-pulse-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Task list */
 .tk-list { display: flex; flex-direction: column; gap: 8px; }
 
@@ -66,6 +90,15 @@
 .tk-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.07); }
 .tk-item--done { opacity: .55; }
 .tk-item--done .tk-item__title { text-decoration: line-through; }
+.tk-item--overdue  { background: #fff5f5; border-color: #fca5a5; animation: tk-blink-border 2s ease-in-out infinite; }
+.tk-item--due-today { background: #fffbeb; border-color: #fcd34d; }
+.tk-item--overdue .tk-item__title  { color: #b91c1c; }
+.tk-item--due-today .tk-item__title { color: #b45309; }
+
+@keyframes tk-blink-border {
+  0%, 100% { border-left-width: 4px; }
+  50%       { border-left-width: 6px; box-shadow: 0 0 0 2px rgba(239,68,68,.12); }
+}
 
 /* Checkbox */
 .tk-check {
