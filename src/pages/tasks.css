@@ -1,8 +1,9 @@
 /* ─── Tasks Page ────────────────────────────────────────── */
-.tk-page { padding: 24px; max-width: 1100px; position: relative; }
+.tk-page { padding: 24px; max-width: 1100px; margin: 0 auto; position: relative; }
 
 /* KPIs */
 .tk-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+@media (max-width: 700px) { .tk-kpis { grid-template-columns: repeat(2, 1fr); } }
 
 /* Filters bar */
 .tk-filters {
@@ -273,3 +274,14 @@
   animation: tk-fadein .2s ease;
 }
 @keyframes tk-fadein { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+@media (max-width: 700px) {
+  .tk-page { padding: 16px; }
+  .tk-filters { flex-direction: column; align-items: stretch; }
+  .tk-filters-right { margin-left: 0; }
+  .tk-status-tabs { overflow-x: auto; }
+  .tk-field-row { grid-template-columns: 1fr; }
+  .tk-item__right { flex-wrap: wrap; gap: 6px; }
+  .tk-drawer { width: 100vw; }
+  .tk-search { width: 100%; }
+}
