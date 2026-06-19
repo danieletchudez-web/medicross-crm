@@ -619,6 +619,24 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     const fecha = new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"long",year:"numeric"});
     const esc   = (t) => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[\\]/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)").replace(/[^\x20-\x7E]/g,"").substring(0,110);
 
+    // Splits description text respecting \n and word-wrapping long lines
+    function splitDescr(text, maxChars) {
+      const out = [];
+      for (const para of String(text||"").split(/\n/)) {
+        const clean = para.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\x20-\x7E]/g," ").trim();
+        if (!clean) continue;
+        if (clean.length <= maxChars) { out.push(clean); continue; }
+        const words = clean.split(/\s+/);
+        let cur = "";
+        for (const w of words) {
+          if (!cur) { cur = w; continue; }
+          if ((cur+" "+w).length <= maxChars) { cur += " "+w; } else { out.push(cur); cur = w; }
+        }
+        if (cur) out.push(cur);
+      }
+      return out;
+    }
+
     const W=595.28, H=841.89;
     const HDR = (nroLicit||institucion||fechaApert) ? 136 : 100;
     let ps=[], pageY=H, pages=[];
@@ -705,7 +723,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       idx%2===0?fill(LX,y-12,CW,12,.97,.97,.97):fill(LX,y-12,CW,12,1,1,1);
       hln(LX,y-12,LX+CW,.82,.82,.82,.3);
       let cx2=LX;
-      [String(idx+1),(r.empresa||"-").substring(0,8),((r.renglon||"-")+(r.subitem?"/"+r.subitem:"")).substring(0,6),(r.descr||"-").substring(0,22),(r.marca||"-").substring(0,7),fARS(c.cARS),fUSD(c.pvUSDs),fARS(c.pvARSs),fARS(c.pvARSc),String(c.cant),fARS(c.sub)].forEach((v,i)=>{
+      [String(idx+1),(r.empresa||"-").substring(0,8),((r.renglon||"-")+(r.subitem?"/"+r.subitem:"")).substring(0,6),String(r.descr||"-").split(/\n/)[0].substring(0,28),(r.marca||"-").substring(0,7),fARS(c.cARS),fUSD(c.pvUSDs),fARS(c.pvARSs),fARS(c.pvARSc),String(c.cant),fARS(c.sub)].forEach((v,i)=>{
         const acc=i===8||i===10; ps.push(acc?".055 .373 .659 rg":"0 0 0 rg"); txt(cx2+2,y-8,v,6,acc); cx2+=cw[i].w;
       });
       ps.push("0 0 0 rg"); y-=12;
@@ -718,11 +736,19 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
 
     renglones.forEach((r,idx)=>{
       const c=calcR(r,tcN); if(!c) return;
-      if(pageY-200<65){pages.push([...ps]);ps=[];drawHeader();}
+      const dLines=splitDescr(r.descr||r.codigo||"",90);
+      const dH=dLines.length>0?dLines.length*11+8:0;
+      if(pageY-(200+dH)<65){pages.push([...ps]);ps=[];drawHeader();}
       y=pageY; y-=6;
       ps.push(".055 .373 .659 rg");
-      txt(LX,y,`RENGLON ${idx+1}: ${(r.descr||r.codigo||"sin descripcion").substring(0,70)}`,8,true);
+      txt(LX,y,`RENGLON ${idx+1}:`,8,true);
       hln(LX,y-10,W-LX,.055,.373,.659,.3); ps.push("0 0 0 rg"); y-=16;
+      dLines.forEach(line=>{
+        const sl=line.replace(/[\\]/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)").substring(0,115);
+        ps.push(`BT /F1 8 Tf ${LX} ${y} Td (${sl}) Tj ET`);
+        y-=11;
+      });
+      if(dLines.length>0) y-=6;
       ps.push(".38 .38 .38 rg"); txt(LX,y,"Empresa:",8.5,false);    ps.push("0 0 0 rg"); txt(LX+65,y,esc(r.empresa||"-"),8.5,false);
       ps.push(".38 .38 .38 rg"); txt(200,y,"Renglon/Sub:",8.5,false); ps.push("0 0 0 rg"); txt(270,y,(r.renglon||"-")+(r.subitem?"/"+r.subitem:""),8.5,false);
       ps.push(".38 .38 .38 rg"); txt(340,y,"Codigo:",8.5,false);    ps.push("0 0 0 rg"); txt(390,y,esc(r.codigo||"-"),8.5,false);
