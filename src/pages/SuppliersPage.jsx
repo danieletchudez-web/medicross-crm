@@ -970,6 +970,25 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                 {/* ── TAB: HISTORY ── */}
                 {tab === "history" && (
                   <div className="sp-tab-body">
+                    {importHistory.length > 0 && (
+                      <div className="sp-history-toolbar">
+                        <span className="sp-history-total">{importHistory.length} importación{importHistory.length !== 1 ? "es" : ""} · {products.length} productos actuales</span>
+                        <button
+                          className="sp-btn sp-btn--sm sp-btn--danger"
+                          onClick={async () => {
+                            if (!window.confirm(`¿Eliminás TODO el catálogo de ${selected.name}?\n\nSe borrarán los ${products.length} productos y el historial de importaciones. Esta acción no se puede deshacer.`)) return;
+                            await supabase.from("supplier_products").delete().eq("supplier_id", selected.id);
+                            await supabase.from("supplier_imports").delete().eq("supplier_id", selected.id);
+                            setProducts([]);
+                            setImportHistory([]);
+                            await loadSuppliers();
+                            showToast("Catálogo eliminado ✓");
+                          }}
+                        >
+                          🗑 Eliminar catálogo completo
+                        </button>
+                      </div>
+                    )}
                     {importHistory.length === 0 ? (
                       <div className="sp-list-empty">Sin importaciones registradas para este proveedor.</div>
                     ) : (
