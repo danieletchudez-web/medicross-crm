@@ -665,6 +665,20 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                     >
                       {selected.is_active ? "Activo" : "Inactivo"}
                     </button>
+                    <button
+                      className="sp-icon-btn sp-icon-btn--del"
+                      title="Eliminar proveedor"
+                      onClick={async () => {
+                        if (!window.confirm(`¿Eliminás el proveedor "${selected.name}"?\n\nSe borrarán también todos sus productos y el historial de importaciones. Esta acción no se puede deshacer.`)) return;
+                        const { error } = await supabase.from("suppliers").delete().eq("id", selected.id);
+                        if (error) { showToast("Error al eliminar: " + error.message, "err"); return; }
+                        setSelected(null);
+                        await loadSuppliers();
+                        showToast("Proveedor eliminado ✓");
+                      }}
+                    >
+                      🗑
+                    </button>
                   </div>
                 </div>
 
