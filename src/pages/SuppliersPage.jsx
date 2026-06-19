@@ -134,6 +134,57 @@ function ProductRow({ prod, onSave, onDelete, lines }) {
   );
 }
 
+/* ── Global search results ───────────────────────────────── */
+function GlobalSearchResults({ results, loading, query, onSelectSupplier }) {
+  if (loading) return <div className="sp-gsearch-loading">Buscando en catálogo…</div>;
+  if (!results.length) return (
+    <div className="sp-gsearch-empty">
+      <div className="sp-gsearch-empty__icon">🔍</div>
+      <div>No se encontraron productos para <strong>"{query}"</strong></div>
+      <div className="sp-gsearch-empty__sub">Probá con otro término o revisá el catálogo de cada proveedor</div>
+    </div>
+  );
+  const bySupplier = {};
+  for (const p of results) {
+    const sid = p.supplier_id;
+    if (!bySupplier[sid]) bySupplier[sid] = { s: p.suppliers, prods: [] };
+    bySupplier[sid].prods.push(p);
+  }
+  const groups = Object.values(bySupplier).sort((a, b) => a.s?.name?.localeCompare(b.s?.name || "") || 0);
+  return (
+    <div className="sp-gsearch-results">
+      <div className="sp-gsearch-summary">
+        <strong>{results.length}</strong> producto{results.length !== 1 ? "s" : ""} en{" "}
+        <strong>{groups.length}</strong> proveedor{groups.length !== 1 ? "es" : ""}
+      </div>
+      {groups.map(({ s, prods }) => (
+        <div key={s?.id} className="sp-gsearch-group">
+          <div className="sp-gsearch-supplier-row">
+            <div className="sp-gsearch-supplier-info">
+              <span className="sp-gsearch-supplier-name">{s?.name || "Proveedor"}</span>
+              <div className="sp-gsearch-supplier-contact">
+                {s?.contact_name && <span>👤 {s.contact_name}</span>}
+                {s?.phone        && <a href={`tel:${s.phone}`}>📞 {s.phone}</a>}
+                {s?.email        && <a href={`mailto:${s.email}`}>✉ {s.email}</a>}
+              </div>
+            </div>
+            <button className="sp-gsearch-link" onClick={() => onSelectSupplier(s)}>
+              Ver ficha →
+            </button>
+          </div>
+          <div className="sp-gsearch-prod-list">
+            {prods.map(p => (
+              <span key={p.id} className="sp-gsearch-prod-chip">
+                {p.name}{p.code ? <em> · {p.code}</em> : ""}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    MAIN PAGE
 ══════════════════════════════════════════════════════════════ */
@@ -170,6 +221,18 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
   const [pastePreview, setPastePreview] = useState(null);
   const [filename,     setFilename]     = useState("");
   const [importHistory, setImportHistory] = useState([]);
+
+  /* ── global search ── */
+  const [globalQuery,     setGlobalQuery]     = useState("");
+  const [globalResults,   setGlobalResults]   = useState(null);
+  const [globalSearching, setGlobalSearching] = useState(false);
+  const globalTimer = useRef(null);
+
+  /* ── multi-sheet import ── */
+  const [multiOpen,      setMultiOpen]      = useState(false);
+  const [multiPreview,   setMultiPreview]   = useState(null); // [{name, products[]}]
+  const [multiImporting, setMultiImporting] = useState(false);
+  const multiFileRef = useRef();
 
   const fileRef = useRef();
   const [toast, showToast] = useToast();
@@ -289,6 +352,86 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
     setProducts(p => p.filter(x => x.id !== id));
   }
 
+  /* ── global search ── */
+  function handleGlobalSearch(q) {
+    setGlobalQuery(q);
+    if (!q.trim() || q.trim().length < 2) { setGlobalResults(null); return; }
+    clearTimeout(globalTimer.current);
+    globalTimer.current = setTimeout(async () => {
+      setGlobalSearching(true);
+      const { data } = await supabase
+        .from("supplier_products")
+        .select("id, name, code, brand, line, unit, supplier_id, suppliers(id, name, contact_name, phone, email)")
+        .ilike("name", `%${q.trim()}%`)
+        .eq("is_active", true)
+        .order("name")
+        .limit(300);
+      setGlobalResults(data || []);
+      setGlobalSearching(false);
+    }, 350);
+  }
+
+  /* ── multi-sheet import ── */
+  async function handleMultiFile(e) {
+    const file = e.target.files?.[0]; if (!file) return;
+    const data = await file.arrayBuffer();
+    const wb   = XLSX.read(data, { type: "array" });
+    const sheets = wb.SheetNames.map(sheetName => {
+      const ws   = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      const prods = rows
+        .map(r => String(r[0] || "").trim())
+        .filter(n => n && n.toLowerCase() !== sheetName.toLowerCase() && n.length > 2);
+      return { name: sheetName.trim(), products: prods };
+    }).filter(s => s.products.length > 0);
+    setMultiPreview(sheets);
+    e.target.value = "";
+  }
+
+  async function runMultiImport() {
+    if (!multiPreview?.length) return;
+    setMultiImporting(true);
+    let totalProds = 0, suppCount = 0;
+    for (const sheet of multiPreview) {
+      let supplierId;
+      const existing = suppliers.find(s => s.name.trim().toLowerCase() === sheet.name.toLowerCase());
+      if (existing) {
+        supplierId = existing.id;
+      } else {
+        const { data: ns } = await supabase.from("suppliers")
+          .insert({ name: sheet.name, created_by: profile?.id })
+          .select("id").single();
+        supplierId = ns?.id;
+      }
+      if (!supplierId) continue;
+
+      // Full replace: deactivate old products then insert new ones
+      await supabase.from("supplier_products").update({ is_active: false }).eq("supplier_id", supplierId);
+
+      const rows = sheet.products.map(name => ({
+        supplier_id: supplierId, name, unit: "u.", is_active: true,
+        price_updated_at: new Date().toISOString(),
+      }));
+      for (let i = 0; i < rows.length; i += 500) {
+        await supabase.from("supplier_products").insert(rows.slice(i, i + 500));
+      }
+      await supabase.from("supplier_imports").insert({
+        supplier_id: supplierId,
+        filename: "Catálogo multi-proveedor (Excel)",
+        product_count: sheet.products.length,
+        imported_by: profile?.id,
+        notes: `${sheet.products.length} productos desde hoja "${sheet.name}"`,
+      });
+      totalProds += sheet.products.length;
+      suppCount++;
+    }
+    showToast(`${totalProds} productos importados de ${suppCount} proveedores ✓`);
+    setMultiImporting(false);
+    setMultiOpen(false);
+    setMultiPreview(null);
+    await loadSuppliers();
+  }
+
   /* ── FILE IMPORT ── */
   async function handleFile(e) {
     const file = e.target.files?.[0]; if (!file) return;
@@ -403,14 +546,47 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
 
         {toast && <div className={`sp-toast sp-toast--${toast.type}`}>{toast.text}</div>}
 
-        {/* ── Stats bar ── */}
-        <div className="sp-stats">
-          <div className="sp-stat"><span className="sp-stat__n">{activeCount}</span><span className="sp-stat__l">Proveedores activos</span></div>
-          <div className="sp-stat"><span className="sp-stat__n">{suppliers.length}</span><span className="sp-stat__l">Total proveedores</span></div>
-          <div className="sp-stat"><span className="sp-stat__n">{totalProds.toLocaleString("es-AR")}</span><span className="sp-stat__l">Productos en catálogo</span></div>
+        {/* ── Global search ── */}
+        <div className="sp-global-search-wrap">
+          <span className="sp-global-search-icon">🔍</span>
+          <input
+            className="sp-global-search"
+            placeholder="Buscá un producto en TODOS los proveedores… ej: algodón, osmosis, aguja, guante"
+            value={globalQuery}
+            onChange={e => handleGlobalSearch(e.target.value)}
+          />
+          {globalQuery && (
+            <button className="sp-global-clear" onClick={() => { setGlobalQuery(""); setGlobalResults(null); }} title="Limpiar búsqueda">✕</button>
+          )}
         </div>
 
-        <div className="sp-layout">
+        {/* ── Stats + multi-import button ── */}
+        <div className="sp-stats-row">
+          <div className="sp-stats">
+            <div className="sp-stat"><span className="sp-stat__n">{activeCount}</span><span className="sp-stat__l">Proveedores activos</span></div>
+            <div className="sp-stat"><span className="sp-stat__n">{suppliers.length}</span><span className="sp-stat__l">Total proveedores</span></div>
+            <div className="sp-stat"><span className="sp-stat__n">{totalProds.toLocaleString("es-AR")}</span><span className="sp-stat__l">Productos en catálogo</span></div>
+          </div>
+          <button className="sp-btn sp-btn--outline" onClick={() => setMultiOpen(true)}>
+            📥 Importar catálogo completo
+          </button>
+        </div>
+
+        {/* ── Global search results ── */}
+        {globalResults !== null && (
+          <GlobalSearchResults
+            results={globalResults}
+            loading={globalSearching}
+            query={globalQuery}
+            onSelectSupplier={s => {
+              setGlobalQuery(""); setGlobalResults(null);
+              const full = suppliers.find(x => x.id === s?.id);
+              if (full) selectSupplier(full);
+            }}
+          />
+        )}
+
+        {globalResults === null && <div className="sp-layout">
 
           {/* ══ LEFT PANEL: supplier list ══ */}
           <aside className="sp-list-panel">
@@ -818,7 +994,84 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
               </>
             )}
           </section>
-        </div>
+        </div>}
+
+        {/* ══ MULTI-SHEET IMPORT MODAL ══ */}
+        {multiOpen && (
+          <div className="sp-overlay" onClick={e => e.target === e.currentTarget && setMultiOpen(false)}>
+            <div className="sp-modal sp-modal--wide">
+              <div className="sp-modal__head">
+                <h3>📥 Importar catálogo completo (multi-proveedor)</h3>
+                <button className="sp-modal__close" onClick={() => { setMultiOpen(false); setMultiPreview(null); }}>✕</button>
+              </div>
+              <div style={{ padding: "16px 20px" }}>
+                {!multiPreview && (
+                  <>
+                    <div className="sp-paste-hint" style={{ marginBottom: 16 }}>
+                      <strong>Formato esperado:</strong> Excel con múltiples hojas. El nombre de cada solapa es el proveedor. La columna A de cada hoja tiene los productos (fila 1 puede ser el nombre del proveedor, se ignora automáticamente).
+                    </div>
+                    <div
+                      className="sp-drop-zone"
+                      onClick={() => multiFileRef.current?.click()}
+                      onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("sp-drop-zone--over"); }}
+                      onDragLeave={e => e.currentTarget.classList.remove("sp-drop-zone--over")}
+                      onDrop={e => {
+                        e.preventDefault(); e.currentTarget.classList.remove("sp-drop-zone--over");
+                        const f = e.dataTransfer.files[0];
+                        if (f) { const dt = new DataTransfer(); dt.items.add(f); multiFileRef.current.files = dt.files; handleMultiFile({ target: multiFileRef.current }); }
+                      }}
+                    >
+                      <div className="sp-drop-zone__icon">📊</div>
+                      <div className="sp-drop-zone__title">Arrastrá o hacé click para subir el Excel</div>
+                      <div className="sp-drop-zone__sub">.xlsx · .xls — Una hoja por proveedor</div>
+                      <input ref={multiFileRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleMultiFile}/>
+                    </div>
+                  </>
+                )}
+
+                {multiPreview && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div className="sp-import-file-info">
+                      <span className="sp-import-count">
+                        Se detectaron <strong>{multiPreview.length} proveedores</strong> con{" "}
+                        <strong>{multiPreview.reduce((s, x) => s + x.products.length, 0).toLocaleString("es-AR")} productos</strong> en total
+                      </span>
+                      <button className="sp-link-btn" onClick={() => setMultiPreview(null)}>Cambiar archivo</button>
+                    </div>
+                    <div className="sp-multi-preview-list">
+                      {multiPreview.map(sheet => {
+                        const existing = suppliers.find(s => s.name.trim().toLowerCase() === sheet.name.toLowerCase());
+                        return (
+                          <div key={sheet.name} className="sp-multi-preview-row">
+                            <div className="sp-multi-preview-name">
+                              {sheet.name}
+                              {existing
+                                ? <span className="sp-multi-badge sp-multi-badge--update">Actualiza existente</span>
+                                : <span className="sp-multi-badge sp-multi-badge--new">Nuevo proveedor</span>
+                              }
+                            </div>
+                            <div className="sp-multi-preview-count">{sheet.products.length} productos</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="sp-paste-note">
+                      Los proveedores existentes se actualizarán (reemplaza su catálogo). Los nuevos se crean automáticamente.
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="sp-modal__foot">
+                <button className="sp-btn sp-btn--ghost" onClick={() => { setMultiOpen(false); setMultiPreview(null); }}>Cancelar</button>
+                {multiPreview && (
+                  <button className="sp-btn sp-btn--primary" onClick={runMultiImport} disabled={multiImporting}>
+                    {multiImporting ? "Importando…" : `Importar ${multiPreview.reduce((s, x) => s + x.products.length, 0).toLocaleString("es-AR")} productos`}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ══ NEW SUPPLIER MODAL ══ */}
         {showNewForm && (
