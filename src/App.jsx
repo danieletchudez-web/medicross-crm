@@ -43,6 +43,7 @@ const CotizadorPage         = lazy(() => import("./pages/CotizadorPage"));
 const PreciosHistoricosPage = lazy(() => import("./pages/PreciosHistoricosPage"));
 const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
 const TasksPage             = lazy(() => import("./pages/TasksPage"));
+const SuppliersPage         = lazy(() => import("./pages/SuppliersPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
 
 const ALL_PAGES = [
@@ -64,6 +65,7 @@ const ALL_PAGES = [
   { id: "preciosHistoricos", Component: PreciosHistoricosPage },
   { id: "notifications",     Component: NotificationsPage },
   { id: "tasks",             Component: TasksPage },
+  { id: "suppliers",         Component: SuppliersPage },
   { id: "settings",          Component: SettingsPage },
 ];
 
@@ -78,7 +80,7 @@ const FALLBACK_PROFILE = {
 };
 
 function canOpenPageForProfile(profile, pageId, isMobile = false) {
-  if (["notifications","settings","tasks"].includes(pageId)) return true;
+  if (["notifications","settings","tasks","suppliers"].includes(pageId)) return true;
   if (pageId === "accountDetail") return canOpenModule(profile, "accounts", isMobile);
   return canOpenModule(profile, pageId, isMobile);
 }

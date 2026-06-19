@@ -21,6 +21,7 @@ import {
   Settings,
   ShieldCheck,
   Target,
+  Truck,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
@@ -43,6 +44,7 @@ const MENU_SECTIONS = [
     items: [
       { id: "accounts",      label: "Clientes / Cuentas",    icon: Building2 },
       { id: "products",      label: "Productos / Share Kit", icon: PackageOpen },
+      { id: "suppliers",     label: "Proveedores",           icon: Truck },
       { id: "opportunities", label: "Oportunidades",         icon: Target },
       { id: "campaigns",     label: "Campañas",              icon: Megaphone },
     ],
