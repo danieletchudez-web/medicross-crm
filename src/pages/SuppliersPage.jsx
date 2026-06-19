@@ -18,16 +18,18 @@ const FIELD_LABELS = {
   line: "Línea", unit: "Unidad", price: "Precio", currency: "Moneda",
 };
 const FIELD_ORDER = ["name", "code", "brand", "line", "unit", "price", "currency"];
+const PRIORITY_LABELS = { principal: "Principal", alternativo: "Alternativo", backup: "Backup" };
+const PRIORITY_ORDER  = { principal: 0, alternativo: 1, backup: 2 };
 
 function emptySupplier() {
   return {
-    name: "", trade_name: "", cuit: "", contact_name: "",
-    email: "", phone: "", website: "", address: "",
-    payment_terms: "", notes: "", is_active: true,
+    name: "", trade_name: "", cuit: "", specialty: "", province: "",
+    contact_name: "", email: "", phone: "", whatsapp: "", website: "", address: "",
+    payment_terms: "", usual_currency: "ARS", delivery_days: "", notes: "", is_active: true,
   };
 }
 function emptyProduct() {
-  return { code: "", name: "", brand: "", line: "", unit: "u.", price: "", currency: "ARS", notes: "" };
+  return { code: "", name: "", brand: "", line: "", unit: "u.", price: "", currency: "ARS", priority: "alternativo", notes: "" };
 }
 
 /* ── Toast ───────────────────────────────────────────────── */
@@ -98,6 +100,11 @@ function ProductRow({ prod, onSave, onDelete, lines }) {
         <td className="sp-td">{prod.brand || <span className="sp-muted">—</span>}</td>
         <td className="sp-td">{prod.line || <span className="sp-muted">—</span>}</td>
         <td className="sp-td">{prod.unit}</td>
+        <td className="sp-td">
+          <span className={`sp-priority-badge sp-priority-badge--${prod.priority || "alternativo"}`}>
+            {PRIORITY_LABELS[prod.priority || "alternativo"]}
+          </span>
+        </td>
         <td className="sp-td sp-td--price">{fmtPrice(prod.price, prod.currency)}</td>
         <td className="sp-td sp-td--actions">
           <button className="sp-icon-btn" onClick={() => { setForm(prod); setEditing(true); }} title="Editar">✎</button>
@@ -118,6 +125,13 @@ function ProductRow({ prod, onSave, onDelete, lines }) {
         <datalist id={`lines-${prod.id}`}>{lines.map(l => <option key={l} value={l}/>)}</datalist>
       </td>
       <td className="sp-td"><input className="sp-td-input sp-td-input--sm" value={form.unit} onChange={e => set("unit", e.target.value)} placeholder="u."/></td>
+      <td className="sp-td">
+        <select className="sp-td-select" value={form.priority || "alternativo"} onChange={e => set("priority", e.target.value)}>
+          <option value="principal">Principal</option>
+          <option value="alternativo">Alternativo</option>
+          <option value="backup">Backup</option>
+        </select>
+      </td>
       <td className="sp-td">
         <div className="sp-price-inline">
           <select className="sp-td-select" value={form.currency} onChange={e => set("currency", e.target.value)}>
@@ -150,7 +164,11 @@ function GlobalSearchResults({ results, loading, query, onSelectSupplier }) {
     if (!bySupplier[sid]) bySupplier[sid] = { s: p.suppliers, prods: [] };
     bySupplier[sid].prods.push(p);
   }
-  const groups = Object.values(bySupplier).sort((a, b) => a.s?.name?.localeCompare(b.s?.name || "") || 0);
+  const groups = Object.values(bySupplier).sort((a, b) => {
+    const aP = Math.min(...a.prods.map(p => PRIORITY_ORDER[p.priority] ?? 1));
+    const bP = Math.min(...b.prods.map(p => PRIORITY_ORDER[p.priority] ?? 1));
+    return aP - bP || (a.s?.name || "").localeCompare(b.s?.name || "");
+  });
   return (
     <div className="sp-gsearch-results">
       <div className="sp-gsearch-summary">
@@ -161,11 +179,20 @@ function GlobalSearchResults({ results, loading, query, onSelectSupplier }) {
         <div key={s?.id} className="sp-gsearch-group">
           <div className="sp-gsearch-supplier-row">
             <div className="sp-gsearch-supplier-info">
-              <span className="sp-gsearch-supplier-name">{s?.name || "Proveedor"}</span>
+              <div className="sp-gsearch-supplier-name-row">
+                <span className="sp-gsearch-supplier-name">{s?.name || "Proveedor"}</span>
+                {s?.specialty && <span className="sp-gsearch-specialty">{s.specialty}</span>}
+              </div>
               <div className="sp-gsearch-supplier-contact">
                 {s?.contact_name && <span>👤 {s.contact_name}</span>}
-                {s?.phone        && <a href={`tel:${s.phone}`}>📞 {s.phone}</a>}
-                {s?.email        && <a href={`mailto:${s.email}`}>✉ {s.email}</a>}
+                {s?.phone && <a href={`tel:${s.phone}`}>📞 {s.phone}</a>}
+                {s?.whatsapp && (
+                  <a href={`https://wa.me/${s.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer">
+                    💬 WhatsApp
+                  </a>
+                )}
+                {s?.email && <a href={`mailto:${s.email}`}>✉ {s.email}</a>}
+                {s?.delivery_days && <span>🚚 {s.delivery_days} días</span>}
               </div>
             </div>
             <button className="sp-gsearch-link" onClick={() => onSelectSupplier(s)}>
@@ -173,9 +200,11 @@ function GlobalSearchResults({ results, loading, query, onSelectSupplier }) {
             </button>
           </div>
           <div className="sp-gsearch-prod-list">
-            {prods.map(p => (
+            {[...prods].sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)).map(p => (
               <span key={p.id} className="sp-gsearch-prod-chip">
+                <span className={`sp-priority-dot sp-priority-dot--${p.priority || "alternativo"}`} />
                 {p.name}{p.code ? <em> · {p.code}</em> : ""}
+                {p.brand ? <em className="sp-chip-brand"> · {p.brand}</em> : ""}
               </span>
             ))}
           </div>
@@ -299,10 +328,13 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
     setSavingForm(true);
     const { error } = await supabase.from("suppliers").update({
       name: supplierForm.name.trim(), trade_name: supplierForm.trade_name, cuit: supplierForm.cuit,
-      contact_name: supplierForm.contact_name, email: supplierForm.email, phone: supplierForm.phone,
+      specialty: supplierForm.specialty, province: supplierForm.province,
+      contact_name: supplierForm.contact_name, email: supplierForm.email,
+      phone: supplierForm.phone, whatsapp: supplierForm.whatsapp,
       website: supplierForm.website, address: supplierForm.address,
-      payment_terms: supplierForm.payment_terms, notes: supplierForm.notes,
-      is_active: supplierForm.is_active,
+      payment_terms: supplierForm.payment_terms, usual_currency: supplierForm.usual_currency,
+      delivery_days: supplierForm.delivery_days ? parseInt(supplierForm.delivery_days) : null,
+      notes: supplierForm.notes, is_active: supplierForm.is_active,
     }).eq("id", selected.id);
     setSavingForm(false);
     if (error) { showToast("Error al guardar: " + error.message, "err"); return; }
@@ -359,10 +391,11 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
     clearTimeout(globalTimer.current);
     globalTimer.current = setTimeout(async () => {
       setGlobalSearching(true);
+      const q2 = q.trim();
       const { data } = await supabase
         .from("supplier_products")
-        .select("id, name, code, brand, line, unit, supplier_id, suppliers(id, name, contact_name, phone, email)")
-        .ilike("name", `%${q.trim()}%`)
+        .select("id, name, code, brand, line, unit, priority, supplier_id, suppliers(id, name, specialty, contact_name, phone, whatsapp, email, delivery_days)")
+        .or(`name.ilike.%${q2}%,brand.ilike.%${q2}%,code.ilike.%${q2}%,line.ilike.%${q2}%`)
         .eq("is_active", true)
         .order("name")
         .limit(300);
@@ -626,7 +659,7 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                       onClick={() => selectSupplier(s)}
                     >
                       <div className="sp-list-item__name">{s.name}</div>
-                      {s.trade_name && <div className="sp-list-item__sub">{s.trade_name}</div>}
+                      {(s.specialty || s.trade_name) && <div className="sp-list-item__sub">{s.specialty || s.trade_name}</div>}
                       <div className="sp-list-item__meta">
                         {s.contact_name && <span>{s.contact_name}</span>}
                         <span className="sp-prod-badge">{count} prod.</span>
@@ -708,6 +741,14 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                         <input value={supplierForm.cuit||""} onChange={e => setF("cuit", e.target.value)} placeholder="XX-XXXXXXXX-X"/>
                       </div>
                       <div className="sp-field">
+                        <label>Especialidad / Rubro</label>
+                        <input value={supplierForm.specialty||""} onChange={e => setF("specialty", e.target.value)} placeholder="Ej: Descartables, Equipamiento, Óptica"/>
+                      </div>
+                      <div className="sp-field">
+                        <label>Provincia</label>
+                        <input value={supplierForm.province||""} onChange={e => setF("province", e.target.value)} placeholder="Buenos Aires, Córdoba…"/>
+                      </div>
+                      <div className="sp-field">
                         <label>Contacto principal</label>
                         <input value={supplierForm.contact_name||""} onChange={e => setF("contact_name", e.target.value)} placeholder="Nombre y apellido"/>
                       </div>
@@ -720,12 +761,28 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                         <input value={supplierForm.phone||""} onChange={e => setF("phone", e.target.value)} placeholder="+54 11 XXXX-XXXX"/>
                       </div>
                       <div className="sp-field">
+                        <label>WhatsApp</label>
+                        <input value={supplierForm.whatsapp||""} onChange={e => setF("whatsapp", e.target.value)} placeholder="+54 9 11 XXXX-XXXX"/>
+                      </div>
+                      <div className="sp-field">
                         <label>Sitio web</label>
                         <input value={supplierForm.website||""} onChange={e => setF("website", e.target.value)} placeholder="https://"/>
                       </div>
                       <div className="sp-field">
                         <label>Condiciones de pago</label>
                         <input value={supplierForm.payment_terms||""} onChange={e => setF("payment_terms", e.target.value)} placeholder="Ej: 30 días, contado, etc."/>
+                      </div>
+                      <div className="sp-field">
+                        <label>Moneda habitual</label>
+                        <select value={supplierForm.usual_currency||"ARS"} onChange={e => setF("usual_currency", e.target.value)} style={{height:"36px",padding:"0 10px",border:"1px solid #e2e8f0",borderRadius:"8px",fontSize:"13px"}}>
+                          <option value="ARS">ARS — Pesos</option>
+                          <option value="USD">USD — Dólares</option>
+                          <option value="EUR">EUR — Euros</option>
+                        </select>
+                      </div>
+                      <div className="sp-field">
+                        <label>Días de entrega (promedio)</label>
+                        <input type="number" min="0" value={supplierForm.delivery_days||""} onChange={e => setF("delivery_days", e.target.value)} placeholder="Ej: 3"/>
                       </div>
                       <div className="sp-field sp-field--full">
                         <label>Dirección</label>
@@ -776,7 +833,7 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                           <thead>
                             <tr>
                               <th>Código</th><th>Nombre / Descripción</th><th>Marca</th>
-                              <th>Línea</th><th>Und.</th><th>Precio</th><th></th>
+                              <th>Línea</th><th>Und.</th><th>Prioridad</th><th>Precio</th><th></th>
                             </tr>
                           </thead>
                           <tbody>
@@ -790,6 +847,13 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                                   <datalist id="new-lines">{prodLines.map(l=><option key={l} value={l}/>)}</datalist>
                                 </td>
                                 <td><input className="sp-td-input sp-td-input--sm" value={newProd.unit} onChange={e => setNewProd(p=>({...p,unit:e.target.value}))} placeholder="u."/></td>
+                                <td>
+                                  <select className="sp-td-select" value={newProd.priority || "alternativo"} onChange={e => setNewProd(p=>({...p,priority:e.target.value}))}>
+                                    <option value="principal">Principal</option>
+                                    <option value="alternativo">Alternativo</option>
+                                    <option value="backup">Backup</option>
+                                  </select>
+                                </td>
                                 <td>
                                   <div className="sp-price-inline">
                                     <select className="sp-td-select" value={newProd.currency} onChange={e => setNewProd(p=>({...p,currency:e.target.value}))}>
@@ -1128,6 +1192,10 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                   <input value={newForm.cuit||""} onChange={e => setNewForm(f => ({ ...f, cuit: e.target.value }))} placeholder="XX-XXXXXXXX-X"/>
                 </div>
                 <div className="sp-field">
+                  <label>Especialidad / Rubro</label>
+                  <input value={newForm.specialty||""} onChange={e => setNewForm(f => ({ ...f, specialty: e.target.value }))} placeholder="Ej: Descartables, Equipamiento"/>
+                </div>
+                <div className="sp-field">
                   <label>Contacto</label>
                   <input value={newForm.contact_name||""} onChange={e => setNewForm(f => ({ ...f, contact_name: e.target.value }))} placeholder="Nombre y apellido"/>
                 </div>
@@ -1138,6 +1206,10 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
                 <div className="sp-field">
                   <label>Teléfono</label>
                   <input value={newForm.phone||""} onChange={e => setNewForm(f => ({ ...f, phone: e.target.value }))} placeholder="+54 11 XXXX-XXXX"/>
+                </div>
+                <div className="sp-field">
+                  <label>WhatsApp</label>
+                  <input value={newForm.whatsapp||""} onChange={e => setNewForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="+54 9 11 XXXX-XXXX"/>
                 </div>
                 <div className="sp-field">
                   <label>Condiciones de pago</label>
