@@ -405,6 +405,8 @@ button, input, select, textarea { font-family: inherit; }
   z-index: 50;
 }
 
+.page-header--has-alert { margin-bottom: 0; }
+
 /* Title block — left side */
 .page-header__title-block {
   min-width: 0;

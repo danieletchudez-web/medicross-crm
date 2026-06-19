@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import GlobalSearch from "./GlobalSearch";
+import TaskAlertBanner from "./TaskAlertBanner";
+import useTaskAlerts from "../hooks/useTaskAlerts";
 
 const ROLE_LABELS = {
   super_admin: "Super Admin",
@@ -29,19 +31,20 @@ export default function Layout({ title, profile, onNavigate, pageKey, children }
   const fullName  = profile?.full_name  || profile?.email || "Usuario";
   const roleLabel = ROLE_LABELS[profile?.role] || profile?.role || "Usuario";
 
+  const { alerts: taskAlerts } = useTaskAlerts(profile?.id ?? null);
+  const hasAlert = taskAlerts.length > 0;
+
   return (
     <div className="app-shell">
       <Sidebar profile={profile} onNavigate={onNavigate} />
 
       <main className="main-content">
-        <header className="page-header">
+        <header className={`page-header${hasAlert ? " page-header--has-alert" : ""}`}>
 
-          {/* Izquierda: título de la página */}
           <div className="page-header__title-block">
             <h1>{title}</h1>
           </div>
 
-          {/* Derecha: búsqueda + usuario + reloj */}
           <div className="page-header__actions">
             <GlobalSearch onNavigate={onNavigate} />
 
@@ -61,6 +64,10 @@ export default function Layout({ title, profile, onNavigate, pageKey, children }
           </div>
 
         </header>
+
+        {hasAlert && (
+          <TaskAlertBanner alerts={taskAlerts} onNavigate={onNavigate} />
+        )}
 
         <div key={pageKey} className="page-enter">
           {children}
