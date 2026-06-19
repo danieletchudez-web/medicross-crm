@@ -349,7 +349,10 @@ export default function SuppliersPage({ profile, onNavigate, pageKey }) {
     if (!newForm.name.trim()) { showToast("El nombre es obligatorio", "err"); return; }
     setSavingForm(true);
     const { error } = await supabase.from("suppliers").insert({
-      ...newForm, name: newForm.name.trim(), created_by: profile?.id,
+      ...newForm,
+      name: newForm.name.trim(),
+      delivery_days: newForm.delivery_days ? parseInt(newForm.delivery_days) : null,
+      created_by: profile?.id,
     });
     setSavingForm(false);
     if (error) { showToast("Error al crear: " + error.message, "err"); return; }
