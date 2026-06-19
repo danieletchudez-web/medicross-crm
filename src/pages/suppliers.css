@@ -739,6 +739,84 @@
 .sp-toast--err { background: #dc2626; color: #fff; }
 @keyframes sp-toast-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
+/* ── Global search — tabla compacta ── */
+.sp-gst-wrap {
+  background: #fff;
+  border: 1px solid #e8ecf2;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.sp-gst-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e8ecf2;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sp-gst-summary { font-size: 13px; color: #64748b; }
+.sp-gst-controls { display: flex; gap: 8px; }
+.sp-gst-select  { height: 30px; font-size: 12px; }
+
+.sp-gst-table-container {
+  overflow-x: auto;
+  max-height: 560px;
+  overflow-y: auto;
+}
+.sp-gst-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sp-gst-th {
+  position: sticky; top: 0; z-index: 1;
+  background: #f8fafc;
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid #e8ecf2;
+  white-space: nowrap;
+}
+.sp-gst-row { border-bottom: 1px solid #f1f5f9; transition: background .08s; }
+.sp-gst-row:last-child { border-bottom: none; }
+.sp-gst-row:hover { background: #f8fafc; }
+.sp-gst-td { padding: 9px 14px; vertical-align: middle; }
+
+.sp-gst-td--product { max-width: 0; width: 36%; }
+.sp-gst-prod-name {
+  display: block;
+  font-weight: 500;
+  color: #0f172a;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+.sp-gst-prod-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.sp-gst-prod-meta em { font-style: normal; font-size: 11px; color: #94a3b8; }
+.sp-gst-brand {
+  font-size: 11px; color: #475569;
+  background: #f1f5f9; border-radius: 5px; padding: 1px 6px;
+}
+
+.sp-gst-sup-name { display: block; font-weight: 600; color: #1e293b; font-size: 13px; white-space: nowrap; }
+.sp-gst-sup-spec { display: block; font-size: 11px; color: #3b82f6; margin-top: 1px; }
+
+.sp-gst-td--contact { min-width: 120px; }
+.sp-gst-contact-name { display: block; font-size: 12px; color: #475569; white-space: nowrap; margin-bottom: 3px; }
+.sp-gst-contact-icons { display: flex; gap: 5px; }
+.sp-gst-icon-link { font-size: 15px; text-decoration: none; opacity: .7; transition: opacity .1s; }
+.sp-gst-icon-link:hover { opacity: 1; }
+
+.sp-gst-delivery { font-size: 12px; font-weight: 600; color: #475569; }
+.sp-gst-td--action { white-space: nowrap; }
+
 /* ── Priority badges (catalog table) ── */
 .sp-priority-badge {
   display: inline-flex;

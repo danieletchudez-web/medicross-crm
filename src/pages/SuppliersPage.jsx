@@ -148,8 +148,11 @@ function ProductRow({ prod, onSave, onDelete, lines }) {
   );
 }
 
-/* ── Global search results ───────────────────────────────── */
+/* ── Global search results — tabla compacta ─────────────── */
 function GlobalSearchResults({ results, loading, query, onSelectSupplier }) {
+  const [sortBy,         setSortBy]         = useState("priority");
+  const [filterSupplier, setFilterSupplier] = useState("");
+
   if (loading) return <div className="sp-gsearch-loading">Buscando en catálogo…</div>;
   if (!results.length) return (
     <div className="sp-gsearch-empty">
@@ -158,58 +161,98 @@ function GlobalSearchResults({ results, loading, query, onSelectSupplier }) {
       <div className="sp-gsearch-empty__sub">Probá con otro término o revisá el catálogo de cada proveedor</div>
     </div>
   );
-  const bySupplier = {};
-  for (const p of results) {
-    const sid = p.supplier_id;
-    if (!bySupplier[sid]) bySupplier[sid] = { s: p.suppliers, prods: [] };
-    bySupplier[sid].prods.push(p);
+
+  const supplierMap = {};
+  for (const r of results) {
+    if (r.suppliers && !supplierMap[r.supplier_id]) supplierMap[r.supplier_id] = r.suppliers;
   }
-  const groups = Object.values(bySupplier).sort((a, b) => {
-    const aP = Math.min(...a.prods.map(p => PRIORITY_ORDER[p.priority] ?? 1));
-    const bP = Math.min(...b.prods.map(p => PRIORITY_ORDER[p.priority] ?? 1));
-    return aP - bP || (a.s?.name || "").localeCompare(b.s?.name || "");
+  const suppliersForFilter = Object.values(supplierMap).sort((a, b) => a.name.localeCompare(b.name));
+  const uniqueCount = suppliersForFilter.length;
+
+  let rows = filterSupplier ? results.filter(r => r.supplier_id === filterSupplier) : [...results];
+  rows = rows.sort((a, b) => {
+    if (sortBy === "priority") {
+      const pd = (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1);
+      return pd !== 0 ? pd : (a.suppliers?.name || "").localeCompare(b.suppliers?.name || "");
+    }
+    if (sortBy === "supplier") return (a.suppliers?.name || "").localeCompare(b.suppliers?.name || "");
+    return a.name.localeCompare(b.name);
   });
+
   return (
-    <div className="sp-gsearch-results">
-      <div className="sp-gsearch-summary">
-        <strong>{results.length}</strong> producto{results.length !== 1 ? "s" : ""} en{" "}
-        <strong>{groups.length}</strong> proveedor{groups.length !== 1 ? "es" : ""}
-      </div>
-      {groups.map(({ s, prods }) => (
-        <div key={s?.id} className="sp-gsearch-group">
-          <div className="sp-gsearch-supplier-row">
-            <div className="sp-gsearch-supplier-info">
-              <div className="sp-gsearch-supplier-name-row">
-                <span className="sp-gsearch-supplier-name">{s?.name || "Proveedor"}</span>
-                {s?.specialty && <span className="sp-gsearch-specialty">{s.specialty}</span>}
-              </div>
-              <div className="sp-gsearch-supplier-contact">
-                {s?.contact_name && <span>👤 {s.contact_name}</span>}
-                {s?.phone && <a href={`tel:${s.phone}`}>📞 {s.phone}</a>}
-                {s?.whatsapp && (
-                  <a href={`https://wa.me/${s.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer">
-                    💬 WhatsApp
-                  </a>
-                )}
-                {s?.email && <a href={`mailto:${s.email}`}>✉ {s.email}</a>}
-                {s?.delivery_days && <span>🚚 {s.delivery_days} días</span>}
-              </div>
-            </div>
-            <button className="sp-gsearch-link" onClick={() => onSelectSupplier(s)}>
-              Ver ficha →
-            </button>
-          </div>
-          <div className="sp-gsearch-prod-list">
-            {[...prods].sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)).map(p => (
-              <span key={p.id} className="sp-gsearch-prod-chip">
-                <span className={`sp-priority-dot sp-priority-dot--${p.priority || "alternativo"}`} />
-                {p.name}{p.code ? <em> · {p.code}</em> : ""}
-                {p.brand ? <em className="sp-chip-brand"> · {p.brand}</em> : ""}
-              </span>
-            ))}
-          </div>
+    <div className="sp-gst-wrap">
+      <div className="sp-gst-header">
+        <span className="sp-gst-summary">
+          <strong>{results.length}</strong> producto{results.length !== 1 ? "s" : ""} en{" "}
+          <strong>{uniqueCount}</strong> proveedor{uniqueCount !== 1 ? "es" : ""}
+        </span>
+        <div className="sp-gst-controls">
+          <select className="sp-select sp-gst-select" value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}>
+            <option value="">Todos los proveedores</option>
+            {suppliersForFilter.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select className="sp-select sp-gst-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <option value="priority">Ordenar: Prioridad</option>
+            <option value="supplier">Ordenar: Proveedor</option>
+            <option value="name">Ordenar: Producto A–Z</option>
+          </select>
         </div>
-      ))}
+      </div>
+
+      <div className="sp-gst-table-container">
+        <table className="sp-gst-table">
+          <thead>
+            <tr>
+              <th className="sp-gst-th">Producto</th>
+              <th className="sp-gst-th">Proveedor</th>
+              <th className="sp-gst-th">Prioridad</th>
+              <th className="sp-gst-th">Contacto</th>
+              <th className="sp-gst-th">Entrega</th>
+              <th className="sp-gst-th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => {
+              const s = r.suppliers;
+              const prio = r.priority || "alternativo";
+              return (
+                <tr key={r.id} className="sp-gst-row">
+                  <td className="sp-gst-td sp-gst-td--product">
+                    <span className="sp-gst-prod-name" title={r.name}>{r.name}</span>
+                    <span className="sp-gst-prod-meta">
+                      {r.code && <em>{r.code}</em>}
+                      {r.brand && <span className="sp-gst-brand">{r.brand}</span>}
+                    </span>
+                  </td>
+                  <td className="sp-gst-td">
+                    <span className="sp-gst-sup-name">{s?.name || "—"}</span>
+                    {s?.specialty && <span className="sp-gst-sup-spec">{s.specialty}</span>}
+                  </td>
+                  <td className="sp-gst-td">
+                    <span className={`sp-priority-badge sp-priority-badge--${prio}`}>{PRIORITY_LABELS[prio]}</span>
+                  </td>
+                  <td className="sp-gst-td sp-gst-td--contact">
+                    {s?.contact_name && <span className="sp-gst-contact-name">{s.contact_name}</span>}
+                    <div className="sp-gst-contact-icons">
+                      {s?.phone    && <a href={`tel:${s.phone}`}    className="sp-gst-icon-link" title={s.phone}>📞</a>}
+                      {s?.whatsapp && <a href={`https://wa.me/${s.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer" className="sp-gst-icon-link" title="WhatsApp">💬</a>}
+                      {s?.email    && <a href={`mailto:${s.email}`} className="sp-gst-icon-link" title={s.email}>✉️</a>}
+                    </div>
+                  </td>
+                  <td className="sp-gst-td">
+                    {s?.delivery_days
+                      ? <span className="sp-gst-delivery">{s.delivery_days}d</span>
+                      : <span className="sp-muted">—</span>}
+                  </td>
+                  <td className="sp-gst-td sp-gst-td--action">
+                    <button className="sp-gsearch-link" onClick={() => onSelectSupplier(s)}>Ver →</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
