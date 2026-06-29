@@ -1038,8 +1038,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                   )}
                 </div>
                 <div className="cot-renglon__right">
+                  <div className="cot-field" style={{maxWidth:140}}>
+                    <label>Cantidad</label>
+                    <input type="number" value={r.cant} min={1} onChange={e=>updateR(r.id,"cant",e.target.value)}
+                      style={{textAlign:"center",fontWeight:700,fontSize:20}}/>
+                  </div>
                   {calc ? (
                     <>
+                      <div className="cot-divider"/>
                       <div className="cot-mk-row">
                         <div className="cot-mk-card">
                           <span>Markup % <small style={{opacity:.6}}>(base costo)</small></span>
@@ -1057,11 +1063,6 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                         <div className="cot-pv"><span>PV ARS c/IVA</span><strong>{fARS(calc.pvARSc)}</strong></div>
                       </div>
                       <div className="cot-divider"/>
-                      <div className="cot-field" style={{maxWidth:140}}>
-                        <label>Cantidad</label>
-                        <input type="number" value={r.cant} min={1} onChange={e=>updateR(r.id,"cant",e.target.value)}
-                          style={{textAlign:"center",fontWeight:700,fontSize:20}}/>
-                      </div>
                       <div className="cot-subtotal">
                         <div>
                           <span>Subtotal c/IVA</span>
