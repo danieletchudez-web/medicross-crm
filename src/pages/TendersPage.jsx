@@ -88,7 +88,7 @@ function ProductLineCombobox({ value, onChange }) {
   function pick(label) { setQuery(label); onChange(label); setOpen(false); }
 
   return (
-    <div style={{position:"relative"}} ref={wrapRef}>
+    <div style={{position:"relative",width:"100%"}} ref={wrapRef}>
       <input
         value={query}
         onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
@@ -168,7 +168,7 @@ function InstitutionCombobox({ value, onChange }) {
   }
 
   return (
-    <div style={{position:"relative"}} ref={wrapRef}>
+    <div style={{position:"relative",width:"100%"}} ref={wrapRef}>
       <input
         value={query}
         onChange={e => handleChange(e.target.value)}
