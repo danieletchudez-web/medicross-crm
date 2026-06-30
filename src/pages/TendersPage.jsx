@@ -1401,7 +1401,10 @@ function BacImportModal({ preview, setPreview, saving, onClose, onConfirm }) {
 
 /* ─── PANEL INTELIGENCIA COMERCIAL ─────────────────────────────────── */
 function TenderIntelligencePanel({ form }) {
-  const keyword = (form.product_line||form.requesting_sector||"").trim();
+  const rawLine    = (form.product_line||form.requesting_sector||"").trim();
+  // "Hemodinamia — Introductores" → search only "Introductores" against descripcion
+  const keyword    = rawLine.includes(" — ") ? rawLine.split(" — ")[1].trim() : rawLine;
+  const displayLine = rawLine;
   const institution = (form.institution||"").trim();
   const [intel, setIntel] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1447,10 +1450,10 @@ function TenderIntelligencePanel({ form }) {
       Ingresá la <strong>Línea de producto</strong> en el tab Datos para ver inteligencia comercial.
     </div>
   );
-  if (loading) return <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>Analizando historial de <strong>{keyword}</strong>…</div>;
+  if (loading) return <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>Analizando historial de <strong>{displayLine}</strong>…</div>;
   if (!intel||!intel.total) return (
     <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>
-      Sin historial en comparativas para <strong>{keyword}</strong>. Importá comparativas BAC para construir inteligencia.
+      Sin historial en comparativas para <strong>{displayLine}</strong>. Importá comparativas BAC para construir inteligencia.
     </div>
   );
 
@@ -1466,7 +1469,7 @@ function TenderIntelligencePanel({ form }) {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{background:"#f8fafc",borderRadius:9,padding:"10px 14px",border:"1px solid #e2e8f0",fontSize:11.5,color:"#64748b"}}>
-        <strong style={{color:"#334155"}}>{keyword}</strong> · {intel.total} referencias en comparativas BAC
+        <strong style={{color:"#334155"}}>{displayLine}</strong> · {intel.total} referencias en comparativas BAC
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10}}>
         {kpis.map(k=>(
