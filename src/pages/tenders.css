@@ -107,6 +107,39 @@
 }
 .tn-btn--refresh:hover { background: #f1f5f9; color: var(--tn-navy); border-color: var(--tn-border2); }
 
+/* ─── TOOLBAR DE ACCIONES ───────────────────────────────────────────── */
+.tn-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 4px;
+  box-shadow: 0 1px 4px rgba(15,23,42,.06);
+}
+.tn-toolbar__group { display: flex; gap: 1px; }
+.tn-toolbar__sep   { width: 1px; height: 22px; background: #e2e8f0; margin: 0 5px; flex-shrink: 0; }
+
+.tn-tbar-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border: none; background: transparent;
+  border-radius: 8px; cursor: pointer; white-space: nowrap;
+  font-size: 12px; font-weight: 500; font-family: inherit;
+  color: #475569; transition: background .12s, color .12s;
+}
+.tn-tbar-btn:hover  { background: #f1f5f9; color: #0f172a; }
+.tn-tbar-btn:active { transform: scale(.97); }
+.tn-tbar-btn svg    { flex-shrink: 0; }
+
+.tn-tbar-btn--intel { color: #1d4ed8; }
+.tn-tbar-btn--intel:hover { background: #eff6ff; color: #1e40af; }
+
+.tn-tbar-btn--primary {
+  background: #0f2444; color: #fff;
+  font-weight: 600; padding: 6px 14px;
+}
+.tn-tbar-btn--primary:hover {
+  background: #1a3a6b;
+  box-shadow: 0 2px 8px rgba(15,36,68,.25);
+}
+
 /* ─── BOTÓN INTELIGENCIA DE PRECIOS ─────────────────────────────────── */
 .tn-btn--inteligencia {
   border-color: #bfdbfe;

@@ -2316,16 +2316,42 @@ export default function TendersPage({ profile, onNavigate }) {
             <input ref={bacFileRef} type="file" accept=".xlsx,.xls" className="tn-hidden-input" onChange={handleBacFile}/>
             {hasFilters && <button className="tn-btn tn-btn--ghost tn-btn--sm" onClick={()=>{setGlobalQ("");setColFilters({});}}>✕ Limpiar</button>}
             {selected.size > 0 && <span style={{fontSize:12,fontWeight:700,color:"#0f2444"}}>{selected.size} selec.</span>}
-            <button className="tn-btn tn-btn--export" onClick={exportToExcel} title={selected.size>0?`Exportar ${selected.size} seleccionadas`:`Exportar ${filtered.length} licitaciones`}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              {selected.size > 0 ? `Excel (${selected.size})` : "Excel"}
-            </button>
-            <button className="tn-btn tn-btn--refresh" onClick={loadTenders} title="Actualizar">↻</button>
-            <button className="tn-btn tn-btn--ghost tn-btn--inteligencia" onClick={() => onNavigate("preciosHistoricos")}>
-              💡 Inteligencia Comercial
-            </button>
-            <button className="tn-btn tn-btn--ghost" onClick={() => bacFileRef.current?.click()}>⬆ Subir comparativa BAC</button>
-            <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
+
+            <div className="tn-toolbar">
+              {/* Grupo datos */}
+              <div className="tn-toolbar__group">
+                <button className="tn-tbar-btn" onClick={exportToExcel} title={selected.size>0?`Exportar ${selected.size} seleccionadas`:`Exportar ${filtered.length} licitaciones`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>{selected.size > 0 ? `Excel (${selected.size})` : "Excel"}</span>
+                </button>
+                <button className="tn-tbar-btn" onClick={loadTenders} title="Recargar datos">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  <span>Actualizar</span>
+                </button>
+              </div>
+
+              <div className="tn-toolbar__sep"/>
+
+              {/* Grupo inteligencia / BAC */}
+              <div className="tn-toolbar__group">
+                <button className="tn-tbar-btn tn-tbar-btn--intel" onClick={() => onNavigate("preciosHistoricos")}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  <span>Inteligencia</span>
+                </button>
+                <button className="tn-tbar-btn" onClick={() => bacFileRef.current?.click()}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Importar BAC</span>
+                </button>
+              </div>
+
+              <div className="tn-toolbar__sep"/>
+
+              {/* CTA principal */}
+              <button className="tn-tbar-btn tn-tbar-btn--primary" onClick={openNew}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Nueva licitación</span>
+              </button>
+            </div>
           </div>
         </div>
 
