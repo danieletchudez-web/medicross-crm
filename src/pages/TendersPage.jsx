@@ -1399,7 +1399,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
           {/* TAB DATOS */}
           <div style={{display:activeTab==="datos"?"":"none"}}>
             <div className="tn-form-section">
-              <p className="tn-form-section__title">📋 Identificación</p>
+              <p className="tn-form-section__title"><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,background:"#185fa5",color:"#fff",borderRadius:"50%",fontSize:10,fontWeight:800,flexShrink:0,marginRight:4}}>1</span> Identificación</p>
               <div className="tn-form-grid">
                 <div className="tn-field"><label>Jurisdicción</label><input value={form.jurisdiction} onChange={e=>setF("jurisdiction",e.target.value)} placeholder="EJ: CABA, PBA, CÓRDOBA"/></div>
                 <div className="tn-field"><label>Hospital / Institución *</label><input value={form.institution} onChange={e=>setF("institution",e.target.value)} placeholder="NOMBRE DEL HOSPITAL O ENTE"/></div>
@@ -1417,7 +1417,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               </div>
             </div>
             <div className="tn-form-section">
-              <p className="tn-form-section__title">📅 Fechas clave</p>
+              <p className="tn-form-section__title"><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,background:"#185fa5",color:"#fff",borderRadius:"50%",fontSize:10,fontWeight:800,flexShrink:0,marginRight:4}}>2</span> Fechas clave</p>
               <div className="tn-form-grid tn-form-grid--3">
                 <div className="tn-field"><label>Fecha de detección</label><input type="date" value={form.detection_date} onChange={e=>setF("detection_date",e.target.value)}/><span className="tn-field__hint">Cuándo detectamos la oportunidad</span></div>
                 <div className="tn-field"><label>Fecha de vencimiento / apertura</label><input type="date" value={form.end_date} onChange={e=>setF("end_date",e.target.value)}/><span className="tn-field__hint">Vencimiento para presentar oferta</span></div>
@@ -1425,7 +1425,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               </div>
             </div>
             <div className="tn-form-section">
-              <p className="tn-form-section__title">⚙️ Estado y seguimiento</p>
+              <p className="tn-form-section__title"><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,background:"#185fa5",color:"#fff",borderRadius:"50%",fontSize:10,fontWeight:800,flexShrink:0,marginRight:4}}>3</span> Estado y seguimiento</p>
               <div className="tn-form-grid tn-form-grid--3">
                 <div className="tn-field"><label>Estado operativo</label><select value={form.operational_status} onChange={e=>setForm(p=>({...p,operational_status:e.target.value}))} style={{fontWeight:700}}>{ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                 <div className="tn-field"><label>Prioridad</label><select value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>{PRIORIDADES.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
@@ -1436,7 +1436,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               </div>
             </div>
             <div className="tn-form-section">
-              <p className="tn-form-section__title">💰 Económico</p>
+              <p className="tn-form-section__title"><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,background:"#185fa5",color:"#fff",borderRadius:"50%",fontSize:10,fontWeight:800,flexShrink:0,marginRight:4}}>4</span> Económico</p>
               <div className="tn-form-grid tn-form-grid--3">
                 <div className="tn-field"><label>Monto estimado / OC ($)</label><input type="number" value={form.purchase_order_amount} onChange={e=>setF("purchase_order_amount",e.target.value)} placeholder="0" min="0"/></div>
                 <div className="tn-field"><label>Link / Portal de licitación</label><input value={form.portal_link} onChange={e=>setForm(p=>({...p,portal_link:e.target.value}))} placeholder="https://…"/></div>
@@ -1444,7 +1444,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               </div>
             </div>
             <div className="tn-form-section">
-              <p className="tn-form-section__title">🧾 Orden de compra</p>
+              <p className="tn-form-section__title"><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,background:"#185fa5",color:"#fff",borderRadius:"50%",fontSize:10,fontWeight:800,flexShrink:0,marginRight:4}}>5</span> Orden de compra</p>
               <div className="tn-form-grid tn-form-grid--3">
                 <div className="tn-field"><label>N° de OC</label><input value={form.purchase_order_number} onChange={e=>setF("purchase_order_number",e.target.value)} placeholder="EJ: OC-2026-001"/></div>
                 <div className="tn-field"><label>Fecha de OC</label><input type="date" value={form.purchase_order_date} onChange={e=>setF("purchase_order_date",e.target.value)}/></div>
@@ -1458,7 +1458,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               </div>
             </div>
             <div className="tn-form-section">
-              <p className="tn-form-section__title">📝 Observaciones</p>
+              <p className="tn-form-section__title"><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:18,height:18,background:"#185fa5",color:"#fff",borderRadius:"50%",fontSize:10,fontWeight:800,flexShrink:0,marginRight:4}}>6</span> Observaciones</p>
               <div className="tn-field"><textarea value={form.notes} onChange={e=>setF("notes",e.target.value)} rows={3} placeholder="NOTAS, HISTORIAL DE SEGUIMIENTO, ESTRATEGIA, COMENTARIOS…"/></div>
             </div>
             {editData && (
