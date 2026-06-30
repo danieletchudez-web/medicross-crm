@@ -1526,6 +1526,156 @@ function TenderIntelligencePanel({ form }) {
   );
 }
 
+/* ─── MODAL VINCULAR COTIZACIÓN ────────────────────────────────────── */
+function CotizadorLinkModal({ tender, onClose, onNavigate, onLink, onUnlink }) {
+  const [search,  setSearch]  = useState("");
+  const [quotes,  setQuotes]  = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [linking, setLinking] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("cotizaciones")
+        .select("id,quote_num_formatted,quote_number,institucion,total_general,estado,created_at")
+        .eq("deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(150);
+      setQuotes(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return quotes;
+    const q = search.toLowerCase();
+    return quotes.filter(c =>
+      (c.quote_num_formatted || c.quote_number || "").toString().toLowerCase().includes(q) ||
+      (c.institucion || "").toLowerCase().includes(q)
+    );
+  }, [quotes, search]);
+
+  const linkedQuote = tender.linked_quote_id ? quotes.find(q => q.id === tender.linked_quote_id) : null;
+
+  const moneyFmt = v => {
+    const n = Number(v || 0);
+    return n ? "$" + n.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "—";
+  };
+
+  const estadoStyle = e => {
+    const map = { vigente:"#059669", vencida:"#dc2626", enviada:"#1d4ed8", "en preparación":"#d97706" };
+    const c = map[e] || "#64748b";
+    return { background: c + "18", color: c, border: `1px solid ${c}30`, fontSize: 10.5, padding: "2px 7px", borderRadius: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".3px" };
+  };
+
+  async function handleLink(q) {
+    setLinking(q.id);
+    await onLink(tender.id, q.id, q.quote_num_formatted || q.quote_number || "?");
+    setLinking(null);
+    onClose();
+  }
+
+  function handleNew() {
+    onNavigate("cotizador", {
+      tenderId: tender.id || null,
+      institucion: tender.institution || "",
+      nroLicit: tender.process_number || "",
+      fechaApert: tender.detection_date || tender.end_date || "",
+      vendedor: tender.internal_owner || "",
+    });
+    onClose();
+  }
+
+  function handleOpen(q) {
+    onNavigate("cotizador", {
+      tenderId: tender.id || null,
+      quoteId: q.id,
+      institucion: tender.institution || "",
+      nroLicit: tender.process_number || "",
+    });
+    onClose();
+  }
+
+  return (
+    <div className="tn-overlay" style={{zIndex:10001}} onClick={e=>{if(e.target.classList.contains("tn-overlay"))onClose();}}>
+      <div className="tn-modal" style={{maxWidth:560}}>
+        <div className="tn-modal__header">
+          <div>
+            <h3>Cotización de licitación</h3>
+            <span style={{fontSize:11.5,color:"#94a3b8"}}>{tender.institution||"Licitación"}{tender.process_number?` · ${tender.process_number}`:""}</span>
+          </div>
+          <button className="tn-modal__close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="tn-modal__body" style={{display:"flex",flexDirection:"column",gap:14}}>
+
+          {/* Vinculada actualmente */}
+          {tender.linked_quote_id && (
+            <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:13,color:"#15803d"}}>
+                  Cotización vinculada{linkedQuote?` — #${linkedQuote.quote_num_formatted||linkedQuote.quote_number||"?"}`:loading?" (cargando…)":" (no encontrada)"}
+                </div>
+                {linkedQuote&&<div style={{fontSize:11.5,color:"#166534",marginTop:2}}>{linkedQuote.institucion||"—"} · {moneyFmt(linkedQuote.total_general)}</div>}
+              </div>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {linkedQuote&&<button className="tn-btn tn-btn--success tn-btn--sm" onClick={()=>handleOpen(linkedQuote)}>Abrir →</button>}
+                <button className="tn-btn tn-btn--danger tn-btn--sm" onClick={()=>{onUnlink(tender.id);onClose();}}>Desvincular</button>
+              </div>
+            </div>
+          )}
+
+          {/* Nueva cotización */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"12px 14px"}}>
+            <div>
+              <div style={{fontWeight:600,fontSize:13,color:"#0f172a"}}>Nueva cotización</div>
+              <div style={{fontSize:11.5,color:"#64748b"}}>Crea una nueva con los datos de esta licitación pre-cargados</div>
+            </div>
+            <button className="tn-btn tn-btn--primary" onClick={handleNew}>+ Nueva</button>
+          </div>
+
+          {/* Buscar existente */}
+          <div>
+            <div style={{fontWeight:600,fontSize:11,color:"#64748b",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Vincular cotización existente</div>
+            <input
+              style={{width:"100%",marginBottom:10}}
+              placeholder="Buscar por número o institución…"
+              value={search}
+              onChange={e=>setSearch(e.target.value)}
+              autoFocus
+            />
+            <div style={{maxHeight:250,overflowY:"auto",border:"1px solid #e2e8f0",borderRadius:8}}>
+              {loading ? (
+                <div style={{padding:"24px",textAlign:"center",color:"#94a3b8",fontSize:13}}>Cargando cotizaciones…</div>
+              ) : filtered.length === 0 ? (
+                <div style={{padding:"24px",textAlign:"center",color:"#94a3b8",fontSize:13}}>Sin resultados</div>
+              ) : filtered.map(q => (
+                <div key={q.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderBottom:"1px solid #f1f5f9",background:q.id===tender.linked_quote_id?"#f0fdf4":""}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:12.5,color:"#0f172a"}}>#{q.quote_num_formatted||q.quote_number||"?"}</div>
+                    <div style={{fontSize:11.5,color:"#64748b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{q.institucion||"—"} · {moneyFmt(q.total_general)}</div>
+                  </div>
+                  {q.estado&&<span style={estadoStyle(q.estado)}>{q.estado}</span>}
+                  {q.id===tender.linked_quote_id ? (
+                    <span style={{fontSize:11.5,color:"#059669",fontWeight:700}}>✓ Vinculada</span>
+                  ) : (
+                    <button className="tn-btn tn-btn--success tn-btn--sm" onClick={()=>handleLink(q)} disabled={linking===q.id}>
+                      {linking===q.id?"…":"Vincular"}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── MODAL LICITACIÓN ─────────────────────────────────────────────── */
 function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTab,
   saving, onClose, onSave, onDelete, onCotizador }) {
@@ -1553,7 +1703,11 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             {editData && <span className={`tn-badge tn-badge--${statusBadge(form.operational_status)}`} style={{fontSize:11,padding:"3px 10px"}}>{form.operational_status}</span>}
-            {editData && <button type="button" className="tn-btn tn-btn--success tn-btn--sm" onClick={e=>onCotizador(editData,e)}>📊 Crear cotización</button>}
+            {editData && (
+              <button type="button" className="tn-btn tn-btn--success tn-btn--sm" onClick={e=>onCotizador(editData,e)}>
+                {editData.linked_quote_id ? "📊 Ver cotización" : "📊 Cotización"}
+              </button>
+            )}
             {editData && <button type="button" className="tn-btn tn-btn--danger tn-btn--sm" onClick={e=>onDelete(editData.id,e)}>🗑 Eliminar</button>}
             <button className="tn-modal__close" onClick={()=>onClose()}>✕</button>
           </div>
@@ -1649,12 +1803,18 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
             </div>
             {editData && (
               <div className="tn-cotizador-link">
-                <span className="tn-cotizador-link__icon">📊</span>
-                <div className="tn-cotizador-link__info">
-                  <div className="tn-cotizador-link__title">Cotizador MediCross</div>
-                  <div className="tn-cotizador-link__sub">{editData.linked_quote_id ? "Esta licitación ya tiene una cotización vinculada" : "Abre el cotizador con los datos de esta licitación pre-cargados"}</div>
+                <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+                  <span className="tn-cotizador-link__icon">{editData.linked_quote_id ? "🔗" : "📊"}</span>
+                  <div className="tn-cotizador-link__info">
+                    <div className="tn-cotizador-link__title">Cotización</div>
+                    <div className="tn-cotizador-link__sub">
+                      {editData.linked_quote_id ? "Tiene una cotización vinculada a esta licitación" : "Sin cotización vinculada aún"}
+                    </div>
+                  </div>
                 </div>
-                <button className="tn-btn tn-btn--success" onClick={e=>onCotizador(editData,e)}>{editData.linked_quote_id ? "Abrir cotización →" : "Crear cotización →"}</button>
+                <button className="tn-btn tn-btn--success" onClick={e=>onCotizador(editData,e)}>
+                  {editData.linked_quote_id ? "Gestionar cotización →" : "Vincular / Crear →"}
+                </button>
               </div>
             )}
           </div>
@@ -1755,8 +1915,10 @@ export default function TendersPage({ profile, onNavigate }) {
   const [showQuick,    setShowQuick]    = useState(false);
   const [quickForm,    setQuickForm]    = useState({...EMPTY_QUICK_TENDER});
   const [viewMode,     setViewMode]     = useState("all");
-  const [bacPreview,   setBacPreview]   = useState(null);
-  const [bacSaving,    setBacSaving]    = useState(false);
+  const [bacPreview,       setBacPreview]       = useState(null);
+  const [bacSaving,        setBacSaving]        = useState(false);
+  const [showCotizLink,    setShowCotizLink]    = useState(false);
+  const [cotizLinkTender,  setCotizLinkTender]  = useState(null);
   const [dismissedAlerts, setDismissedAlerts] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("tn_dismissed_alerts") || "{}");
@@ -2168,12 +2330,31 @@ export default function TendersPage({ profile, onNavigate }) {
 
     XLSX.writeFile(wb, `licitaciones_${today()}.xlsx`);
   }
-  async function abrirCotizador(t, e) {
+  function abrirCotizador(t, e) {
     e?.stopPropagation();
-    const src=t||{id:editData?.id,institution:form.institution,process_number:form.process_number,detection_date:form.detection_date,end_date:form.end_date,internal_owner:form.internal_owner};
-    if (src?.id) await logEvent(src.id,"cotizador","Cotización iniciada desde Licitaciones",null,null);
-    onNavigate("cotizador",{tenderId:src.id||null,quoteId:src.linked_quote_id||null,institucion:src.institution||"",nroLicit:src.process_number||"",fechaApert:src.detection_date||src.end_date||"",vendedor:src.internal_owner||""});
-    setShowForm(false);
+    const src = t || { id:editData?.id, institution:form.institution, process_number:form.process_number, detection_date:form.detection_date, end_date:form.end_date, internal_owner:form.internal_owner, linked_quote_id:editData?.linked_quote_id };
+    setCotizLinkTender(src);
+    setShowCotizLink(true);
+  }
+
+  async function linkQuoteTender(tenderId, quoteId, quoteNum) {
+    const { error } = await supabase.from("tenders").update({ linked_quote_id:quoteId, updated_at:new Date().toISOString() }).eq("id", tenderId);
+    if (!error) {
+      setTenders(prev => prev.map(t => t.id===tenderId ? {...t, linked_quote_id:quoteId} : t));
+      if (editData?.id===tenderId) setEditData(prev => ({...prev, linked_quote_id:quoteId}));
+      await logEvent(tenderId,"link_quote",`Cotización #${quoteNum} vinculada`,null,quoteId);
+      showToast(`Cotización #${quoteNum} vinculada ✓`);
+    }
+  }
+
+  async function unlinkQuoteTender(tenderId) {
+    const { error } = await supabase.from("tenders").update({ linked_quote_id:null, updated_at:new Date().toISOString() }).eq("id", tenderId);
+    if (!error) {
+      setTenders(prev => prev.map(t => t.id===tenderId ? {...t, linked_quote_id:null} : t));
+      if (editData?.id===tenderId) setEditData(prev => ({...prev, linked_quote_id:null}));
+      await logEvent(tenderId,"unlink_quote","Cotización desvinculada",null,null);
+      showToast("Cotización desvinculada");
+    }
   }
 
   function renderCell(col, t) {
@@ -2526,6 +2707,15 @@ export default function TendersPage({ profile, onNavigate }) {
         onClose={() => setBacPreview(null)}
         onConfirm={confirmBacImport}
       />
+      {showCotizLink && cotizLinkTender && (
+        <CotizadorLinkModal
+          tender={cotizLinkTender}
+          onClose={() => { setShowCotizLink(false); setCotizLinkTender(null); }}
+          onNavigate={onNavigate}
+          onLink={linkQuoteTender}
+          onUnlink={unlinkQuoteTender}
+        />
+      )}
     </Layout>
   );
 }
