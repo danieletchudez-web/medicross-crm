@@ -1401,23 +1401,34 @@ function BacImportModal({ preview, setPreview, saving, onClose, onConfirm }) {
 
 /* ─── PANEL INTELIGENCIA COMERCIAL ─────────────────────────────────── */
 function TenderIntelligencePanel({ form }) {
-  const rawLine    = (form.product_line||form.requesting_sector||"").trim();
-  // "Hemodinamia — Introductores" → search only "Introductores" against descripcion
-  const keyword    = rawLine.includes(" — ") ? rawLine.split(" — ")[1].trim() : rawLine;
+  const rawLine     = (form.product_line||form.requesting_sector||"").trim();
   const displayLine = rawLine;
+  // Extract the family name from "Unit — Family" format
+  const family      = rawLine.includes(" — ") ? rawLine.split(" — ")[1].trim() : rawLine;
   const institution = (form.institution||"").trim();
   const [intel, setIntel] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!keyword) { setIntel(null); return; }
+    if (!family) { setIntel(null); return; }
     let cancelled = false;
     setLoading(true);
     (async () => {
+      // Normalize: strip accents, lowercase, split into stems of 6 chars
+      // This lets "Catéteres de Ablación" match "CATETER DE ABLACION" in DB
+      const STOP = new Set(["de","la","el","los","las","y","para","en","con","del","por","a"]);
+      const norm  = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+      const stems = norm(family).split(/\s+/)
+        .filter(w => w.length > 3 && !STOP.has(w))
+        .map(w => w.slice(0, Math.min(6, w.length)));
+      const orFilter = stems.length
+        ? stems.map(s => `descripcion.ilike.%${s}%`).join(",")
+        : `descripcion.ilike.%${norm(family).slice(0,6)}%`;
+
       const { data } = await supabase
         .from("tender_comparativas")
         .select("id,descripcion,empresa,es_nuestra_oferta,precio_unitario,adjudicado,tender_id,tenders:tender_id(id,institution,end_date,resultado)")
-        .ilike("descripcion", `%${keyword}%`)
+        .or(orFilter)
         .limit(500);
       if (cancelled) return;
       const rows = data || [];
@@ -1443,7 +1454,7 @@ function TenderIntelligencePanel({ form }) {
       setLoading(false);
     })();
     return () => { cancelled=true; };
-  }, [keyword, institution]);
+  }, [family, institution]);
 
   if (!keyword) return (
     <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>
