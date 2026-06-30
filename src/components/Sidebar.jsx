@@ -14,7 +14,6 @@ import {
   Clock3,
   FileText,
   Handshake,
-  Layers,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -46,9 +45,8 @@ const MENU_SECTIONS = [
       { id: "accounts",      label: "Clientes / Cuentas",    icon: Building2 },
       { id: "products",      label: "Productos / Share Kit", icon: PackageOpen },
       { id: "suppliers",     label: "Proveedores",           icon: Truck },
-      { id: "opportunities",  label: "Oportunidades",         icon: Target },
+      { id: "opportunities", label: "Oportunidades",         icon: Target },
       { id: "campaigns",     label: "Campañas",              icon: Megaphone },
-      { id: "businessUnits", label: "Unidades de Negocio",   icon: Layers },
     ],
   },
   {
