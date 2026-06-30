@@ -1789,20 +1789,22 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
             </p>
           </div>
           <div className="ph-header-actions">
+            <button className="ph-back-button" type="button" onClick={() => onNavigate("tenders")}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+              <span>Licitaciones</span>
+            </button>
             {canImportBac && (
               <>
+                <div className="ph-toolbar__sep"/>
                 <button className="ph-import-bac" type="button"
                   onClick={() => bacFileRef.current?.click()} disabled={bacImporting}>
-                  <Upload size={15}/>
-                  {bacImporting ? "Leyendo archivo…" : "Subir comparativa BAC"}
+                  <Upload size={14}/>
+                  <span>{bacImporting ? "Leyendo archivo…" : "Subir comparativa BAC"}</span>
                 </button>
                 <input ref={bacFileRef} type="file" accept=".xlsx,.xls"
                   onChange={handleBacFile} style={{display:"none"}}/>
               </>
             )}
-            <button className="ph-back-button" type="button" onClick={() => onNavigate("tenders")}>
-              ← Volver a Licitaciones
-            </button>
           </div>
         </div>
 
