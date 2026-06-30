@@ -20,7 +20,7 @@ const BUCKET       = "tenders-docs";
 
 /* ─── Helpers de inteligencia ──────────────────────────────────────── */
 const OWN_INTEL_ALIASES = ["MEDI-CROSS","MEDICROSS","STORING INSUMOS MEDICOS"];
-function normalizeIntel(v){return String(v||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim();}
+function normalizeIntel(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim();}
 function isOwnIntel(row){return Boolean(row?.es_nuestra_oferta)||OWN_INTEL_ALIASES.some(a=>normalizeIntel(row?.empresa).includes(normalizeIntel(a)));}
 function priceIntel(row){const n=Number(row?.precio_unitario);return Number.isFinite(n)&&n>=1?n:null;}
 function moneyIntel(v){const n=Number(v||0);return n?"$"+n.toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:0}):"—";}
@@ -153,10 +153,10 @@ function InstitutionCombobox({ value, onChange }) {
     onChange(val);
     if (val.length < 3) { setResults([]); setOpen(false); return; }
     const data = await loadInstituciones();
-    const q = val.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+    const q = val.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
     const hits = data.filter(r =>
-      r.n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").includes(q) ||
-      r.l.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").includes(q)
+      r.n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(q) ||
+      r.l.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(q)
     ).slice(0, 40);
     setResults(hits);
     setOpen(hits.length > 0);
@@ -1417,7 +1417,7 @@ function TenderIntelligencePanel({ form }) {
       // Normalize: strip accents, lowercase, split into stems of 6 chars
       // This lets "Catéteres de Ablación" match "CATETER DE ABLACION" in DB
       const STOP = new Set(["de","la","el","los","las","y","para","en","con","del","por","a"]);
-      const norm  = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+      const norm  = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
       const stems = norm(family).split(/\s+/)
         .filter(w => w.length > 3 && !STOP.has(w))
         .map(w => w.slice(0, Math.min(6, w.length)));
@@ -2325,8 +2325,7 @@ export default function TendersPage({ profile, onNavigate }) {
               💡 Inteligencia Comercial
             </button>
             <button className="tn-btn tn-btn--ghost" onClick={() => bacFileRef.current?.click()}>⬆ Subir comparativa BAC</button>
-            <button className="tn-btn tn-btn--ghost" onClick={openQuick}>⚡ Carga rápida</button>
-            <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Formulario completo</button>
+            <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
           </div>
         </div>
 
@@ -2336,7 +2335,7 @@ export default function TendersPage({ profile, onNavigate }) {
             <h3>Cargar menos, decidir antes</h3>
             <p>Registrá procesos en borrador, completá sólo los campos críticos y usá comparativas BAC como base de inteligencia.</p>
             <div className="tn-workbench-actions">
-              <button className="tn-btn tn-btn--primary" onClick={openQuick}>⚡ Carga rápida</button>
+              <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
               <button className="tn-btn" onClick={() => bacFileRef.current?.click()}>⬆ Importar BAC</button>
             </div>
           </div>
