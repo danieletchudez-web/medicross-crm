@@ -1569,15 +1569,14 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
           <div style={{display:activeTab==="datos"?"":"none"}}>
             <div className="tn-form-section">
               <p className="tn-form-section__title"><span className="tn-step-badge">1</span> Identificación</p>
-              <div className="tn-form-grid">
-                <div className="tn-field"><label>Jurisdicción</label><input value={form.jurisdiction} onChange={e=>setF("jurisdiction",e.target.value)} placeholder="EJ: CABA, PBA, CÓRDOBA"/></div>
-                <div className="tn-field"><label>Tipo de proceso</label><select value={form.process_type} onChange={e=>setForm(p=>({...p,process_type:e.target.value}))}><option value="">— Seleccioná —</option><option>Licitación Pública</option><option>Licitación Privada</option><option>Concurso Privado</option><option>Contratación Directa</option><option>Comparativa BAC</option></select></div>
-              </div>
               <div className="tn-form-grid tn-form-grid--1">
                 <div className="tn-field"><label>Hospital / Institución *</label><InstitutionCombobox value={form.institution} onChange={v=>setF("institution",v)}/></div>
               </div>
-              <div className="tn-form-grid tn-form-grid--3">
+              <div className="tn-form-grid">
+                <div className="tn-field"><label>Tipo de proceso</label><select value={form.process_type} onChange={e=>setForm(p=>({...p,process_type:e.target.value}))}><option value="">— Seleccioná —</option><option>Licitación Pública</option><option>Licitación Privada</option><option>Concurso Privado</option><option>Contratación Directa</option><option>Comparativa BAC</option></select></div>
                 <div className="tn-field"><label>N° de proceso</label><input value={form.process_number} onChange={e=>setF("process_number",e.target.value)} placeholder="EJ: LP 001/2026"/></div>
+              </div>
+              <div className="tn-form-grid">
                 <div className="tn-field"><label>N° de expediente</label><input value={form.expedient_number} onChange={e=>setF("expedient_number",e.target.value)} placeholder="EJ: EX-2026-12345"/></div>
                 <div className="tn-field"><label>Tipo</label><select value={form.tender_type} onChange={e=>setForm(p=>({...p,tender_type:e.target.value}))}>{TENDER_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
               </div>
