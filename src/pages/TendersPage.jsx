@@ -1456,7 +1456,7 @@ function TenderIntelligencePanel({ form }) {
     return () => { cancelled=true; };
   }, [family, institution]);
 
-  if (!keyword) return (
+  if (!family) return (
     <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>
       Ingresá la <strong>Línea de producto</strong> en el tab Datos para ver inteligencia comercial.
     </div>
