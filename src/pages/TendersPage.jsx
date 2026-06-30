@@ -2136,7 +2136,7 @@ export default function TendersPage({ profile, onNavigate }) {
             </button>
             <button className="tn-btn tn-btn--refresh" onClick={loadTenders} title="Actualizar">↻</button>
             <button className="tn-btn tn-btn--ghost tn-btn--inteligencia" onClick={() => onNavigate("preciosHistoricos")}>
-              📈 Inteligencia de precios
+              💡 Inteligencia Comercial
             </button>
             <button className="tn-btn tn-btn--ghost" onClick={() => bacFileRef.current?.click()}>⬆ Subir comparativa BAC</button>
             <button className="tn-btn tn-btn--ghost" onClick={openQuick}>⚡ Carga rápida</button>
