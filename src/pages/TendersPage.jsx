@@ -90,6 +90,7 @@ function ProductLineCombobox({ value, onChange }) {
   return (
     <div style={{position:"relative",width:"100%"}} ref={wrapRef}>
       <input
+        style={{width:"100%"}}
         value={query}
         onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
         onFocus={() => { if (query.length >= 3) setOpen(true); }}
@@ -170,6 +171,7 @@ function InstitutionCombobox({ value, onChange }) {
   return (
     <div style={{position:"relative",width:"100%"}} ref={wrapRef}>
       <input
+        style={{width:"100%"}}
         value={query}
         onChange={e => handleChange(e.target.value)}
         onFocus={() => { if (results.length > 0) setOpen(true); }}
