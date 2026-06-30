@@ -46,7 +46,12 @@
   display: inline-block; width: 4px; height: 22px;
   background: #185fa5; border-radius: 4px; flex-shrink: 0;
 }
-.cot-header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cot-header-actions {
+  display: flex; align-items: center; gap: 2px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  padding: 4px; box-shadow: 0 1px 4px rgba(15,23,42,.06);
+}
+.cot-toolbar__sep { width: 1px; height: 22px; background: #e2e8f0; margin: 0 5px; flex-shrink: 0; }
 
 .cot-quote-badge {
   display: inline-flex; align-items: center; gap: 6px;
@@ -58,24 +63,24 @@
 
 /* ── Botones ── */
 .cot-btn {
-  padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
-  font-family: inherit; cursor: pointer; border: 1px solid rgba(15,36,68,.14);
-  background: #fff; color: #334155;
-  transition: background .15s, box-shadow .15s, transform .1s;
-  white-space: nowrap;
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border: none; background: transparent; border-radius: 8px;
+  cursor: pointer; white-space: nowrap; font-size: 12px; font-weight: 500;
+  font-family: inherit; color: #475569;
+  transition: background .12s, color .12s, box-shadow .12s;
 }
-.cot-btn:hover  { background: #f1f5f9; }
-.cot-btn:active { transform: scale(.98); }
-.cot-btn--primary { background: #0f2444; color: #fff; border-color: #0f2444; }
-.cot-btn--primary:hover { background: #1a3a6b; box-shadow: 0 2px 8px rgba(15,36,68,.25); }
-.cot-btn--success { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-.cot-btn--success:hover { background: #d1fae5; }
-.cot-btn--ghost { border-color: transparent; background: transparent; color: #64748b; }
-.cot-btn--ghost:hover { background: #f1f5f9; border-color: rgba(15,36,68,.12); color: #334155; }
-.cot-btn--danger { color: #dc2626; border-color: #fecaca; background: #fff; }
-.cot-btn--danger:hover { background: #fef2f2; }
-.cot-btn--sm { padding: 4px 10px; font-size: 11.5px; border-radius: 6px; }
+.cot-btn:hover  { background: #f1f5f9; color: #0f172a; }
+.cot-btn:active { opacity: .85; }
+.cot-btn--primary { background: #0f2444; color: #fff; font-weight: 600; padding: 6px 14px; }
+.cot-btn--primary:hover { background: #1a3a6b; box-shadow: 0 2px 8px rgba(15,36,68,.25); color: #fff; }
+.cot-btn--primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.cot-btn--success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.cot-btn--success:hover { background: #d1fae5; color: #047857; }
+.cot-btn--ghost { color: #475569; }
+.cot-btn--danger { color: #dc2626; }
+.cot-btn--danger:hover { background: #fef2f2; color: #b91c1c; }
+.cot-btn--sm { padding: 4px 10px; font-size: 11.5px; border-radius: 6px; border: 1px solid rgba(15,36,68,.14); background: #fff; color: #334155; }
+.cot-btn--sm:hover { background: #f1f5f9; }
 
 /* ── Card / sección ── */
 .cot-card {

@@ -845,13 +845,32 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
             </h2>
           </div>
           <div className="cot-header-actions">
-            <button className="cot-btn cot-btn--ghost" onClick={()=>onNavigate("tenders")}>← Licitaciones</button>
-            <button className="cot-btn cot-btn--ghost" onClick={abrirHistorial}>📋 Historial</button>
-            <button className="cot-btn cot-btn--ghost" onClick={abrirPapelera} style={{color:"#dc2626"}}>🗑 Papelera</button>
-            <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>+ Nueva</button>
-            <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>⬇ PDF</button>
+            <button className="cot-btn cot-btn--ghost" onClick={()=>onNavigate("tenders")}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+              <span>Licitaciones</span>
+            </button>
+            <button className="cot-btn cot-btn--ghost" onClick={abrirHistorial}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+              <span>Historial</span>
+            </button>
+            <div className="cot-toolbar__sep"/>
+            <button className="cot-btn cot-btn--danger" onClick={abrirPapelera}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              <span>Papelera</span>
+            </button>
+            <div className="cot-toolbar__sep"/>
+            <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Nueva</span>
+            </button>
+            <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>PDF</span>
+            </button>
+            <div className="cot-toolbar__sep"/>
             <button className="cot-btn cot-btn--primary" onClick={guardar} disabled={saving || !hasMeaningfulQuoteData} title={!hasMeaningfulQuoteData ? "Completá al menos un dato antes de guardar" : "Guardar cotización"}>
-              {saving?"Guardando…":"💾 Guardar"}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>{saving ? "Guardando…" : "Guardar"}</span>
             </button>
           </div>
         </div>
