@@ -41,6 +41,13 @@ function operationalStatusFromResult(form) {
   return current;
 }
 
+const EVAL_STATUS_LABELS = {
+  sin_asignar:    "Sin asignar",
+  en_evaluacion:  "En evaluación",
+  aceptada:       "Aceptada",
+  rechazada:      "Rechazada",
+};
+
 const EMPTY_FORM = {
   jurisdiction:"", institution:"", process_type:"", process_number:"",
   tender_type:"Original", process_name:"", expedient_number:"",
@@ -54,6 +61,7 @@ const EMPTY_FORM = {
   billing_status:"Pendiente", delivery_status:"Pendiente",
   priority:"Media", portal_link:"", notes:"",
   resultado:"", monto_adjudicado:"", motivo_perdida:"", competitor_winner:"",
+  business_unit_id:"", eval_status:"sin_asignar",
 };
 
 const EMPTY_COMPETITOR = { name:"", price:"", notes:"" };
@@ -279,6 +287,7 @@ const COLS = [
   { key:"monto_adjudicado",     label:"Adj. final",      w:120 },
   { key:"internal_owner",       label:"Responsable",     w:120 },
   { key:"product_line",         label:"Línea prod.",     w:120 },
+  { key:"eval_status",          label:"Evaluación",      w:115 },
   { key:"next_action",          label:"Próxima acción",  w:180 },
   { key:"next_action_date",     label:"Fecha acción",    w:100 },
   { key:"documentation_status", label:"Doc.",            w:100 },
@@ -1224,7 +1233,7 @@ function BacImportModal({ preview, setPreview, saving, onClose, onConfirm }) {
 
 /* ─── MODAL LICITACIÓN ─────────────────────────────────────────────── */
 function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTab,
-  saving, onClose, onSave, onDelete, onCotizador }) {
+  saving, onClose, onSave, onDelete, onCotizador, businessUnits }) {
 
   if (!showForm) return null;
 
@@ -1235,6 +1244,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
       "detection_date","start_date","end_date","next_action_date","purchase_order_date",
       "resultado","motivo_perdida","competitor_winner","notes",
       "documentation_pending_detail","next_action","process_name",
+      "eval_status","business_unit_id",
     ];
     setForm(prev => ({...prev, [k]: typeof v==="string" && !NO_UPPER.includes(k) ? v.toUpperCase() : v}));
   }
@@ -1292,6 +1302,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               <div className="tn-form-grid">
                 <div className="tn-field"><label>Sector solicitante</label><input value={form.requesting_sector} onChange={e=>setF("requesting_sector",e.target.value)} placeholder="EJ: QUIRÓFANO, UTI"/></div>
                 <div className="tn-field"><label>Línea de producto</label><input value={form.product_line} onChange={e=>setF("product_line",e.target.value)} placeholder="EJ: FILTROS, APHERESIS"/></div>
+                <div className="tn-field"><label>Unidad de negocio</label><select value={form.business_unit_id} onChange={e=>setForm(p=>({...p,business_unit_id:e.target.value}))}><option value="">Sin asignar</option>{businessUnits.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></div>
               </div>
             </div>
             <div className="tn-form-section">
@@ -1307,6 +1318,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               <div className="tn-form-grid tn-form-grid--3">
                 <div className="tn-field"><label>Estado operativo</label><select value={form.operational_status} onChange={e=>setForm(p=>({...p,operational_status:e.target.value}))} style={{fontWeight:700}}>{ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                 <div className="tn-field"><label>Prioridad</label><select value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>{PRIORIDADES.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+                <div className="tn-field"><label>Estado evaluación</label><select value={form.eval_status} onChange={e=>setForm(p=>({...p,eval_status:e.target.value}))}>{Object.entries(EVAL_STATUS_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
                 <div className="tn-field"><label>Responsable interno</label><input value={form.internal_owner} onChange={e=>setF("internal_owner",e.target.value)} placeholder="NOMBRE DEL RESPONSABLE"/></div>
                 <div className="tn-field"><label>Próxima acción</label><input value={form.next_action} onChange={e=>setF("next_action",e.target.value)} placeholder="EJ: PREPARAR COTIZACIÓN, PEDIR PLIEGO"/></div>
                 <div className="tn-field"><label>Fecha próxima acción</label><input type="date" value={form.next_action_date} onChange={e=>setF("next_action_date",e.target.value)}/></div>
@@ -1437,7 +1449,8 @@ export default function TendersPage({ profile, onNavigate }) {
   const [quickForm,    setQuickForm]    = useState({...EMPTY_QUICK_TENDER});
   const [viewMode,     setViewMode]     = useState("all");
   const [bacPreview,   setBacPreview]   = useState(null);
-  const [bacSaving,    setBacSaving]    = useState(false);
+  const [bacSaving,      setBacSaving]      = useState(false);
+  const [businessUnits,  setBusinessUnits]  = useState([]);
   const [dismissedAlerts, setDismissedAlerts] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("tn_dismissed_alerts") || "{}");
@@ -1449,7 +1462,12 @@ export default function TendersPage({ profile, onNavigate }) {
   const prevStatusRef = useRef(null);
   const bacFileRef = useRef(null);
 
-  useEffect(() => { loadTenders(); }, []);
+  useEffect(() => { loadTenders(); loadBusinessUnits(); }, []);
+
+  async function loadBusinessUnits() {
+    const { data } = await supabase.from("business_units").select("id, name, color").eq("is_active", true).order("name");
+    setBusinessUnits(data || []);
+  }
 
   async function loadTenders() {
     setLoading(true);
@@ -1718,6 +1736,7 @@ export default function TendersPage({ profile, onNavigate }) {
       notes:t.notes||"",resultado:t.resultado||"",
       monto_adjudicado:t.monto_adjudicado!=null?String(t.monto_adjudicado):"",
       motivo_perdida:t.motivo_perdida||"",competitor_winner:t.competitor_winner||"",
+      business_unit_id:t.business_unit_id||"",eval_status:t.eval_status||"sin_asignar",
     });
     prevStatusRef.current=t.operational_status;
     setActiveTab("datos");
@@ -1750,6 +1769,7 @@ export default function TendersPage({ profile, onNavigate }) {
       resultado:form.resultado||null,
       monto_adjudicado:form.monto_adjudicado!==""?Number(form.monto_adjudicado):null,
       motivo_perdida:form.motivo_perdida||null,competitor_winner:form.competitor_winner||null,
+      business_unit_id:form.business_unit_id||null,eval_status:form.eval_status||"sin_asignar",
       owner_id:profile?.id,updated_at:new Date().toISOString(),
     };
     if (editData) {
@@ -1918,6 +1938,16 @@ export default function TendersPage({ profile, onNavigate }) {
       case "delivery_status":{
         const bc=t.delivery_status==="Completa"?"green":t.delivery_status==="Parcial"?"yellow":"red";
         return <span className={`tn-badge tn-badge--${bc}`} style={{fontSize:10.5,padding:"2px 6px"}}>{t.delivery_status||"—"}</span>;
+      }
+      case "eval_status":{
+        const es = t.eval_status || "sin_asignar";
+        const evalStyle = {
+          sin_asignar:   {background:"#f1f5f9",color:"#64748b"},
+          en_evaluacion: {background:"#dbeafe",color:"#1d4ed8"},
+          aceptada:      {background:"#dcfce7",color:"#15803d"},
+          rechazada:     {background:"#fee2e2",color:"#dc2626"},
+        }[es] || {background:"#f1f5f9",color:"#64748b"};
+        return <span style={{...evalStyle,display:"inline-flex",alignItems:"center",padding:"2px 8px",borderRadius:999,fontSize:10,fontWeight:700}}>{EVAL_STATUS_LABELS[es]||es}</span>;
       }
       case "notes":
         return <span style={{fontSize:11,color:"#64748b",display:"block",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={t.notes||""}>{t.notes||"—"}</span>;
@@ -2165,6 +2195,7 @@ export default function TendersPage({ profile, onNavigate }) {
         activeTab={activeTab} setActiveTab={setActiveTab} saving={saving}
         onClose={() => setShowForm(false)} onSave={saveTender}
         onDelete={deleteTender} onCotizador={abrirCotizador}
+        businessUnits={businessUnits}
       />
       <QuickTenderModal
         show={showQuick}
