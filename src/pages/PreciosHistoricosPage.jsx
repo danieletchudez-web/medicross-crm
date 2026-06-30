@@ -610,6 +610,70 @@ function ProductComparisonChart({ groups }) {
   );
 }
 
+function WinLossPanel({ stats }) {
+  if (!stats || stats.timesQuoted === 0) return null;
+  const wr = stats.winRate;
+  const wrColor = wr >= 60 ? "#059669" : wr >= 35 ? "#d97706" : "#dc2626";
+  const wrBg   = wr >= 60 ? "#dcfce7" : wr >= 35 ? "#fef3c7" : "#fee2e2";
+  return (
+    <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
+      boxShadow:"0 2px 8px rgba(15,23,42,.06)",padding:"18px 20px"}}>
+      <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:".7px",
+        color:"#185fa5",marginBottom:12}}>
+        💡 Inteligencia Comercial — {stats.timesQuoted} licitación{stats.timesQuoted!==1?"es":""} donde cotizamos
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:10,marginBottom:16}}>
+        {[
+          { label:"Win Rate", val:`${wr}%`, color:wrColor, bg:wrBg },
+          { label:"Ganadas",  val:stats.timesWon,  color:"#059669", bg:"#dcfce7" },
+          { label:"Perdidas", val:stats.timesLost, color:"#dc2626", bg:"#fee2e2" },
+          { label:"Sin resultado", val:stats.timesQuoted-stats.timesWon-stats.timesLost, color:"#94a3b8", bg:"#f1f5f9" },
+          ...(stats.recommendedPrice?[{ label:"Precio ganador (p40)", val:fullMoney(stats.recommendedPrice), color:"#1d4ed8", bg:"#dbeafe" }]:[]),
+        ].map(k=>(
+          <div key={k.label} style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",
+            textAlign:"center",border:"1px solid #f1f5f9"}}>
+            <div style={{fontSize:k.val.toString().length>7?14:22,fontWeight:800,color:k.color,
+              background:k.bg,borderRadius:8,padding:"3px 8px",display:"inline-block",marginBottom:4}}>
+              {k.val}
+            </div>
+            <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>{k.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {wr<30&&stats.timesQuoted>=3&&(
+          <div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:9,
+            padding:"10px 14px",fontSize:12.5,color:"#7f1d1d",display:"flex",gap:8}}>
+            <span style={{flexShrink:0}}>⚠️</span>
+            <span>Win rate bajo ({wr}%). Considerá ser más agresivo en precio o revisá la estrategia comercial.</span>
+          </div>
+        )}
+        {wr>=60&&stats.timesQuoted>=2&&(
+          <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:9,
+            padding:"10px 14px",fontSize:12.5,color:"#14532d",display:"flex",gap:8}}>
+            <span style={{flexShrink:0}}>✅</span>
+            <span>Buen historial ({wr}% win rate en {stats.timesQuoted} licitaciones). Podés mantener el margen habitual.</span>
+          </div>
+        )}
+        {stats.failureInstitutions.length>0&&(
+          <div style={{background:"#fef3c7",border:"1px solid #fcd34d",borderRadius:9,
+            padding:"10px 14px",fontSize:12.5,color:"#78350f",display:"flex",gap:8}}>
+            <span style={{flexShrink:0}}>🏥</span>
+            <span>Nunca ganamos en: <strong>{stats.failureInstitutions.map(i=>i.name).join(" · ")}</strong></span>
+          </div>
+        )}
+        {stats.successInstitutions.length>0&&(
+          <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:9,
+            padding:"10px 14px",fontSize:12.5,color:"#14532d",display:"flex",gap:8}}>
+            <span style={{flexShrink:0}}>🏆</span>
+            <span>Mejor tasa en: {stats.successInstitutions.slice(0,3).map(i=>`${i.name} (${i.winRate}%)`).join(" · ")}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PreciosHistoricosPage({ profile, onNavigate }) {
   const [query,    setQuery]    = useState("");
   const [desde,    setDesde]    = useState("");
@@ -705,7 +769,8 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         tender_id,
         tenders:tender_id (
           id, institution, process_number, process_name,
-          end_date, jurisdiction, operational_status, notes
+          end_date, jurisdiction, operational_status, notes,
+          resultado, monto_adjudicado
         )
       `)
       .ilike("descripcion", `%${q.trim()}%`)
@@ -1566,6 +1631,44 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
     ];
   }, [metricas, decision, marketTrend, competitiveIntel, marketRows.length]);
 
+  const winLossStats = useMemo(() => {
+    if (!rows.length) return null;
+    const tenderMap = {};
+    rows.forEach(row => {
+      const tid = row.tender_id;
+      if (!tenderMap[tid]) tenderMap[tid] = { tender: row.tenders, hasOwn: false, ownPrices: [], institution: row.tenders?.institution || "" };
+      if (isOwnOffer(row)) {
+        tenderMap[tid].hasOwn = true;
+        const p = comparablePrice(row);
+        if (p !== null) tenderMap[tid].ownPrices.push(p);
+      }
+    });
+    const tendersWithOwn = Object.values(tenderMap).filter(t => t.hasOwn);
+    if (!tendersWithOwn.length) return null;
+    const timesQuoted = tendersWithOwn.length;
+    const timesWon  = tendersWithOwn.filter(t => t.tender?.resultado === "ganada").length;
+    const timesLost = tendersWithOwn.filter(t => t.tender?.resultado === "perdida").length;
+    const winRate = Math.round(timesWon / timesQuoted * 100);
+    const wonPrices = tendersWithOwn.filter(t => t.tender?.resultado === "ganada").flatMap(t => t.ownPrices);
+    const recommendedPrice = wonPrices.length >= 2
+      ? Math.round(percentile(wonPrices, 0.40))
+      : wonPrices.length === 1 ? wonPrices[0] : null;
+    const instMap = {};
+    tendersWithOwn.forEach(t => {
+      const inst = t.institution; if (!inst) return;
+      if (!instMap[inst]) instMap[inst] = { quoted: 0, won: 0 };
+      instMap[inst].quoted++;
+      if (t.tender?.resultado === "ganada") instMap[inst].won++;
+    });
+    const successInstitutions = Object.entries(instMap)
+      .map(([name, s]) => ({ name, ...s, winRate: Math.round(s.won / s.quoted * 100) }))
+      .filter(i => i.won > 0).sort((a, b) => b.won - a.won).slice(0, 3);
+    const failureInstitutions = Object.entries(instMap)
+      .map(([name, s]) => ({ name, ...s }))
+      .filter(i => i.won === 0 && i.quoted >= 2).sort((a, b) => b.quoted - a.quoted).slice(0, 3);
+    return { timesQuoted, timesWon, timesLost, winRate, recommendedPrice, successInstitutions, failureInstitutions };
+  }, [rows]);
+
   const sortMarketBy = key => {
     setMarketSort(prev => ({
       key,
@@ -1667,7 +1770,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
   }, [decision, onNavigate]);
 
   return (
-    <Layout title="Inteligencia de Precios" profile={profile} onNavigate={onNavigate}>
+    <Layout title="Centro de Inteligencia Comercial" profile={profile} onNavigate={onNavigate}>
       <div className="ph-page" style={{padding:"18px 24px 48px",display:"flex",flexDirection:"column",gap:18,
         fontFamily:"DM Sans, system-ui, sans-serif",minHeight:"100vh",fontSize:"13.5px"}}>
 
@@ -1679,10 +1782,10 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               display:"flex",alignItems:"center",gap:8}}>
               <span style={{display:"inline-block",width:4,height:22,background:"#185fa5",
                 borderRadius:4,flexShrink:0}}/>
-              Inteligencia de Precios
+              Centro de Inteligencia Comercial
             </h2>
             <p style={{margin:"3px 0 0",fontSize:12,color:"#94a3b8",paddingLeft:12}}>
-              Historial de precios por producto en todas las licitaciones cargadas
+              Win/loss, precios históricos y recomendaciones basadas en todas las licitaciones cargadas
             </p>
           </div>
           <div className="ph-header-actions">
@@ -2058,6 +2161,11 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
               Ver todas las referencias
             </button>
           </div>
+        )}
+
+        {/* INTELLIGENCE PANEL — win/loss desde tenders.resultado */}
+        {searched && !loading && rows.length > 0 && winLossStats && (
+          <WinLossPanel stats={winLossStats} />
         )}
 
         {searched && !loading && baseFilteredRows.length > 0 && (

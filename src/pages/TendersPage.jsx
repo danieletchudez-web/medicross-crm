@@ -18,6 +18,14 @@ const DEL_ESTADOS  = ["Pendiente","Parcial","Completa"];
 const TENDER_TYPES = ["Original","Ampliación","Prórroga","Otro"];
 const BUCKET       = "tenders-docs";
 
+/* ─── Helpers de inteligencia ──────────────────────────────────────── */
+const OWN_INTEL_ALIASES = ["MEDI-CROSS","MEDICROSS","STORING INSUMOS MEDICOS"];
+function normalizeIntel(v){return String(v||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim();}
+function isOwnIntel(row){return Boolean(row?.es_nuestra_oferta)||OWN_INTEL_ALIASES.some(a=>normalizeIntel(row?.empresa).includes(normalizeIntel(a)));}
+function priceIntel(row){const n=Number(row?.precio_unitario);return Number.isFinite(n)&&n>=1?n:null;}
+function moneyIntel(v){const n=Number(v||0);return n?"$"+n.toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:0}):"—";}
+function pctIntel(values,pct){const s=[...values].filter(Number.isFinite).sort((a,b)=>a-b);if(!s.length)return null;const i=(s.length-1)*pct;const lo=Math.floor(i),hi=Math.ceil(i);return lo===hi?s[lo]:s[lo]+(s[hi]-s[lo])*(i-lo);}
+
 const CERRADAS = ["Finalizada","Perdida / No adjudicada","Vencida","Cobrada"];
 const EN_CURSO = ["En análisis","Cotizada","Presentada","Adjudicada",
                   "Orden de compra recibida","En ejecución","Entrega parcial",
@@ -1222,6 +1230,119 @@ function BacImportModal({ preview, setPreview, saving, onClose, onConfirm }) {
   );
 }
 
+/* ─── PANEL INTELIGENCIA COMERCIAL ─────────────────────────────────── */
+function TenderIntelligencePanel({ form }) {
+  const keyword = (form.product_line||form.requesting_sector||"").trim();
+  const institution = (form.institution||"").trim();
+  const [intel, setIntel] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!keyword) { setIntel(null); return; }
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const { data } = await supabase
+        .from("tender_comparativas")
+        .select("id,descripcion,empresa,es_nuestra_oferta,precio_unitario,adjudicado,tender_id,tenders:tender_id(id,institution,end_date,resultado)")
+        .ilike("descripcion", `%${keyword}%`)
+        .limit(500);
+      if (cancelled) return;
+      const rows = data || [];
+      const tmap = {};
+      rows.forEach(r => {
+        const tid = r.tender_id;
+        if (!tmap[tid]) tmap[tid] = { tender: r.tenders, hasOwn: false, ownPrices: [], inst: r.tenders?.institution||"" };
+        if (isOwnIntel(r)) { tmap[tid].hasOwn=true; const p=priceIntel(r); if(p!==null) tmap[tid].ownPrices.push(p); }
+      });
+      const own = Object.values(tmap).filter(t=>t.hasOwn);
+      const timesQuoted = own.length;
+      const timesWon = own.filter(t=>t.tender?.resultado==="ganada").length;
+      const winRate = timesQuoted>0?Math.round(timesWon/timesQuoted*100):null;
+      const wonPrices = own.filter(t=>t.tender?.resultado==="ganada").flatMap(t=>t.ownPrices);
+      const recommended = wonPrices.length>=2?Math.round(pctIntel(wonPrices,0.40)):wonPrices.length===1?wonPrices[0]:null;
+      const normInst = institution.slice(0,12).toUpperCase();
+      const instTenders = normInst?own.filter(t=>t.inst.toUpperCase().includes(normInst)):[];
+      const instWon = instTenders.filter(t=>t.tender?.resultado==="ganada").length;
+      const compCounts = {};
+      rows.filter(r=>!isOwnIntel(r)).forEach(r=>{ const k=r.empresa||"Sin empresa"; compCounts[k]=(compCounts[k]||0)+1; });
+      const topComp = Object.entries(compCounts).sort((a,b)=>b[1]-a[1])[0];
+      setIntel({ total:rows.length, timesQuoted, timesWon, winRate, recommended, instQuoted:instTenders.length, instWon, topComp:topComp?{name:topComp[0],count:topComp[1]}:null });
+      setLoading(false);
+    })();
+    return () => { cancelled=true; };
+  }, [keyword, institution]);
+
+  if (!keyword) return (
+    <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>
+      Ingresá la <strong>Línea de producto</strong> en el tab Datos para ver inteligencia comercial.
+    </div>
+  );
+  if (loading) return <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>Analizando historial de <strong>{keyword}</strong>…</div>;
+  if (!intel||!intel.total) return (
+    <div style={{padding:"40px 0",textAlign:"center",color:"#94a3b8",fontSize:13}}>
+      Sin historial en comparativas para <strong>{keyword}</strong>. Importá comparativas BAC para construir inteligencia.
+    </div>
+  );
+
+  const wr = intel.winRate;
+  const wrColor = wr===null?"#64748b":wr>=60?"#059669":wr>=35?"#d97706":"#dc2626";
+  const wrBg = wr===null?"#f1f5f9":wr>=60?"#dcfce7":wr>=35?"#fef3c7":"#fee2e2";
+  const kpis = [
+    {label:"Win Rate", val:wr!==null?`${wr}%`:"—", color:wrColor, bg:wrBg},
+    {label:"Cotizamos", val:intel.timesQuoted, color:"#334155", bg:"#f1f5f9"},
+    {label:"Ganamos", val:intel.timesWon, color:"#059669", bg:"#dcfce7"},
+    ...(intel.recommended?[{label:"Precio ganador", val:moneyIntel(intel.recommended), color:"#1d4ed8", bg:"#dbeafe"}]:[]),
+  ];
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{background:"#f8fafc",borderRadius:9,padding:"10px 14px",border:"1px solid #e2e8f0",fontSize:11.5,color:"#64748b"}}>
+        <strong style={{color:"#334155"}}>{keyword}</strong> · {intel.total} referencias en comparativas BAC
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10}}>
+        {kpis.map(k=>(
+          <div key={k.label} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:9,padding:"12px",textAlign:"center"}}>
+            <div style={{fontSize:k.val.toString().length>7?13:17,fontWeight:800,color:k.color,background:k.bg,borderRadius:7,padding:"3px 8px",display:"inline-block",marginBottom:4}}>{k.val}</div>
+            <div style={{fontSize:10.5,color:"#64748b",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px"}}>{k.label}</div>
+          </div>
+        ))}
+      </div>
+      {intel.instQuoted>0&&(
+        <div style={{background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:9,padding:"12px 14px"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#0369a1",textTransform:"uppercase",marginBottom:4}}>🏥 {institution}</div>
+          <div style={{fontSize:13,color:"#0c4a6e"}}>
+            Cotizamos {intel.instQuoted} vez{intel.instQuoted!==1?"es":""} en esta institución.{" "}
+            {intel.instWon>0?`Ganamos ${intel.instWon} (${Math.round(intel.instWon/intel.instQuoted*100)}%).`:"Nunca ganamos aquí."}
+          </div>
+        </div>
+      )}
+      {intel.topComp&&(
+        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:9,padding:"12px 14px"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b",textTransform:"uppercase",marginBottom:4}}>🔍 Competidor más frecuente</div>
+          <div style={{fontSize:13.5,fontWeight:600,color:"#1e293b"}}>{intel.topComp.name} <span style={{fontWeight:400,color:"#64748b"}}>— {intel.topComp.count} aparición{intel.topComp.count!==1?"es":""}</span></div>
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {wr!==null&&wr<30&&intel.timesQuoted>=3&&(
+          <div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:8,padding:"10px 14px",fontSize:12.5,color:"#7f1d1d"}}>
+            ⚠️ Win rate bajo ({wr}%). Considerá bajar el precio o revisar la estrategia.
+          </div>
+        )}
+        {wr!==null&&wr>=60&&intel.timesQuoted>=2&&(
+          <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:8,padding:"10px 14px",fontSize:12.5,color:"#14532d"}}>
+            ✅ Buen historial ({wr}% win rate). Podés mantener margen habitual.
+          </div>
+        )}
+        {intel.instQuoted>0&&intel.instWon===0&&(
+          <div style={{background:"#fef3c7",border:"1px solid #fcd34d",borderRadius:8,padding:"10px 14px",fontSize:12.5,color:"#78350f"}}>
+            🏥 Nunca ganamos en <strong>{institution}</strong> ({intel.instQuoted} intento{intel.instQuoted!==1?"s":""}). Estrategia agresiva recomendada.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── MODAL LICITACIÓN ─────────────────────────────────────────────── */
 function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTab,
   saving, onClose, onSave, onDelete, onCotizador }) {
@@ -1257,9 +1378,10 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
 
         <div className="tn-modal-tabs">
           {[
-            {key:"datos",       label:"📋 Datos"},
-            {key:"resultado",   label:"🏆 Resultado"},
-            {key:"competidores",label:"🔍 Competidores"},
+            {key:"datos",         label:"📋 Datos"},
+            {key:"inteligencia",  label:"💡 Inteligencia"},
+            {key:"resultado",     label:"🏆 Resultado"},
+            {key:"competidores",  label:"🔍 Competidores"},
             ...(editData?[
               {key:"comparativa", label:"📊 Comparativa"},
               {key:"historial",   label:"📜 Historial"},
@@ -1349,6 +1471,17 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
                 <button className="tn-btn tn-btn--success" onClick={e=>onCotizador(editData,e)}>{editData.linked_quote_id ? "Abrir cotización →" : "Crear cotización →"}</button>
               </div>
             )}
+          </div>
+
+          {/* TAB INTELIGENCIA */}
+          <div style={{display:activeTab==="inteligencia"?"":"none"}}>
+            <div className="tn-form-section">
+              <p className="tn-form-section__title">💡 Inteligencia Comercial</p>
+              <p style={{fontSize:12,color:"#94a3b8",margin:"0 0 14px"}}>
+                Análisis automático basado en comparativas BAC importadas para el tipo de producto y la institución de esta licitación.
+              </p>
+              <TenderIntelligencePanel form={form}/>
+            </div>
           </div>
 
           {/* TAB RESULTADO */}
