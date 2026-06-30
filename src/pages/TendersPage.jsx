@@ -1413,7 +1413,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               </div>
               <div className="tn-form-grid">
                 <div className="tn-field"><label>Sector solicitante</label><input value={form.requesting_sector} onChange={e=>setF("requesting_sector",e.target.value)} placeholder="EJ: QUIRÓFANO, UTI"/></div>
-                <div className="tn-field"><label>Línea de producto</label><input value={form.product_line} onChange={e=>setF("product_line",e.target.value)} placeholder="EJ: FILTROS, APHERESIS"/></div>
+                <div className="tn-field"><label>Línea de producto</label><select value={form.product_line} onChange={e=>setF("product_line",e.target.value)}><option value="">— Seleccioná —</option><option>Descartables</option><option>Dialisis</option><option>Hemoterapia</option><option>Hemodinamia</option><option>Cardiologia</option><option>Equipamiento Medico</option><option>Nutricion</option><option>Otros</option></select></div>
               </div>
             </div>
             <div className="tn-form-section">
@@ -1429,7 +1429,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               <div className="tn-form-grid tn-form-grid--3">
                 <div className="tn-field"><label>Estado operativo</label><select value={form.operational_status} onChange={e=>setForm(p=>({...p,operational_status:e.target.value}))} style={{fontWeight:700}}>{ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
                 <div className="tn-field"><label>Prioridad</label><select value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>{PRIORIDADES.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
-                <div className="tn-field"><label>Responsable interno</label><input value={form.internal_owner} onChange={e=>setF("internal_owner",e.target.value)} placeholder="NOMBRE DEL RESPONSABLE"/></div>
+                <div className="tn-field"><label>Responsable interno</label><select value={form.internal_owner} onChange={e=>setF("internal_owner",e.target.value)}><option value="">— Seleccioná —</option><option>SC</option><option>DE</option><option>MS</option></select></div>
                 <div className="tn-field"><label>Próxima acción</label><input value={form.next_action} onChange={e=>setF("next_action",e.target.value)} placeholder="EJ: PREPARAR COTIZACIÓN, PEDIR PLIEGO"/></div>
                 <div className="tn-field"><label>Fecha próxima acción</label><input type="date" value={form.next_action_date} onChange={e=>setF("next_action_date",e.target.value)}/></div>
                 <div className="tn-field"><label>Estado documentación</label><select value={form.documentation_status} onChange={e=>setForm(p=>({...p,documentation_status:e.target.value}))}>{DOC_ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
