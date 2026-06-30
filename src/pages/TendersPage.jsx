@@ -33,6 +33,98 @@ const EN_CURSO = ["En análisis","Cotizada","Presentada","Adjudicada",
 const ESTADOS_GANADOS = ["Adjudicada","Orden de compra recibida","En ejecución",
                          "Entrega parcial","Entregada","Facturada","Cobrada","Finalizada"];
 
+const PRODUCT_CATALOG = [
+  { unit:"Descartables",                  families:["Jeringas","Agujas","Guantes","Campos Quirúrgicos","Gasas y Apósitos","Sondas","Tubuladuras","Accesos Vasculares","Insumos Generales"] },
+  { unit:"Diálisis",                       families:["Hemodiálisis","Diálisis Peritoneal","Filtros","Líneas","Soluciones","Catéteres","Accesorios","Equipamiento"] },
+  { unit:"Hemoterapia",                    families:["Bolsas de Sangre","Filtros Leucorreductores","Reactivos","Aféresis","Banco de Sangre","Equipamiento","Software de Gestión de Donantes","Accesorios"] },
+  { unit:"Hemodinamia",                    families:["Catéteres Diagnósticos","Catéteres Guía","Guías Coronarias","Balones","Introductores","Stents","Dispositivos Estructurales","Accesorios"] },
+  { unit:"Cardiología",                    families:["Marcapasos","Desfibriladores","Electrodos","Monitoreo Cardíaco","Diagnóstico","Consumibles","Accesorios"] },
+  { unit:"Urología",                       families:["EchoLaser","Láser Holmium","Láser Tulio","Biopsia Prostática","Fusión de Imágenes","Litotricia","Endourología","Consumibles","Instrumental"] },
+  { unit:"Endoscopía",                     families:["Gastroenterología","Broncoscopía","CPRE","Colonoscopía","Cistoscopía","Consumibles","Instrumental","Accesorios"] },
+  { unit:"Cirugía General",                families:["Instrumental","Energía","Suturas","Mallas","Hemostáticos","Drenajes","Consumibles"] },
+  { unit:"Cirugía Mínimamente Invasiva",   families:["Laparoscopía","Trocars","Insuflación","Energía","Visualización","Instrumental","Consumibles"] },
+  { unit:"Electrofisiología",              families:["Catéteres de Ablación","Navegación","Mapeo","Consumibles","Accesorios"] },
+  { unit:"Terapia Intensiva",              families:["Monitoreo","Accesos Vasculares","Respiratorio","Nutrición","Bombas de Infusión","Consumibles"] },
+  { unit:"Anestesia",                      families:["Vía Aérea","Monitoreo","Bombas","Consumibles","Accesorios"] },
+  { unit:"Diagnóstico por Imágenes",       families:["Ecógrafos","Transductores","Software","Fusión de Imágenes","Accesorios"] },
+  { unit:"Equipamiento Médico",            families:["Ecógrafos","Monitores","Torres de Video","Láseres","Bombas","Equipos de Diagnóstico","Equipos Terapéuticos"] },
+  { unit:"Consumibles para Equipamiento",  families:["Kits","Fibras","Cartuchos","Sensores","Cables","Cassettes","Accesorios"] },
+  { unit:"Nutrición Clínica",              families:["Nutrición Enteral","Nutrición Parenteral","Bombas de Alimentación","Sets de Administración","Suplementos","Accesorios"] },
+  { unit:"Cuidado de Heridas",             families:["Terapia por Presión Negativa","Apósitos","Antisépticos","Curación Avanzada","Accesorios"] },
+  { unit:"Laboratorio",                    families:["Reactivos","Equipamiento","Controles","Calibradores","Consumibles","Accesorios"] },
+  { unit:"Ginecología y Obstetricia",      families:["Diagnóstico","Ecografía","Instrumental","Consumibles","Tratamientos Mínimamente Invasivos"] },
+  { unit:"Neonatología",                   families:["Monitoreo","Alimentación","Respiratorio","Consumibles","Equipamiento"] },
+  { unit:"Rehabilitación",                 families:["Equipamiento","Electroestimulación","Ayudas Técnicas","Accesorios"] },
+  { unit:"Servicio Técnico",               families:["Instalación","Mantenimiento Preventivo","Mantenimiento Correctivo","Calibración","Repuestos","Capacitaciones"] },
+  { unit:"Alquiler de Equipamiento",       families:["Ecógrafos","EchoLaser","Bombas","Monitores","Torres de Video","Equipos Especiales"] },
+  { unit:"Proyectos Especiales",           families:["Llave en Mano","Integración Tecnológica","Digitalización Hospitalaria","Software","Consultoría","Desarrollo de Proyectos"] },
+];
+
+function ProductLineCombobox({ value, onChange }) {
+  const [query, setQuery]   = useState(value || "");
+  const [open, setOpen]     = useState(false);
+  const wrapRef             = useRef(null);
+
+  useEffect(() => { setQuery(value || ""); }, [value]);
+
+  useEffect(() => {
+    function onDown(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const groups = useMemo(() => {
+    if (!query || query.length < 3) return [];
+    const q = query.toLowerCase();
+    const out = [];
+    PRODUCT_CATALOG.forEach(({ unit, families }) => {
+      const unitHit    = unit.toLowerCase().includes(q);
+      const famHits    = families.filter(f => f.toLowerCase().includes(q));
+      if (unitHit || famHits.length) out.push({ unit, families: unitHit ? families : famHits });
+    });
+    return out;
+  }, [query]);
+
+  function pick(label) { setQuery(label); onChange(label); setOpen(false); }
+
+  return (
+    <div style={{position:"relative"}} ref={wrapRef}>
+      <input
+        value={query}
+        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={() => { if (query.length >= 3) setOpen(true); }}
+        placeholder="Buscar unidad o familia…"
+        autoComplete="off"
+      />
+      {open && groups.length > 0 && (
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",border:"1px solid #dde3ed",borderRadius:8,boxShadow:"0 8px 24px rgba(0,0,0,.12)",zIndex:9999,maxHeight:260,overflowY:"auto"}}>
+          {groups.map(({ unit, families }) => (
+            <div key={unit}>
+              <div
+                onMouseDown={() => pick(unit)}
+                style={{padding:"7px 12px",fontWeight:700,fontSize:10,letterSpacing:".5px",textTransform:"uppercase",color:"#1e3a5f",background:"#f0f4ff",cursor:"pointer",borderBottom:"1px solid #e8edf5"}}
+              >
+                {unit}
+              </div>
+              {families.map(fam => (
+                <div
+                  key={fam}
+                  onMouseDown={() => pick(`${unit} — ${fam}`)}
+                  style={{padding:"7px 14px 7px 22px",fontSize:12,color:"#374151",cursor:"pointer",borderBottom:"1px solid #f3f4f6"}}
+                  onMouseEnter={e => e.currentTarget.style.background="#f8faff"}
+                  onMouseLeave={e => e.currentTarget.style.background=""}
+                >
+                  {fam}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function isTenderLost(t) {
   return t?.resultado === "perdida" || t?.operational_status === "Perdida / No adjudicada";
 }
@@ -1413,7 +1505,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               </div>
               <div className="tn-form-grid">
                 <div className="tn-field"><label>Sector solicitante</label><input value={form.requesting_sector} onChange={e=>setF("requesting_sector",e.target.value)} placeholder="EJ: QUIRÓFANO, UTI"/></div>
-                <div className="tn-field"><label>Línea de producto</label><select value={form.product_line} onChange={e=>setF("product_line",e.target.value)}><option value="">— Seleccioná —</option><option>Descartables</option><option>Dialisis</option><option>Hemoterapia</option><option>Hemodinamia</option><option>Cardiologia</option><option>Equipamiento Medico</option><option>Nutricion</option><option>Otros</option></select></div>
+                <div className="tn-field"><label>Línea de producto</label><ProductLineCombobox value={form.product_line} onChange={v=>setF("product_line",v)}/></div>
               </div>
             </div>
             <div className="tn-form-section">
