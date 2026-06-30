@@ -460,7 +460,8 @@
 
 /* ─── FORMULARIO ─────────────────────────────────────────────────────── */
 .tn-form-section { display: flex; flex-direction: column; gap: 10px; }
-.tn-form-section__title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--tn-text3); margin-bottom: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--tn-border); display: flex; align-items: center; gap: 7px; }
+.tn-form-section__title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--tn-text3); margin-bottom: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--tn-border); display: flex; align-items: center; gap: 8px; }
+.tn-step-badge { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; min-width: 19px; background: #1e3a5f; color: #fff; border-radius: 50%; font-size: 10px; font-weight: 700; letter-spacing: 0; text-transform: none; line-height: 1; flex-shrink: 0; }
 .tn-form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .tn-form-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
 .tn-form-grid--1 { grid-template-columns: 1fr; }
