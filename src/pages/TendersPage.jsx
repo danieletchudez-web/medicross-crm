@@ -125,6 +125,81 @@ function ProductLineCombobox({ value, onChange }) {
   );
 }
 
+let _instCache = null;
+async function loadInstituciones() {
+  if (_instCache) return _instCache;
+  const res = await fetch("/instituciones.json");
+  _instCache = await res.json();
+  return _instCache;
+}
+
+function InstitutionCombobox({ value, onChange }) {
+  const [query, setQuery]     = useState(value || "");
+  const [open, setOpen]       = useState(false);
+  const [results, setResults] = useState([]);
+  const wrapRef               = useRef(null);
+
+  useEffect(() => { setQuery(value || ""); }, [value]);
+
+  useEffect(() => {
+    function onDown(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  async function handleChange(val) {
+    setQuery(val);
+    onChange(val);
+    if (val.length < 3) { setResults([]); setOpen(false); return; }
+    const data = await loadInstituciones();
+    const q = val.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+    const hits = data.filter(r =>
+      r.n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").includes(q) ||
+      r.l.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").includes(q)
+    ).slice(0, 40);
+    setResults(hits);
+    setOpen(hits.length > 0);
+  }
+
+  function pick(inst) {
+    setQuery(inst.n);
+    onChange(inst.n);
+    setOpen(false);
+  }
+
+  return (
+    <div style={{position:"relative"}} ref={wrapRef}>
+      <input
+        value={query}
+        onChange={e => handleChange(e.target.value)}
+        onFocus={() => { if (results.length > 0) setOpen(true); }}
+        placeholder="Buscar hospital, clínica, instituto…"
+        autoComplete="off"
+      />
+      {open && results.length > 0 && (
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",border:"1px solid #dde3ed",borderRadius:8,boxShadow:"0 8px 24px rgba(0,0,0,.12)",zIndex:9999,maxHeight:280,overflowY:"auto"}}>
+          {results.map((inst, idx) => (
+            <div
+              key={idx}
+              onMouseDown={() => pick(inst)}
+              style={{padding:"8px 12px",borderBottom:"1px solid #f3f4f6",cursor:"pointer"}}
+              onMouseEnter={e => e.currentTarget.style.background="#f0f4ff"}
+              onMouseLeave={e => e.currentTarget.style.background=""}
+            >
+              <div style={{fontWeight:600,fontSize:12,color:"#1e293b",lineHeight:1.3}}>{inst.n}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                {inst.d && <span>{inst.d} · </span>}
+                <span>{inst.l}</span>
+                {inst.cp && <span style={{marginLeft:6,background:"#f1f5f9",color:"#475569",borderRadius:4,padding:"1px 5px",fontSize:10}}>{inst.cp}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function isTenderLost(t) {
   return t?.resultado === "perdida" || t?.operational_status === "Perdida / No adjudicada";
 }
@@ -1494,7 +1569,7 @@ function TenderModal({ showForm, form, setForm, editData, activeTab, setActiveTa
               <p className="tn-form-section__title"><span className="tn-step-badge">1</span> Identificación</p>
               <div className="tn-form-grid">
                 <div className="tn-field"><label>Jurisdicción</label><input value={form.jurisdiction} onChange={e=>setF("jurisdiction",e.target.value)} placeholder="EJ: CABA, PBA, CÓRDOBA"/></div>
-                <div className="tn-field"><label>Hospital / Institución *</label><input value={form.institution} onChange={e=>setF("institution",e.target.value)} placeholder="NOMBRE DEL HOSPITAL O ENTE"/></div>
+                <div className="tn-field"><label>Hospital / Institución *</label><InstitutionCombobox value={form.institution} onChange={v=>setF("institution",v)}/></div>
                 <div className="tn-field"><label>Tipo de proceso</label><select value={form.process_type} onChange={e=>setForm(p=>({...p,process_type:e.target.value}))}><option value="">— Seleccioná —</option><option>Licitación Pública</option><option>Licitación Privada</option><option>Concurso Privado</option><option>Contratación Directa</option><option>Comparativa BAC</option></select></div>
                 <div className="tn-field"><label>N° de proceso</label><input value={form.process_number} onChange={e=>setF("process_number",e.target.value)} placeholder="EJ: LP 001/2026"/></div>
                 <div className="tn-field"><label>N° de expediente</label><input value={form.expedient_number} onChange={e=>setF("expedient_number",e.target.value)} placeholder="EJ: EX-2026-12345"/></div>
