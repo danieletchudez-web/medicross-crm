@@ -528,6 +528,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
       if (!silent) showToast("Completá al menos un dato de la cotización antes de guardar.", "err");
       return { ok: false, reason: "empty_quote" };
     }
+    if (!institucion.trim()) {
+      showToast("La institución es obligatoria. Completá el campo Institución / Hospital antes de guardar.", "err");
+      return { ok: false, reason: "no_institution" };
+    }
     setSaving(true);
     try {
       if (docId) {
@@ -1249,16 +1253,23 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                 <p style={{textAlign:"center",color:"#94a3b8",padding:32}}>{histItems.length===0?"No hay cotizaciones guardadas.":"Sin resultados."}</p>
               ) : histFiltrado.map(c=>(
                 <div key={c.id} className="cot-hist-item" onClick={()=>loadCotizacion(c.id)}>
-                  <div className="cot-hist-item__top">
+                  <div className="cot-hist-item__head">
+                    <div className="cot-hist-inst">
+                      {c.institucion || <span style={{color:"#94a3b8",fontStyle:"italic",fontWeight:400}}>Sin institución</span>}
+                    </div>
+                    <span className="cot-hist-date">{c.created_at?new Date(c.created_at).toLocaleDateString("es-AR"):"-"}</span>
+                  </div>
+                  <div className="cot-hist-item__meta">
                     <span className="cot-hist-num">#{c.quote_num_formatted||"???"}</span>
                     {c.vendedor&&<span className="cot-hist-vend">{c.vendedor.split(" ")[0]}</span>}
                     <span className={`cot-estado cot-estado--${c.estado||"borrador"}`}>{ESTADO_LABELS[c.estado||"borrador"]}</span>
-                    <span className="cot-hist-date">{c.created_at?new Date(c.created_at).toLocaleDateString("es-AR"):"-"}{c.institucion?" — "+c.institucion.substring(0,30):""}</span>
+                    <span className="cot-hist-total">{c.total_general?fARS(c.total_general):"—"}</span>
                   </div>
-                  <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
-                    {(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).slice(0,3).join(" · ")}
-                  </div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#0f2444",marginTop:2}}>Total: {c.total_general?fARS(c.total_general):"-"}</div>
+                  {(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).length > 0 && (
+                    <div className="cot-hist-items">
+                      {(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).slice(0,3).join(" · ")}
+                    </div>
+                  )}
                   <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
                     <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(c.id)}>Editar</button>
                     <select className="cot-estado-select" value={c.estado||"borrador"} onChange={e=>cambiarEstado(c.id,e.target.value)}>
