@@ -203,10 +203,12 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
   const [toast,         setToast]         = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
   const [showPapelera,  setShowPapelera]  = useState(false);
-  const [histItems,     setHistItems]     = useState([]);
-  const [papItems,      setPapItems]      = useState([]);
-  const [histSearch,    setHistSearch]    = useState("");
-  const [loadingHist,   setLoadingHist]   = useState(false);
+  const [histItems,      setHistItems]      = useState([]);
+  const [papItems,       setPapItems]       = useState([]);
+  const [histSearch,     setHistSearch]     = useState("");
+  const [filterVendedor, setFilterVendedor] = useState("");
+  const [filterMes,      setFilterMes]      = useState("");
+  const [loadingHist,    setLoadingHist]    = useState(false);
   const [catalog,        setCatalog]       = useState([]);
   const [catalogOpenId,  setCatalogOpenId] = useState(null);
   const [expirationDays, setExpirationDays] = useState(30);
@@ -683,9 +685,25 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
     window.scrollTo(0,0);
   }
 
-  const histFiltrado = histSearch
-    ? histItems.filter(c => [c.quote_num_formatted,c.vendedor,c.institucion,c.nro_licit,(c.renglones||[]).map(r=>(r.descr||"")+" "+(r.empresa||"")+" "+(r.marca||"")).join(" ")].join(" ").toLowerCase().includes(histSearch.toLowerCase()))
-    : histItems;
+  const histVendedores = useMemo(() => [...new Set(histItems.map(c=>c.vendedor).filter(Boolean))].sort(), [histItems]);
+  const histMeses = useMemo(() => {
+    const meses = [...new Set(histItems.map(c=>c.created_at?.slice(0,7)).filter(Boolean))].sort().reverse();
+    return meses;
+  }, [histItems]);
+  function fmtMes(ym) {
+    const [y,m] = (ym||"").split("-");
+    return ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][parseInt(m)-1]+" "+y;
+  }
+  const histFiltrado = useMemo(() => {
+    let items = histItems;
+    if (histSearch) {
+      const q = histSearch.toLowerCase();
+      items = items.filter(c => [c.quote_num_formatted,c.vendedor,c.institucion,c.nro_licit,(c.renglones||[]).map(r=>(r.descr||"")+" "+(r.empresa||"")+" "+(r.marca||"")).join(" ")].join(" ").toLowerCase().includes(q));
+    }
+    if (filterVendedor) items = items.filter(c => c.vendedor === filterVendedor);
+    if (filterMes)      items = items.filter(c => c.created_at?.slice(0,7) === filterMes);
+    return items;
+  }, [histItems, histSearch, filterVendedor, filterMes]);
 
   /* ── Export PDF ── */
   async function exportPDF() {
@@ -1244,7 +1262,23 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
               <button className="cot-modal__close" onClick={()=>setShowHistorial(false)}>×</button>
             </div>
             <div className="cot-modal__search">
-              <input className="cot-search" value={histSearch} onChange={e=>setHistSearch(e.target.value)} placeholder="Buscar por N°, institución, descripción, vendedor…"/>
+              <input className="cot-search" value={histSearch} onChange={e=>setHistSearch(e.target.value)} placeholder="Buscar por N°, institución, descripción…"/>
+              <div className="cot-hist-filters">
+                <select className="cot-hist-filter-sel" value={filterVendedor} onChange={e=>setFilterVendedor(e.target.value)}>
+                  <option value="">Todos los vendedores</option>
+                  {histVendedores.map(v=><option key={v} value={v}>{v}</option>)}
+                </select>
+                <select className="cot-hist-filter-sel" value={filterMes} onChange={e=>setFilterMes(e.target.value)}>
+                  <option value="">Todos los meses</option>
+                  {histMeses.map(m=><option key={m} value={m}>{fmtMes(m)}</option>)}
+                </select>
+                {(filterVendedor||filterMes||histSearch) && (
+                  <button className="cot-hist-filter-clear" onClick={()=>{setFilterVendedor("");setFilterMes("");setHistSearch("");}}>
+                    ✕ Limpiar
+                  </button>
+                )}
+                <span className="cot-hist-filter-count">{histFiltrado.length} resultado{histFiltrado.length!==1?"s":""}</span>
+              </div>
             </div>
             <div className="cot-modal__body">
               {loadingHist ? (
@@ -1272,12 +1306,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
                   )}
                   <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
                     <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(c.id)}>Editar</button>
-                    <select className="cot-estado-select" value={c.estado||"borrador"} onChange={e=>cambiarEstado(c.id,e.target.value)}>
-                      {ESTADOS.map(s=><option key={s} value={s}>{ESTADO_LABELS[s]}</option>)}
-                    </select>
                     {c.estado === "aceptada" && (
                       <button className="cot-btn cot-btn--success cot-btn--sm" onClick={()=>convertAcceptedQuote(c)}>
-                        {c.accepted_opportunity_id ? "✓ Oportunidad creada" : "✓ Convertir en ganada"}
+                        {c.accepted_opportunity_id ? "✓ Oportunidad creada" : "✓ Convertir en oportunidad"}
                       </button>
                     )}
                     <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>softDelete(c.id,c.quote_num_formatted||"???")}>Borrar</button>
