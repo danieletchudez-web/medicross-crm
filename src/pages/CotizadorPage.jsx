@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
@@ -109,6 +109,79 @@ function canQuoteUser(user) {
   if (!user?.approved || user?.is_active === false) return false;
   if (user.role === "super_admin") return true;
   return Array.isArray(user.allowed_modules) && user.allowed_modules.includes("cotizador");
+}
+
+/* ─── Combobox institución (reutiliza public/instituciones.json) ──── */
+const PLAZOS_VENTA = ["Anticipado","Contra Entrega","Contado","Echeq 15 días","A 30 días","A 60 días","A 90 días","Según Pliego"];
+const MANTENIMIENTOS = ["15 días","30 días","60 días","90 días"];
+const FORMAS_COBRO = ["Echeq","Transferencia","Cheque"];
+
+let _instCacheCot = null;
+async function loadInstCot() {
+  if (_instCacheCot) return _instCacheCot;
+  const res = await fetch("/instituciones.json");
+  _instCacheCot = await res.json();
+  return _instCacheCot;
+}
+
+function CotInstCombobox({ value, onChange }) {
+  const [query,   setQuery]   = useState(value || "");
+  const [open,    setOpen]    = useState(false);
+  const [results, setResults] = useState([]);
+  const wrapRef               = useRef(null);
+
+  useEffect(() => { setQuery(value || ""); }, [value]);
+
+  useEffect(() => {
+    function onDown(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  async function handleChange(val) {
+    setQuery(val); onChange(val);
+    if (val.length < 3) { setResults([]); setOpen(false); return; }
+    const data = await loadInstCot();
+    const q = val.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const hits = data.filter(r =>
+      r.n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q) ||
+      r.l.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q)
+    ).slice(0, 40);
+    setResults(hits);
+    setOpen(hits.length > 0);
+  }
+
+  function pick(inst) { setQuery(inst.n); onChange(inst.n); setOpen(false); }
+
+  return (
+    <div style={{position:"relative",width:"100%"}} ref={wrapRef}>
+      <input
+        style={{width:"100%"}}
+        value={query}
+        onChange={e => handleChange(e.target.value)}
+        onFocus={() => { if (results.length > 0) setOpen(true); }}
+        placeholder="Buscar hospital, clínica, instituto… o escribir libremente"
+        autoComplete="off"
+      />
+      {open && results.length > 0 && (
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",border:"1px solid #dde3ed",borderRadius:8,boxShadow:"0 8px 24px rgba(0,0,0,.12)",zIndex:9999,maxHeight:260,overflowY:"auto"}}>
+          {results.map((inst, idx) => (
+            <div key={idx} onMouseDown={() => pick(inst)}
+              style={{padding:"8px 12px",borderBottom:"1px solid #f3f4f6",cursor:"pointer"}}
+              onMouseEnter={e => e.currentTarget.style.background="#f0f4ff"}
+              onMouseLeave={e => e.currentTarget.style.background=""}>
+              <div style={{fontWeight:600,fontSize:12,color:"#1e293b",lineHeight:1.3}}>{inst.n}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                {inst.d && <span>{inst.d} · </span>}
+                <span>{inst.l}</span>
+                {inst.cp && <span style={{marginLeft:6,background:"#f1f5f9",color:"#475569",borderRadius:4,padding:"1px 5px",fontSize:10}}>{inst.cp}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function CotizadorPage({ profile, onNavigate, initialData }) {
@@ -890,7 +963,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
               <input type="number" value={tc} onChange={e=>setTc(e.target.value)} placeholder="1425"/>
             </div>
             <div className="cot-field"><label>Institución / Hospital</label>
-              <input value={institucion} onChange={e=>setInstitucion(e.target.value)} placeholder="Nombre"/>
+              <CotInstCombobox value={institucion} onChange={setInstitucion}/>
             </div>
             <div className="cot-field"><label>N° Licitación</label>
               <input value={nroLicit} onChange={e=>setNroLicit(e.target.value)} placeholder="Ej: 001/2026"/>
@@ -899,13 +972,22 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
               <input type="date" value={fechaApert} onChange={e=>setFechaApert(e.target.value)}/>
             </div>
             <div className="cot-field"><label>Plazo de venta</label>
-              <input value={plazoVenta} onChange={e=>setPlazoVenta(e.target.value)} placeholder="Ej: 30 días"/>
+              <select value={plazoVenta} onChange={e=>setPlazoVenta(e.target.value)}>
+                <option value="">— Seleccioná —</option>
+                {PLAZOS_VENTA.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
             <div className="cot-field"><label>Mantenimiento oferta</label>
-              <input value={mantOferta} onChange={e=>setMantOferta(e.target.value)} placeholder="Ej: 60 días"/>
+              <select value={mantOferta} onChange={e=>setMantOferta(e.target.value)}>
+                <option value="">— Seleccioná —</option>
+                {MANTENIMIENTOS.map(m=><option key={m} value={m}>{m}</option>)}
+              </select>
             </div>
             <div className="cot-field"><label>Forma de cobro</label>
-              <input value={formaCobro} onChange={e=>setFormaCobro(e.target.value)} placeholder="Ej: Cheque"/>
+              <select value={formaCobro} onChange={e=>setFormaCobro(e.target.value)}>
+                <option value="">— Seleccioná —</option>
+                {FORMAS_COBRO.map(f=><option key={f} value={f}>{f}</option>)}
+              </select>
             </div>
           </div>
         </div>
