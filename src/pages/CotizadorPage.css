@@ -103,6 +103,7 @@
 .cot-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cot-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .cot-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.cot-col-span-2 { grid-column: span 2; }
 @media(max-width:900px){ .cot-grid-4{grid-template-columns:1fr 1fr;} }
 @media(max-width:600px){ .cot-grid-2,.cot-grid-3,.cot-grid-4{grid-template-columns:1fr;} }
 

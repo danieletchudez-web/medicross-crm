@@ -112,9 +112,9 @@ function canQuoteUser(user) {
 }
 
 /* ─── Combobox institución (reutiliza public/instituciones.json) ──── */
-const PLAZOS_VENTA = ["Anticipado","Contra Entrega","Contado","Echeq 15 días","A 30 días","A 60 días","A 90 días","Según Pliego"];
+const PLAZOS_VENTA = ["Anticipado","Contado","Contado a 7 días","Echeq 15 días","Echeq a 30 días","Echeq a 60 días","Echeq a 90 días","Según Pliego"];
 const MANTENIMIENTOS = ["15 días","30 días","60 días","90 días"];
-const FORMAS_COBRO = ["Echeq","Transferencia","Cheque"];
+const FORMAS_COBRO = ["Echeq","Transferencia","Cheque Físico"];
 
 let _instCacheCot = null;
 async function loadInstCot() {
@@ -158,8 +158,9 @@ function CotInstCombobox({ value, onChange }) {
       <input
         style={{width:"100%"}}
         value={query}
+        title={query}
         onChange={e => handleChange(e.target.value)}
-        onFocus={() => { if (results.length > 0) setOpen(true); }}
+        onFocus={e => { e.target.select(); if (results.length > 0) setOpen(true); }}
         placeholder="Buscar hospital, clínica, instituto… o escribir libremente"
         autoComplete="off"
       />
@@ -962,14 +963,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
             <div className="cot-field"><label>Tipo de cambio USD → ARS</label>
               <input type="number" value={tc} onChange={e=>setTc(e.target.value)} placeholder="1425"/>
             </div>
-            <div className="cot-field"><label>Institución / Hospital</label>
-              <CotInstCombobox value={institucion} onChange={setInstitucion}/>
-            </div>
             <div className="cot-field"><label>N° Licitación</label>
               <input value={nroLicit} onChange={e=>setNroLicit(e.target.value)} placeholder="Ej: 001/2026"/>
             </div>
             <div className="cot-field"><label>Fecha apertura</label>
               <input type="date" value={fechaApert} onChange={e=>setFechaApert(e.target.value)}/>
+            </div>
+            <div className="cot-field cot-col-span-2"><label>Institución / Hospital</label>
+              <CotInstCombobox value={institucion} onChange={setInstitucion}/>
             </div>
             <div className="cot-field"><label>Plazo de venta</label>
               <select value={plazoVenta} onChange={e=>setPlazoVenta(e.target.value)}>
