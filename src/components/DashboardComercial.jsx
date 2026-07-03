@@ -43,11 +43,13 @@ function avgGM(docs) {
 /* ══════════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ══════════════════════════════════════════════════════════════════════════ */
-export default function DashboardComercial() {
+export default function DashboardComercial({ pageKey }) {
   const [rawData,    setRawData]    = useState([]);
   const [filtered,   setFiltered]   = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [collapsed,  setCollapsed]  = useState(true);
+
+  useEffect(() => { setCollapsed(true); }, [pageKey]);
   const [status,     setStatus]     = useState('');
 
   /* Filtros */

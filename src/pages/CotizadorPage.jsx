@@ -185,7 +185,7 @@ function CotInstCombobox({ value, onChange }) {
   );
 }
 
-export default function CotizadorPage({ profile, onNavigate, initialData }) {
+export default function CotizadorPage({ profile, onNavigate, initialData, pageKey }) {
   const [vendedor,    setVendedor]    = useState(initialData?.vendedor    || "");
   const [vendedores,  setVendedores]  = useState(VENDEDORES);
   const [tc,          setTc]          = useState("1425");
@@ -971,7 +971,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData }) {
           </div>
         </div>
 
-        <DashboardComercial />
+        <DashboardComercial pageKey={pageKey} />
 
         <div className="cot-card">
           <h3 className="cot-section-title">⚙️ Parámetros globales</h3>
