@@ -117,12 +117,11 @@ export default function DashboardComercial({ pageKey }) {
 
   /* ── Dibujar charts cuando filtered cambia ── */
   useEffect(() => {
-    if (!loading) {
-      // pequeño delay para asegurar que el DOM esté listo
+    if (!loading && !collapsed) {
       const t = setTimeout(() => renderCharts(), 80);
       return () => clearTimeout(t);
     }
-  }, [filtered, loading]);
+  }, [filtered, loading, collapsed]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
