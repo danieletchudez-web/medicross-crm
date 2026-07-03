@@ -640,6 +640,48 @@
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* ── Mobile layout fix ≤ 768px ──────────────────────────────────────── */
+@media (max-width:768px){
+  /* El sidebar pasa a ser top bar (width:100%), bi-shell debe ser columna */
+  .bi-shell {
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+  .bi-main {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    min-height: 0;
+  }
+  /* bi-header sticky debajo del top bar (48px) */
+  .bi-header {
+    top: var(--sb-brand-height, 48px);
+    height: auto;
+    min-height: 44px;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .bi-header__right { display: none; }
+  /* bi-content: scroll natural de la página, no del div */
+  .bi-content {
+    overflow-y: visible;
+    padding: 12px 12px calc(92px + env(safe-area-inset-bottom,0px));
+    gap: 12px;
+  }
+  /* Filtros 2 columnas */
+  .bi-filters { grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px; }
+  /* Contexto en columna */
+  .bi-context-line { grid-template-columns: 1fr; gap: 4px; }
+  .bi-view-toggle { display: none; }
+  /* KPIs 2 col */
+  .bi-kpi-row { grid-template-columns: 1fr 1fr; }
+  /* Grillas a 1 col */
+  .bi-row--70-30, .bi-row--50-50, .bi-row--33-33-33 { grid-template-columns: 1fr; }
+  .bi-support-grid { grid-template-columns: 1fr 1fr; }
+  .bi-decisions { grid-template-columns: 1fr; }
+}
+
 @media (max-width:1200px){
   .bi-row--70-30 { grid-template-columns: 1fr; }
   .bi-row--33-33-33 { grid-template-columns: 1fr 1fr; }
@@ -666,14 +708,13 @@
 /* ── Mobile ≤ 600px ─────────────────────────────────────────────────── */
 @media (max-width:600px){
 
-  /* Compensar topbar fija del sidebar */
-  .bi-content { padding: 70px 10px 20px; gap: 10px; }
-
-  /* Header del BI compacto */
-  .bi-header { padding: 0 10px 0 14px; height: 50px; top: 56px; }
-  .bi-header::before { top: 10px; bottom: 10px; }
-  .bi-header__tab { font-size: 11px; padding: 4px 9px; }
+  /* Header compacto */
+  .bi-header { padding: 6px 10px; top: var(--sb-brand-height,48px); }
+  .bi-header::before { display: none; }
+  .bi-header__tab { font-size: 11px; padding: 4px 8px; }
   .bi-header__sync { display: none; }
+  /* Contenido */
+  .bi-content { padding: 10px 10px calc(92px + env(safe-area-inset-bottom,0px)); gap: 10px; }
 
   /* Filtros 2x2 */
   .bi-filters { grid-template-columns: repeat(2,1fr); gap: 6px; padding: 8px 10px; }
