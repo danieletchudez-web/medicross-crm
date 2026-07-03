@@ -47,7 +47,7 @@ export default function DashboardComercial() {
   const [rawData,    setRawData]    = useState([]);
   const [filtered,   setFiltered]   = useState([]);
   const [loading,    setLoading]    = useState(true);
-  const [collapsed,  setCollapsed]  = useState(false);
+  const [collapsed,  setCollapsed]  = useState(true);
   const [status,     setStatus]     = useState('');
 
   /* Filtros */
@@ -307,20 +307,39 @@ export default function DashboardComercial() {
     <div style={{ background: 'var(--bg2, #f7f7f6)', border: '.5px solid var(--bd, rgba(0,0,0,.11))', borderRadius: 16, padding: 20, marginBottom: 24 }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>Análisis Comercial</div>
-          <div style={{ fontSize: 12, color: '#9a9a9a', marginTop: 2 }}>Indicadores y rendimiento de cotizaciones</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: collapsed ? 0 : 18, gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Análisis Comercial</div>
+            <div style={{ fontSize: 12, color: '#9a9a9a', marginTop: 2 }}>Indicadores y rendimiento de cotizaciones</div>
+          </div>
+          <button
+            type="button"
+            aria-expanded={!collapsed}
+            onClick={() => setCollapsed(c => !c)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              height: 34, padding: '0 14px',
+              borderRadius: 8,
+              background: collapsed ? '#1d65ad' : '#f1f5f9',
+              border: collapsed ? '1px solid #1557a0' : '1px solid #cbd5e1',
+              color: collapsed ? '#fff' : '#475569',
+              fontSize: 12, fontWeight: 700,
+              letterSpacing: '.04em', textTransform: 'uppercase',
+              fontFamily: 'inherit', cursor: 'pointer',
+              boxShadow: collapsed ? '0 2px 8px rgba(29,101,173,.25)' : 'none',
+              transition: 'all .15s ease',
+            }}
+          >
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform .2s ease', flexShrink: 0 }}
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+            {collapsed ? 'Ver análisis' : 'Ocultar'}
+          </button>
         </div>
-        <button onClick={() => setCollapsed(c => !c)} style={{
-          display: 'flex', alignItems: 'center', gap: 5, height: 30, padding: '0 12px',
-          borderRadius: 99, background: 'var(--bg,#fff)', border: '.5px solid var(--bd2,rgba(0,0,0,.2))',
-          color: 'var(--text2,#6b6b6b)', fontSize: 11, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-        }}>
-          <span style={{ transform: collapsed ? 'rotate(-90deg)' : '', display: 'inline-block', transition: 'transform .2s' }}>▼</span>
-          {collapsed ? 'Mostrar' : 'Ocultar'}
-        </button>
-      </div>
 
       {!collapsed && (
         <>
