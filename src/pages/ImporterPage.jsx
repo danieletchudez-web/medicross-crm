@@ -197,9 +197,19 @@ function monthLabel(date) {
     .replace(/^\w/, c => c.toUpperCase());
 }
 
+function parseFecha(value) {
+  if (!value) return null;
+  if (value instanceof Date) return isNaN(value) ? null : value;
+  const s = String(value).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
 function monthKey(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date)) return null;
+  const date = value instanceof Date ? value : parseFecha(value);
+  if (!date || isNaN(date)) return null;
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -420,7 +430,7 @@ export default function ImporterPage({ profile, onNavigate }) {
 
     const byWeek = {};
     filteredSales.forEach(s => {
-      const d = new Date(s.fecha); if (isNaN(d)) return;
+      const d = parseFecha(s.fecha); if (!d) return;
       const wk = Math.floor(d.getTime() / (7 * 86400000));
       byWeek[wk] = (byWeek[wk] || 0) + safeN(s.total_venta);
     });
@@ -428,7 +438,7 @@ export default function ImporterPage({ profile, onNavigate }) {
 
     const byMonthObj = {};
     filteredSales.forEach(s => {
-      const d = new Date(s.fecha); if (isNaN(d)) return;
+      const d = parseFecha(s.fecha); if (!d) return;
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       byMonthObj[k] = (byMonthObj[k] || 0) + safeN(s.total_venta);
     });
@@ -478,7 +488,7 @@ export default function ImporterPage({ profile, onNavigate }) {
   ].filter(Boolean).length;
 
   const filteredDateRange = useMemo(() => {
-    const dates = filteredSales.map(s => new Date(s.fecha)).filter(d => !isNaN(d)).sort((a, b) => a - b);
+    const dates = filteredSales.map(s => parseFecha(s.fecha)).filter(d => d && !isNaN(d)).sort((a, b) => a - b);
     if (dates.length === 0) return "Sin fechas";
     const format = d => d.toLocaleDateString("es-AR");
     return `${format(dates[0])} - ${format(dates[dates.length - 1])}`;
@@ -497,7 +507,7 @@ export default function ImporterPage({ profile, onNavigate }) {
       list.push({ type: "danger", icon: "alert", title: "Caída de ventas", desc: `Las ventas cayeron ${Math.abs(kpis.momChange).toFixed(1).replace(".", ",")}% vs. el mes anterior.`, val: `${kpis.momChange.toFixed(1).replace(".", ",")}%` });
     if (kpis.fcastPct !== null && kpis.fcastPct < 90)
       list.push({ type: "warning", icon: "alert", title: "Forecast en riesgo", desc: `Cumplimiento del ${kpis.fcastPct}% del forecast mensual.`, val: `${kpis.fcastPct}%` });
-    const sinCompra60 = new Set(filteredSales.filter(s => { const d = new Date(s.fecha); return !isNaN(d) && (new Date() - d) > 60 * 86400000; }).map(s => s.cliente)).size;
+    const sinCompra60 = new Set(filteredSales.filter(s => { const d = parseFecha(s.fecha); return d && (new Date() - d) > 60 * 86400000; }).map(s => s.cliente)).size;
     if (sinCompra60 > 0)
       list.push({ type: "info", icon: "users", title: "Clientes inactivos", desc: `${sinCompra60} clientes sin compras en más de 60 días.`, val: String(sinCompra60) });
     if (kpis.pendienteCount > 0)
@@ -558,7 +568,7 @@ export default function ImporterPage({ profile, onNavigate }) {
     [lineRef, ticketRef, donutRef].forEach(r => { if (r.current?.chartInstance) r.current.chartInstance.destroy(); });
     const byMonth = {};
     filteredSales.forEach(s => {
-      if (!s.fecha) return; const d = new Date(s.fecha); if (isNaN(d)) return;
+      const d = parseFecha(s.fecha); if (!d) return;
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const v = Number(s.total_venta); byMonth[k] = (byMonth[k] || 0) + (isFinite(v) ? v : 0);
     });
@@ -581,8 +591,7 @@ export default function ImporterPage({ profile, onNavigate }) {
     }
     const byMonthTicket = {};
     filteredSales.forEach(s => {
-      if (!s.fecha) return;
-      const d = new Date(s.fecha); if (isNaN(d)) return;
+      const d = parseFecha(s.fecha); if (!d) return;
       const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
       if (!byMonthTicket[k]) byMonthTicket[k] = { total:0, comps: new Set(), count:0 };
       const v = isFinite(Number(s.total_venta)) ? Number(s.total_venta) : 0;

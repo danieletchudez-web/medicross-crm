@@ -2115,57 +2115,65 @@
   color: #fff;
 }
 
-.ph-header-actions,
-.ph-import-bac,
-.ph-back-button {
+.ph-header-actions {
   display: flex;
   align-items: center;
+  gap: 2px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 1px 4px rgba(15,23,42,.06);
 }
 
-.ph-header-actions {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
+.ph-toolbar__sep {
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  margin: 0 5px;
+  flex-shrink: 0;
 }
 
 .ph-import-bac,
 .ph-back-button {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  min-height: 34px;
-  padding: 7px 13px;
+  padding: 6px 11px;
+  border: none;
+  background: transparent;
   border-radius: 8px;
   cursor: pointer;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 800;
-  transition: border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #475569;
+  transition: background .12s, color .12s;
+}
+
+.ph-import-bac:hover,
+.ph-back-button:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 .ph-import-bac {
-  border: 1px solid #185fa5;
-  background: #185fa5;
+  background: #0f2444;
   color: #fff;
-  box-shadow: 0 5px 12px rgba(24, 95, 165, .18);
+  font-weight: 600;
+  padding: 6px 14px;
 }
 
 .ph-import-bac:hover {
-  background: #124f8c;
+  background: #1a3a6b;
+  box-shadow: 0 2px 8px rgba(15,36,68,.25);
 }
 
 .ph-import-bac:disabled {
-  cursor: wait;
   opacity: .65;
-}
-
-.ph-back-button {
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  color: #334155;
-}
-
-.ph-back-button:hover {
-  border-color: #bfdbfe;
-  color: #185fa5;
+  cursor: wait;
+  box-shadow: none;
 }
 
 .ph-latest-card__meta .ph-source-bac {
@@ -2496,13 +2504,14 @@
 
 @media (max-width: 720px) {
   .ph-header-actions {
+    flex-wrap: wrap;
     width: 100%;
-    justify-content: stretch;
+    border-radius: 10px;
   }
 
   .ph-header-actions button {
-    justify-content: center;
     flex: 1 1 auto;
+    justify-content: center;
   }
 
   .ph-bac-backdrop {
