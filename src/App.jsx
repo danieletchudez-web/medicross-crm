@@ -5,6 +5,7 @@ import { canOpenModule, getFirstOpenModule } from "./lib/moduleAccess";
 import LoginPage          from "./pages/LoginPage";
 import CRMAssistant       from "./components/CRMAssistant";
 import DialogSystem       from "./components/DialogSystem";
+import MobileNav          from "./components/MobileNav";
 
 class PageErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
@@ -45,6 +46,7 @@ const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
 const TasksPage             = lazy(() => import("./pages/TasksPage"));
 const SuppliersPage         = lazy(() => import("./pages/SuppliersPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
+const MobileHomePage        = lazy(() => import("./pages/MobileHomePage"));
 
 const ALL_PAGES = [
   { id: "managerDashboard",  Component: ManagerDashboard },
@@ -67,6 +69,7 @@ const ALL_PAGES = [
   { id: "tasks",             Component: TasksPage },
   { id: "suppliers",         Component: SuppliersPage },
   { id: "settings",          Component: SettingsPage },
+  { id: "mobileHome",        Component: MobileHomePage },
 ];
 
 const FALLBACK_PROFILE = {
@@ -80,7 +83,7 @@ const FALLBACK_PROFILE = {
 };
 
 function canOpenPageForProfile(profile, pageId, isMobile = false) {
-  if (["notifications","settings","tasks","suppliers"].includes(pageId)) return true;
+  if (["notifications","settings","tasks","suppliers","mobileHome"].includes(pageId)) return true;
   if (pageId === "accountDetail") return canOpenModule(profile, "accounts", isMobile);
   return canOpenModule(profile, pageId, isMobile);
 }
@@ -140,7 +143,11 @@ function FullPageLoader({ label = "Cargando módulo…", overlay = false }) {
 export default function App() {
   const [session,      setSession]      = useState(null);
   const [profile,      setProfile]      = useState(null);
-  const [page,         setPage]         = useState(() => localStorage.getItem("crm_current_page") || "managerDashboard");
+  const [page,         setPage]         = useState(() => {
+    const saved = localStorage.getItem("crm_current_page") || "managerDashboard";
+    if (window.matchMedia?.("(max-width: 768px)").matches && (saved === "managerDashboard" || saved === "sellerDashboard")) return "mobileHome";
+    return saved;
+  });
   const [navigateData, setNavigateData] = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [crmData,      setCrmData]      = useState(null);
@@ -297,6 +304,8 @@ export default function App() {
     );
   }
 
+  async function handleLogout() { await supabase.auth.signOut(); }
+
   function navigate(p, data) {
     const targetPage = canOpenPageForProfile(safeProfile, p, isMobileViewport)
       ? p
@@ -366,6 +375,7 @@ export default function App() {
       {routeLoading && <FullPageLoader label="Preparando módulo…" overlay />}
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
       <DialogSystem />
+      <MobileNav currentPage={currentPage} onNavigate={navigate} profile={safeProfile} onLogout={handleLogout} />
     </>
   );
 }
