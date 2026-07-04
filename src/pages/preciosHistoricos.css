@@ -912,7 +912,7 @@
 .ph-chart-trend__label {
   font-size: 11px;
   color: #94a3b8;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 
 /* Tooltip text inside SVG */
@@ -920,12 +920,12 @@
   fill: #64748b;
   font-size: 9.5px;
   font-weight: 700;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 .ph-chart-tooltip-row {
   fill: #0f172a;
   font-size: 9px;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 
 .ph-chart-grid {

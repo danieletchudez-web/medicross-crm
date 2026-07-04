@@ -17,7 +17,7 @@
   align-items: center;
   justify-content: center;
   transition: transform 0.2s, box-shadow 0.2s;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 
 .crm-ai-fab:hover {
@@ -46,7 +46,7 @@
   z-index: 999;
   overflow: hidden;
   animation: crm-slide-up 0.18s ease;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 
 @keyframes crm-slide-up {
@@ -225,7 +225,7 @@
   padding: 7px 10px;
   font-size: 11.5px;
   font-weight: 600;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   cursor: pointer;
   text-align: left;
   transition: background 0.15s;
@@ -251,7 +251,7 @@
   border-radius: 11px;
   padding: 9px 12px;
   font-size: 13px;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   color: #0f172a;
   resize: none;
   outline: none;

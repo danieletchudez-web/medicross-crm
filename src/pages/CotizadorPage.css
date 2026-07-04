@@ -3,7 +3,7 @@
 .cot-page {
   padding: 18px 24px 60px;
   display: flex; flex-direction: column; gap: 16px;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   background: #f0f2f5; min-height: 100vh;
   position: relative;
 }
@@ -444,7 +444,7 @@
 /* ── Price Intelligence Badge ── */
 .cot-pi-loading {
   font-size: 11px; color: #94a3b8; padding: 5px 2px; font-style: italic;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 .cot-pi-hint {
   margin: 7px 0 2px; padding: 8px 10px; border: 1px dashed #bfdbfe;
@@ -460,7 +460,7 @@
 .cot-pi-badge--neutral { background: #f8fafc; border-color: #e2e8f0; }
 
 .cot-pi-head { display: flex; align-items: center; justify-content: space-between; }
-.cot-pi-status { font-size: 11.5px; font-weight: 700; font-family: "Inter", system-ui, sans-serif; }
+.cot-pi-status { font-size: 11.5px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif; }
 .cot-pi-badge--ok     .cot-pi-status { color: #15803d; }
 .cot-pi-badge--cerca  .cot-pi-status { color: #92400e; }
 .cot-pi-badge--riesgo .cot-pi-status { color: #dc2626; }
@@ -474,14 +474,14 @@
 .cot-pi-data { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .cot-pi-data span {
   display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: #64748b;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 .cot-pi-data strong { font-family: "JetBrains Mono", monospace, monospace; font-weight: 700; font-size: 12.5px; color: #0f172a; }
 
 .cot-pi-use {
   align-self: flex-start; border: none; border-radius: 7px;
   padding: 5px 12px; font-size: 11.5px; font-weight: 700;
-  cursor: pointer; font-family: "Inter", system-ui, sans-serif;
+  cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   transition: filter 0.12s, transform 0.1s;
 }
 .cot-pi-badge--ok     .cot-pi-use { background: #dcfce7; color: #15803d; }

@@ -20,7 +20,7 @@
   --tn-page-x: 24px;
   padding: 18px 24px 40px;
   display: flex; flex-direction: column; gap: 14px;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   background: var(--tn-bg);
   min-height: 100vh;
   color: var(--tn-text);
@@ -309,7 +309,7 @@
 /* ─── GRID ───────────────────────────────────────────────────────────── */
 .tn-grid-wrap { background: var(--tn-surface); border: 1px solid var(--tn-border); border-radius: var(--tn-radius3); overflow: hidden; box-shadow: 0 1px 4px rgba(15,23,42,.06); }
 .tn-grid-scroll { overflow-x: auto; overflow-y: auto; max-height: calc(100vh - 300px); }
-.tn-grid { border-collapse: collapse; font-family: "Inter", system-ui, sans-serif; font-size: 12.5px; white-space: nowrap; min-width: 100%; }
+.tn-grid { border-collapse: collapse; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif; font-size: 12.5px; white-space: nowrap; min-width: 100%; }
 .tn-grid__head-row { position: sticky; top: 0; z-index: 3; }
 .tn-grid__th { background: var(--tn-navy); color: rgba(255,255,255,.85); padding: 11px 10px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; border-right: 1px solid rgba(255,255,255,.08); cursor: pointer; user-select: none; white-space: nowrap; }
 .tn-grid__th:hover { background: var(--tn-navy2); }

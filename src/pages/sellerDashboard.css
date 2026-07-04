@@ -24,7 +24,7 @@
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 18px;
-  --font: "Inter", system-ui, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace, monospace;
 }
 

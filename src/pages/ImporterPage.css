@@ -5,7 +5,7 @@
   display: flex;
   min-height: 100vh;
   background: #f1f5f9;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 .bi-main {
   flex: 1;
@@ -284,7 +284,7 @@
 .bi-forecast-select {
   flex: 1; border: 1px solid #e8ecf2; background: #f8fafc;
   border-radius: 7px; padding: 5px 9px;
-  font-size: 11.5px; font-family: "Inter", system-ui, sans-serif;
+  font-size: 11.5px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   color: #334155; font-weight: 600; outline: none; cursor: pointer; transition: border-color .15s;
 }
 .bi-forecast-select:focus { border-color: #6366f1; background: #fff; }
@@ -856,7 +856,7 @@
   box-shadow: 0 8px 24px rgba(15,23,42,0.25);
   z-index: 999;
   pointer-events: none;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   letter-spacing: 0.1px;
 }
 .kpi-tooltip-box::before {
