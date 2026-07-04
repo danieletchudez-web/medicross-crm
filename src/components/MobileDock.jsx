@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import {
   CalendarPlus, Sparkles, UserPlus, Target, MapPin, Calendar,
   CheckSquare, FileText, Briefcase, Package, Truck, Megaphone, Bell,
-  BarChart2, Users, Settings, User, ChevronRight, LogOut, Moon, Sun, Plus,
+  BarChart2, Users, Settings, User, ChevronRight, LogOut, Moon, Sun, Plus, X,
 } from "lucide-react";
 
-// ── Contextual center button map ─────────────────────────────────────────────
 const DOCK_CONTEXTS = {
   mobileHome:       { Icon: Sparkles,     label: "Medix",       action: "medix" },
   managerDashboard: { Icon: Sparkles,     label: "Medix",       action: "medix" },
@@ -53,6 +52,12 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
   const [medixActive, setMedixActive] = useState(false);
   const [contextKey,  setContextKey]  = useState(currentPage);
   const prevPage = useRef(currentPage);
+
+  // Swipe-to-dismiss — use refs so handlers always see current values
+  const [dragDelta,   setDragDelta] = useState(0);  // drives the inline style (triggers render)
+  const isDraggingRef = useRef(false);
+  const dragStartY    = useRef(0);
+  const currentDelta  = useRef(0);
 
   const modules = (() => {
     try { return JSON.parse(localStorage.getItem("mob_modules")) || DEFAULT_MODULES; }
@@ -109,6 +114,27 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
   const { Icon: CtxIcon, label: ctxLabel, action: ctxAction } = ctx;
   const isCtxMedix = ctxAction === "medix";
 
+  // ── Swipe-to-dismiss handlers (handle + header only) ──
+  function onDragStart(e) {
+    dragStartY.current  = e.touches[0].clientY;
+    currentDelta.current = 0;
+    isDraggingRef.current = true;
+  }
+  function onDragMove(e) {
+    if (!isDraggingRef.current) return;
+    const delta = Math.max(0, e.touches[0].clientY - dragStartY.current);
+    currentDelta.current = delta;
+    setDragDelta(delta);   // triggers re-render for inline transform
+  }
+  function onDragEnd() {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    const delta = currentDelta.current;
+    currentDelta.current = 0;
+    setDragDelta(0);       // clears inline transform → CSS transition resumes
+    if (delta > 80) setSheetOpen(false);
+  }
+
   function handleCtx() {
     if (ctxAction === "medix") {
       document.dispatchEvent(new CustomEvent("crm:toggle-medix"));
@@ -135,10 +161,15 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     document.dispatchEvent(new CustomEvent("crm:toggle-medix"));
   }
 
+  // Sheet inline style while dragging — dragDelta > 0 drives the override
+  const sheetDragStyle = dragDelta > 0
+    ? { transform: `translateY(${dragDelta}px)`, transition: "none" }
+    : undefined;
+
   return (
     <>
-      {/* ── Dock pill ────────────────────────────────────────────────────── */}
-      <div className="mob-dock" role="toolbar" aria-label="Acciones rápidas">
+      {/* ── Dock pill ─────────────────────────────────────────────────── */}
+      <div className={`mob-dock${sheetOpen ? " mob-dock--recede" : ""}`} role="toolbar" aria-label="Acciones rápidas">
 
         <button className="mob-dock-btn mob-dock-btn--side" onClick={handleQuickVisit} aria-label="Visita rápida">
           <CalendarPlus size={15} strokeWidth={1.5} aria-hidden="true" />
@@ -174,22 +205,48 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
 
       </div>
 
-      {/* ── Backdrop ─────────────────────────────────────────────────────── */}
+      {/* ── Backdrop ──────────────────────────────────────────────────── */}
       {sheetOpen && (
         <div className="mob-backdrop" onClick={() => setSheetOpen(false)} aria-hidden="true" />
       )}
 
-      {/* ── Bottom sheet ─────────────────────────────────────────────────── */}
+      {/* ── Bottom sheet ──────────────────────────────────────────────── */}
       <div
         className={`mob-sheet${sheetOpen ? " mob-sheet--open" : ""}`}
+        style={sheetDragStyle}
         role="dialog"
         aria-modal="true"
         aria-label="Menú móvil"
       >
-        <div className="mob-sheet-handle" />
+        {/* Draggable handle */}
+        <div
+          className="mob-sheet-handle"
+          onTouchStart={onDragStart}
+          onTouchMove={onDragMove}
+          onTouchEnd={onDragEnd}
+        />
+
+        {/* Fixed header — stays visible during scroll */}
+        <div
+          className="mob-sheet-header"
+          onTouchStart={onDragStart}
+          onTouchMove={onDragMove}
+          onTouchEnd={onDragEnd}
+        >
+          <span className="mob-sheet-header__spacer" aria-hidden="true" />
+          <span className="mob-sheet-header__title">Menú</span>
+          <button
+            className="mob-sheet-header__close"
+            onClick={() => setSheetOpen(false)}
+            aria-label="Cerrar menú"
+          >
+            <X size={18} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Scrollable content */}
         <div className="mob-sheet-scroll">
 
-          {/* CREAR */}
           <div className="mob-sheet-section-label">CREAR</div>
           {QUICK_ACTIONS.map(({ key, label, Icon: Ic }) => (
             <button key={key} className="mob-sheet-row" onClick={() => { setSheetOpen(false); onNavigate(key); }}>
@@ -199,7 +256,6 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
             </button>
           ))}
 
-          {/* IR A */}
           <div className="mob-sheet-section-label">IR A</div>
           <div className="mob-module-grid">
             {modules.map(({ key, label, Icon: Ic }) => (
@@ -210,7 +266,6 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
             ))}
           </div>
 
-          {/* ASISTENTE IA */}
           <div className="mob-sheet-section-label">ASISTENTE IA</div>
           <button className="mob-sheet-row" onClick={openMedix}>
             <span className="mob-sheet-row__icon mob-sheet-row__icon--medix">
@@ -220,7 +275,6 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
             <span className="mob-sheet-ai-badge">IA</span>
           </button>
 
-          {/* CUENTA */}
           <div className="mob-sheet-section-label">CUENTA</div>
           <button className="mob-sheet-row" onClick={() => { setSheetOpen(false); onNavigate("settings"); }}>
             <span className="mob-sheet-row__icon"><User size={18} strokeWidth={1.5} /></span>

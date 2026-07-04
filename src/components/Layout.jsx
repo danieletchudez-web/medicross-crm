@@ -28,11 +28,13 @@ function LiveClock() {
 
 // Mobile-only date shown below the module title in the header
 function MobileHeaderDate() {
-  const date = new Date().toLocaleDateString("es-AR", {
+  const raw = new Date().toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+  // Capitalize only the first character; avoid CSS capitalize which uppercases every word
+  const date = raw.charAt(0).toUpperCase() + raw.slice(1);
   return <span className="page-header__mobile-date">{date}</span>;
 }
 
