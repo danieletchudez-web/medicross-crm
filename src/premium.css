@@ -60,6 +60,31 @@
 [data-theme="dark"] .layout-clock__date { font-size: 10px !important; color: #6B7280 !important; }
 
 /* ─── Sidebar ─────────────────────────────────────────────────────────────── */
+/* Sidebar negro en ambos modos */
+.sidebar {
+  background: #0d0d0d !important;
+  border-right: 1px solid rgba(255,255,255,.04) !important;
+  box-shadow: none !important;
+}
+.sidebar-nav__label   { color: rgba(255,255,255,.55) !important; }
+.sidebar-nav__icon    { color: rgba(255,255,255,.3) !important; }
+.sidebar-section__label { color: rgba(255,255,255,.14) !important; }
+.sidebar-brand__name  { color: rgba(255,255,255,.9) !important; }
+.sidebar-brand__sub   { color: rgba(255,255,255,.35) !important; }
+.sidebar-nav__item    { color: rgba(255,255,255,.55) !important; }
+.sidebar-nav__item:hover { background: rgba(255,255,255,.055) !important; }
+.sidebar-nav__item.active,
+.sidebar-nav__item--active { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.9) !important; }
+.sidebar-nav__item.active .sidebar-nav__icon,
+.sidebar-nav__item--active .sidebar-nav__icon { color: rgba(255,255,255,.75) !important; }
+.sidebar-nav__item.active .sidebar-nav__label,
+.sidebar-nav__item--active .sidebar-nav__label { color: rgba(255,255,255,.9) !important; }
+.sidebar-section__divider { display: none !important; }
+.sidebar-logout  { color: rgba(255,255,255,.35) !important; }
+.sidebar-logout:hover { background: rgba(255,255,255,.055) !important; }
+.sidebar-brand__mark { background: rgba(255,255,255,.06) !important; color: rgba(255,255,255,.4) !important; border: none !important; }
+.sidebar-edit-btn { background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.07) !important; color: rgba(255,255,255,.3) !important; }
+.sidebar-reset-btn { color: rgba(255,255,255,.3) !important; background: transparent !important; border: none !important; }
 [data-theme="dark"] .sidebar {
   background: #0d0d0d !important;
   border-right: 1px solid rgba(255,255,255,.04) !important;
