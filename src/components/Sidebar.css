@@ -31,26 +31,118 @@
   --sb-dur-out: 0.36s;
 }
 
-/* Modo oscuro — sidebar negro puro */
+/* ─── Modo oscuro — Sidebar estilo Rimu ──────────────────────────────────
+   Negro puro, aire, sin azul, íconos grises, items activos como cápsula  */
+
 [data-theme="dark"] .sidebar,
 [data-theme="dark"] .sidebar--collapsed {
-  background: #0d0d0d !important;
-  border-right-color: rgba(255,255,255,0.06) !important;
+  background: #0a0a0a !important;
+  border-right: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: none !important;
 }
 [data-theme="dark"] .sidebar-brand {
-  background: #0d0d0d !important;
-  border-bottom-color: rgba(255,255,255,0.06) !important;
+  background: #0a0a0a !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
 }
-[data-theme="dark"] .sidebar-body {
-  background: #0d0d0d !important;
-}
+[data-theme="dark"] .sidebar-body { background: #0a0a0a !important; }
+
 [data-theme="dark"] .sidebar-pin-btn {
-  background: #1a1a1a !important;
-  border-color: rgba(255,255,255,0.1) !important;
+  background: #181818 !important;
+  border-color: rgba(255,255,255,0.07) !important;
+  color: rgba(255,255,255,0.3) !important;
+  box-shadow: none !important;
 }
+[data-theme="dark"] .sidebar-pin-btn:hover {
+  background: #202020 !important;
+  color: rgba(255,255,255,0.6) !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .sidebar-pin-btn.pinned {
+  background: #181818 !important;
+  color: rgba(255,255,255,0.5) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: none !important;
+}
+
 [data-theme="dark"] .sidebar-section__divider {
-  background: rgba(255,255,255,0.06) !important;
+  background: rgba(255,255,255,0.04) !important;
+  margin: 10px 14px !important;
 }
+
+/* Quick actions — gris, no azul */
+[data-theme="dark"] .sidebar-quick button {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.5) !important;
+  border-radius: 10px !important;
+  font-weight: 500 !important;
+  font-size: 11.5px !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .sidebar-quick button::after { opacity: 0 !important; }
+[data-theme="dark"] .sidebar-quick button:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  color: rgba(255,255,255,0.75) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Nav items — cápsula gris, sin escala */
+[data-theme="dark"] .sidebar-nav__item {
+  border-radius: 10px !important;
+  transition: background 150ms ease-out !important;
+}
+[data-theme="dark"] .sidebar-nav__item:hover {
+  background: rgba(255,255,255,0.05) !important;
+  transform: none !important;
+}
+[data-theme="dark"] .sidebar-nav__item:hover .sidebar-nav__icon {
+  color: rgba(255,255,255,0.65) !important;
+  transform: none !important;
+}
+[data-theme="dark"] .sidebar-nav__item:hover .sidebar-nav__label { color: #F4F4F5 !important; }
+[data-theme="dark"] .sidebar-nav__item:active {
+  background: rgba(255,255,255,0.07) !important;
+  transform: none !important;
+}
+/* Eliminar chevron de hover */
+[data-theme="dark"] .sidebar-nav__item::after { display: none !important; }
+
+/* Ícono gris, stroke fino */
+[data-theme="dark"] .sidebar-nav__icon { color: #6B7280 !important; }
+[data-theme="dark"] .sidebar-nav__icon svg { stroke-width: 1.5 !important; }
+
+/* Label — peso medio, gris */
+[data-theme="dark"] .sidebar-nav__label {
+  color: #A1A1AA !important;
+  font-weight: 500 !important;
+}
+
+/* Section labels — muy sutiles */
+[data-theme="dark"] .sidebar-section__label {
+  color: rgba(255,255,255,0.18) !important;
+  font-size: 9px !important;
+  padding-top: 12px !important;
+}
+[data-theme="dark"] .sidebar-nav__group-label { color: rgba(255,255,255,0.18) !important; }
+
+/* Footer */
+[data-theme="dark"] .sidebar-footer { border-top-color: rgba(255,255,255,0.04) !important; }
+[data-theme="dark"] .sidebar-theme-toggle {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+[data-theme="dark"] .sidebar-theme-toggle:hover { background: rgba(255,255,255,0.04) !important; }
+[data-theme="dark"] .sidebar-theme-toggle .sidebar-logout__label,
+[data-theme="dark"] .sidebar-logout .sidebar-logout__label { color: #6B7280 !important; font-weight: 500 !important; }
+[data-theme="dark"] .sidebar-logout__icon,
+[data-theme="dark"] .sidebar-theme-toggle__icon { color: #6B7280 !important; }
+[data-theme="dark"] .sidebar-logout:hover .sidebar-logout__label { color: rgba(255,255,255,0.7) !important; }
+[data-theme="dark"] .sidebar-logout:hover .sidebar-logout__icon { color: rgba(255,255,255,0.6) !important; }
+
+/* Brand mark (colapsado) — gris oscuro no azul */
+[data-theme="dark"] .sidebar-brand__mark { background: #1c1c1c !important; color: rgba(255,255,255,0.7) !important; box-shadow: none !important; }
 
 /* ─── Shell ──────────────────────────────────────────────────────────── */
 .sidebar {
@@ -287,11 +379,11 @@
 }
 
 [data-theme="dark"] .mobile-bottom-nav {
-  border-color: #273244;
-  background: rgba(15,24,36,.96);
+  border-color: rgba(255,255,255,0.05);
+  background: rgba(10,10,10,0.96);
 }
 
-[data-theme="dark"] .mobile-bottom-nav button { color: #a8b7cc; }
+[data-theme="dark"] .mobile-bottom-nav button { color: #6B7280; }
 
 .sidebar-nav__group-row {
   display: flex;

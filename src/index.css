@@ -40,20 +40,20 @@ body,
 
 /* ─── Dark mode ──────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg: #141414;
-  --sidebar: #0d0d0d;
-  --card: #1e1e1e;
-  --text: #f0f0f0;
-  --muted: #9a9a9a;
-  --border: rgba(255,255,255,0.08);
-  --primary: #58a6ff;
-  --primary-soft: rgba(88,166,255,0.12);
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
-  --surface: #1e1e1e;
-  --border-light: rgba(255,255,255,0.05);
-  --text-primary: #f0f0f0;
-  --text-secondary: #9a9a9a;
-  --text-tertiary: #666666;
+  --bg:             #111111;
+  --sidebar:        #0a0a0a;
+  --surface:        #181818;
+  --card:           #1c1c1c;
+  --text:           #F4F4F5;
+  --muted:          #A1A1AA;
+  --border:         rgba(255,255,255,0.05);
+  --border-light:   rgba(255,255,255,0.04);
+  --primary:        #58a6ff;
+  --primary-soft:   rgba(88,166,255,0.12);
+  --shadow:         none;
+  --text-primary:   #F4F4F5;
+  --text-secondary: #A1A1AA;
+  --text-tertiary:  #6B7280;
 }
 
 [data-theme="dark"] body { background: var(--bg); color: var(--text); }
