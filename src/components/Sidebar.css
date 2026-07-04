@@ -31,6 +31,27 @@
   --sb-dur-out: 0.36s;
 }
 
+/* Modo oscuro — sidebar negro puro */
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .sidebar--collapsed {
+  background: #0d0d0d !important;
+  border-right-color: rgba(255,255,255,0.06) !important;
+}
+[data-theme="dark"] .sidebar-brand {
+  background: #0d0d0d !important;
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+}
+[data-theme="dark"] .sidebar-body {
+  background: #0d0d0d !important;
+}
+[data-theme="dark"] .sidebar-pin-btn {
+  background: #1a1a1a !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+[data-theme="dark"] .sidebar-section__divider {
+  background: rgba(255,255,255,0.06) !important;
+}
+
 /* ─── Shell ──────────────────────────────────────────────────────────── */
 .sidebar {
   width: 240px;
