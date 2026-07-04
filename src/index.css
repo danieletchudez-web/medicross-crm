@@ -172,7 +172,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv11", "salt", "ss01", "ss03";
@@ -189,7 +189,7 @@ button, input, select, textarea { font-family: inherit; }
   background:
     radial-gradient(circle at 50% 48%, rgba(15, 78, 137, 0.12), transparent 24%),
     linear-gradient(180deg, #f8fbff 0%, #edf4fb 100%);
-  font-family: "Inter", Inter, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   color: #0f2444;
 }
 
@@ -430,7 +430,7 @@ button, input, select, textarea { font-family: inherit; }
   font-weight: 750;
   letter-spacing: -0.3px;
   color: #0f172a;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -479,7 +479,7 @@ button, input, select, textarea { font-family: inherit; }
   justify-content: center;
   flex-shrink: 0;
   letter-spacing: -0.5px;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 
 .page-header__user-info {
@@ -495,7 +495,7 @@ button, input, select, textarea { font-family: inherit; }
   color: #0f172a;
   white-space: nowrap;
   line-height: 1.2;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 
 .page-header__user-role {
@@ -505,7 +505,7 @@ button, input, select, textarea { font-family: inherit; }
   color: #94a3b8;
   white-space: nowrap;
   line-height: 1;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 
 /* ─── Clock ──────────────────────────────────────────────────────────── */
