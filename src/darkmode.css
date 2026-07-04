@@ -1763,3 +1763,224 @@
 [data-theme="dark"] .sidebar-theme-toggle { background: transparent !important; border-color: transparent !important; }
 [data-theme="dark"] .sidebar-theme-toggle:hover { background: rgba(255,255,255,0.04) !important; }
 [data-theme="dark"] .sidebar-footer { border-top-color: rgba(255,255,255,0.04) !important; }
+[data-theme="dark"] .sidebar-footer { border-top-color: rgba(255,255,255,0.04) !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RIMU SPACING & TYPOGRAPHY — Aire · Secciones · Sin cajas
+   Eliminar bordes visibles. Separar por espacio, no por líneas.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Sin gradiente azul en dashboard ────────────────────────────────────── */
+[data-theme="dark"] .unified-dashboard {
+  background: #111111 !important;
+  padding: 28px !important;
+  gap: 24px !important;
+}
+
+/* ── Eliminar bordes de todas las cards ──────────────────────────────────── */
+[data-theme="dark"] .dash-header,
+[data-theme="dark"] .dash-panel,
+[data-theme="dark"] .dash-primary-kpi,
+[data-theme="dark"] .dash-kpi,
+[data-theme="dark"] .dash-insight,
+[data-theme="dark"] .dash-comparison,
+[data-theme="dark"] .dash-comparison-card,
+[data-theme="dark"] .dash-banner,
+[data-theme="dark"] .dash-loading,
+[data-theme="dark"] .bi-panel,
+[data-theme="dark"] .bi-kpi,
+[data-theme="dark"] .bi-filters,
+[data-theme="dark"] .bi-alerta,
+[data-theme="dark"] .visits-panel,
+[data-theme="dark"] .visits-kpi,
+[data-theme="dark"] .visits-item,
+[data-theme="dark"] .sd-panel,
+[data-theme="dark"] .sd-kpi,
+[data-theme="dark"] .sd-primary-kpi,
+[data-theme="dark"] .sd-list-card,
+[data-theme="dark"] .sa-perf-card,
+[data-theme="dark"] .sa-alerts-summary {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Padding generoso en cards principales ───────────────────────────────── */
+[data-theme="dark"] .dash-header         { padding: 28px 32px !important; }
+[data-theme="dark"] .dash-primary-kpi    { padding: 22px 24px !important; min-height: 130px !important; }
+[data-theme="dark"] .dash-kpi            { padding: 16px 18px !important; }
+[data-theme="dark"] .dash-panel          { padding: 28px 28px !important; gap: 20px !important; }
+[data-theme="dark"] .dash-insight        { padding: 20px 22px !important; border-top: 2px solid rgba(88,166,255,0.3) !important; }
+[data-theme="dark"] .dash-banner         { padding: 20px 24px !important; }
+[data-theme="dark"] .dash-comparison     { padding: 0 !important; }
+[data-theme="dark"] .dash-comparison-card { padding: 18px 20px !important; }
+
+/* BI */
+[data-theme="dark"] .bi-kpi              { padding: 22px 24px !important; }
+[data-theme="dark"] .bi-panel__hd        { padding: 22px 26px 16px !important; border-bottom-color: rgba(255,255,255,0.04) !important; }
+[data-theme="dark"] .bi-content          { padding: 24px 28px 32px !important; gap: 22px !important; }
+[data-theme="dark"] .bi-filters          { padding: 18px 22px !important; }
+
+/* ── Gaps aumentados en todos los grids ──────────────────────────────────── */
+[data-theme="dark"] .dash-primary-kpis   { gap: 20px !important; }
+[data-theme="dark"] .dash-kpi-grid       { gap: 16px !important; }
+[data-theme="dark"] .dash-main-grid,
+[data-theme="dark"] .dash-chart-grid     { gap: 20px !important; }
+[data-theme="dark"] .dash-insights-grid  { gap: 16px !important; }
+[data-theme="dark"] .bi-row              { gap: 20px !important; }
+[data-theme="dark"] .bi-kpi-row          { gap: 16px !important; }
+[data-theme="dark"] .dash-comparison__grid { gap: 12px !important; }
+
+/* ── Tipografía — pesos reducidos ────────────────────────────────────────── */
+/* Labels uppercase pequeños → Medium en vez de Bold */
+[data-theme="dark"] .dash-primary-kpi__label { font-weight: 500 !important; font-size: 10px !important; letter-spacing: 0.5px !important; }
+[data-theme="dark"] .dash-primary-kpi__value { font-weight: 600 !important; }
+[data-theme="dark"] .dash-primary-kpi__sub   { font-weight: 400 !important; }
+[data-theme="dark"] .dash-kpi__label         { font-weight: 500 !important; }
+[data-theme="dark"] .dash-kpi__value         { font-weight: 600 !important; }
+[data-theme="dark"] .dash-panel__header h3,
+[data-theme="dark"] .dash-panel__title       { font-weight: 500 !important; font-size: 13px !important; }
+[data-theme="dark"] .dash-wordmark           { font-weight: 500 !important; }
+[data-theme="dark"] .dash-title              { font-weight: 600 !important; font-size: clamp(22px, 2vw, 30px) !important; }
+[data-theme="dark"] .dash-subtitle           { font-weight: 400 !important; }
+[data-theme="dark"] .dash-filter-label       { font-weight: 500 !important; }
+[data-theme="dark"] .dash-comparison__head strong { font-weight: 600 !important; }
+[data-theme="dark"] .dash-insight__label     { font-weight: 500 !important; }
+[data-theme="dark"] .dash-insight__value     { font-weight: 600 !important; }
+[data-theme="dark"] .dash-banner strong      { font-weight: 600 !important; }
+[data-theme="dark"] .dash-hero-status strong { font-weight: 600 !important; }
+
+/* BI */
+[data-theme="dark"] .bi-kpi__label          { font-weight: 500 !important; }
+[data-theme="dark"] .bi-kpi__val            { font-weight: 600 !important; }
+[data-theme="dark"] .bi-kpi__sub            { font-weight: 400 !important; }
+[data-theme="dark"] .bi-panel__hd h3        { font-weight: 500 !important; font-size: 13px !important; }
+[data-theme="dark"] .bi-panel__hd p         { font-weight: 400 !important; }
+[data-theme="dark"] .bi-hero__big           { font-weight: 600 !important; }
+
+/* Reducir todos los font-weight: 700/800 residuales en headings */
+[data-theme="dark"] h1 { font-weight: 600 !important; }
+[data-theme="dark"] h2 { font-weight: 600 !important; }
+[data-theme="dark"] h3 { font-weight: 500 !important; }
+[data-theme="dark"] h4 { font-weight: 500 !important; }
+[data-theme="dark"] h5 { font-weight: 500 !important; }
+
+/* ── Panel dividers internos — casi invisibles ───────────────────────────── */
+[data-theme="dark"] .dash-panel__header { border-bottom-color: rgba(255,255,255,0.04) !important; }
+[data-theme="dark"] .dash-comparison__head { border-bottom-color: rgba(255,255,255,0.04) !important; }
+
+/* ── Hover cards — muy sutil, sin border al aparecer ────────────────────── */
+[data-theme="dark"] .dash-kpi:hover,
+[data-theme="dark"] .dash-primary-kpi:hover,
+[data-theme="dark"] .dash-comparison-card:hover,
+[data-theme="dark"] .bi-kpi:hover {
+  background: #212121 !important;
+  box-shadow: none !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Selector selects en hero ────────────────────────────────────────────── */
+[data-theme="dark"] .dash-filter-select { font-weight: 400 !important; border-radius: 10px !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RIMU SPACING & TYPOGRAPHY — Aire · Secciones · Sin cajas
+   Eliminar bordes visibles. Separar por espacio, no por líneas.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Sin gradiente azul en dashboard ────────────────────────────────────── */
+[data-theme="dark"] .unified-dashboard {
+  background: #111111 !important;
+  padding: 28px !important;
+  gap: 24px !important;
+}
+
+/* ── Eliminar bordes de todas las cards ──────────────────────────────────── */
+[data-theme="dark"] .dash-header,
+[data-theme="dark"] .dash-panel,
+[data-theme="dark"] .dash-primary-kpi,
+[data-theme="dark"] .dash-kpi,
+[data-theme="dark"] .dash-insight,
+[data-theme="dark"] .dash-comparison,
+[data-theme="dark"] .dash-comparison-card,
+[data-theme="dark"] .dash-banner,
+[data-theme="dark"] .dash-loading,
+[data-theme="dark"] .bi-panel,
+[data-theme="dark"] .bi-kpi,
+[data-theme="dark"] .bi-filters,
+[data-theme="dark"] .bi-alerta,
+[data-theme="dark"] .visits-panel,
+[data-theme="dark"] .visits-kpi,
+[data-theme="dark"] .visits-item,
+[data-theme="dark"] .sd-panel,
+[data-theme="dark"] .sd-kpi,
+[data-theme="dark"] .sd-primary-kpi,
+[data-theme="dark"] .sd-list-card,
+[data-theme="dark"] .sa-perf-card,
+[data-theme="dark"] .sa-alerts-summary {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Padding generoso en cards principales ───────────────────────────────── */
+[data-theme="dark"] .dash-header         { padding: 28px 32px !important; }
+[data-theme="dark"] .dash-primary-kpi    { padding: 22px 24px !important; min-height: 130px !important; }
+[data-theme="dark"] .dash-kpi            { padding: 16px 18px !important; }
+[data-theme="dark"] .dash-panel          { padding: 28px 28px !important; gap: 20px !important; }
+[data-theme="dark"] .dash-insight        { padding: 20px 22px !important; border-top: 2px solid rgba(88,166,255,0.3) !important; }
+[data-theme="dark"] .dash-banner         { padding: 20px 24px !important; }
+[data-theme="dark"] .dash-comparison-card { padding: 18px 20px !important; }
+[data-theme="dark"] .bi-kpi              { padding: 22px 24px !important; }
+[data-theme="dark"] .bi-panel__hd        { padding: 22px 26px 16px !important; border-bottom-color: rgba(255,255,255,0.04) !important; }
+[data-theme="dark"] .bi-content          { padding: 24px 28px 32px !important; gap: 22px !important; }
+[data-theme="dark"] .bi-filters          { padding: 18px 22px !important; }
+
+/* ── Gaps aumentados en todos los grids ──────────────────────────────────── */
+[data-theme="dark"] .dash-primary-kpis   { gap: 20px !important; }
+[data-theme="dark"] .dash-kpi-grid       { gap: 16px !important; }
+[data-theme="dark"] .dash-main-grid,
+[data-theme="dark"] .dash-chart-grid     { gap: 20px !important; }
+[data-theme="dark"] .dash-insights-grid  { gap: 16px !important; }
+[data-theme="dark"] .bi-row              { gap: 20px !important; }
+[data-theme="dark"] .bi-kpi-row          { gap: 16px !important; }
+
+/* ── Tipografía — pesos reducidos ────────────────────────────────────────── */
+[data-theme="dark"] .dash-primary-kpi__label { font-weight: 500 !important; }
+[data-theme="dark"] .dash-primary-kpi__value { font-weight: 600 !important; }
+[data-theme="dark"] .dash-primary-kpi__sub   { font-weight: 400 !important; }
+[data-theme="dark"] .dash-kpi__label         { font-weight: 500 !important; }
+[data-theme="dark"] .dash-kpi__value         { font-weight: 600 !important; }
+[data-theme="dark"] .dash-panel__title       { font-weight: 500 !important; font-size: 13px !important; }
+[data-theme="dark"] .dash-wordmark           { font-weight: 500 !important; }
+[data-theme="dark"] .dash-title              { font-weight: 600 !important; }
+[data-theme="dark"] .dash-subtitle           { font-weight: 400 !important; }
+[data-theme="dark"] .dash-filter-label       { font-weight: 500 !important; }
+[data-theme="dark"] .dash-insight__label     { font-weight: 500 !important; }
+[data-theme="dark"] .dash-insight__value     { font-weight: 600 !important; }
+[data-theme="dark"] .dash-banner strong      { font-weight: 600 !important; }
+[data-theme="dark"] .bi-kpi__label           { font-weight: 500 !important; }
+[data-theme="dark"] .bi-kpi__val             { font-weight: 600 !important; }
+[data-theme="dark"] .bi-kpi__sub             { font-weight: 400 !important; }
+[data-theme="dark"] .bi-panel__hd h3         { font-weight: 500 !important; font-size: 13px !important; }
+[data-theme="dark"] .bi-panel__hd p          { font-weight: 400 !important; }
+[data-theme="dark"] .bi-hero__big            { font-weight: 600 !important; }
+[data-theme="dark"] h1 { font-weight: 600 !important; }
+[data-theme="dark"] h2 { font-weight: 600 !important; }
+[data-theme="dark"] h3 { font-weight: 500 !important; }
+[data-theme="dark"] h4 { font-weight: 500 !important; }
+[data-theme="dark"] h5 { font-weight: 500 !important; }
+
+/* ── Separadores internos de panels — casi invisibles ───────────────────── */
+[data-theme="dark"] .dash-panel__header  { border-bottom-color: rgba(255,255,255,0.04) !important; }
+[data-theme="dark"] .dash-comparison__head { border-bottom-color: rgba(255,255,255,0.04) !important; }
+
+/* ── Hover sutil, sin borde al aparecer ─────────────────────────────────── */
+[data-theme="dark"] .dash-kpi:hover,
+[data-theme="dark"] .dash-primary-kpi:hover,
+[data-theme="dark"] .dash-comparison-card:hover,
+[data-theme="dark"] .bi-kpi:hover {
+  background: #212121 !important;
+  box-shadow: none !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Filter select ──────────────────────────────────────────────────────── */
+[data-theme="dark"] .dash-filter-select { font-weight: 400 !important; border-radius: 10px !important; }
