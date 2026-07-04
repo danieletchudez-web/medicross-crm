@@ -341,14 +341,45 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
 
           {/* ── TABLERO ── */}
           {activeTab === "tablero" && (
-            <div className="p-body">
+            <div className="p-list">
               {ranked.length === 0
                 ? <p className="p-empty">Seleccioná al menos un vendedor.</p>
-                : (
-                  <div className="sa-perf-grid">
-                    {ranked.map((s, i) => <SellerPerfCard key={s.id} s={s} rank={i} />)}
-                  </div>
-                )
+                : ranked.map((s, i) => {
+                  const tier = s.score >= 70 ? "top" : s.score >= 40 ? "mid" : "low";
+                  const tierBadge = { top: "p-badge--green", mid: "p-badge--amber", low: "p-badge--red" }[tier];
+                  const tierLabel = { top: "Alto rendimiento", mid: "Rendimiento medio", low: "Necesita atención" }[tier];
+                  const hasAlert = s.overdueOpps > 0 || s.noNextAction > 0 || s.redAccounts > 0;
+                  return (
+                    <div key={s.id} className="p-row">
+                      <span className="p-row__rank">{String(i + 1).padStart(2, "0")}</span>
+                      <div className="p-avatar" style={{ background: s.color, color: "#fff" }}>
+                        {s.name.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div className="p-row__main">
+                        <span className="p-row__name">{s.name}</span>
+                        <span className="p-row__sub">
+                          {s.realizadas} visitas · {s.oppsCreated} opps · Pipeline {compactMoney(s.pipeline)} · Conv. {s.convRate}%
+                        </span>
+                      </div>
+                      <div className="p-row__meta">
+                        {hasAlert && (
+                          <span className="p-badge--red">
+                            {s.overdueOpps > 0
+                              ? `${s.overdueOpps} vencida${s.overdueOpps > 1 ? "s" : ""}`
+                              : s.noNextAction > 0
+                              ? `${s.noNextAction} sin acción`
+                              : `${s.redAccounts} en riesgo`}
+                          </span>
+                        )}
+                        <span className={`p-badge ${tierBadge}`}>{tierLabel}</span>
+                        <span className="p-row__val" style={{ minWidth: 40, textAlign: "right" }}>{s.score}<span style={{ opacity: .45, fontSize: 11 }}>/100</span></span>
+                        <div className="p-progress" style={{ width: 80 }}>
+                          <div className="p-progress-fill" style={{ width: `${s.score}%`, background: s.color }}/>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               }
             </div>
           )}
