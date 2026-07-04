@@ -86,42 +86,66 @@ export default function AccountDetailPage({profile,onNavigate,navigationData}) {
   const filteredEvents = timelineFilter==="all" ? events : events.filter(event=>event.type===timelineFilter);
 
   if (loading) return <Layout title="Vista 360°" profile={profile} onNavigate={onNavigate}><div className="account360-loading">Preparando ficha del cliente...</div></Layout>;
-  if (!account) return <Layout title="Vista 360°" profile={profile} onNavigate={onNavigate}><EmptyState title="Cliente no encontrado" text="Volvé al listado y seleccioná una cuenta válida." action={<button className="account360-btn" onClick={()=>onNavigate("accounts")}>Volver a clientes</button>}/></Layout>;
+  if (!account) return <Layout title="Vista 360°" profile={profile} onNavigate={onNavigate}><EmptyState title="Cliente no encontrado" text="Volvé al listado y seleccioná una cuenta válida." action={<button className="p-btn p-btn--ghost" onClick={()=>onNavigate("accounts")}>Volver a clientes</button>}/></Layout>;
 
   return (
     <Layout title="Vista 360° del Cliente" profile={profile} onNavigate={onNavigate}>
-      <div className="account360-page">
-        <ModuleHeader
-          title={account.name}
-          subtitle={`${account.type||"Cuenta"} · ${[account.city,account.province].filter(Boolean).join(" · ")||"Ubicación sin completar"}`}
-          actions={<button className="account360-btn account360-btn--ghost" onClick={()=>onNavigate("accounts")}><ArrowLeft size={15}/> Volver</button>}
-        />
+      <div className="p-page">
 
-        <section className="account360-hero">
-          <div>
-            <span>Hub comercial del cliente</span>
-            <h2>{account.name}</h2>
-            <p>{account.address||"Dirección pendiente"}{account.phone?` · ${account.phone}`:""}</p>
+        {/* Top panel: account header + metrics */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">{account.name}</span>
+              <span className="p-sub">{account.type||"Cuenta"} · {[account.city,account.province].filter(Boolean).join(" · ")||"Ubicación sin completar"}</span>
+            </div>
+            <div className="p-hd-right">
+              <button className="p-btn p-btn--ghost" onClick={()=>onNavigate("accounts")}><ArrowLeft size={15}/> Volver</button>
+              <button className="p-btn p-btn--primary" onClick={()=>onNavigate("visits",{action:"create",accountId:account.id})}><CalendarPlus size={15}/> Nueva visita</button>
+              <button className="p-btn p-btn--ghost" onClick={()=>onNavigate("opportunities",{action:"create",accountId:account.id})}>+ Oportunidad</button>
+            </div>
           </div>
-          <div className="account360-actions">
-            <button className="account360-btn" onClick={()=>onNavigate("visits",{action:"create",accountId:account.id})}><CalendarPlus size={15}/> Nueva visita</button>
-            <button className="account360-btn account360-btn--light" onClick={()=>onNavigate("opportunities",{action:"create",accountId:account.id})}>+ Oportunidad</button>
+
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Potencial</span>
+              <span className="p-metric__val">{account.potential||"—"}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Seguimiento</span>
+              <span className="p-metric__val">
+                <span className={`p-badge--${account.follow_status==="rojo"?"red":account.follow_status==="amarillo"?"amber":"green"}`}>{account.follow_status||"verde"}</span>
+              </span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Visitas</span>
+              <span className="p-metric__val">{data.visits.length}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Oportunidades</span>
+              <span className="p-metric__val">{data.opportunities.length}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Licitaciones</span>
+              <span className="p-metric__val">{data.tenders.length}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Facturación BI</span>
+              <span className="p-metric__val">{money(data.sales.reduce((sum,row)=>sum+Number(row.total_venta||0),0))}</span>
+            </div>
           </div>
-        </section>
+        </div>
 
-        <section className="account360-kpis">
-          <article className="account360-kpi"><span>Potencial</span><strong>{account.potential||"—"}</strong></article>
-          <article className="account360-kpi"><span>Seguimiento</span><strong><span className={`account360-badge account360-badge--${account.follow_status||"verde"}`}>{account.follow_status||"verde"}</span></strong></article>
-          <article className="account360-kpi"><span>Visitas</span><strong>{data.visits.length}</strong></article>
-          <article className="account360-kpi"><span>Oportunidades</span><strong>{data.opportunities.length}</strong></article>
-          <article className="account360-kpi"><span>Licitaciones</span><strong>{data.tenders.length}</strong></article>
-          <article className="account360-kpi"><span>Facturación BI</span><strong>{money(data.sales.reduce((sum,row)=>sum+Number(row.total_venta||0),0))}</strong></article>
-        </section>
-
-        <nav className="account360-tabs" aria-label="Secciones del cliente">
-          {TABS.map(([id,label,Icon])=><button key={id} className={`account360-tab${active===id?" is-active":""}`} onClick={()=>setActive(id)}><Icon size={15}/>{label}</button>)}
+        {/* Tabs nav */}
+        <nav className="p-tabs" aria-label="Secciones del cliente">
+          {TABS.map(([id,label,Icon])=>(
+            <button key={id} className={`p-tab${active===id?" p-tab--active":""}`} onClick={()=>setActive(id)}>
+              <Icon size={15}/> {label}
+            </button>
+          ))}
         </nav>
 
+        {/* Tab content panels */}
         {active==="summary"&&<Summary account={account}/>}
         {active==="timeline"&&<TimelinePanel events={filteredEvents} filter={timelineFilter} onFilter={setTimelineFilter} onNavigate={onNavigate}/>}
         {active==="visits"&&<RecordList rows={data.visits} empty="Todavía no hay visitas para este cliente." render={item=><><strong>{fmtDate(item.visit_date)} · {item.products?.name||"Sin producto"}</strong><p>{item.result||item.next_action||"Sin resultado cargado"}</p></>}/>}
@@ -129,6 +153,7 @@ export default function AccountDetailPage({profile,onNavigate,navigationData}) {
         {active==="tenders"&&<RecordList rows={data.tenders} empty="No se encontraron licitaciones para esta institución." render={item=><><strong>{item.process_number||"Sin número"} · {item.process_name||"Proceso"}</strong><p>{item.operational_status||"Sin estado"} · cierre {fmtDate(item.end_date)}</p></>}/>}
         {active==="quotes"&&<RecordList rows={data.quotes} empty="No se encontraron cotizaciones vinculadas." render={item=><><strong>#{item.quote_num_formatted||"—"} · {item.estado||"Sin estado"}</strong><p>{fmtDate(item.created_at)} · {money(item.total_general)}</p></>}/>}
         {active==="sales"&&<RecordList rows={data.sales} empty="No se encontraron ventas BI para este cliente." render={item=><><strong>{fmtDate(item.fecha)} · {item.producto||item.descripcion||"Venta"}</strong><p>{money(item.total_venta)}</p></>}/>}
+
       </div>
     </Layout>
   );
@@ -136,19 +161,102 @@ export default function AccountDetailPage({profile,onNavigate,navigationData}) {
 
 function Summary({account}) {
   const contacts = Array.isArray(account.contacts)?account.contacts:[];
-  return <section className="account360-grid">
-    <article className="account360-panel"><h3>Datos de la cuenta</h3><p>{account.email||"Email pendiente"}</p><p>{account.website||"Sitio web pendiente"}</p><p>{account.address||"Dirección pendiente"}</p></article>
-    <article className="account360-panel"><h3><Users size={16}/> Contactos registrados</h3>{contacts.length?contacts.map((contact,index)=><div className="account360-contact" key={`${contact.email||contact.name}-${index}`}><strong>{contact.name||"Sin nombre"}</strong><span>{contact.role||contact.area||"Sin cargo"}{contact.email?` · ${contact.email}`:""}</span></div>):<p>Sin contactos cargados.</p>}</article>
-  </section>;
+  return (
+    <div className="p-cols p-cols--2">
+      <div className="p-panel">
+        <div className="p-hd">
+          <div className="p-hd-left">
+            <span className="p-title">Datos de la cuenta</span>
+          </div>
+        </div>
+        <div className="p-body">
+          <div className="p-list">
+            <div className="p-row"><span className="p-row__main"><span className="p-row__name">{account.email||"Email pendiente"}</span></span></div>
+            <div className="p-row"><span className="p-row__main"><span className="p-row__name">{account.website||"Sitio web pendiente"}</span></span></div>
+            <div className="p-row"><span className="p-row__main"><span className="p-row__name">{account.address||"Dirección pendiente"}</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div className="p-panel">
+        <div className="p-hd">
+          <div className="p-hd-left">
+            <span className="p-title"><Users size={14}/> Contactos registrados</span>
+          </div>
+        </div>
+        <div className="p-body">
+          {contacts.length ? (
+            <div className="p-list">
+              {contacts.map((contact,index)=>(
+                <div className="p-row" key={`${contact.email||contact.name}-${index}`}>
+                  <div className="p-row__main">
+                    <span className="p-row__name">{contact.name||"Sin nombre"}</span>
+                    <span className="p-row__sub">{contact.role||contact.area||"Sin cargo"}{contact.email?` · ${contact.email}`:""}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="p-empty">Sin contactos cargados.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function TimelinePanel({events,filter,onFilter,onNavigate}) {
-  return <section className="account360-panel">
-    <header className="account360-panel-head"><h3>Línea de tiempo comercial</h3><select className="account360-filter" value={filter} onChange={event=>onFilter(event.target.value)}><option value="all">Todos los eventos</option>{TABS.slice(2).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select></header>
-    {events.length?events.map(event=><button className="account360-event" key={event.id} onClick={()=>onNavigate(event.page)}><span>{fmtDate(event.date)}</span><strong>{event.title}</strong><p>{event.detail}</p></button>):<EmptyState title="Sin actividad vinculada" text="Los eventos comerciales aparecerán en orden cronológico."/>}
-  </section>;
+  return (
+    <div className="p-panel">
+      <div className="p-hd">
+        <div className="p-hd-left">
+          <span className="p-title">Línea de tiempo comercial</span>
+        </div>
+        <div className="p-hd-right">
+          <select className="p-select" value={filter} onChange={event=>onFilter(event.target.value)}>
+            <option value="all">Todos los eventos</option>
+            {TABS.slice(2).map(([id,label])=><option value={id} key={id}>{label}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="p-body">
+        {events.length ? (
+          <div className="p-list">
+            {events.map(event=>(
+              <button className="p-row" key={event.id} onClick={()=>onNavigate(event.page)} style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer"}}>
+                <div className="p-row__main">
+                  <span className="p-row__sub">{fmtDate(event.date)}</span>
+                  <span className="p-row__name">{event.title}</span>
+                  <span className="p-row__sub">{event.detail}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Sin actividad vinculada" text="Los eventos comerciales aparecerán en orden cronológico."/>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function RecordList({rows,empty,render}) {
-  return <section className="account360-panel account360-records">{rows.length?rows.map((item,index)=><article className="account360-record" key={item.id||index}>{render(item)}</article>):<EmptyState title="Sin registros" text={empty}/>}</section>;
+  return (
+    <div className="p-panel">
+      <div className="p-body">
+        {rows.length ? (
+          <div className="p-list">
+            {rows.map((item,index)=>(
+              <div className="p-row" key={item.id||index}>
+                <div className="p-row__main">
+                  {render(item)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Sin registros" text={empty}/>
+        )}
+      </div>
+    </div>
+  );
 }

@@ -110,180 +110,202 @@ export default function AccountsPage({ profile, onNavigate }) {
 
   return (
     <Layout title="Clientes / Cuentas" profile={profile} onNavigate={onNavigate}>
-      <div className="acc-page">
+      <div className="p-page">
 
         {/* KPIs */}
-        <section className="acc-kpis">
-          <AccKpi label="Clientes totales"    value={total} />
-          <AccKpi label="Potencial alto"      value={highPot} accent="blue" />
-          <AccKpi label="Seguimiento rojo"    value={redFollow} accent="red" />
-          <AccKpi label="Con contactos"       value={withContact} accent="green" />
-        </section>
-
-        {/* FORM + LIST side by side */}
-        <div className="acc-main">
+        <div className="p-panel">
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Clientes totales</span>
+              <span className="p-metric__val">{total}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Potencial alto</span>
+              <span className="p-metric__val">{highPot}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Seguimiento rojo</span>
+              <span className="p-metric__val">{redFollow}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Con contactos</span>
+              <span className="p-metric__val">{withContact}</span>
+            </div>
+          </div>
+        </div>
 
         {/* FORM */}
-        <section className="acc-card acc-card--form">
-          <div className="acc-card-head">
-            <div>
-              <h2>{editingId ? "Editar cliente" : "Nuevo cliente"}</h2>
-              <p>Alta de hospitales, clínicas, sanatorios y cuentas objetivo.</p>
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">{editingId ? "Editar cliente" : "Nuevo cliente"}</span>
+              <span className="p-sub">Alta de hospitales, clínicas, sanatorios y cuentas objetivo.</span>
             </div>
-            {editingId && <button className="acc-ghost-btn" onClick={resetForm}>Cancelar edición</button>}
+            {editingId && (
+              <div className="p-hd-right">
+                <button className="p-btn p-btn--ghost" onClick={resetForm}>Cancelar edición</button>
+              </div>
+            )}
           </div>
 
-          <form className="acc-form" onSubmit={saveAccount}>
+          <div className="p-body">
+            <form onSubmit={saveAccount}>
 
-            {/* DATOS PRINCIPALES */}
-            <div className="acc-form-section">
-              <span className="acc-form-section__label">Datos de la institución</span>
-              <div className="acc-form-grid">
-                <div className="acc-field acc-field--wide">
-                  <label>Nombre del cliente / institución</label>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej: Hospital Italiano de Buenos Aires" required />
-                </div>
-                <div className="acc-field">
-                  <label>Tipo de cuenta</label>
-                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                    <option>Hospital</option>
-                    <option>Clínica</option>
-                    <option>Sanatorio</option>
-                    <option>Instituto</option>
-                    <option>Obra social</option>
-                    <option>Distribuidor</option>
-                    <option>Otro</option>
-                  </select>
-                </div>
-                <div className="acc-field">
-                  <label>Potencial</label>
-                  <select value={form.potential} onChange={(e) => setForm({ ...form, potential: e.target.value })}>
-                    <option>Alto</option>
-                    <option>Medio</option>
-                    <option>Bajo</option>
-                  </select>
-                </div>
-                <div className="acc-field">
-                  <label>Semáforo seguimiento</label>
-                  <select value={form.follow_status} onChange={(e) => setForm({ ...form, follow_status: e.target.value })}>
-                    <option value="verde">Verde</option>
-                    <option value="amarillo">Amarillo</option>
-                    <option value="rojo">Rojo</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* UBICACIÓN */}
-            <div className="acc-form-section">
-              <span className="acc-form-section__label">Ubicación</span>
-              <div className="acc-form-grid">
-                <div className="acc-field">
-                  <label>Provincia</label>
-                  <input value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} placeholder="Ej: Buenos Aires" />
-                </div>
-                <div className="acc-field">
-                  <label>Ciudad</label>
-                  <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ej: CABA" />
-                </div>
-                <div className="acc-field acc-field--wide">
-                  <label>Dirección</label>
-                  <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Ej: Av. Potosí 4234, piso 3" />
-                </div>
-              </div>
-            </div>
-
-            {/* CONTACTO INSTITUCIONAL */}
-            <div className="acc-form-section">
-              <span className="acc-form-section__label">Contacto institucional</span>
-              <div className="acc-form-grid">
-                <div className="acc-field">
-                  <label>Teléfono</label>
-                  <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Ej: +54 11 4321-0000" />
-                </div>
-                <div className="acc-field">
-                  <label>Email institucional</label>
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Ej: compras@hospital.com" />
-                </div>
-                <div className="acc-field">
-                  <label>Sitio web</label>
-                  <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="Ej: www.hospitalitaliano.org.ar" />
-                </div>
-              </div>
-            </div>
-
-            {/* CONTACTOS POR ÁREA */}
-            <div className="acc-form-section">
-              <div className="acc-contacts-head">
-                <span className="acc-form-section__label">Contactos por área</span>
-                <button type="button" className="acc-add-contact-btn" onClick={addContact}>+ Agregar contacto</button>
-              </div>
-
-              {form.contacts.length === 0 && (
-                <p className="acc-contacts-empty">No hay contactos cargados. Agregá referentes de compras, biomedicina, jefatura, etc.</p>
-              )}
-
-              {form.contacts.map((c, i) => (
-                <div key={i} className="acc-contact-row">
-                  <div className="acc-contact-fields">
-                    <div className="acc-field">
-                      <label>Nombre completo</label>
-                      <input value={c.name} onChange={(e) => updateContact(i, "name", e.target.value)} placeholder="Ej: María González" />
-                    </div>
-                    <div className="acc-field">
-                      <label>Cargo</label>
-                      <input value={c.role} onChange={(e) => updateContact(i, "role", e.target.value)} placeholder="Ej: Jefa de Compras" />
-                    </div>
-                    <div className="acc-field">
-                      <label>Área</label>
-                      <select value={c.area} onChange={(e) => updateContact(i, "area", e.target.value)}>
-                        <option value="">Seleccionar área</option>
-                        <option>Compras</option>
-                        <option>Biomedicina</option>
-                        <option>Jefatura médica</option>
-                        <option>Administración</option>
-                        <option>Dirección</option>
-                        <option>Tecnología</option>
-                        <option>Otro</option>
-                      </select>
-                    </div>
-                    <div className="acc-field">
-                      <label>Teléfono directo</label>
-                      <input value={c.phone} onChange={(e) => updateContact(i, "phone", e.target.value)} placeholder="Ej: +54 11 1234-5678" />
-                    </div>
-                    <div className="acc-field">
-                      <label>Email directo</label>
-                      <input type="email" value={c.email} onChange={(e) => updateContact(i, "email", e.target.value)} placeholder="Ej: mgonzalez@hospital.com" />
-                    </div>
+              {/* DATOS PRINCIPALES */}
+              <div className="p-section">
+                <span className="p-section__label">Datos de la institución</span>
+                <div className="p-form p-form--4col" style={{ marginTop: 12 }}>
+                  <div className="p-field p-field--span2">
+                    <label>Nombre del cliente / institución</label>
+                    <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej: Hospital Italiano de Buenos Aires" required />
                   </div>
-                  <button type="button" className="acc-remove-contact" onClick={() => removeContact(i)} title="Eliminar contacto">✕</button>
+                  <div className="p-field">
+                    <label>Tipo de cuenta</label>
+                    <select className="p-select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                      <option>Hospital</option>
+                      <option>Clínica</option>
+                      <option>Sanatorio</option>
+                      <option>Instituto</option>
+                      <option>Obra social</option>
+                      <option>Distribuidor</option>
+                      <option>Otro</option>
+                    </select>
+                  </div>
+                  <div className="p-field">
+                    <label>Potencial</label>
+                    <select className="p-select" value={form.potential} onChange={(e) => setForm({ ...form, potential: e.target.value })}>
+                      <option>Alto</option>
+                      <option>Medio</option>
+                      <option>Bajo</option>
+                    </select>
+                  </div>
+                  <div className="p-field">
+                    <label>Semáforo seguimiento</label>
+                    <select className="p-select" value={form.follow_status} onChange={(e) => setForm({ ...form, follow_status: e.target.value })}>
+                      <option value="verde">Verde</option>
+                      <option value="amarillo">Amarillo</option>
+                      <option value="rojo">Rojo</option>
+                    </select>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <button className="acc-submit" disabled={loading}>
-              {loading ? "Guardando..." : editingId ? "Actualizar cliente" : "Crear cliente"}
-            </button>
-          </form>
-        </section>
+              {/* UBICACIÓN */}
+              <div className="p-section">
+                <span className="p-section__label">Ubicación</span>
+                <div className="p-form p-form--4col" style={{ marginTop: 12 }}>
+                  <div className="p-field">
+                    <label>Provincia</label>
+                    <input value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} placeholder="Ej: Buenos Aires" />
+                  </div>
+                  <div className="p-field">
+                    <label>Ciudad</label>
+                    <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ej: CABA" />
+                  </div>
+                  <div className="p-field p-field--span2">
+                    <label>Dirección</label>
+                    <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Ej: Av. Potosí 4234, piso 3" />
+                  </div>
+                </div>
+              </div>
+
+              {/* CONTACTO INSTITUCIONAL */}
+              <div className="p-section">
+                <span className="p-section__label">Contacto institucional</span>
+                <div className="p-form" style={{ marginTop: 12 }}>
+                  <div className="p-field">
+                    <label>Teléfono</label>
+                    <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Ej: +54 11 4321-0000" />
+                  </div>
+                  <div className="p-field">
+                    <label>Email institucional</label>
+                    <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Ej: compras@hospital.com" />
+                  </div>
+                  <div className="p-field">
+                    <label>Sitio web</label>
+                    <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="Ej: www.hospitalitaliano.org.ar" />
+                  </div>
+                </div>
+              </div>
+
+              {/* CONTACTOS POR ÁREA */}
+              <div className="p-section">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span className="p-section__label">Contactos por área</span>
+                  <button type="button" className="p-btn p-btn--ghost" onClick={addContact}>+ Agregar contacto</button>
+                </div>
+
+                {form.contacts.length === 0 && (
+                  <p className="p-empty">No hay contactos cargados. Agregá referentes de compras, biomedicina, jefatura, etc.</p>
+                )}
+
+                {form.contacts.map((c, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
+                    <div className="p-form p-form--4col" style={{ flex: 1 }}>
+                      <div className="p-field">
+                        <label>Nombre completo</label>
+                        <input value={c.name} onChange={(e) => updateContact(i, "name", e.target.value)} placeholder="Ej: María González" />
+                      </div>
+                      <div className="p-field">
+                        <label>Cargo</label>
+                        <input value={c.role} onChange={(e) => updateContact(i, "role", e.target.value)} placeholder="Ej: Jefa de Compras" />
+                      </div>
+                      <div className="p-field">
+                        <label>Área</label>
+                        <select className="p-select" value={c.area} onChange={(e) => updateContact(i, "area", e.target.value)}>
+                          <option value="">Seleccionar área</option>
+                          <option>Compras</option>
+                          <option>Biomedicina</option>
+                          <option>Jefatura médica</option>
+                          <option>Administración</option>
+                          <option>Dirección</option>
+                          <option>Tecnología</option>
+                          <option>Otro</option>
+                        </select>
+                      </div>
+                      <div className="p-field">
+                        <label>Teléfono directo</label>
+                        <input value={c.phone} onChange={(e) => updateContact(i, "phone", e.target.value)} placeholder="Ej: +54 11 1234-5678" />
+                      </div>
+                      <div className="p-field">
+                        <label>Email directo</label>
+                        <input type="email" value={c.email} onChange={(e) => updateContact(i, "email", e.target.value)} placeholder="Ej: mgonzalez@hospital.com" />
+                      </div>
+                    </div>
+                    <button type="button" className="p-btn p-btn--danger p-btn--icon" onClick={() => removeContact(i)} title="Eliminar contacto">✕</button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-form-actions">
+                <button type="submit" className="p-btn p-btn--primary" disabled={loading}>
+                  {loading ? "Guardando..." : editingId ? "Actualizar cliente" : "Crear cliente"}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
 
         {/* LISTA */}
-        <section className="acc-card acc-card--list">
-          <div className="acc-card-head">
-            <div>
-              <h2>Listado de clientes</h2>
-              <p>Base comercial para visitas, oportunidades y score automático.</p>
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Listado de clientes</span>
+              <span className="p-sub">Base comercial para visitas, oportunidades y score automático.</span>
             </div>
-            <input
-              className="acc-search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, ciudad o tipo…"
-            />
+            <div className="p-hd-right">
+              <input
+                className="p-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por nombre, ciudad o tipo…"
+              />
+            </div>
           </div>
 
-          <div className="acc-table-wrap">
-            <table className="acc-table">
+          <div className="p-table-wrap">
+            <table className="p-table">
               <thead>
                 <tr>
                   <th>Cliente</th>
@@ -298,7 +320,7 @@ export default function AccountsPage({ profile, onNavigate }) {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="8" className="acc-empty">No hay clientes cargados.</td></tr>
+                  <tr><td colSpan="8" className="p-empty">No hay clientes cargados.</td></tr>
                 ) : filtered.map((a) => (
                   <>
                     <tr key={a.id} className={expanded === a.id ? "acc-row--expanded" : ""}>
@@ -317,13 +339,27 @@ export default function AccountsPage({ profile, onNavigate }) {
                           </button>
                         )}
                       </td>
-                      <td><span className={`acc-badge acc-badge--${a.potential?.toLowerCase()}`}>{a.potential || "Medio"}</span></td>
-                      <td><span className={`acc-badge acc-badge--${a.follow_status}`}>{a.follow_status || "verde"}</span></td>
+                      <td>
+                        <span className={`p-badge--${
+                          a.potential === "Alto" ? "blue" :
+                          a.potential === "Bajo" ? "gray" : "amber"
+                        }`}>
+                          {a.potential || "Medio"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`p-badge--${
+                          a.follow_status === "verde" ? "green" :
+                          a.follow_status === "rojo" ? "red" : "amber"
+                        }`}>
+                          {a.follow_status || "verde"}
+                        </span>
+                      </td>
                       <td>{a.profiles?.full_name || a.profiles?.email || "Sin asignar"}</td>
                       <td>
                         <div className="acc-actions">
-                          <button className="acc-btn acc-btn--edit" onClick={() => editAccount(a)}>Editar</button>
-                          <button className="acc-btn acc-btn--del"  onClick={() => deleteAccount(a.id)}>Borrar</button>
+                          <button className="p-btn p-btn--ghost" onClick={() => editAccount(a)}>Editar</button>
+                          <button className="p-btn p-btn--danger" onClick={() => deleteAccount(a.id)}>Borrar</button>
                         </div>
                       </td>
                     </tr>
@@ -353,9 +389,7 @@ export default function AccountsPage({ profile, onNavigate }) {
               </tbody>
             </table>
           </div>
-        </section>
-
-        </div>{/* end acc-main */}
+        </div>
 
         <footer className="acc-footer">
           <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>

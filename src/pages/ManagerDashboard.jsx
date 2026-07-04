@@ -108,16 +108,18 @@ function Tooltip({ text }) {
 /* ── Probability panel ──────────────────────────────────────────────── */
 function ProbabilityPanel({ probabilityRef, total }) {
   return (
-    <article className="dash-panel">
-      <header className="dash-panel__header">
-        <div>
-          <h3 className="dash-panel__title">Probabilidad de cierre</h3>
-          <p className="dash-panel__sub">Monto del pipeline agrupado por rango de probabilidad</p>
+    <div className="p-panel">
+      <div className="p-hd">
+        <div className="p-hd-left">
+          <span className="p-title">Probabilidad de cierre</span>
+          <span className="p-sub">Monto del pipeline agrupado por rango de probabilidad</span>
         </div>
-        <span className="dash-panel__metric">{total}</span>
-      </header>
-      <div className="dash-chart-box"><canvas ref={probabilityRef}/></div>
-    </article>
+        <div className="p-hd-right">
+          <span className="p-title">{total}</span>
+        </div>
+      </div>
+      <div className="p-chart"><canvas ref={probabilityRef}/></div>
+    </div>
   );
 }
 
@@ -133,12 +135,14 @@ function StageDistributionPanel({ opps }) {
   }).filter((r) => r.count > 0);
 
   return (
-    <article className="dash-panel">
-      <header className="dash-panel__header">
-        <h3 className="dash-panel__title">Distribución por etapa</h3>
-        <p className="dash-panel__sub">Oportunidades activas y monto por fase</p>
-      </header>
-      {rows.length === 0 ? <p className="dash-empty">No hay oportunidades abiertas.</p> : (
+    <div className="p-panel">
+      <div className="p-hd">
+        <div className="p-hd-left">
+          <span className="p-title">Distribución por etapa</span>
+          <span className="p-sub">Oportunidades activas y monto por fase</span>
+        </div>
+      </div>
+      {rows.length === 0 ? <p className="p-empty">No hay oportunidades abiertas.</p> : (
         <div className="stage-dist">
           {rows.map((r) => (
             <div className="stage-dist__row" key={r.stage}>
@@ -155,34 +159,36 @@ function StageDistributionPanel({ opps }) {
           ))}
         </div>
       )}
-    </article>
+    </div>
   );
 }
 
 /* ── Últimas visitas ────────────────────────────────────────────────── */
 function RecentVisitsPanel({ visits }) {
   return (
-    <article className="dash-panel">
-      <header className="dash-panel__header">
-        <h3 className="dash-panel__title">Últimas visitas del equipo</h3>
-        <p className="dash-panel__sub">Actividad comercial reciente registrada</p>
-      </header>
-      {visits.length === 0 ? <p className="dash-empty">No hay visitas registradas.</p> : (
-        <div className="dash-list">
+    <div className="p-panel">
+      <div className="p-hd">
+        <div className="p-hd-left">
+          <span className="p-title">Últimas visitas del equipo</span>
+          <span className="p-sub">Actividad comercial reciente registrada</span>
+        </div>
+      </div>
+      {visits.length === 0 ? <p className="p-empty">No hay visitas registradas.</p> : (
+        <div className="p-list">
           {visits.slice(0, 6).map((v) => (
-            <div className="dash-list-row" key={v.id}>
-              <div className="dash-list-row__main">
-                <strong>{v.accounts?.name || "Sin cliente"}</strong>
-                <small>{v.products?.name || "Sin producto"} · {v.visit_type || "—"}</small>
+            <div className="p-row" key={v.id}>
+              <div className="p-row__main">
+                <span className="p-row__name">{v.accounts?.name || "Sin cliente"}</span>
+                <span className="p-row__sub">{v.products?.name || "Sin producto"} · {v.visit_type || "—"}</span>
               </div>
-              <div className="dash-list-row__meta">
-                <span>{v.visit_date ? new Date(v.visit_date).toLocaleDateString("es-AR") : "—"}</span>
+              <div className="p-row__meta">
+                <span className="p-row__val">{v.visit_date ? new Date(v.visit_date).toLocaleDateString("es-AR") : "—"}</span>
               </div>
             </div>
           ))}
         </div>
       )}
-    </article>
+    </div>
   );
 }
 
@@ -500,229 +506,250 @@ export default function ManagerDashboard({ profile, onNavigate }) {
 
   return (
     <Layout title="Dashboard Comercial" profile={profile} onNavigate={onNavigate}>
-      <div className="unified-dashboard">
+      <div className="p-page">
 
-        {/* HEADER */}
-        <header className="dash-header dash-hero">
-          <div className="dash-header-left">
-            <div className="dash-wordmark"><span className="dash-wordmark-dot"/>Soluciones Médicas</div>
-            <h1 className="dash-title">Centro de Ventas</h1>
-            <p className="dash-subtitle">Pipeline · Forecast ponderado · Campañas · Probabilidad de cierre</p>
-          </div>
-          <div className="dash-hero-metrics">
-            <div><span>Pipeline</span><strong>{compactMoney(metrics.pipeline)}</strong></div>
-            <div><span>Forecast</span><strong>{compactMoney(metrics.forecast)}</strong></div>
-            <div><span>Cobertura</span><strong>{metrics.coverage}%</strong></div>
-          </div>
-          <div className="dash-header-right">
-            <div className="dash-filter-wrap">
-              <label className="dash-filter-label">Línea de producto</label>
-              <select className="dash-filter-select" value={selectedLine} onChange={(e) => setSelectedLine(e.target.value)}>
+        {/* TOP PANEL — header + metrics strip */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Dashboard Comercial</span>
+              <span className="p-sub">Pipeline · Forecast ponderado · Campañas · Probabilidad de cierre</span>
+            </div>
+            <div className="p-hd-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <select className="p-select" value={selectedLine} onChange={(e) => setSelectedLine(e.target.value)}>
                 {productLines.map((line) => <option key={line}>{line}</option>)}
               </select>
+              <button className="p-btn p-btn--ghost" onClick={() => onNavigate("opportunities")}>Ver pipeline</button>
             </div>
-            <button className="dash-hero-cta" onClick={() => onNavigate("opportunities")}>Ver pipeline</button>
           </div>
-        </header>
-
-        <section className={`dash-comparison ${comparisonExpanded ? "is-expanded" : ""}`}>
-          <div className="dash-comparison__head">
-            <div>
-              <span>Comparativo de períodos</span>
-              <strong>Actividad comercial generada</strong>
-              <p>Medición por fecha de creación o registro, separada de la foto actual del pipeline.</p>
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Pipeline</span>
+              <span className="p-metric__val">{compactMoney(metrics.pipeline)}</span>
+              <span className="p-metric__sub">Monto total activo</span>
             </div>
-            <div className="dash-comparison__actions">
-              <select value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)}>
+            <div className="p-metric">
+              <span className="p-metric__ey">Forecast</span>
+              <span className="p-metric__val">{compactMoney(metrics.forecast)}</span>
+              <span className="p-metric__sub">Ponderado por probabilidad</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Cobertura</span>
+              <span className="p-metric__val">{metrics.coverage}%</span>
+              <span className="p-metric__sub">Forecast vs objetivo</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Visitas (semana)</span>
+              <span className="p-metric__val">{weeklyVisits}</span>
+              <span className="p-metric__sub">Últimos 7 días</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Pipeline abierto</span>
+              <span className="p-metric__val">{metrics.openOpps}</span>
+              <span className="p-metric__sub">{metrics.hotDeals} hot deals</span>
+            </div>
+          </div>
+        </div>
+
+        {/* COMPARISON PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Comparativo de períodos</span>
+              <span className="p-sub">Actividad comercial generada · medición por fecha de creación o registro</span>
+            </div>
+            <div className="p-hd-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <select className="p-select" value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)}>
                 {COMPARISON_PERIODS.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
               </select>
-              <button type="button" onClick={() => setComparisonExpanded((expanded) => !expanded)}>
+              <button type="button" className="p-btn p-btn--ghost" onClick={() => setComparisonExpanded((expanded) => !expanded)}>
                 {comparisonExpanded ? "Ocultar detalle" : "Ver comparativo"}
               </button>
             </div>
           </div>
           {comparisonExpanded && (
-            <div className="dash-comparison__grid">
+            <div className="p-metrics">
               {comparison.map((item) => {
                 const delta = comparisonDelta(item.value, item.previous);
                 const format = item.formatter || ((value) => Number(value || 0).toLocaleString("es-AR"));
                 return (
-                  <article key={item.label} className="dash-comparison-card">
-                    <span>{item.label}</span>
-                    <strong>{format(item.value)}</strong>
-                    <small>Anterior: {format(item.previous)}</small>
-                    <em className={`dash-comparison-card__delta dash-comparison-card__delta--${delta.tone}`}>
+                  <div key={item.label} className="p-metric">
+                    <span className="p-metric__ey">{item.label}</span>
+                    <span className="p-metric__val">{format(item.value)}</span>
+                    <span className="p-metric__sub">Anterior: {format(item.previous)}</span>
+                    <span className={delta.tone === "up" ? "p-metric__up" : delta.tone === "down" ? "p-metric__down" : "p-metric__sub"}>
                       {delta.tone === "up" ? "↑" : delta.tone === "down" ? "↓" : "→"} {delta.label}
-                    </em>
-                  </article>
+                    </span>
+                  </div>
                 );
               })}
             </div>
           )}
-        </section>
-
-        {/* Indicadores complementarios: evitan repetir la foto ejecutiva del hero. */}
-        <section className="dash-primary-kpis">
-          <PrimaryKpi
-            label="Objetivo campañas"
-            value={money(metrics.target)}
-            sub="Meta comercial definida"
-            accent="slate"
-            progress={metrics.campaigns > 0 ? 100 : 0}
-            meta={`${metrics.campaigns} campañas activas`}
-            tooltip="Suma de los objetivos económicos de todas las campañas activas. Es la meta que el equipo comercial debe alcanzar."
-          />
-          <PrimaryKpi
-            label="Oportunidades abiertas"
-            value={metrics.openOpps}
-            sub="Negocios activos en seguimiento"
-            accent="blue"
-            progress={metrics.openOpps > 0 ? 100 : 0}
-            meta={`${metrics.noAction} sin próxima acción`}
-            tooltip="Cantidad de oportunidades que no están Ganadas ni Perdidas. El detalle de seguimiento aparece más abajo en Salud del pipeline."
-          />
-          <PrimaryKpi
-            label="Hot deals"
-            value={metrics.hotDeals}
-            sub="Probabilidad de cierre ≥70%"
-            accent={metrics.hotDeals > 0 ? "green" : "slate"}
-            progress={metrics.openOpps > 0 ? Math.round((metrics.hotDeals / metrics.openOpps) * 100) : 0}
-            meta="Priorizar cierre"
-            tooltip="Oportunidades activas con probabilidad de cierre igual o superior al 70%. Son los negocios que conviene mover primero."
-          />
-          <PrimaryKpi
-            label="Visitas esta semana"
-            value={weeklyVisits}
-            sub="Actividad de los últimos 7 días"
-            accent="blue"
-            progress={weeklyVisits > 0 ? 100 : 0}
-            meta={`${metrics.visits} registradas`}
-            tooltip="Total de visitas comerciales registradas en los últimos 7 días por el equipo."
-          />
-        </section>
-
-        <section className="dash-decisions">
-          <div className="dash-decisions__head">
-            <span>Decisiones de hoy</span>
-            <strong>Prioridad ejecutiva</strong>
-            <p>{decision.text}</p>
-            <button
-              className="dash-exec-action"
-              onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}
-            >
-              Ejecutar acción
-            </button>
-          </div>
-          <div className="dash-decisions__cards">
-            {todayDecisions.map((item, index) => (
-              <article key={`${item.title}-${index}`} className={`dash-decision-card dash-decision-card--${item.tone}`}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* KPIs COLAPSABLES — fila 2 y 3 */}
-        <div className="dash-kpi-section">
-          <div className="dash-kpi-section__head">
-            <div>
-              <span>Salud comercial</span>
-              <strong>Métricas operativas</strong>
-            </div>
-            <div className="dash-kpi-section__controls">
-              <div className="dash-kpi-toggle" role="group" aria-label="Nivel de detalle del dashboard">
-                <button
-                  type="button"
-                  className={dashboardMode === "complete" ? "is-active" : ""}
-                  onClick={() => setDashboardMode("complete")}
-                >
-                  Completo
-                </button>
-                <button
-                  type="button"
-                  className={dashboardMode === "executive" ? "is-active" : ""}
-                  onClick={() => setDashboardMode("executive")}
-                >
-                  Ejecutivo
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <section className="dash-metric-band">
-            <div className="dash-metric-band__head">
-              <span>Pipeline</span>
-              <strong>Seguimiento y alertas</strong>
-            </div>
-            <div className="dash-kpi-grid dash-kpi-grid--pipeline">
-                <Kpi label="Opps. abiertas"   value={metrics.openOpps}   tooltip="Cantidad de oportunidades que no están Ganadas ni Perdidas. Refleja el tamaño activo del pipeline."/>
-                <Kpi label="Hot deals"        value={metrics.hotDeals}   accent="amber" tooltip="Oportunidades con probabilidad de cierre ≥70%. Son las más cercanas a convertirse en venta. Priorizalas esta semana."/>
-                <Kpi label="Sin próx. acción" value={metrics.noAction}   accent="red"   tooltip="Oportunidades abiertas sin próxima acción definida. Si no hay acción planificada, el negocio se enfría. Asigná un paso concreto a cada una."/>
-                <Kpi label="Vencidas"         value={metrics.overdue}    accent="red"   tooltip="Oportunidades cuya fecha esperada de cierre ya pasó. Requieren revisión urgente: actualizar fecha o cambiar etapa."/>
-            </div>
-          </section>
-
-          <section className="dash-metric-band">
-            <div className="dash-metric-band__head">
-              <span>Eficiencia</span>
-              <strong>Calidad y velocidad comercial</strong>
-            </div>
-            <div className="dash-kpi-grid dash-kpi-grid--efficiency">
-                <Kpi label="Win rate"         value={`${metrics.winRate}%`} tooltip="Porcentaje de oportunidades ganadas sobre el total de cerradas (Ganado + Perdido). Mide la efectividad de cierre del equipo."/>
-                <Kpi label="Ticket promedio"  value={compactMoney(metrics.avgDeal)} tooltip="Monto promedio por oportunidad abierta. Pipeline total ÷ cantidad de oportunidades abiertas."/>
-                <Kpi label="Días en pipeline" value={`${metrics.avgDaysInPipeline}d`} tooltip="Promedio de días que llevan abiertas las oportunidades desde su creación. Ciclos muy largos pueden indicar estancamiento."/>
-                <Kpi label="Con probabilidad" value={`${metrics.forecastRatio}%`} accent={metrics.forecastRatio < 50 ? "red" : metrics.forecastRatio < 80 ? "amber" : undefined} tooltip="Porcentaje de oportunidades abiertas que tienen cargado un % de probabilidad. Sin probabilidad no hay forecast confiable."/>
-                <Kpi label="Conversión"        value={`${metrics.convRate}%`} accent={metrics.convRate < 20 ? "red" : metrics.convRate < 40 ? "amber" : "green"} tooltip="Porcentaje de leads que avanzaron a Cotización, Negociación o Ganado. Mide la calidad del proceso desde el primer contacto."/>
-                <Kpi label="Visitas semana"   value={weeklyVisits} tooltip="Total de visitas comerciales registradas en los últimos 7 días por el equipo."/>
-            </div>
-          </section>
         </div>
 
+        {/* OPERATIONAL METRICS PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Salud comercial</span>
+              <span className="p-sub">Métricas operativas · Pipeline, eficiencia y calidad</span>
+            </div>
+            <div className="p-hd-right" style={{ display: "flex", gap: 6 }}>
+              <button
+                type="button"
+                className={`p-btn ${dashboardMode === "complete" ? "p-btn--primary" : "p-btn--ghost"}`}
+                onClick={() => setDashboardMode("complete")}
+              >
+                Completo
+              </button>
+              <button
+                type="button"
+                className={`p-btn ${dashboardMode === "executive" ? "p-btn--primary" : "p-btn--ghost"}`}
+                onClick={() => setDashboardMode("executive")}
+              >
+                Ejecutivo
+              </button>
+            </div>
+          </div>
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Opps. abiertas</span>
+              <span className="p-metric__val">{metrics.openOpps}</span>
+              <span className="p-metric__sub">Pipeline activo</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Hot deals</span>
+              <span className="p-metric__val">{metrics.hotDeals}</span>
+              <span className="p-metric__sub">Prob. ≥70%</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Sin próx. acción</span>
+              <span className="p-metric__val">{metrics.noAction}</span>
+              <span className="p-metric__sub">Requieren seguimiento</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Vencidas</span>
+              <span className="p-metric__val">{metrics.overdue}</span>
+              <span className="p-metric__sub">Revisión urgente</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Win rate</span>
+              <span className="p-metric__val">{metrics.winRate}%</span>
+              <span className="p-metric__sub">{metrics.won} ganadas · {metrics.lost} perdidas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Ticket promedio</span>
+              <span className="p-metric__val">{compactMoney(metrics.avgDeal)}</span>
+              <span className="p-metric__sub">Por opp. abierta</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Días en pipeline</span>
+              <span className="p-metric__val">{metrics.avgDaysInPipeline}d</span>
+              <span className="p-metric__sub">Promedio de antigüedad</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Conversión</span>
+              <span className="p-metric__val">{metrics.convRate}%</span>
+              <span className="p-metric__sub">Lead → Cotización+</span>
+            </div>
+          </div>
+        </div>
+
+        {/* DECISIONS PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Decisiones de hoy</span>
+              <span className="p-sub">{decision.text}</span>
+            </div>
+            <div className="p-hd-right">
+              <button
+                className="p-btn p-btn--primary"
+                onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}
+              >
+                Ejecutar acción
+              </button>
+            </div>
+          </div>
+          <div className="p-list">
+            {todayDecisions.map((item, index) => (
+              <div key={`${item.title}-${index}`} className="p-row">
+                <span className="p-row__rank">{String(index + 1).padStart(2, "0")}</span>
+                <div className="p-row__main">
+                  <span className="p-row__name">{item.title}</span>
+                  <span className="p-row__sub">{item.text}</span>
+                </div>
+                <div className="p-row__meta">
+                  <span className={
+                    item.tone === "success" ? "p-badge--green" :
+                    item.tone === "warning" ? "p-badge--amber" :
+                    item.tone === "danger"  ? "p-badge--red"   : "p-badge--gray"
+                  }>
+                    {item.tone === "success" ? "Prioridad alta" : item.tone === "warning" ? "Atención" : item.tone === "danger" ? "Urgente" : "Info"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CHARTS ROW */}
         {showDetailedPanels ? (
           <>
-            {/* MAIN PANELS */}
-            <section className="dash-main-grid">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="p-panel">
+                <div className="p-hd">
+                  <div className="p-hd-left">
+                    <span className="p-title">Pipeline por etapa</span>
+                    <span className="p-sub">Monto total en cada fase</span>
+                  </div>
+                </div>
+                <div className="p-chart"><canvas ref={pipelineRef}/></div>
+              </div>
+              <div className="p-panel">
+                <div className="p-hd">
+                  <div className="p-hd-left">
+                    <span className="p-title">Actividad semanal</span>
+                    <span className="p-sub">Visitas registradas por día de la semana</span>
+                  </div>
+                </div>
+                <div className="p-chart"><canvas ref={activityRef}/></div>
+              </div>
+            </div>
+
+            {/* PROBABILITY + STAGE DISTRIBUTION */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <ProbabilityPanel probabilityRef={probabilityRef} total={compactMoney(metrics.pipeline)}/>
-              <CampaignPanel rows={campaignRows}/>
-              <HotProjects rows={projectTemperature}/>
-            </section>
-
-            {/* CHART PANELS */}
-            <section className="dash-chart-grid dash-chart-grid--compact">
-              <Panel title="Pipeline por etapa" subtitle="Monto total en cada fase">
-                <canvas ref={pipelineRef}/>
-              </Panel>
               <StageDistributionPanel opps={filteredOpps}/>
-            </section>
+            </div>
 
-            {/* ACTIVIDAD + ÚLTIMAS VISITAS */}
-            <section className="dash-bottom-grid">
-              <Panel title="Actividad semanal" subtitle="Visitas registradas por día de la semana">
-                <canvas ref={activityRef}/>
-              </Panel>
-              <RecentVisitsPanel visits={filteredVisits}/>
-            </section>
+            {/* HOT PROJECTS + CAMPAIGNS */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <HotProjects rows={projectTemperature}/>
+              <CampaignPanel rows={campaignRows}/>
+            </div>
+
+            {/* RECENT VISITS */}
+            <RecentVisitsPanel visits={filteredVisits}/>
           </>
         ) : (
-          <section className="dash-detail-gate">
-            <div>
-              <span>Análisis extendido</span>
-              <strong>Gráficos, campañas y actividad del equipo</strong>
-              <p>La lectura ejecutiva prioriza decisiones. Abrí la vista completa cuando necesites profundizar.</p>
+          <div className="p-panel">
+            <div className="p-body">
+              <span className="p-section__label">Análisis extendido</span>
+              <p className="p-title" style={{ marginTop: 8 }}>Gráficos, campañas y actividad del equipo</p>
+              <p className="p-sub" style={{ marginTop: 4 }}>La lectura ejecutiva prioriza decisiones. Abrí la vista completa cuando necesites profundizar.</p>
+              <button type="button" className="p-btn p-btn--primary" style={{ marginTop: 14 }} onClick={() => setDashboardMode("complete")}>Ver análisis completo</button>
             </div>
-            <button type="button" onClick={() => setDashboardMode("complete")}>Ver análisis completo</button>
-          </section>
+          </div>
         )}
 
-        <footer className="dash-footer">
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" className="dash-footer-link">
-            Designed by Daniel Etchudez
-          </a>
-        </footer>
+        <div className="p-panel">
+          <div className="p-body" style={{ textAlign: "center" }}>
+            <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{ color: "#64748b", fontSize: 12, textDecoration: "none" }}>
+              Designed by Daniel Etchudez
+            </a>
+          </div>
+        </div>
 
       </div>
     </Layout>
@@ -779,67 +806,71 @@ function Panel({ title, subtitle, metric, children }) {
 
 function CampaignPanel({ rows }) {
   return (
-    <article className="dash-panel">
-      <header className="dash-panel__header">
-        <div>
-          <h3 className="dash-panel__title">Campañas vs objetivo</h3>
-          <p className="dash-panel__sub">Forecast ponderado por campaña</p>
+    <div className="p-panel">
+      <div className="p-hd">
+        <div className="p-hd-left">
+          <span className="p-title">Campañas vs objetivo</span>
+          <span className="p-sub">Forecast ponderado por campaña</span>
         </div>
-        <span className="dash-panel__metric">{rows.length}</span>
-      </header>
-      {rows.length === 0 ? <p className="dash-empty">No hay campañas cargadas.</p> : (
-        <div className="dash-list">
+        <div className="p-hd-right">
+          <span className="p-sub">{rows.length} campañas</span>
+        </div>
+      </div>
+      {rows.length === 0 ? <p className="p-empty">No hay campañas cargadas.</p> : (
+        <div className="p-list">
           {rows.slice(0, 4).map((r) => (
-            <div className="dash-list-row" key={r.id}>
-              <div className="dash-list-row__main">
-                <strong>{r.name}</strong>
-                <div className="dash-progress-track">
-                  <div className="dash-progress-fill" style={{ width:`${Math.min(100,r.coverage)}%` }}/>
+            <div className="p-row" key={r.id}>
+              <div className="p-row__main">
+                <span className="p-row__name">{r.name}</span>
+                <div className="p-progress">
+                  <div className={`p-progress-fill ${r.coverage >= 80 ? "p-progress-fill--green" : r.coverage >= 50 ? "p-progress-fill--amber" : "p-progress-fill--red"}`} style={{ width:`${Math.min(100, r.coverage)}%` }}/>
                 </div>
               </div>
-              <div className="dash-list-row__meta">
-                <span>{money(r.forecast)}</span>
-                <em className={r.coverage>=80?"badge badge--green":r.coverage>=50?"badge badge--amber":"badge badge--red"}>{r.coverage}%</em>
+              <div className="p-row__meta">
+                <span className="p-row__val">{money(r.forecast)}</span>
+                <span className={r.coverage >= 80 ? "p-badge--green" : r.coverage >= 50 ? "p-badge--amber" : "p-badge--red"}>{r.coverage}%</span>
               </div>
             </div>
           ))}
         </div>
       )}
-    </article>
+    </div>
   );
 }
 
 function HotProjects({ rows }) {
   return (
-    <article className="dash-panel">
-      <header className="dash-panel__header">
-        <div>
-          <h3 className="dash-panel__title">Proyectos prioritarios</h3>
-          <p className="dash-panel__sub">Ordenados por score de temperatura</p>
+    <div className="p-panel">
+      <div className="p-hd">
+        <div className="p-hd-left">
+          <span className="p-title">Proyectos prioritarios</span>
+          <span className="p-sub">Ordenados por score de temperatura</span>
         </div>
-        <span className="dash-panel__metric">{rows[0]?.score || 0}</span>
-      </header>
-      {rows.length === 0 ? <p className="dash-empty">No hay oportunidades abiertas.</p> : (
-        <div className="dash-hot-list">
+        <div className="p-hd-right">
+          <span className="p-sub">Top score: {rows[0]?.score || 0}</span>
+        </div>
+      </div>
+      {rows.length === 0 ? <p className="p-empty">No hay oportunidades abiertas.</p> : (
+        <div className="p-list">
           {rows.slice(0, 5).map((p, index) => (
-            <div className="dash-hot-row" key={p.id}>
-              <span className="dash-hot-rank">{index + 1}</span>
-              <div className="dash-hot-row__main">
-                <strong>{p.name}</strong>
-                <small>{p.client} · {p.stage}</small>
-                <p>{p.nextAction}</p>
-                <div className="dash-hot-score">
-                  <div style={{ width: `${p.score}%` }} />
+            <div className="p-row" key={p.id}>
+              <span className="p-row__rank">{index + 1}</span>
+              <div className="p-row__main">
+                <span className="p-row__name">{p.name}</span>
+                <span className="p-row__sub">{p.client} · {p.stage}</span>
+                <span className="p-row__sub">{p.nextAction}</span>
+                <div className="p-progress">
+                  <div className={`p-progress-fill ${p.score >= 75 ? "p-progress-fill--green" : p.score >= 50 ? "p-progress-fill--amber" : "p-progress-fill--red"}`} style={{ width: `${p.score}%` }} />
                 </div>
               </div>
-              <div className="dash-hot-row__meta">
-                <span>{money(p.forecast)}</span>
-                <em className={p.score>=75?"badge badge--green":p.score>=50?"badge badge--amber":"badge"}>{p.score}</em>
+              <div className="p-row__meta">
+                <span className="p-row__val">{money(p.forecast)}</span>
+                <span className={p.score >= 75 ? "p-badge--green" : p.score >= 50 ? "p-badge--amber" : "p-badge--gray"}>{p.score}</span>
               </div>
             </div>
           ))}
         </div>
       )}
-    </article>
+    </div>
   );
 }

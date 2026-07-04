@@ -118,143 +118,158 @@ Quedo atento para coordinar una presentación.`;
 
   return (
     <Layout title="Acciones Hoy" profile={profile} onNavigate={onNavigate}>
-      <div className="ta-page">
-        <ModuleHeader
-          title="Acciones Hoy"
-          subtitle="Agenda comercial priorizada por potencial, pipeline, vencimientos y tiempo sin contacto."
-          actions={(
-            <>
-              <button className="ta-header-btn" type="button" onClick={loadActions}>
+      <div className="p-page">
+
+        {/* KPI Panel */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Acciones Hoy</span>
+              <span className="p-sub">Agenda comercial priorizada por potencial, pipeline, vencimientos y tiempo sin contacto.</span>
+            </div>
+            <div className="p-hd-right">
+              <button className="p-btn p-btn--ghost" type="button" onClick={loadActions}>
                 <RefreshCw size={16} /> Actualizar
               </button>
-              <button className="ta-header-btn ta-header-btn--primary" type="button" onClick={() => onNavigate("visits", { action: "create", source: "todayActions" })}>
+              <button className="p-btn p-btn--primary" type="button" onClick={() => onNavigate("visits", { action: "create", source: "todayActions" })}>
                 <CalendarPlus size={16} /> Registrar visita
               </button>
-            </>
-          )}
-        />
-
-        <section className="ta-kpi-grid">
-          <MetricKpi label="Clientes priorizados" value={actions.length} sub="cuentas analizadas" accent="blue" />
-          <MetricKpi label="Prioridad alta" value={high} sub="requieren contacto" accent="red" />
-          <MetricKpi label="+30 días sin contacto" value={cold} sub="cuentas para reactivar" accent="amber" />
-          <MetricKpi label="Pipeline priorizado" value={moneyARS(prioritizedPipeline)} sub="monto abierto" accent="green" />
-        </section>
-
-        <section className={`ta-insight ${high || overdue ? "ta-insight--alert" : "ta-insight--ok"}`}>
-          <div className="ta-insight__icon">
-            {high || overdue ? <AlertTriangle size={19} /> : <CheckCircle2 size={19} />}
-          </div>
-          <div>
-            <span>Lectura operativa</span>
-            <strong>{high || overdue ? "Hay acciones comerciales para resolver hoy" : "Agenda comercial bajo control"}</strong>
-            <p>
-              {high || overdue
-                ? `${high} cliente${high !== 1 ? "s" : ""} de prioridad alta y ${overdue} con oportunidades vencidas.`
-                : "No hay oportunidades vencidas ni cuentas críticas en la bandeja actual."}
-            </p>
-          </div>
-        </section>
-
-        <section className="ta-worklist">
-          <header className="ta-worklist__head">
-            <div>
-              <span>Bandeja priorizada</span>
-              <h2>Próximas mejores acciones</h2>
-              <p>{filteredActions.length} cliente{filteredActions.length !== 1 ? "s" : ""} en esta vista</p>
             </div>
-          </header>
+          </div>
 
-          <div className="ta-toolbar">
-            <label className="ta-search">
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Clientes priorizados</span>
+              <span className="p-metric__val">{actions.length}</span>
+              <span className="p-metric__sub">cuentas analizadas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Prioridad alta</span>
+              <span className="p-metric__val">{high}</span>
+              <span className="p-metric__sub">requieren contacto</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">+30 días sin contacto</span>
+              <span className="p-metric__val">{cold}</span>
+              <span className="p-metric__sub">cuentas para reactivar</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Pipeline priorizado</span>
+              <span className="p-metric__val">{moneyARS(prioritizedPipeline)}</span>
+              <span className="p-metric__sub">monto abierto</span>
+            </div>
+          </div>
+
+          <div className="p-body">
+            <div className={`ta-insight ${high || overdue ? "ta-insight--alert" : "ta-insight--ok"}`}>
+              <div className="ta-insight__icon">
+                {high || overdue ? <AlertTriangle size={19} /> : <CheckCircle2 size={19} />}
+              </div>
+              <div>
+                <span>Lectura operativa</span>
+                <strong>{high || overdue ? "Hay acciones comerciales para resolver hoy" : "Agenda comercial bajo control"}</strong>
+                <p>
+                  {high || overdue
+                    ? `${high} cliente${high !== 1 ? "s" : ""} de prioridad alta y ${overdue} con oportunidades vencidas.`
+                    : "No hay oportunidades vencidas ni cuentas críticas en la bandeja actual."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Worklist Panel */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Bandeja priorizada</span>
+              <span className="p-sub">{filteredActions.length} cliente{filteredActions.length !== 1 ? "s" : ""} en esta vista</span>
+            </div>
+          </div>
+
+          <div className="p-toolbar--top">
+            <label className="p-search">
               <Search size={16} />
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar cliente, ciudad o producto..." />
             </label>
-            <label className="ta-select-wrap">
-              <SlidersHorizontal size={15} />
-              <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)}>
-                <option value="todas">Todas las prioridades</option>
-                <option value="Alta">Prioridad alta</option>
-                <option value="Media">Prioridad media</option>
-                <option value="Baja">Prioridad baja</option>
-              </select>
-            </label>
-            <label className="ta-select-wrap">
-              <TrendingUp size={15} />
-              <select value={focusFilter} onChange={(event) => setFocusFilter(event.target.value)}>
-                <option value="todos">Todos los enfoques</option>
-                <option value="vencidas">Oportunidades vencidas</option>
-                <option value="sin_contacto">Más de 30 días sin contacto</option>
-                <option value="pipeline">Con pipeline abierto</option>
-                <option value="sin_producto">Sin producto sugerido</option>
-              </select>
-            </label>
+            <select className="p-select" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)}>
+              <option value="todas">Todas las prioridades</option>
+              <option value="Alta">Prioridad alta</option>
+              <option value="Media">Prioridad media</option>
+              <option value="Baja">Prioridad baja</option>
+            </select>
+            <select className="p-select" value={focusFilter} onChange={(event) => setFocusFilter(event.target.value)}>
+              <option value="todos">Todos los enfoques</option>
+              <option value="vencidas">Oportunidades vencidas</option>
+              <option value="sin_contacto">Más de 30 días sin contacto</option>
+              <option value="pipeline">Con pipeline abierto</option>
+              <option value="sin_producto">Sin producto sugerido</option>
+            </select>
             {(search || priorityFilter !== "todas" || focusFilter !== "todos") && (
-              <button className="ta-clear-btn" type="button" onClick={clearFilters} title="Limpiar filtros">
+              <button className="p-btn p-btn--ghost p-btn--icon" type="button" onClick={clearFilters} title="Limpiar filtros">
                 <X size={16} />
               </button>
             )}
           </div>
 
-          <div className="ta-grid">
+          <div className="p-list">
             {filteredActions.length === 0 ? (
-              <EmptyState
-                title={actions.length ? "No hay acciones con esos filtros" : "Todavía no hay clientes cargados"}
-                text={actions.length ? "Probá con otra prioridad o enfoque comercial." : "Cargá una cuenta para comenzar a priorizar la agenda."}
-                action={actions.length ? <button className="ta-header-btn" type="button" onClick={clearFilters}>Limpiar filtros</button> : null}
-              />
+              <div className="p-empty">
+                {actions.length
+                  ? "No hay acciones con esos filtros. Probá con otra prioridad o enfoque comercial."
+                  : "Todavía no hay clientes cargados. Cargá una cuenta para comenzar a priorizar la agenda."}
+                {actions.length > 0 && (
+                  <button className="p-btn p-btn--ghost" type="button" onClick={clearFilters} style={{ marginLeft: 12 }}>Limpiar filtros</button>
+                )}
+              </div>
             ) : filteredActions.slice(0, 12).map((item, index) => (
-              <article key={item.account.id} className={`ta-card ta-card--${item.priority.toLowerCase()}`}>
-                <div className="ta-card__top">
-                  <div className="ta-card__rank">{String(index + 1).padStart(2, "0")}</div>
-                  <div className="ta-card__info">
-                    <span className="ta-card__eyebrow">{item.priority} prioridad</span>
-                    <h3 className="ta-card__name">{item.account.name}</h3>
-                    <p className="ta-card__location">
-                      {item.account.city || "—"} · {item.account.province || "—"} · Potencial {item.account.potential || "Medio"}
-                    </p>
+              <div key={item.account.id} className="p-row">
+                <span className="p-row__rank">{String(index + 1).padStart(2, "0")}</span>
+                <div className="p-row__main">
+                  <div className="p-row__name">
+                    {item.account.name}
+                    {item.priority === "Alta" && <span className="p-badge--red" style={{ marginLeft: 8 }}>Alta</span>}
+                    {item.priority === "Media" && <span className="p-badge--amber" style={{ marginLeft: 8 }}>Media</span>}
+                    {item.priority === "Baja" && <span className="p-badge--gray" style={{ marginLeft: 8 }}>Baja</span>}
                   </div>
-                  <div className="ta-score">
-                    <span>Score</span>
-                    <strong>{item.score}</strong>
+                  <div className="p-row__sub">
+                    {item.account.city || "—"} · {item.account.province || "—"} · Potencial {item.account.potential || "Medio"}
+                    &nbsp;·&nbsp;<Clock3 size={12} style={{ display: "inline", verticalAlign: "middle" }} /> {item.daysWithoutContact} días sin contacto
+                    &nbsp;·&nbsp;<TrendingUp size={12} style={{ display: "inline", verticalAlign: "middle" }} /> {moneyARS(item.openPipeline)}
+                    {item.suggestedProduct && <>&nbsp;·&nbsp;<PackageOpen size={12} style={{ display: "inline", verticalAlign: "middle" }} /> {item.suggestedProduct.name}</>}
+                  </div>
+                  <div className="p-row__sub" style={{ marginTop: 4 }}>{item.reason}</div>
+                </div>
+                <div className="p-row__meta">
+                  <span className="p-row__val">Score {item.score}</span>
+                  <div className="p-progress" style={{ width: 80, marginTop: 4 }}>
+                    <div
+                      className={`p-progress-fill ${item.score >= 70 ? "p-progress-fill--green" : item.score >= 40 ? "p-progress-fill--amber" : "p-progress-fill--red"}`}
+                      style={{ width: `${item.score}%` }}
+                    />
                   </div>
                 </div>
-
-                <div className="ta-scorebar">
-                  <span>Score comercial</span>
-                  <div><i style={{ width: `${item.score}%` }} /></div>
-                  <strong>{item.score}/100</strong>
-                </div>
-
-                <div className="ta-metrics">
-                  <TaMetric icon={<Clock3 size={14} />} label="Sin contacto" value={`${item.daysWithoutContact} días`} />
-                  <TaMetric icon={<TrendingUp size={14} />} label="Pipeline" value={moneyARS(item.openPipeline)} />
-                  <TaMetric icon={<PackageOpen size={14} />} label="Producto" value={item.suggestedProduct?.name || "Sin producto"} />
-                </div>
-
-                <div className="ta-decision">
-                  <span>Próxima mejor acción</span>
-                  <p>{item.reason}</p>
-                </div>
-
-                <div className="ta-actions">
+                <div className="p-row__actions">
                   <button
-                    className="ta-btn ta-btn--primary"
+                    className="p-icon-btn"
+                    title="Compartir Share Kit"
                     onClick={() => shareProduct(item.suggestedProduct, item.account.name)}
                   >
-                    <MessageCircle size={15} /> Compartir Share Kit
+                    <MessageCircle size={15} />
                   </button>
                   <button
-                    className="ta-btn ta-btn--secondary"
+                    className="p-icon-btn"
+                    title="Registrar visita"
                     onClick={() => onNavigate("visits", { action: "create", source: "todayActions" })}
                   >
-                    <CalendarPlus size={15} /> Registrar visita
+                    <CalendarPlus size={15} />
                   </button>
                 </div>
-              </article>
+              </div>
             ))}
           </div>
-        </section>
+        </div>
+
       </div>
     </Layout>
   );

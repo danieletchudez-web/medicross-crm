@@ -298,57 +298,84 @@ export default function TasksPage({ profile, onNavigate }) {
 
   return (
     <Layout title="Tareas" profile={profile} onNavigate={onNavigate}>
-      <div className="tk-page">
+      <div className="p-page">
 
         {toast && <div className="tk-toast">{toast}</div>}
 
-        <ModuleHeader
-          title="Tareas"
-          subtitle={`${kpis.activas} activa${kpis.activas !== 1 ? "s" : ""} · ${tasks.length} en total`}
-          actions={
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div className="tk-view-toggle">
-                <button className={`tk-view-btn${viewMode === "list" ? " active" : ""}`} onClick={() => setViewMode("list")} title="Lista">☰ Lista</button>
-                <button className={`tk-view-btn${viewMode === "kanban" ? " active" : ""}`} onClick={() => setViewMode("kanban")} title="Kanban">⊞ Kanban</button>
-              </div>
-              <button className="tk-btn tk-btn--primary" onClick={() => openNew()}>+ Nueva tarea</button>
+        {/* Metrics Panel */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Tareas</span>
+              <span className="p-sub">{`${kpis.activas} activa${kpis.activas !== 1 ? "s" : ""} · ${tasks.length} en total`}</span>
             </div>
-          }
-        />
-
-        <section className="tk-kpis">
-          <MetricKpi label="Activas"     value={loading ? "—" : kpis.activas} />
-          <MetricKpi label="Vencidas"    value={loading ? "—" : kpis.vencidas}    accent="red"   />
-          <MetricKpi label="Hoy"         value={loading ? "—" : kpis.hoy}         accent="amber" />
-          <MetricKpi label="Completadas" value={loading ? "—" : kpis.completadas} accent="green" />
-        </section>
-
-        <div className="tk-filters">
-          <div className="tk-status-tabs">
-            {[
-              { key: "activas",    label: "Activas"      },
-              { key: "completada", label: "Completadas"  },
-              { key: "cancelada",  label: "Canceladas"   },
-              { key: "todas",      label: "Todas"        },
-            ].map(s => (
-              <button key={s.key} className={`tk-tab${filter === s.key ? " active" : ""}`} onClick={() => setFilter(s.key)}>
-                {s.label}
-              </button>
-            ))}
+            <div className="p-hd-right">
+              <button className="p-btn p-btn--primary" onClick={() => openNew()}>+ Nueva tarea</button>
+            </div>
           </div>
-          <div className="tk-filters-right">
-            <select className="tk-select" value={prioFilter} onChange={e => setPrioFilter(e.target.value)}>
-              <option value="">Todas las prioridades</option>
-              {PRIORITIES.map(p => <option key={p} value={p}>{PRIO_LABEL[p]}</option>)}
-            </select>
-            <select className="tk-select" value={assignFilter} onChange={e => setAssignFilter(e.target.value)}>
-              <option value="">Todos los responsables</option>
-              {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
-            </select>
-            <input className="tk-search" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Pendientes</span>
+              <span className="p-metric__val">{loading ? "—" : tasks.filter(t => t.status === "pendiente").length}</span>
+              <span className="p-metric__sub">sin iniciar</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">En Progreso</span>
+              <span className="p-metric__val">{loading ? "—" : tasks.filter(t => t.status === "en_progreso").length}</span>
+              <span className="p-metric__sub">activas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Vencidas</span>
+              <span className="p-metric__val p-metric__down">{loading ? "—" : kpis.vencidas}</span>
+              <span className="p-metric__sub">requieren atención</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Completadas</span>
+              <span className="p-metric__val p-metric__up">{loading ? "—" : kpis.completadas}</span>
+              <span className="p-metric__sub">finalizadas</span>
+            </div>
           </div>
         </div>
 
+        {/* Filter Bar Panel */}
+        <div className="p-panel">
+          <div className="p-toolbar--top">
+            <div className="p-pills">
+              {[
+                { key: "activas",    label: "Activas"     },
+                { key: "completada", label: "Completadas" },
+                { key: "cancelada",  label: "Canceladas"  },
+                { key: "todas",      label: "Todas"       },
+              ].map(s => (
+                <button
+                  key={s.key}
+                  className={`p-pill${filter === s.key ? " p-pill--active" : ""}`}
+                  onClick={() => setFilter(s.key)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
+              <input
+                className="p-search"
+                placeholder="Buscar..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <select className="p-select" value={prioFilter} onChange={e => setPrioFilter(e.target.value)}>
+                <option value="">Todas las prioridades</option>
+                {PRIORITIES.map(p => <option key={p} value={p}>{PRIO_LABEL[p]}</option>)}
+              </select>
+              <select className="p-select" value={assignFilter} onChange={e => setAssignFilter(e.target.value)}>
+                <option value="">Todos los responsables</option>
+                {profiles.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Alerts strip */}
         {!loading && (kpis.vencidas > 0 || kpis.hoy > 0 || kpis.manana > 0 || kpis.en3dias > 0) && (
           <div className="tk-due-alerts">
             {kpis.vencidas > 0 && (
@@ -378,145 +405,179 @@ export default function TasksPage({ profile, onNavigate }) {
           </div>
         )}
 
-        {viewMode === "kanban" && (
-          <div className="tk-kanban">
-            {STATUSES.map(status => {
-              const colTasks = tasks.filter(t => t.status === status);
-              return (
-                <div
-                  key={status}
-                  className={`tk-kanban-col tk-kanban-col--${STATUS_COLOR[status]}${draggingId ? " tk-kanban-col--drop-target" : ""}`}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={() => handleDrop(status)}
-                >
-                  <div className="tk-kanban-col__header">
-                    <span className={`tk-kanban-col__dot tk-kanban-col__dot--${STATUS_COLOR[status]}`} />
-                    <span className="tk-kanban-col__title">{STATUS_LABEL[status]}</span>
-                    <span className="tk-kanban-col__count">{colTasks.length}</span>
-                  </div>
-                  <div className="tk-kanban-cards">
-                    {colTasks.length === 0 && (
-                      <div className="tk-kanban-empty">Sin tareas</div>
-                    )}
-                    {colTasks.map(task => {
-                      const due     = dueBadge(task.due_date, task.status);
-                      const pColor  = PRIO_COLOR[task.priority] || "#94a3b8";
-                      const link    = linkLabel(task, accounts, opportunities, tenders, campaigns);
-                      const assignee = profiles.find(p => p.id === task.assigned_to);
-                      const initials = assignee?.full_name
-                        ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
-                        : null;
-                      const isOwner  = task.created_by === profile?.id;
-                      const daysDue  = daysUntil(task.due_date);
-                      const isOverdue = !["completada","cancelada"].includes(task.status) && daysDue !== null && daysDue < 0;
-                      const isDueToday = !["completada","cancelada"].includes(task.status) && daysDue === 0;
-
-                      return (
-                        <div
-                          key={task.id}
-                          className={`tk-kanban-card${isOverdue ? " tk-kanban-card--overdue" : ""}${isDueToday ? " tk-kanban-card--today" : ""}${draggingId === task.id ? " tk-kanban-card--dragging" : ""}`}
-                          draggable={isOwner}
-                          onDragStart={() => isOwner && setDraggingId(task.id)}
-                          onDragEnd={() => setDraggingId(null)}
-                          style={{ borderLeftColor: pColor, cursor: isOwner ? "grab" : "default" }}
-                          onClick={() => isOwner && openEdit(task)}
-                        >
-                          <div className="tk-kanban-card__title">{task.title}</div>
-                          <div className="tk-kanban-card__meta">
-                            <span className="tk-prio-badge" style={{ color: pColor, background: PRIO_BG[task.priority] }}>{PRIO_LABEL[task.priority]}</span>
-                            {link && <span className="tk-meta-tag tk-meta-tag--link">{link.icon} {link.text}</span>}
-                          </div>
-                          <div className="tk-kanban-card__footer">
-                            {task.due_date && (
-                              <span className="tk-meta-tag" style={{ fontSize: 11 }}>
-                                📅 {new Date(task.due_date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
-                              </span>
-                            )}
-                            {due && <span className={`tk-due tk-due--${due.cls}`}>{due.label}</span>}
-                            {initials && <span className="tk-avatar" style={{ marginLeft: "auto" }} title={assignee?.full_name}>{initials}</span>}
-                          </div>
-                          {!isOwner && <div className="tk-kanban-card__lock" title="Solo el creador puede mover esta tarea">🔒</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {viewMode === "list" && <div className="tk-list">
-          {loading ? (
-            <EmptyState title="Cargando tareas…" text="" />
-          ) : filtered.length === 0 ? (
-            <EmptyState
-              title="Sin tareas"
-              text={filter === "activas" ? "No hay tareas activas. Creá una para empezar." : "No hay tareas en esta categoría."}
-              action={<button className="tk-btn tk-btn--primary" style={{marginTop:8}} onClick={() => openNew()}>+ Nueva tarea</button>}
-            />
-          ) : filtered.map(task => {
-            const due     = dueBadge(task.due_date, task.status);
-            const done    = task.status === "completada";
-            const pColor  = PRIO_COLOR[task.priority] || "#94a3b8";
-            const link    = linkLabel(task, accounts, opportunities, tenders, campaigns);
-            const assignee = profiles.find(p => p.id === task.assigned_to);
-            const initials = assignee?.full_name
-              ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
-              : null;
-            const assigneeName = assignee?.full_name || null;
-            const isOwner = task.created_by === profile?.id;
-
-            const daysDue = daysUntil(task.due_date);
-            const rowCls = done ? " tk-item--done"
-              : daysDue !== null && daysDue < 0  ? " tk-item--overdue"
-              : daysDue === 0                     ? " tk-item--due-today"
-              : "";
-
-            return (
-              <div key={task.id} className={`tk-item${rowCls}`} style={{ borderLeftColor: pColor }}>
+        {/* Main Content Panel */}
+        <div className="p-panel p-panel--grow">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <div className="p-tabs">
                 <button
-                  className={`tk-check${done ? " tk-check--done" : ""}`}
-                  onClick={() => isOwner && toggleComplete(task)}
-                  title={!isOwner ? "Solo el creador puede modificar esta tarea" : done ? "Marcar pendiente" : "Marcar completada"}
-                  style={!isOwner ? { cursor: "default", opacity: 0.4 } : {}}
+                  className={`p-tab${viewMode === "list" ? " p-tab--active" : ""}`}
+                  onClick={() => setViewMode("list")}
                 >
-                  {done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  ☰ Lista
                 </button>
-
-                <div className="tk-item__body" onClick={() => isOwner && openEdit(task)} style={!isOwner ? { cursor: "default" } : {}}>
-                  <div className="tk-item__title">{task.title}</div>
-                  {task.description && <div className="tk-item__desc">{task.description}</div>}
-                  <div className="tk-item__meta">
-                    {link && <span className="tk-meta-tag tk-meta-tag--link">{link.icon} {link.text}</span>}
-                    {task.due_date && (
-                      <span className="tk-meta-tag">
-                        📅 {new Date(task.due_date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
-                      </span>
-                    )}
-                    {due && <span className={`tk-due tk-due--${due.cls}`}>{due.label}</span>}
-                  </div>
-                </div>
-
-                <div className="tk-item__right">
-                  <span className="tk-prio-badge" style={{ color: pColor, background: PRIO_BG[task.priority] }}>
-                    {PRIO_LABEL[task.priority]}
-                  </span>
-                  <span className={`tk-status-badge tk-status-badge--${STATUS_COLOR[task.status]}`}>
-                    {STATUS_LABEL[task.status]}
-                  </span>
-                  {initials && <span className="tk-avatar" title={assigneeName}>{initials}</span>}
-                  {isOwner && (
-                    <div className="tk-item__actions">
-                      <button className="tk-action-btn" onClick={() => openEdit(task)} title="Editar">✎</button>
-                      <button className="tk-action-btn tk-action-btn--del" onClick={() => deleteTask(task.id)} title="Eliminar">✕</button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  className={`p-tab${viewMode === "kanban" ? " p-tab--active" : ""}`}
+                  onClick={() => setViewMode("kanban")}
+                >
+                  ⊞ Kanban
+                </button>
               </div>
-            );
-          })}
-        </div>}
+            </div>
+          </div>
+
+          {/* Kanban View */}
+          {viewMode === "kanban" && (
+            <div className="p-body">
+              <div className="p-kanban">
+                {STATUSES.map(status => {
+                  const colTasks = tasks.filter(t => t.status === status);
+                  return (
+                    <div
+                      key={status}
+                      className="p-kanban-col"
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={() => handleDrop(status)}
+                    >
+                      <div className="p-kanban-hd">
+                        <span className={`p-dot--${STATUS_COLOR[status]}`} />
+                        <span>{STATUS_LABEL[status]}</span>
+                        <span className="p-sub" style={{ marginLeft: "auto" }}>{colTasks.length}</span>
+                      </div>
+                      {colTasks.length === 0 && (
+                        <div className="p-empty">Sin tareas</div>
+                      )}
+                      {colTasks.map(task => {
+                        const due      = dueBadge(task.due_date, task.status);
+                        const pColor   = PRIO_COLOR[task.priority] || "#94a3b8";
+                        const link     = linkLabel(task, accounts, opportunities, tenders, campaigns);
+                        const assignee = profiles.find(p => p.id === task.assigned_to);
+                        const initials = assignee?.full_name
+                          ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
+                          : null;
+                        const isOwner   = task.created_by === profile?.id;
+                        const daysDue   = daysUntil(task.due_date);
+                        const isOverdue = !["completada","cancelada"].includes(task.status) && daysDue !== null && daysDue < 0;
+                        const isDueToday = !["completada","cancelada"].includes(task.status) && daysDue === 0;
+
+                        return (
+                          <div
+                            key={task.id}
+                            className={`p-kanban-card${isOverdue ? " tk-kanban-card--overdue" : ""}${isDueToday ? " tk-kanban-card--today" : ""}${draggingId === task.id ? " tk-kanban-card--dragging" : ""}`}
+                            draggable={isOwner}
+                            onDragStart={() => isOwner && setDraggingId(task.id)}
+                            onDragEnd={() => setDraggingId(null)}
+                            style={{ borderLeftColor: pColor, cursor: isOwner ? "grab" : "default" }}
+                            onClick={() => isOwner && openEdit(task)}
+                          >
+                            <div className="tk-kanban-card__title">{task.title}</div>
+                            <div className="tk-kanban-card__meta">
+                              <span className={`p-badge--${task.priority === "urgente" || task.priority === "alta" ? "red" : task.priority === "media" ? "amber" : "gray"}`}>
+                                {PRIO_LABEL[task.priority]}
+                              </span>
+                              {link && <span className="tk-meta-tag tk-meta-tag--link">{link.icon} {link.text}</span>}
+                            </div>
+                            <div className="tk-kanban-card__footer">
+                              {task.due_date && (
+                                <span className="tk-meta-tag" style={{ fontSize: 11 }}>
+                                  📅 {new Date(task.due_date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                                </span>
+                              )}
+                              {due && <span className={`p-badge--${due.cls}`}>{due.label}</span>}
+                              {initials && (
+                                <span className="p-avatar" style={{ marginLeft: "auto" }} title={assignee?.full_name}>
+                                  {initials}
+                                </span>
+                              )}
+                            </div>
+                            {!isOwner && <div className="tk-kanban-card__lock" title="Solo el creador puede mover esta tarea">🔒</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === "list" && (
+            <div className="p-list">
+              {loading ? (
+                <div className="p-empty">Cargando tareas…</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-empty">
+                  <div style={{ marginBottom: 8 }}>Sin tareas</div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>
+                    {filter === "activas" ? "No hay tareas activas. Creá una para empezar." : "No hay tareas en esta categoría."}
+                  </div>
+                  <button className="p-btn p-btn--primary" onClick={() => openNew()}>+ Nueva tarea</button>
+                </div>
+              ) : filtered.map(task => {
+                const due      = dueBadge(task.due_date, task.status);
+                const done     = task.status === "completada";
+                const pColor   = PRIO_COLOR[task.priority] || "#94a3b8";
+                const link     = linkLabel(task, accounts, opportunities, tenders, campaigns);
+                const assignee = profiles.find(p => p.id === task.assigned_to);
+                const initials = assignee?.full_name
+                  ? assignee.full_name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()
+                  : null;
+                const assigneeName = assignee?.full_name || null;
+                const isOwner  = task.created_by === profile?.id;
+                const daysDue  = daysUntil(task.due_date);
+
+                return (
+                  <div key={task.id} className="p-row" style={{ borderLeftColor: pColor, borderLeftWidth: 3, borderLeftStyle: "solid" }}>
+                    <div className="p-row__rank">
+                      <button
+                        className={`tk-check${done ? " tk-check--done" : ""}`}
+                        onClick={() => isOwner && toggleComplete(task)}
+                        title={!isOwner ? "Solo el creador puede modificar esta tarea" : done ? "Marcar pendiente" : "Marcar completada"}
+                        style={!isOwner ? { cursor: "default", opacity: 0.4 } : {}}
+                      >
+                        {done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </button>
+                    </div>
+
+                    <div className="p-row__main" onClick={() => isOwner && openEdit(task)} style={!isOwner ? { cursor: "default" } : { cursor: "pointer" }}>
+                      <div className="p-row__name" style={{ textDecoration: done ? "line-through" : "none", opacity: done ? 0.5 : 1 }}>
+                        {task.title}
+                      </div>
+                      <div className="p-row__sub">
+                        {link && <span style={{ marginRight: 8 }}>{link.icon} {link.text}</span>}
+                        {task.due_date && (
+                          <span style={{ marginRight: 8 }}>
+                            📅 {new Date(task.due_date + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                          </span>
+                        )}
+                        {due && <span className={`p-badge--${due.cls}`} style={{ marginRight: 8 }}>{due.label}</span>}
+                      </div>
+                    </div>
+
+                    <div className="p-row__meta">
+                      <span className={`p-badge--${task.priority === "urgente" || task.priority === "alta" ? "red" : task.priority === "media" ? "amber" : "gray"}`}>
+                        {PRIO_LABEL[task.priority]}
+                      </span>
+                      <span className={`p-badge--${STATUS_COLOR[task.status]}`} style={{ marginLeft: 6 }}>
+                        {STATUS_LABEL[task.status]}
+                      </span>
+                      {initials && (
+                        <span className="p-avatar" style={{ marginLeft: 8 }} title={assigneeName}>{initials}</span>
+                      )}
+                      {isOwner && (
+                        <div className="p-row__actions">
+                          <button className="p-icon-btn" onClick={() => openEdit(task)} title="Editar">✎</button>
+                          <button className="p-icon-btn p-icon-btn--del" onClick={() => deleteTask(task.id)} title="Eliminar">✕</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Drawer */}
@@ -606,8 +667,8 @@ export default function TasksPage({ profile, onNavigate }) {
             </div>
 
             <div className="tk-drawer__foot">
-              <button className="tk-btn tk-btn--ghost" onClick={closeForm}>Cancelar</button>
-              <button className="tk-btn tk-btn--primary" onClick={save} disabled={saving || !form.title.trim()}>
+              <button className="p-btn p-btn--ghost" onClick={closeForm}>Cancelar</button>
+              <button className="p-btn p-btn--primary" onClick={save} disabled={saving || !form.title.trim()}>
                 {saving ? "Guardando…" : editing ? "Guardar cambios" : "Crear tarea"}
               </button>
             </div>

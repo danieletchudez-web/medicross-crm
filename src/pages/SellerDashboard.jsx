@@ -191,208 +191,254 @@ export default function SellerDashboard({ profile, onNavigate }) {
 
   return (
     <Layout title="Dashboard" profile={profile} onNavigate={onNavigate}>
-      <div className="sd">
+      <div className="p-page">
 
-        {/* HERO */}
-        <header className="sd-hero">
-          <div className="sd-hero__left">
-            <p className="sd-hero__eyebrow">STORING Medical · CRM</p>
-            <h1 className="sd-hero__title">Hola, {firstName} 👋</h1>
-            <p className="sd-hero__sub">Resumen del equipo comercial — pipeline, visitas, oportunidades y clientes.</p>
-          </div>
-          <div className="sd-hero__right">
-            <button className="sd-hero__btn" onClick={() => onNavigate("visits", { action: "create", source: "sellerDashboard" })}>+ Registrar visita</button>
-          </div>
-        </header>
-
-        {/* PRIMARY KPIs */}
-        <section className="sd-primary-kpis">
-          <SdPrimaryKpi label="Pipeline abierto"    value={money(metrics.pipeline)}  sub="Total oportunidades activas" accent="blue"/>
-          <SdPrimaryKpi label="Forecast ponderado"  value={money(metrics.forecast)}  sub="Probabilidad × monto"        accent="blue"/>
-          <SdPrimaryKpi label="Opps. abiertas"      value={metrics.openOpps}         sub="En proceso de cierre"        accent="slate"/>
-          <SdPrimaryKpi label="Visitas registradas" value={metrics.visits}           sub="Total del equipo"            accent="green"/>
-        </section>
-
-        {/* SECONDARY KPIs */}
-        <section className="sd-kpi-grid">
-          <SdKpi label="Clientes totales"    value={metrics.accounts}/>
-          <SdKpi label="Clientes en riesgo"  value={metrics.redAccounts}       accent="red"/>
-          <SdKpi label="Hot deals"           value={metrics.hotDeals}          accent="amber"/>
-          <SdKpi label="Sin próxima acción"  value={metrics.withoutNextAction} accent="red"/>
-          <SdKpi label="Opps. vencidas"      value={metrics.overdueOpps}       accent={metrics.overdueOpps > 0 ? "red" : undefined}/>
-          <SdKpi label="Clientes fríos +30d" value={metrics.coldAccounts}      accent={metrics.coldAccounts > 0 ? "amber" : undefined}/>
-          <SdKpi label="Visitas esta semana" value={metrics.visitsThisWeek}/>
-          <SdKpi label="A cerrar en 30 días" value={metrics.closingThisMonth}  accent={metrics.closingThisMonth > 0 ? "green" : undefined}/>
-        </section>
-
-        {/* INSIGHTS */}
-        <section className="sd-insights">
-          <div className="sd-insight-card">
-            <span className="sd-insight__label">Actividad esta semana</span>
-            <div className="sd-insight__row">
-              <strong className="sd-insight__value">{metrics.visitsThisWeek} visitas</strong>
-              <span style={{ color: weekColor, fontWeight: 700, fontSize: 13 }}>{weekTrend} vs semana anterior ({metrics.visitsPrevWeek})</span>
+        {/* HEADER PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-sub">STORING Medical · CRM</span>
+              <span className="p-title" style={{ fontSize: 18, fontWeight: 600 }}>Hola, {firstName}</span>
+              <span className="p-sub">Resumen del equipo comercial — pipeline, visitas, oportunidades y clientes.</span>
             </div>
-            <span className="sd-insight__sub">Ritmo de contacto del equipo</span>
-          </div>
-
-          <div className="sd-insight-card sd-insight-card--green">
-            <span className="sd-insight__label">Pipeline a cerrar este mes</span>
-            <div className="sd-insight__row">
-              <strong className="sd-insight__value">{money(metrics.closingAmount)}</strong>
-              <span style={{ fontWeight: 600, fontSize: 12, color: "#64748b" }}>{metrics.closingThisMonth} oportunidad{metrics.closingThisMonth !== 1 ? "es" : ""}</span>
+            <div className="p-hd-right">
+              <button className="p-btn p-btn--primary" onClick={() => onNavigate("visits", { action: "create", source: "sellerDashboard" })}>+ Registrar visita</button>
             </div>
-            <span className="sd-insight__sub">Con cierre en los próximos 30 días</span>
           </div>
 
-          <div className={`sd-insight-card ${metrics.overdueOpps > 0 ? "sd-insight-card--red" : ""}`}>
-            <span className="sd-insight__label">Oportunidades vencidas</span>
-            <div className="sd-insight__row">
-              <strong className="sd-insight__value">{metrics.overdueOpps}</strong>
-              {metrics.overdueOpps > 0 && <span style={{ color: "#ef4444", fontWeight: 700, fontSize: 13 }}>⚠ Requieren acción</span>}
+          {/* PRIMARY METRICS STRIP */}
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Pipeline abierto</span>
+              <span className="p-metric__val">{compactMoney(metrics.pipeline)}</span>
+              <span className="p-metric__sub">Total oportunidades activas</span>
             </div>
-            <span className="sd-insight__sub">Fecha de cierre ya pasó sin resolver</span>
-          </div>
-
-          <div className={`sd-insight-card ${metrics.coldAccounts > 0 ? "sd-insight-card--amber" : ""}`}>
-            <span className="sd-insight__label">Clientes fríos</span>
-            <div className="sd-insight__row">
-              <strong className="sd-insight__value">{metrics.coldAccounts}</strong>
-              {metrics.coldAccounts > 0 && <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 13 }}>+30 días sin visita</span>}
+            <div className="p-metric">
+              <span className="p-metric__ey">Forecast ponderado</span>
+              <span className="p-metric__val">{compactMoney(metrics.forecast)}</span>
+              <span className="p-metric__sub">Probabilidad × monto</span>
             </div>
-            <span className="sd-insight__sub">Sin contacto reciente</span>
+            <div className="p-metric">
+              <span className="p-metric__ey">Opps. abiertas</span>
+              <span className="p-metric__val">{metrics.openOpps}</span>
+              <span className="p-metric__sub">En proceso de cierre</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Visitas registradas</span>
+              <span className="p-metric__val">{metrics.visits}</span>
+              <span className="p-metric__sub">Total del equipo</span>
+            </div>
           </div>
-        </section>
 
-        {/* DECISIONS */}
-        <section className="sd-decisions">
-          <SdDecision
-            tone={metrics.overdueOpps > 0 ? "danger" : metrics.withoutNextAction > 0 ? "warning" : metrics.hotDeals > 0 ? "success" : "neutral"}
-            icon={metrics.overdueOpps > 0 ? "⚠" : metrics.withoutNextAction > 0 ? "◎" : metrics.hotDeals > 0 ? "↑" : "●"}
-            title="Acción comercial sugerida"
-            text={
-              metrics.overdueOpps > 0
-                ? `${metrics.overdueOpps} oportunidad${metrics.overdueOpps > 1 ? "es vencidas" : " vencida"}. Actualizar fecha o cerrar.`
-                : metrics.withoutNextAction > 0
-                ? `${metrics.withoutNextAction} oportunidades necesitan próximo paso. Definir acción hoy.`
-                : metrics.hotDeals > 0
-                ? `${metrics.hotDeals} oportunidades calientes. Priorizar cierre.`
-                : "Operación estable. Mantener seguimiento de visitas."
-            }
-          />
-          <SdDecision
-            tone={visitPriority[0] ? "warning" : "neutral"}
-            icon="◷"
-            title="Prioridad de visita"
-            text={visitPriority[0] ? `Visitar primero: ${visitPriority[0].name}. Score ${visitPriority[0].score}.` : "No hay clientes cargados todavía."}
-          />
-        </section>
+          {/* SECONDARY METRICS STRIP */}
+          <div className="p-metrics" style={{ borderBottom: "none" }}>
+            <div className="p-metric">
+              <span className="p-metric__ey">Clientes totales</span>
+              <span className="p-metric__val">{metrics.accounts}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Clientes en riesgo</span>
+              <span className="p-metric__val p-metric__down">{metrics.redAccounts}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Hot deals</span>
+              <span className="p-metric__val" style={{ color: "#f59e0b" }}>{metrics.hotDeals}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Sin próxima acción</span>
+              <span className="p-metric__val p-metric__down">{metrics.withoutNextAction}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Opps. vencidas</span>
+              <span className={`p-metric__val ${metrics.overdueOpps > 0 ? "p-metric__down" : ""}`}>{metrics.overdueOpps}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Clientes fríos +30d</span>
+              <span className={`p-metric__val ${metrics.coldAccounts > 0 ? "p-metric__down" : ""}`}>{metrics.coldAccounts}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Visitas esta semana</span>
+              <span className="p-metric__val">{metrics.visitsThisWeek}</span>
+              <span className="p-metric__sub" style={{ color: weekColor }}>{weekTrend} vs sem. ant. ({metrics.visitsPrevWeek})</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">A cerrar en 30 días</span>
+              <span className={`p-metric__val ${metrics.closingThisMonth > 0 ? "p-metric__up" : ""}`}>{metrics.closingThisMonth}</span>
+              <span className="p-metric__sub">{compactMoney(metrics.closingAmount)}</span>
+            </div>
+          </div>
+        </div>
 
-        {/* CHARTS */}
-        <section className="sd-chart-grid">
-          <SdPanel title="Pipeline por etapa" sub="Monto total en cada fase"><canvas ref={pipelineRef}/></SdPanel>
-          <SdPanel title="Actividad semanal"  sub="Visitas registradas por día"><canvas ref={activityRef}/></SdPanel>
-        </section>
+        {/* INSIGHTS PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Alertas y sugerencias</span>
+            </div>
+          </div>
+          <div className="p-metrics" style={{ borderBottom: "none" }}>
+            <div className="p-metric">
+              <span className="p-metric__ey">Actividad esta semana</span>
+              <span className="p-metric__val">{metrics.visitsThisWeek} visitas</span>
+              <span className="p-metric__sub" style={{ color: weekColor }}>{weekTrend} vs semana anterior ({metrics.visitsPrevWeek})</span>
+              <span className="p-metric__sub">Ritmo de contacto del equipo</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Pipeline a cerrar este mes</span>
+              <span className="p-metric__val p-metric__up">{compactMoney(metrics.closingAmount)}</span>
+              <span className="p-metric__sub">{metrics.closingThisMonth} oportunidad{metrics.closingThisMonth !== 1 ? "es" : ""} próximas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Oportunidades vencidas</span>
+              <span className={`p-metric__val ${metrics.overdueOpps > 0 ? "p-metric__down" : ""}`}>{metrics.overdueOpps}</span>
+              <span className="p-metric__sub">{metrics.overdueOpps > 0 ? "Requieren acción urgente" : "Sin vencimientos"}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Clientes fríos</span>
+              <span className={`p-metric__val ${metrics.coldAccounts > 0 ? "p-metric__down" : ""}`}>{metrics.coldAccounts}</span>
+              <span className="p-metric__sub">{metrics.coldAccounts > 0 ? "+30 días sin visita" : "Todos contactados"}</span>
+            </div>
+          </div>
 
-        {/* LISTS */}
-        <section className="sd-list-grid">
-          <SdListCard title="Últimas visitas" sub="Actividad reciente del equipo">
-            {visits.length === 0 ? <p className="sd-empty">No hay visitas registradas.</p> : (
-              visits.slice(0, 5).map((v) => (
-                <SdListItem key={v.id} title={v.accounts?.name || "Sin cliente"} sub={`${v.products?.name || "Sin producto"} · ${v.visit_type || "—"}`} right={v.visit_date ? new Date(v.visit_date).toLocaleDateString("es-AR") : "—"}/>
-              ))
-            )}
-          </SdListCard>
+          {/* ACTION SUGGESTIONS */}
+          <div className="p-section">
+            <div className="p-body" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 220, padding: "12px 16px", background: metrics.overdueOpps > 0 ? "rgba(239,68,68,0.08)" : metrics.withoutNextAction > 0 ? "rgba(245,158,11,0.08)" : metrics.hotDeals > 0 ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.04)", borderRadius: 10, borderLeft: `3px solid ${metrics.overdueOpps > 0 ? "#ef4444" : metrics.withoutNextAction > 0 ? "#f59e0b" : metrics.hotDeals > 0 ? "#10b981" : "#6b7280"}` }}>
+                <span className="p-metric__ey">Acción comercial sugerida</span>
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: "#e2e8f0", fontWeight: 500 }}>
+                  {metrics.overdueOpps > 0
+                    ? `${metrics.overdueOpps} oportunidad${metrics.overdueOpps > 1 ? "es vencidas" : " vencida"}. Actualizar fecha o cerrar.`
+                    : metrics.withoutNextAction > 0
+                    ? `${metrics.withoutNextAction} oportunidades necesitan próximo paso. Definir acción hoy.`
+                    : metrics.hotDeals > 0
+                    ? `${metrics.hotDeals} oportunidades calientes. Priorizar cierre.`
+                    : "Operación estable. Mantener seguimiento de visitas."}
+                </p>
+              </div>
+              <div style={{ flex: 1, minWidth: 220, padding: "12px 16px", background: visitPriority[0] ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.04)", borderRadius: 10, borderLeft: `3px solid ${visitPriority[0] ? "#f59e0b" : "#6b7280"}` }}>
+                <span className="p-metric__ey">Prioridad de visita</span>
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: "#e2e8f0", fontWeight: 500 }}>
+                  {visitPriority[0] ? `Visitar primero: ${visitPriority[0].name}. Score ${visitPriority[0].score}.` : "No hay clientes cargados todavía."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          <SdListCard title="A cerrar este mes" sub="Expected close en próximos 30 días">
-            {closingSoon.length === 0 ? <p className="sd-empty">No hay oportunidades próximas.</p> : (
-              closingSoon.slice(0, 5).map((o) => (
-                <SdListItem key={o.id} title={o.name || "Sin nombre"} sub={`${o.stage} · ${new Date(o.expected_close).toLocaleDateString("es-AR")}`} right={money(o.amount)} rightAccent="green"/>
-              ))
-            )}
-          </SdListCard>
+        {/* CHARTS PANELS */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Pipeline por etapa</span>
+                <span className="p-sub">Monto total en cada fase</span>
+              </div>
+            </div>
+            <div className="p-chart" style={{ height: 240 }}>
+              <canvas ref={pipelineRef}/>
+            </div>
+          </div>
 
-          <SdListCard title="Clientes prioritarios" sub="Ordenados por score de urgencia">
-            {visitPriority.length === 0 ? <p className="sd-empty">No hay clientes cargados.</p> : (
-              visitPriority.map((c) => (
-                <SdListItem key={c.id} title={c.name} sub={`Score ${c.score} · ${c.daysWithoutVisit} días sin visita`} right={money(c.openPipeline)} rightAccent={c.daysWithoutVisit > 30 ? "red" : undefined}/>
-              ))
-            )}
-          </SdListCard>
-        </section>
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Actividad semanal</span>
+                <span className="p-sub">Visitas registradas por día</span>
+              </div>
+            </div>
+            <div className="p-chart" style={{ height: 240 }}>
+              <canvas ref={activityRef}/>
+            </div>
+          </div>
+        </div>
 
-        <footer className="sd-footer">
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" className="sd-footer-link">
+        {/* LISTS PANELS */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+
+          {/* Últimas visitas */}
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Últimas visitas</span>
+                <span className="p-sub">Actividad reciente del equipo</span>
+              </div>
+            </div>
+            <div className="p-list">
+              {visits.length === 0 ? (
+                <p className="p-empty">No hay visitas registradas.</p>
+              ) : (
+                visits.slice(0, 5).map((v) => (
+                  <div key={v.id} className="p-row">
+                    <div className="p-row__main">
+                      <div className="p-row__name">{v.accounts?.name || "Sin cliente"}</div>
+                      <div className="p-row__sub">{v.products?.name || "Sin producto"} · {v.visit_type || "—"}</div>
+                    </div>
+                    <div className="p-row__val">{v.visit_date ? new Date(v.visit_date).toLocaleDateString("es-AR") : "—"}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* A cerrar este mes */}
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">A cerrar este mes</span>
+                <span className="p-sub">Expected close en próximos 30 días</span>
+              </div>
+            </div>
+            <div className="p-list">
+              {closingSoon.length === 0 ? (
+                <p className="p-empty">No hay oportunidades próximas.</p>
+              ) : (
+                closingSoon.slice(0, 5).map((o) => (
+                  <div key={o.id} className="p-row">
+                    <div className="p-row__main">
+                      <div className="p-row__name">{o.name || "Sin nombre"}</div>
+                      <div className="p-row__sub">{o.stage} · {new Date(o.expected_close).toLocaleDateString("es-AR")}</div>
+                    </div>
+                    <div className="p-row__val" style={{ color: "#10b981" }}>{money(o.amount)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Clientes prioritarios */}
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Clientes prioritarios</span>
+                <span className="p-sub">Ordenados por score de urgencia</span>
+              </div>
+            </div>
+            <div className="p-list">
+              {visitPriority.length === 0 ? (
+                <p className="p-empty">No hay clientes cargados.</p>
+              ) : (
+                visitPriority.map((c) => (
+                  <div key={c.id} className="p-row">
+                    <div className="p-row__main">
+                      <div className="p-row__name">{c.name}</div>
+                      <div className="p-row__sub">Score {c.score} · {c.daysWithoutVisit} días sin visita</div>
+                    </div>
+                    <div className="p-row__val" style={{ color: c.daysWithoutVisit > 30 ? "#ef4444" : undefined }}>{money(c.openPipeline)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        <footer style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#4b5563", textDecoration: "none" }}>
             Designed by Daniel Etchudez
           </a>
         </footer>
 
       </div>
     </Layout>
-  );
-}
-
-/* ─── Sub-components ─────────────────────────────────────────────────── */
-function SdPrimaryKpi({ label, value, sub, accent = "blue" }) {
-  return (
-    <article className={`sd-primary-kpi sd-primary-kpi--${accent}`}>
-      <span className="sd-primary-kpi__label">{label}</span>
-      <strong className="sd-primary-kpi__value" title={String(value)}>{value}</strong>
-      <span className="sd-primary-kpi__sub">{sub}</span>
-    </article>
-  );
-}
-
-function SdKpi({ label, value, accent }) {
-  return (
-    <article className={`sd-kpi ${accent ? `sd-kpi--${accent}` : ""}`}>
-      <span className="sd-kpi__label">{label}</span>
-      <strong className="sd-kpi__value" title={String(value)}>{value}</strong>
-    </article>
-  );
-}
-
-function SdDecision({ tone, icon, title, text }) {
-  return (
-    <article className={`sd-decision sd-decision--${tone}`}>
-      <span className="sd-decision__icon">{icon}</span>
-      <div><span className="sd-decision__title">{title}</span><strong className="sd-decision__text">{text}</strong></div>
-    </article>
-  );
-}
-
-function SdPanel({ title, sub, children }) {
-  return (
-    <article className="sd-panel">
-      <header className="sd-panel__header">
-        <h3 className="sd-panel__title">{title}</h3>
-        {sub && <p className="sd-panel__sub">{sub}</p>}
-      </header>
-      <div className="sd-chart-box">{children}</div>
-    </article>
-  );
-}
-
-function SdListCard({ title, sub, children }) {
-  return (
-    <article className="sd-list-card">
-      <header className="sd-panel__header">
-        <h3 className="sd-panel__title">{title}</h3>
-        {sub && <p className="sd-panel__sub">{sub}</p>}
-      </header>
-      <div className="sd-list-body">{children}</div>
-    </article>
-  );
-}
-
-function SdListItem({ title, sub, right, rightAccent }) {
-  return (
-    <div className="sd-list-item">
-      <div className="sd-list-item__left">
-        <strong>{title}</strong>
-        <span>{sub}</span>
-      </div>
-      <em className={`sd-list-item__right ${rightAccent ? `sd-list-item__right--${rightAccent}` : ""}`} title={String(right)}>{right}</em>
-    </div>
   );
 }

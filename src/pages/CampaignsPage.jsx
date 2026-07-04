@@ -179,216 +179,223 @@ export default function CampaignsPage({ profile, onNavigate }) {
 
   return (
     <Layout title="Campañas Comerciales" profile={profile} onNavigate={onNavigate}>
-      <div className="campaigns-page">
-        <section className="campaign-hero">
-          <div>
-            <h2>Campañas comerciales</h2>
-            <p>
-              Definí objetivos por línea de producto. El avance se mide con forecast manual de oportunidades vinculadas.
-            </p>
-          </div>
-        </section>
+      <div className="p-page p-page--2col">
 
-        <section className="campaign-kpi-grid">
-          <Kpi title="Campañas totales"     value={stats.total} />
-          <Kpi title="Activas"              value={stats.active} />
-          <Kpi title="Objetivo total"       value={money(stats.target)} />
-          <Kpi title="Forecast manual total" value={money(stats.forecast)} />
-          <Kpi title="Cobertura global"     value={`${stats.coverage}%`} />
-        </section>
+        {/* LEFT — Campaign list panel */}
+        <div className="p-panel p-panel--grow">
 
-        <section className="campaign-form-card">
-          <div className="campaign-section-head">
-            <div>
-              <h3>{editingId ? "Editar campaña" : "Nueva campaña"}</h3>
-              <p>La campaña impacta automáticamente en el dashboard comercial.</p>
+          {/* Metrics strip */}
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Campañas</span>
+              <span className="p-metric__val">{stats.total}</span>
+              <span className="p-metric__sub">total</span>
             </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Activas</span>
+              <span className="p-metric__val">{stats.active}</span>
+              <span className="p-metric__sub">en curso</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Objetivo</span>
+              <span className="p-metric__val">{money(stats.target)}</span>
+              <span className="p-metric__sub">total</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Forecast</span>
+              <span className="p-metric__val">{money(stats.forecast)}</span>
+              <span className="p-metric__sub">manual total</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Cobertura</span>
+              <span className="p-metric__val">{stats.coverage}%</span>
+              <span className="p-metric__sub">global</span>
+            </div>
+          </div>
 
+          {/* Panel header */}
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Campañas</span>
+              <span className="p-sub">Seguimiento con forecast manual y oportunidades vinculadas</span>
+            </div>
+          </div>
+
+          {/* Campaign list */}
+          <div className="p-list">
+            {enrichedCampaigns.length === 0 ? (
+              <div className="p-empty">No hay campañas cargadas todavía.</div>
+            ) : (
+              enrichedCampaigns.map((campaign) => (
+                <div className="p-row" key={campaign.id}>
+                  <div className="p-row__main">
+                    <div className="p-row__name">{campaign.name}</div>
+                    <div className="p-row__sub">
+                      {campaign.product_line || campaign.line}
+                      {campaign.start_date && ` · ${campaign.start_date}`}
+                      {campaign.end_date && ` — ${campaign.end_date}`}
+                    </div>
+                    <div style={{ marginTop: 6 }}>
+                      <div className="p-progress" style={{ width: 180 }}>
+                        <div
+                          className={
+                            campaign.coverage >= 80
+                              ? "p-progress-fill p-progress-fill--green"
+                              : campaign.coverage >= 50
+                              ? "p-progress-fill p-progress-fill--amber"
+                              : "p-progress-fill p-progress-fill--red"
+                          }
+                          style={{ width: `${Math.min(100, campaign.coverage)}%` }}
+                        />
+                      </div>
+                      <span className="p-row__sub" style={{ marginTop: 2, display: "block" }}>
+                        {campaign.coverage}% · Forecast: {money(campaign.forecast)} · Pipeline: {money(campaign.pipeline)} · {campaign.openOpps} opps
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-row__meta">
+                    <span
+                      className={
+                        campaign.status === "activa"
+                          ? "p-badge--green"
+                          : campaign.status === "finalizada"
+                          ? "p-badge--red"
+                          : "p-badge--gray"
+                      }
+                    >
+                      {campaign.status}
+                    </span>
+                    <div className="p-row__actions" style={{ marginTop: 6 }}>
+                      <button className="p-btn p-btn--ghost" onClick={() => editCampaign(campaign)}>
+                        Editar
+                      </button>
+                      <button className="p-btn p-btn--danger" onClick={() => deleteCampaign(campaign)}>
+                        Borrar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT — Form panel */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">{editingId ? "Editar campaña" : "Nueva campaña"}</span>
+              <span className="p-sub">La campaña impacta automáticamente en el dashboard comercial</span>
+            </div>
             {editingId && (
-              <button
-                className="ghost-btn"
-                onClick={() => {
-                  setEditingId(null);
-                  setForm(EMPTY_FORM);
-                }}
-              >
-                Cancelar edición
-              </button>
+              <div className="p-hd-right">
+                <button
+                  className="p-btn p-btn--ghost"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm(EMPTY_FORM);
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
             )}
           </div>
 
-          <form className="campaign-form" onSubmit={saveCampaign}>
-            <div>
-              <label>Nombre de campaña</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Ej: EchoLaser Urología Q3"
-                required
-              />
-            </div>
+          <div className="p-body">
+            <form className="p-form p-form--2col" onSubmit={saveCampaign}>
+              <div className="p-field p-field--span2">
+                <label>Nombre de campaña</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Ej: EchoLaser Urología Q3"
+                  required
+                />
+              </div>
 
-            <div>
-              <label>Línea de producto</label>
-              <select
-                value={form.product_line}
-                onChange={(e) => setForm({ ...form, product_line: e.target.value })}
-              >
-                {LINES.map((line) => (
-                  <option key={line}>{line}</option>
-                ))}
-              </select>
-            </div>
+              <div className="p-field">
+                <label>Línea de producto</label>
+                <select
+                  className="p-select"
+                  value={form.product_line}
+                  onChange={(e) => setForm({ ...form, product_line: e.target.value })}
+                >
+                  {LINES.map((line) => (
+                    <option key={line}>{line}</option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label>Objetivo económico ARS</label>
-              <input
-                type="number"
-                value={form.target_amount}
-                onChange={(e) => setForm({ ...form, target_amount: e.target.value })}
-                placeholder="150000000"
-              />
-            </div>
+              <div className="p-field">
+                <label>Estado</label>
+                <select
+                  className="p-select"
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                >
+                  <option value="activa">Activa</option>
+                  <option value="pausada">Pausada</option>
+                  <option value="finalizada">Finalizada</option>
+                </select>
+              </div>
 
-            <div>
-              <label>Forecast manual ARS</label>
-              <input
-                type="number"
-                value={form.forecast_manual}
-                onChange={(e) => setForm({ ...form, forecast_manual: e.target.value })}
-                placeholder="Ej: 120000000"
-              />
-            </div>
+              <div className="p-field">
+                <label>Objetivo económico ARS</label>
+                <input
+                  type="number"
+                  value={form.target_amount}
+                  onChange={(e) => setForm({ ...form, target_amount: e.target.value })}
+                  placeholder="150000000"
+                />
+              </div>
 
-            <div>
-              <label>Estado</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="activa">Activa</option>
-                <option value="pausada">Pausada</option>
-                <option value="finalizada">Finalizada</option>
-              </select>
-            </div>
+              <div className="p-field">
+                <label>Forecast manual ARS</label>
+                <input
+                  type="number"
+                  value={form.forecast_manual}
+                  onChange={(e) => setForm({ ...form, forecast_manual: e.target.value })}
+                  placeholder="Ej: 120000000"
+                />
+              </div>
 
-            <div>
-              <label>Inicio</label>
-              <input
-                type="date"
-                value={form.start_date}
-                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-              />
-            </div>
+              <div className="p-field">
+                <label>Inicio</label>
+                <input
+                  type="date"
+                  value={form.start_date}
+                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                />
+              </div>
 
-            <div>
-              <label>Cierre</label>
-              <input
-                type="date"
-                value={form.end_date}
-                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-              />
-            </div>
+              <div className="p-field">
+                <label>Cierre</label>
+                <input
+                  type="date"
+                  value={form.end_date}
+                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                />
+              </div>
 
-            <div className="wide">
-              <label>Objetivo comercial</label>
-              <textarea
-                value={form.objective}
-                onChange={(e) => setForm({ ...form, objective: e.target.value })}
-                placeholder="Ej: abrir 5 cuentas nuevas, generar 3 demos y cerrar primera compra..."
-              />
-            </div>
+              <div className="p-field p-field--span2">
+                <label>Objetivo comercial</label>
+                <textarea
+                  value={form.objective}
+                  onChange={(e) => setForm({ ...form, objective: e.target.value })}
+                  placeholder="Ej: abrir 5 cuentas nuevas, generar 3 demos y cerrar primera compra..."
+                />
+              </div>
 
-            <button disabled={loading}>
-              {loading ? "Guardando..." : editingId ? "Guardar cambios" : "Crear campaña"}
-            </button>
-          </form>
-        </section>
-
-        <section className="campaign-list-card">
-          <div className="campaign-section-head">
-            <div>
-              <h3>Campañas cargadas</h3>
-              <p>Seguimiento con forecast manual y oportunidades vinculadas.</p>
-            </div>
+              <div className="p-form-actions p-field--span2">
+                <button className="p-btn p-btn--primary" disabled={loading}>
+                  {loading ? "Guardando..." : editingId ? "Guardar cambios" : "Crear campaña"}
+                </button>
+              </div>
+            </form>
           </div>
+        </div>
 
-          {enrichedCampaigns.length === 0 ? (
-            <p className="campaign-empty">No hay campañas cargadas todavía.</p>
-          ) : (
-            <div className="campaign-grid">
-              {enrichedCampaigns.map((campaign) => (
-                <article className="campaign-card" key={campaign.id}>
-                  <div className="campaign-card-head">
-                    <div>
-                      <h4>{campaign.name}</h4>
-                      <span>{campaign.product_line || campaign.line}</span>
-                    </div>
-
-                    <em className={`status ${campaign.status}`}>
-                      {campaign.status}
-                    </em>
-                  </div>
-
-                  <div className="campaign-progress-block">
-                    <div className="progress-info">
-                      <strong>{campaign.coverage}%</strong>
-                      <span>cobertura</span>
-                    </div>
-
-                    <div className="campaign-progress">
-                      <div
-                        style={{ width: `${Math.min(100, campaign.coverage)}%` }}
-                        className={
-                          campaign.coverage >= 80
-                            ? "green"
-                            : campaign.coverage >= 50
-                            ? "yellow"
-                            : "red"
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="campaign-data-grid">
-                    <div>
-                      <span>Objetivo</span>
-                      <strong>{money(campaign.target)}</strong>
-                    </div>
-
-                    <div>
-                      <span>Forecast manual</span>
-                      <strong style={{ color: campaign.forecast > 0 ? "#3b82f6" : undefined }}>
-                        {money(campaign.forecast)}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>Pipeline</span>
-                      <strong>{money(campaign.pipeline)}</strong>
-                    </div>
-
-                    <div>
-                      <span>Oportunidades</span>
-                      <strong>{campaign.openOpps}</strong>
-                    </div>
-                  </div>
-
-                  {campaign.objective && (
-                    <p className="campaign-objective">{campaign.objective}</p>
-                  )}
-
-                  <div className="campaign-actions">
-                    <button onClick={() => editCampaign(campaign)}>Editar</button>
-                    <button className="danger" onClick={() => deleteCampaign(campaign)}>
-                      Borrar
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
     </Layout>
   );

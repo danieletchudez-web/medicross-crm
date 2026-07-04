@@ -397,212 +397,282 @@ export default function ProductLineDashboard({ profile, onNavigate }) {
   if (loading) {
     return (
       <Layout title="Dashboard Línea" profile={profile} onNavigate={onNavigate}>
-        <div className="line-loading">Cargando dashboard por línea...</div>
+        <div className="p-page">
+          <div className="p-panel">
+            <div className="p-body p-empty">Cargando dashboard por línea...</div>
+          </div>
+        </div>
       </Layout>
     );
   }
 
   return (
     <Layout title="Dashboard Línea" profile={profile} onNavigate={onNavigate}>
-      <div className="line-dashboard">
-        <section className="line-hero">
-          <div>
-            <h2>{selectedLine}</h2>
-            <p>Vista comercial por línea de producto: pipeline, forecast, actividad y campañas.</p>
+      <div className="p-page">
+
+        {/* Top panel: line selector + KPI metrics strip */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">{selectedLine}</span>
+              <span className="p-sub">Vista comercial por línea de producto</span>
+            </div>
+            <div className="p-hd-right">
+              <select
+                className="p-select"
+                value={selectedLine}
+                onChange={(e) => setSelectedLine(e.target.value)}
+              >
+                {LINE_OPTIONS.map((line) => (
+                  <option key={line}>{line}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="line-selector">
-            <span>Línea</span>
-            <select
-              value={selectedLine}
-              onChange={(e) => setSelectedLine(e.target.value)}
-            >
-              {LINE_OPTIONS.map((line) => (
-                <option key={line}>{line}</option>
-              ))}
-            </select>
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Pipeline abierto</span>
+              <span className="p-metric__val">{compactMoney(metrics.pipeline)}</span>
+              <span className="p-metric__sub">{money(metrics.pipeline)}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Forecast ponderado</span>
+              <span className="p-metric__val">{compactMoney(metrics.forecast)}</span>
+              <span className="p-metric__sub">{money(metrics.forecast)}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Objetivo campañas</span>
+              <span className="p-metric__val">{compactMoney(metrics.target)}</span>
+              <span className="p-metric__sub">{money(metrics.target)}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Cobertura</span>
+              <span className={`p-metric__val ${metrics.coverage >= 80 ? "p-metric__up" : metrics.coverage >= 50 ? "" : "p-metric__down"}`}>{metrics.coverage}%</span>
+              <span className="p-metric__sub">vs objetivo</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Opps abiertas</span>
+              <span className="p-metric__val">{metrics.openOpps}</span>
+              <span className="p-metric__sub">oportunidades</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Hot deals</span>
+              <span className={`p-metric__val ${metrics.hotDeals > 0 ? "p-metric__up" : ""}`}>{metrics.hotDeals}</span>
+              <span className="p-metric__sub">prob. &ge; 70%</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Clientes activos</span>
+              <span className="p-metric__val">{metrics.accounts}</span>
+              <span className="p-metric__sub">cuentas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Visitas</span>
+              <span className="p-metric__val">{metrics.visits}</span>
+              <span className="p-metric__sub">registradas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Sin prox. acción</span>
+              <span className={`p-metric__val ${metrics.withoutNextAction > 0 ? "p-metric__down" : ""}`}>{metrics.withoutNextAction}</span>
+              <span className="p-metric__sub">pendientes</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Productos</span>
+              <span className="p-metric__val">{metrics.products}</span>
+              <span className="p-metric__sub">cargados</span>
+            </div>
           </div>
-        </section>
 
-        <section className={`line-decision ${decision.tone}`}>
-          <span>{decision.title}</span>
-          <strong>{decision.text}</strong>
-        </section>
+          {/* Decision alert */}
+          <div className="p-toolbar">
+            <span className={`p-badge--${decision.tone === "danger" ? "red" : decision.tone === "warning" ? "amber" : decision.tone === "success" ? "green" : "gray"}`}>{decision.title}</span>
+            <span className="p-sub" style={{ marginLeft: 10 }}>{decision.text}</span>
+          </div>
+        </div>
 
-        <section className="line-kpi-grid">
-          <Kpi title="Pipeline abierto" value={money(metrics.pipeline)} />
-          <Kpi title="Forecast ponderado" value={money(metrics.forecast)} />
-          <Kpi title="Objetivo campañas" value={money(metrics.target)} />
-          <Kpi title="Cobertura" value={`${metrics.coverage}%`} />
-          <Kpi title="Oportunidades abiertas" value={metrics.openOpps} />
-          <Kpi title="Productos cargados" value={metrics.products} />
-          <Kpi title="Clientes activos" value={metrics.accounts} />
-          <Kpi title="Visitas registradas" value={metrics.visits} />
-          <Kpi title="Hot deals" value={metrics.hotDeals} />
-          <Kpi title="Sin próxima acción" value={metrics.withoutNextAction} danger />
-        </section>
+        {/* Charts row 1: Pipeline by stage + Forecast */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Pipeline por etapa</span>
+              </div>
+            </div>
+            <div className="p-chart">
+              <canvas ref={pipelineRef}></canvas>
+            </div>
+          </div>
 
-        <section className="line-mid-grid">
-          <CampaignTable rows={campaignRows} />
-          <ListCard title="Productos / Share Kit">
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Forecast 30 / 60 / 90 días</span>
+              </div>
+            </div>
+            <div className="p-chart">
+              <canvas ref={forecastRef}></canvas>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts row 2: Activity + Products mix */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Actividad semanal</span>
+              </div>
+            </div>
+            <div className="p-chart">
+              <canvas ref={activityRef}></canvas>
+            </div>
+          </div>
+
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Pipeline por producto</span>
+              </div>
+            </div>
+            <div className="p-chart">
+              <canvas ref={productsRef}></canvas>
+            </div>
+          </div>
+        </div>
+
+        {/* Campaigns + Products list */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 14 }}>
+          {/* Campaigns panel */}
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Campañas vs objetivo</span>
+                <span className="p-sub">{campaignRows.length} campañas</span>
+              </div>
+            </div>
+            {campaignRows.length === 0 ? (
+              <div className="p-body p-empty">No hay campañas cargadas para esta línea.</div>
+            ) : (
+              <div className="p-table-wrap">
+                <table className="p-table">
+                  <thead>
+                    <tr>
+                      <th>Campaña</th>
+                      <th>Forecast</th>
+                      <th>Objetivo</th>
+                      <th>Cobertura</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {campaignRows.slice(0, 4).map((r) => (
+                      <tr key={r.id}>
+                        <td>
+                          <div>{r.name}</div>
+                          <div className="p-progress" style={{ marginTop: 4 }}>
+                            <div
+                              className={`p-progress-fill ${r.coverage >= 80 ? "p-progress-fill--green" : r.coverage >= 50 ? "p-progress-fill--amber" : "p-progress-fill--red"}`}
+                              style={{ width: `${Math.min(100, r.coverage)}%` }}
+                            />
+                          </div>
+                        </td>
+                        <td>{money(r.forecast)}</td>
+                        <td>{money(r.target)}</td>
+                        <td>
+                          <span className={`p-badge--${r.coverage >= 80 ? "green" : r.coverage >= 50 ? "amber" : "red"}`}>{r.coverage}%</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Products list panel */}
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Productos / Share Kit</span>
+                <span className="p-sub">{lineProducts.length} productos</span>
+              </div>
+            </div>
             {lineProducts.length === 0 ? (
-              <EmptyText text="No hay productos cargados para esta línea." />
+              <div className="p-body p-empty">No hay productos cargados para esta línea.</div>
             ) : (
-              lineProducts.slice(0, 5).map((p) => (
-                <ListItem
-                  key={p.id}
-                  title={p.name}
-                  subtitle={p.speech ? "Speech cargado" : "Sin speech"}
-                  right={p.brochure_url ? "Brochure" : "—"}
-                />
-              ))
+              <div className="p-list">
+                {lineProducts.slice(0, 5).map((p, i) => (
+                  <div className="p-row" key={p.id}>
+                    <span className="p-row__rank">{i + 1}</span>
+                    <div className="p-row__main">
+                      <div className="p-row__name">{p.name}</div>
+                      <div className="p-row__sub">{p.speech ? "Speech cargado" : "Sin speech"}</div>
+                    </div>
+                    <div className="p-row__val">{p.brochure_url ? "Brochure" : "—"}</div>
+                  </div>
+                ))}
+              </div>
             )}
-          </ListCard>
-        </section>
+          </div>
+        </div>
 
-        <section className="line-chart-grid">
-          <ChartCard title="Pipeline por etapa">
-            <canvas ref={pipelineRef}></canvas>
-          </ChartCard>
-
-          <ChartCard title="Forecast 30 / 60 / 90 días">
-            <canvas ref={forecastRef}></canvas>
-          </ChartCard>
-
-          <ChartCard title="Actividad semanal">
-            <canvas ref={activityRef}></canvas>
-          </ChartCard>
-
-          <ChartCard title="Pipeline por producto">
-            <canvas ref={productsRef}></canvas>
-          </ChartCard>
-        </section>
-
-        <section className="line-list-grid">
-          <ListCard title="Últimas oportunidades">
+        {/* Opportunities + Visits lists */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          {/* Latest opportunities */}
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Últimas oportunidades</span>
+                <span className="p-sub">{lineOpportunities.length} total</span>
+              </div>
+            </div>
             {lineOpportunities.length === 0 ? (
-              <EmptyText text="No hay oportunidades cargadas." />
+              <div className="p-body p-empty">No hay oportunidades cargadas.</div>
             ) : (
-              lineOpportunities.slice(0, 5).map((o) => (
-                <ListItem
-                  key={o.id}
-                  title={o.name || "Sin nombre"}
-                  subtitle={`${o.accounts?.name || "Sin cliente"} · ${o.stage || "Sin etapa"} · ${o.probability || 0}%`}
-                  right={money(o.amount)}
-                />
-              ))
+              <div className="p-list">
+                {lineOpportunities.slice(0, 5).map((o) => (
+                  <div className="p-row" key={o.id}>
+                    <div className="p-row__main">
+                      <div className="p-row__name">{o.name || "Sin nombre"}</div>
+                      <div className="p-row__sub">{o.accounts?.name || "Sin cliente"} · {o.stage || "Sin etapa"} · {o.probability || 0}%</div>
+                    </div>
+                    <div className="p-row__val">{money(o.amount)}</div>
+                  </div>
+                ))}
+              </div>
             )}
-          </ListCard>
+          </div>
 
-          <ListCard title="Últimas visitas">
+          {/* Latest visits */}
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Últimas visitas</span>
+                <span className="p-sub">{lineVisits.length} total</span>
+              </div>
+            </div>
             {lineVisits.length === 0 ? (
-              <EmptyText text="No hay visitas cargadas." />
+              <div className="p-body p-empty">No hay visitas cargadas.</div>
             ) : (
-              lineVisits.slice(0, 5).map((v) => (
-                <ListItem
-                  key={v.id}
-                  title={v.accounts?.name || "Sin cliente"}
-                  subtitle={`${v.products?.name || "Sin producto"} · ${v.visit_type || "Sin tipo"}`}
-                  right={
-                    v.visit_date
-                      ? new Date(v.visit_date).toLocaleDateString("es-AR")
-                      : "—"
-                  }
-                />
-              ))
+              <div className="p-list">
+                {lineVisits.slice(0, 5).map((v) => (
+                  <div className="p-row" key={v.id}>
+                    <div className="p-row__main">
+                      <div className="p-row__name">{v.accounts?.name || "Sin cliente"}</div>
+                      <div className="p-row__sub">{v.products?.name || "Sin producto"} · {v.visit_type || "Sin tipo"}</div>
+                    </div>
+                    <div className="p-row__val">
+                      {v.visit_date
+                        ? new Date(v.visit_date).toLocaleDateString("es-AR")
+                        : "—"}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-          </ListCard>
-        </section>
+          </div>
+        </div>
+
       </div>
     </Layout>
   );
-}
-
-function Kpi({ title, value, danger }) {
-  return (
-    <article className={`line-kpi ${danger ? "danger" : ""}`}>
-      <span>{title}</span>
-      <strong title={String(value)}>{value}</strong>
-    </article>
-  );
-}
-
-function CampaignTable({ rows }) {
-  return (
-    <article className="line-campaign-table">
-      <h3>Campañas vs objetivo</h3>
-
-      <div className="line-campaign-head">
-        <span>Campaña</span>
-        <span>Forecast</span>
-        <span>Objetivo</span>
-        <span>Cobertura</span>
-      </div>
-
-      {rows.length === 0 ? (
-        <p className="line-empty">No hay campañas cargadas para esta línea.</p>
-      ) : (
-        rows.slice(0, 4).map((r) => (
-          <div className="line-campaign-row" key={r.id}>
-            <div>
-              <strong>{r.name}</strong>
-              <div className="line-progress-track">
-                <div
-                  style={{ width: `${Math.min(100, r.coverage)}%` }}
-                  className={
-                    r.coverage >= 80 ? "green" : r.coverage >= 50 ? "yellow" : "red"
-                  }
-                />
-              </div>
-            </div>
-            <span>{money(r.forecast)}</span>
-            <span>{money(r.target)}</span>
-            <em
-              className={
-                r.coverage >= 80 ? "green" : r.coverage >= 50 ? "yellow" : "red"
-              }
-            >
-              {r.coverage}%
-            </em>
-          </div>
-        ))
-      )}
-    </article>
-  );
-}
-
-function ChartCard({ title, children }) {
-  return (
-    <article className="line-chart-card">
-      <div className="line-chart-head">
-        <h3>{title}</h3>
-      </div>
-      <div className="line-chart-box">{children}</div>
-    </article>
-  );
-}
-
-function ListCard({ title, children }) {
-  return (
-    <article className="line-list-card">
-      <h3>{title}</h3>
-      <div>{children}</div>
-    </article>
-  );
-}
-
-function ListItem({ title, subtitle, right }) {
-  return (
-    <div className="line-list-item">
-      <div>
-        <strong>{title}</strong>
-        <span>{subtitle}</span>
-      </div>
-      <em title={String(right)}>{right}</em>
-    </div>
-  );
-}
-
-function EmptyText({ text }) {
-  return <p className="line-empty">{text}</p>;
 }

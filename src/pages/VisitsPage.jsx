@@ -630,127 +630,175 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
 
   return (
     <Layout title="Visitas Comerciales" profile={profile} onNavigate={onNavigate}>
-      <div className="visits-page">
+      <div className="p-page">
 
-        <ModuleHeader
-          title="Visitas Comerciales"
-          subtitle="Historial operativo, próximos seguimientos y resultados de cada contacto comercial."
-          actions={(
-            <>
-              <button className="visits-header-btn" type="button" onClick={loadData}>
-                <RefreshCw size={16}/> Actualizar
+        {/* METRICS PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Visitas Comerciales</span>
+              <span className="p-sub">Historial operativo, próximos seguimientos y resultados de cada contacto comercial.</span>
+            </div>
+            <div className="p-hd-right">
+              <button className="p-btn p-btn--ghost" type="button" onClick={loadData}>
+                <RefreshCw size={15}/> Actualizar
               </button>
-              <button className="visits-header-btn" type="button" onClick={() => onNavigate("calendar")}>
-                <CalendarDays size={16}/> Calendario
+              <button className="p-btn p-btn--ghost" type="button" onClick={() => onNavigate("calendar")}>
+                <CalendarDays size={15}/> Calendario
               </button>
-              <button className="visits-header-btn visits-header-btn--quick" type="button" onClick={() => setQuickOpen(true)}>
-                <Zap size={16}/> Visita rápida
+              <button className="p-btn p-btn--ghost" type="button" onClick={() => setQuickOpen(true)}>
+                <Zap size={15}/> Visita rápida
               </button>
-              <button className="visits-header-btn visits-header-btn--primary" type="button" onClick={openNewVisit}>
-                <CalendarPlus size={16}/> Nueva visita
+              <button className="p-btn p-btn--primary" type="button" onClick={openNewVisit}>
+                <CalendarPlus size={15}/> Nueva visita
               </button>
-            </>
-          )}
-        />
-
-        <section className="visits-kpi-grid">
-          {kpiData.map(k => <MetricKpi key={k.label} {...k}/>)}
-        </section>
-
-        <section className={`visits-insight ${stats.requiresAttention ? "visits-insight--alert" : "visits-insight--ok"}`}>
-          <div className="visits-insight__icon">
-            {stats.requiresAttention ? <AlertTriangle size={19}/> : <ClipboardCheck size={19}/>}
+            </div>
           </div>
-          <div>
-            <span>Lectura operativa</span>
-            <strong>{stats.requiresAttention ? "Hay seguimientos para resolver" : "Agenda de visitas bajo control"}</strong>
-            <p>
-              {stats.requiresAttention
-                ? `${stats.requiresAttention} visita${stats.requiresAttention!==1?"s":""} con seguimiento vencido o próximo.`
-                : `${stats.programadas} visita${stats.programadas!==1?"s":""} programada${stats.programadas!==1?"s":""} y ${stats.pendientes} informe${stats.pendientes!==1?"s":""} pendiente${stats.pendientes!==1?"s":""}.`}
-            </p>
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Visitas registradas</span>
+              <span className="p-metric__val">{stats.total}</span>
+              <span className="p-metric__sub">historial comercial</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Agenda de hoy</span>
+              <span className="p-metric__val">{stats.hoy}</span>
+              <span className="p-metric__sub">visitas programadas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Realizadas</span>
+              <span className="p-metric__val">{stats.realizadas}</span>
+              <span className="p-metric__sub">visitas completadas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Pendientes informe</span>
+              <span className="p-metric__val">{stats.pendientes}</span>
+              <span className="p-metric__sub">visitas por cerrar</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Requieren atención</span>
+              <span className={`p-metric__val ${stats.requiresAttention > 0 ? "p-metric__down" : ""}`}>{stats.requiresAttention}</span>
+              <span className="p-metric__sub">seguimientos próximos</span>
+            </div>
           </div>
-          {stats.requiresAttention>0&&(
-            <button type="button" className="visits-insight__action" onClick={()=>{setActiveTab("history");setAttentionOnly(true);}}>
-              Ver seguimientos
-            </button>
+          {stats.requiresAttention > 0 && (
+            <div className="p-body" style={{display:"flex",alignItems:"center",gap:10,paddingTop:12,paddingBottom:12}}>
+              <AlertTriangle size={16} style={{color:"#f59e0b",flexShrink:0}}/>
+              <span style={{fontSize:13,color:"#e5e7eb",flex:1}}>
+                <strong style={{color:"#fff"}}>Hay seguimientos para resolver — </strong>
+                {stats.requiresAttention} visita{stats.requiresAttention!==1?"s":""} con seguimiento vencido o próximo.
+              </span>
+              <button type="button" className="p-btn p-btn--ghost" onClick={()=>{setActiveTab("history");setAttentionOnly(true);}}>
+                Ver seguimientos
+              </button>
+            </div>
           )}
-        </section>
+          {!stats.requiresAttention && (
+            <div className="p-body" style={{display:"flex",alignItems:"center",gap:10,paddingTop:12,paddingBottom:12}}>
+              <ClipboardCheck size={16} style={{color:"#22c55e",flexShrink:0}}/>
+              <span style={{fontSize:13,color:"#9ca3af"}}>
+                <strong style={{color:"#fff"}}>Agenda de visitas bajo control — </strong>
+                {stats.programadas} visita{stats.programadas!==1?"s":""} programada{stats.programadas!==1?"s":""} y {stats.pendientes} informe{stats.pendientes!==1?"s":""} pendiente{stats.pendientes!==1?"s":""}.
+              </span>
+            </div>
+          )}
+        </div>
 
-        <div className="visits-tabs">
-          <button className={`visits-tab ${activeTab==="form"?"active":""}`}
+        {/* TABS */}
+        <div className="p-tabs">
+          <button
+            className={`p-tab ${activeTab==="form" ? "p-tab--active" : ""}`}
             onClick={openNewVisit}>
-            <CalendarPlus size={15}/> Nueva visita
+            <CalendarPlus size={14}/> Nueva visita
           </button>
-          <button className={`visits-tab ${activeTab==="history"?"active":""}`}
+          <button
+            className={`p-tab ${activeTab==="history" ? "p-tab--active" : ""}`}
             onClick={()=>setActiveTab("history")}>
-            <History size={15}/> Historial ({visits.length})
+            <History size={14}/> Historial ({visits.length})
           </button>
         </div>
 
-        {/* TAB NUEVA VISITA */}
+        {/* FORM PANEL */}
         {activeTab==="form" && (
-          <section className="visits-panel">
-            <header className="visits-panel__header">
-              <div>
-                <h2 className="visits-panel__title">Nueva visita</h2>
-                <p className="visits-panel__sub">Completá los datos de la visita, el resultado y la próxima acción.</p>
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Nueva visita</span>
+                <span className="p-sub">Completá los datos de la visita, el resultado y la próxima acción.</span>
               </div>
-            </header>
-            <form onSubmit={saveVisit}>
-              <FormComponent f={form} setF={setForm} isEdit={false}
-                accounts={accounts} products={products} loading={loading}
-                onToggleMaterial={toggleMaterialNew}
-                onCreateContact={createContact}/>
-            </form>
-          </section>
+            </div>
+            <div className="p-body">
+              <form onSubmit={saveVisit}>
+                <FormComponent f={form} setF={setForm} isEdit={false}
+                  accounts={accounts} products={products} loading={loading}
+                  onToggleMaterial={toggleMaterialNew}
+                  onCreateContact={createContact}/>
+              </form>
+            </div>
+          </div>
         )}
 
-        {/* TAB HISTORIAL */}
+        {/* HISTORY PANEL */}
         {activeTab==="history" && (
-          <section className="visits-panel">
-            <header className="visits-panel__header">
-              <div>
-                <h2 className="visits-panel__title">Actividad comercial reciente</h2>
-                <p className="visits-panel__sub">{filteredVisits.length} visita{filteredVisits.length!==1?"s":""} en esta vista</p>
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Actividad comercial reciente</span>
+                <span className="p-sub">{filteredVisits.length} visita{filteredVisits.length!==1?"s":""} en esta vista</span>
               </div>
-            </header>
+            </div>
 
-            <div className="visits-history-toolbar">
-              <label className="visits-search">
-                <Search size={16}/>
+            <div className="p-toolbar--top">
+              <label className="p-search">
+                <Search size={15}/>
                 <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente, producto, unidad o próxima acción..."/>
               </label>
-              <div className="visits-filter-tabs">
+              <div className="p-pills">
                 {[
                   {key:"todas",             label:`Todas (${visits.length})`},
                   {key:"programada",        label:`Programadas (${stats.programadas})`},
                   {key:"realizada",         label:`Realizadas (${stats.realizadas})`},
                   {key:"pendiente_informe", label:`Pend. informe (${stats.pendientes})`},
                 ].map(t=>(
-                  <button key={t.key} className={`visits-filter-tab ${filterStatus===t.key?"active":""}`}
+                  <button key={t.key} className={`p-pill ${filterStatus===t.key?"p-pill--active":""}`}
                     onClick={()=>setFilterStatus(t.key)}>{t.label}</button>
                 ))}
-                <button className={`visits-filter-tab ${attentionOnly?"active":""}`} onClick={()=>setAttentionOnly(value=>!value)}>
+                <button className={`p-pill ${attentionOnly?"p-pill--active":""}`} onClick={()=>setAttentionOnly(value=>!value)}>
                   Seguimientos ({stats.requiresAttention})
                 </button>
               </div>
             </div>
 
-            <div className="visits-history">
+            <div className="p-list">
               {filteredVisits.length===0 ? (
-                <EmptyState
-                  title="Sin visitas en esta vista"
-                  text="Cambiá los filtros o registrá una nueva visita comercial."
-                  action={<button className="visits-header-btn visits-header-btn--primary" type="button" onClick={openNewVisit}><CalendarPlus size={15}/> Nueva visita</button>}
-                />
+                <div className="p-empty">
+                  <span>Sin visitas en esta vista</span>
+                  <p>Cambiá los filtros o registrá una nueva visita comercial.</p>
+                  <button className="p-btn p-btn--primary" type="button" onClick={openNewVisit}>
+                    <CalendarPlus size={14}/> Nueva visita
+                  </button>
+                </div>
               ) : filteredVisits.map(v => {
                 const alert    = getFollowupAlert(v.visit_date,v.followup_date);
                 const timeline = getTimelineData(v.visit_date,v.followup_date);
                 const si = statusInfo(v.status);
                 const pi = priorityInfo(v.priority);
+
+                const statusBadgeClass =
+                  v.status==="realizada"         ? "p-badge--green"  :
+                  v.status==="programada"        ? "p-badge--blue"   :
+                  v.status==="pendiente_informe" ? "p-badge--purple" :
+                  v.status==="reprogramada"      ? "p-badge--amber"  :
+                  v.status==="cancelada"         ? "p-badge--red"    :
+                  "p-badge--gray";
+
+                const priorityBadgeClass =
+                  v.priority==="alta"  ? "p-badge--red"   :
+                  v.priority==="media" ? "p-badge--amber" :
+                  "p-badge--green";
+
                 return (
-                  <article className={`visits-item ${alert?`visits-item--${alert.tone}`:""}`} key={v.id}>
+                  <div className="p-row" key={v.id} style={{flexDirection:"column",alignItems:"stretch",padding:"14px 20px"}}>
                     {editingId===v.id ? (
                       <FormComponent f={editForm} setF={setEditForm} isEdit={true}
                         onSubmit={()=>saveEdit(v.id)} onCancel={cancelEdit}
@@ -760,105 +808,111 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
                     ) : (
                       <>
                         {alert && (
-                          <div className={`visits-alert visits-alert--${alert.tone}`}>
-                            <span className="visits-alert__dot"/>{alert.label}
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                            <span className={`p-dot--${alert.tone==="overdue"||alert.tone==="today"||alert.tone==="urgent"?"red":alert.tone==="soon"?"amber":"green"}`}/>
+                            <span style={{fontSize:11.5,color:"#9ca3af"}}>{alert.label}</span>
                           </div>
                         )}
 
-                        <div className="visits-item__top">
-                          <div className="visits-item__avatar">
+                        <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                          <div className="p-avatar">
                             {(v.accounts?.name||"?").slice(0,1).toUpperCase()}
                           </div>
-                          <div className="visits-item__head">
-                            <strong>{v.accounts?.name||"Sin cliente"}</strong>
-                            <span>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                              <span className="p-row__name">{v.accounts?.name||"Sin cliente"}</span>
+                              <span className={`p-badge--${statusBadgeClass.replace("p-badge--","")}`}>{si.label}</span>
+                              <span className={`p-badge--${priorityBadgeClass.replace("p-badge--","")}`}>{pi.label}</span>
+                            </div>
+                            <div className="p-row__sub" style={{marginTop:2}}>
                               {v.contact_name&&<em>{v.contact_name} · </em>}
                               {v.products?.name||"Sin producto"} · {VISIT_TYPES.find(t=>t.value===v.visit_type)?.label||v.visit_type}
                               {v.visit_time&&` · ${v.visit_time.slice(0,5)}`}
-                            </span>
+                            </div>
                           </div>
-                          <div className="visits-item__badges">
-                            <span className="visits-badge" style={{background:`${si.color}18`,color:si.color,borderColor:`${si.color}40`}}>{si.label}</span>
-                            <span className="visits-badge" style={{background:`${pi.color}18`,color:pi.color,borderColor:`${pi.color}40`}}>{pi.label}</span>
-                          </div>
-                          <div className="visits-item__actions">
-                            <button className="visits-action-btn visits-action-btn--edit" onClick={()=>startEdit(v)} title="Editar"><Pencil size={14}/></button>
-                            <button className="visits-action-btn visits-action-btn--delete" onClick={()=>deleteVisit(v.id)} disabled={deletingId===v.id} title="Eliminar">
+                          <div className="p-row__actions" style={{display:"flex",gap:4,flexShrink:0}}>
+                            <button className="p-icon-btn" onClick={()=>startEdit(v)} title="Editar"><Pencil size={14}/></button>
+                            <button className="p-icon-btn p-icon-btn--del" onClick={()=>deleteVisit(v.id)} disabled={deletingId===v.id} title="Eliminar">
                               {deletingId===v.id?"…":<Trash2 size={14}/>}
                             </button>
                           </div>
                         </div>
 
-                        <div className="visits-item__meta-row">
-                          {v.business_unit&&<span className="visits-meta-chip">🏢 {v.business_unit}</span>}
-                          {v.pipeline_stage&&<span className="visits-meta-chip">📊 {v.pipeline_stage}</span>}
-                          {v.commercial_potential>0&&<span className="visits-meta-chip">💰 {money(v.commercial_potential)}</span>}
-                          {v.visit_date&&<span className="visits-meta-chip">📅 {new Date(v.visit_date).toLocaleDateString("es-AR")}</span>}
-                          {v.duration_minutes>0&&<span className="visits-meta-chip"><Timer size={13}/> {v.duration_minutes} min</span>}
-                          {(v.attachments||[]).length>0&&<span className="visits-meta-chip"><Paperclip size={13}/> {v.attachments.length}</span>}
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+                          {v.business_unit&&<span className="p-badge--gray">🏢 {v.business_unit}</span>}
+                          {v.pipeline_stage&&<span className="p-badge--blue">📊 {v.pipeline_stage}</span>}
+                          {v.commercial_potential>0&&<span className="p-badge--green">💰 {money(v.commercial_potential)}</span>}
+                          {v.visit_date&&<span className="p-badge--gray">📅 {new Date(v.visit_date).toLocaleDateString("es-AR")}</span>}
+                          {v.duration_minutes>0&&<span className="p-badge--gray"><Timer size={11}/> {v.duration_minutes} min</span>}
+                          {(v.attachments||[]).length>0&&<span className="p-badge--gray"><Paperclip size={11}/> {v.attachments.length}</span>}
                         </div>
 
                         {v.objective&&(
-                          <div className="visits-objective">
-                            <span>Objetivo</span><p>{v.objective}</p>
+                          <div style={{marginTop:8}}>
+                            <span className="p-section__label">Objetivo</span>
+                            <p style={{fontSize:13,color:"#d1d5db",margin:"4px 0 0"}}>{v.objective}</p>
                           </div>
                         )}
 
                         {timeline&&(
-                          <div className="visits-timeline">
-                            <div className="visits-timeline__labels">
+                          <div style={{marginTop:10}}>
+                            <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,color:"#6b7280",marginBottom:4}}>
                               <span>Visita: {v.visit_date?new Date(v.visit_date).toLocaleDateString("es-AR"):"—"}</span>
                               {v.followup_date&&<span>Seguimiento: {new Date(v.followup_date).toLocaleDateString("es-AR")}</span>}
                             </div>
                             {timeline.totalSpan!==null&&(
                               <>
-                                <div className="visits-timeline__track">
-                                  <div className={`visits-timeline__fill visits-timeline__fill--${alert?.tone||"ok"}`} style={{width:`${timeline.progress}%`}}/>
-                                  <div className="visits-timeline__cursor" style={{left:`${timeline.progress}%`}}/>
+                                <div className="p-progress">
+                                  <div
+                                    className={`p-progress-fill p-progress-fill--${alert?.tone==="overdue"||alert?.tone==="today"||alert?.tone==="urgent"?"red":alert?.tone==="soon"?"amber":"green"}`}
+                                    style={{width:`${timeline.progress}%`}}
+                                  />
                                 </div>
-                                <div className="visits-timeline__info">
+                                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#6b7280",marginTop:3}}>
                                   <span>{timeline.daysSinceVisit}d desde visita</span>
                                   <span>{timeline.totalSpan}d totales · {timeline.progress}%</span>
                                 </div>
                               </>
                             )}
                             {timeline.totalSpan===null&&(
-                              <div className="visits-timeline__info">
-                                <span>{timeline.daysSinceVisit}d desde la visita · Sin seguimiento agendado</span>
+                              <div style={{fontSize:11.5,color:"#6b7280"}}>
+                                {timeline.daysSinceVisit}d desde la visita · Sin seguimiento agendado
                               </div>
                             )}
                           </div>
                         )}
 
-                        {v.notes&&<p className="visits-item__notes">{v.notes}</p>}
+                        {v.notes&&<p style={{fontSize:13,color:"#9ca3af",margin:"8px 0 0",lineHeight:1.5}}>{v.notes}</p>}
 
                         {v.result&&(
-                          <div className="visits-result">
-                            <span>Resultado</span><p>{v.result}</p>
+                          <div style={{marginTop:8}}>
+                            <span className="p-section__label">Resultado</span>
+                            <p style={{fontSize:13,color:"#d1d5db",margin:"4px 0 0"}}>{v.result}</p>
                           </div>
                         )}
 
-                        <div className="visits-item__meta">
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
                           {(v.present_contacts||[]).map((contact,index)=>(
-                            <span className="visits-tag" key={`${contact.email||contact.name}-${index}`}>👤 {contact.name}</span>
+                            <span className="p-badge--gray" key={`${contact.email||contact.name}-${index}`}>👤 {contact.name}</span>
                           ))}
-                          {v.next_action&&<span className="visits-tag">↗ {v.next_action}</span>}
-                          {v.next_step&&<span className="visits-tag">📋 {v.next_step}</span>}
-                          {v.objection&&<span className="visits-tag visits-tag--red">⚑ {v.objection}</span>}
-                          {v.next_action_date&&<span className="visits-tag visits-tag--blue">🗓 Acción: {new Date(v.next_action_date).toLocaleDateString("es-AR")}</span>}
+                          {v.next_action&&<span className="p-badge--blue">↗ {v.next_action}</span>}
+                          {v.next_step&&<span className="p-badge--gray">📋 {v.next_step}</span>}
+                          {v.objection&&<span className="p-badge--red">⚑ {v.objection}</span>}
+                          {v.next_action_date&&<span className="p-badge--blue">🗓 Acción: {new Date(v.next_action_date).toLocaleDateString("es-AR")}</span>}
                           {(v.materials||[]).map(m=>(
-                            <span className="visits-tag visits-tag--blue" key={m}>{MATERIAL_LABELS[m]||m}</span>
+                            <span className="p-badge--blue" key={m}>{MATERIAL_LABELS[m]||m}</span>
                           ))}
                         </div>
                       </>
                     )}
-                  </article>
+                  </div>
                 );
               })}
             </div>
-          </section>
+          </div>
         )}
 
+        {/* QUICK VISIT MODAL */}
         {quickOpen&&(
           <div className="visits-modal-backdrop" role="presentation" onMouseDown={()=>setQuickOpen(false)}>
             <section className="visits-quick-modal" role="dialog" aria-modal="true" aria-labelledby="quick-visit-title" onMouseDown={event=>event.stopPropagation()}>
@@ -888,16 +942,16 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
                   <textarea value={quickForm.result} onChange={event=>setQuickForm({...quickForm,result:event.target.value})} placeholder="Ej: enviar cotización y llamar el martes..." required/>
                 </label>
                 <div className="visits-quick-modal__actions">
-                  <button type="button" className="vf-btn vf-btn--cancel" onClick={()=>setQuickOpen(false)}>Cancelar</button>
-                  <button className="vf-btn vf-btn--save" disabled={loading}>{loading?"Guardando...":"Guardar borrador"}</button>
+                  <button type="button" className="p-btn p-btn--ghost" onClick={()=>setQuickOpen(false)}>Cancelar</button>
+                  <button className="p-btn p-btn--primary" disabled={loading}>{loading?"Guardando...":"Guardar borrador"}</button>
                 </div>
               </form>
             </section>
           </div>
         )}
 
-        <footer className="visits-footer">
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>
+        <footer style={{textAlign:"center",padding:"16px 0 4px",borderTop:"1px solid #1f1f1f",marginTop:8}}>
+          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{fontSize:12,color:"#4b5563",textDecoration:"none"}}>Designed by Daniel Etchudez</a>
         </footer>
 
       </div>

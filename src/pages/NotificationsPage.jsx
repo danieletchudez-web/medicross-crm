@@ -312,69 +312,99 @@ export default function NotificationsPage({ profile, onNavigate }) {
 
   return (
     <Layout title="Centro de Alertas" profile={profile} onNavigate={onNavigate}>
-      <div className="notif-page">
-        <ModuleHeader
-          title="Centro de Alertas"
-          subtitle="Seguimientos, licitaciones, cotizaciones y oportunidades en una bandeja operativa."
-          actions={
-            <div className="notif-actions">
+      <div className="p-page">
+        <div className="p-panel">
+
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Centro de Alertas</span>
+              <span className="p-sub">Seguimientos, licitaciones, cotizaciones y oportunidades en una bandeja operativa.</span>
+            </div>
+            <div className="p-hd-right">
               {persistent && unread > 0 && (
-                <button className="notif-refresh" onClick={markAllRead}>
+                <button className="p-btn p-btn--ghost" onClick={markAllRead}>
                   <CheckCheck size={14}/> Marcar leídas
                 </button>
               )}
-              <button className="notif-refresh" onClick={load} disabled={loading}>
+              <button className="p-btn p-btn--ghost" onClick={load} disabled={loading}>
                 <RefreshCw size={14} className={loading ? "notif-spin" : ""}/>
                 {loading ? "Actualizando…" : "Actualizar"}
               </button>
             </div>
-          }
-        />
+          </div>
 
-        <section className="notif-kpis">
-          <MetricKpi label="Sin leer"  value={loading ? "—" : unread} />
-          <MetricKpi label="Urgentes"  value={loading ? "—" : urgent} accent="red" />
-          <MetricKpi label="Atención"  value={loading ? "—" : warn}   accent="amber" />
-          <MetricKpi label="Total"     value={loading ? "—" : alerts.length} accent="green" />
-        </section>
-
-        <div className="notif-filters">
-          {ALL_CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              className={`notif-filter-btn${filter === cat ? " active" : ""}`}
-              onClick={() => setFilter(cat)}
-            >
-              {CATEGORY_ICONS[cat] && <span>{CATEGORY_ICONS[cat]}</span>}
-              {cat}
-              {countFor(cat) > 0 && <span className="notif-filter-count">{countFor(cat)}</span>}
-            </button>
-          ))}
-        </div>
-
-        <section className="notif-list">
-          {loading ? (
-            <EmptyState title="Analizando el CRM…" text="Revisando vencimientos, seguimientos y alertas operativas." />
-          ) : filtered.length === 0 ? (
-            <div className="notif-empty">
-              <BellOff size={32} color="#cbd5e1" />
-              <p>{filter === "Todas" ? "Sin alertas pendientes" : `Sin alertas en ${filter}`}</p>
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Sin leer</span>
+              <span className="p-metric__val">{loading ? "—" : unread}</span>
             </div>
-          ) : filtered.map((alert, index) => (
-            <button
-              key={alert.id || `${alert.type}-${index}`}
-              className={`notif-item notif-item--${alert.level}${alert.read_at ? " is-read" : ""}`}
-              onClick={() => openAlert(alert)}
-            >
-              <span className="notif-item__cat">
-                {CATEGORY_ICONS[alert.type] || <Bell size={12}/>} {alert.type}
-              </span>
-              <strong className="notif-item__title">{alert.title}</strong>
-              <small className="notif-item__detail">{alert.detail}</small>
-              {!alert.read_at && <span className="notif-item__dot" aria-label="Sin leer"/>}
-            </button>
-          ))}
-        </section>
+            <div className="p-metric">
+              <span className="p-metric__ey">Urgentes</span>
+              <span className="p-metric__val p-metric__down">{loading ? "—" : urgent}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Atención</span>
+              <span className="p-metric__val">{loading ? "—" : warn}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Total</span>
+              <span className="p-metric__val p-metric__up">{loading ? "—" : alerts.length}</span>
+            </div>
+          </div>
+
+          <div className="p-toolbar p-toolbar--top">
+            <div className="p-pills">
+              {ALL_CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  className={`p-pill${filter === cat ? " p-pill--active" : ""}`}
+                  onClick={() => setFilter(cat)}
+                >
+                  {CATEGORY_ICONS[cat] && <span>{CATEGORY_ICONS[cat]}</span>}
+                  {cat}
+                  {countFor(cat) > 0 && (
+                    <span className="p-badge--gray" style={{ marginLeft: 4 }}>{countFor(cat)}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-list">
+            {loading ? (
+              <div className="p-empty">Analizando el CRM… Revisando vencimientos, seguimientos y alertas operativas.</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-empty">
+                <BellOff size={32} color="#cbd5e1" />
+                <p>{filter === "Todas" ? "Sin alertas pendientes" : `Sin alertas en ${filter}`}</p>
+              </div>
+            ) : filtered.map((alert, index) => (
+              <button
+                key={alert.id || `${alert.type}-${index}`}
+                className="p-row"
+                onClick={() => openAlert(alert)}
+                style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
+              >
+                <div className="p-row__rank" style={{ fontSize: 18 }}>
+                  {CATEGORY_ICONS[alert.type] || <Bell size={14}/>}
+                </div>
+                <div className="p-row__main">
+                  <div className="p-row__name">{alert.title}</div>
+                  <div className="p-row__sub">{alert.detail}</div>
+                </div>
+                <div className="p-row__meta">
+                  <span className={`p-badge--${alert.level === "slate" ? "gray" : alert.level || "blue"}`}>
+                    {alert.type}
+                  </span>
+                  {!alert.read_at && (
+                    <span className={`p-dot--${alert.level === "red" ? "red" : alert.level === "amber" ? "amber" : "blue"}`} aria-label="Sin leer"/>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+        </div>
       </div>
     </Layout>
   );

@@ -100,45 +100,69 @@ export default function SettingsPage({ profile, onNavigate }) {
 
   return (
     <Layout title="Configuración" profile={profile} onNavigate={onNavigate}>
-      <div className="settings-page">
-        <ModuleHeader
-          title="Configuración"
-          subtitle="Parámetros visuales y operativos del CRM. Esta primera versión guarda preferencias locales."
-        />
-        <section className="settings-card">
-          {rows.map(row => (
-            <label key={row.key} className="settings-row">
-              <span>{row.label}</span>
-              {row.type === "select" ? (
-                <select value={settings[row.key]} onChange={e => update(row.key, e.target.value)}>
-                  {row.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
-              ) : (
-                <input value={settings[row.key]} onChange={e => update(row.key, e.target.value)} placeholder={row.placeholder} />
-              )}
-            </label>
-          ))}
-        </section>
-        <section className="settings-card">
-          <div className="settings-section-head">
-            <div>
-              <h3>Umbrales operativos</h3>
-              <p>Estos valores alimentan alertas del equipo y vencimientos automáticos.</p>
+      <div className="p-page">
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Preferencias visuales</span>
+              <span className="p-sub">Parámetros visuales y operativos del CRM. Esta primera versión guarda preferencias locales.</span>
             </div>
-            <button type="button" onClick={saveOperationalSettings} disabled={!canWriteOperational || savingOperational}>
-              {savingOperational ? "Guardando..." : "Guardar parámetros"}
-            </button>
           </div>
-          <OperationalRow label="Vendedor sin visitas" value={operational.seller_without_visits_days} suffix="días" onChange={value => updateOperational("seller_without_visits_days", value)} disabled={!canWriteOperational} />
-          <OperationalRow label="Cliente alto potencial sin contacto" value={operational.high_potential_account_days} suffix="días" onChange={value => updateOperational("high_potential_account_days", value)} disabled={!canWriteOperational} />
-          <OperationalRow label="Oportunidad sin movimiento" value={operational.opportunity_stale_days} suffix="días" onChange={value => updateOperational("opportunity_stale_days", value)} disabled={!canWriteOperational} />
-          <OperationalRow label="Cotización enviada sin respuesta" value={operational.quote_expiration_days} suffix="días" onChange={value => updateOperational("quote_expiration_days", value)} disabled={!canWriteOperational} />
-          {operationalStatus && <p className="settings-status">{operationalStatus}</p>}
-        </section>
-        <section className="settings-note">
-          <strong>Preferencias y control operativo</strong>
-          <p>La primera sección conserva preferencias locales por dispositivo. Los umbrales operativos se comparten mediante Supabase y sólo un Super Admin puede modificarlos.</p>
-        </section>
+          <div className="p-body">
+            <div className="p-list">
+              {rows.map(row => (
+                <label key={row.key} className="p-row" style={{ cursor: "pointer" }}>
+                  <div className="p-row__main">
+                    <span className="p-row__name">{row.label}</span>
+                  </div>
+                  <div className="p-row__meta">
+                    {row.type === "select" ? (
+                      <select className="p-select" value={settings[row.key]} onChange={e => update(row.key, e.target.value)}>
+                        {row.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    ) : (
+                      <input className="p-search" value={settings[row.key]} onChange={e => update(row.key, e.target.value)} placeholder={row.placeholder} />
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Umbrales operativos</span>
+              <span className="p-sub">Estos valores alimentan alertas del equipo y vencimientos automáticos.</span>
+            </div>
+            <div className="p-hd-right">
+              <button type="button" className="p-btn p-btn--primary" onClick={saveOperationalSettings} disabled={!canWriteOperational || savingOperational}>
+                {savingOperational ? "Guardando..." : "Guardar parámetros"}
+              </button>
+            </div>
+          </div>
+          <div className="p-body">
+            <div className="p-list">
+              <OperationalRow label="Vendedor sin visitas" value={operational.seller_without_visits_days} suffix="días" onChange={value => updateOperational("seller_without_visits_days", value)} disabled={!canWriteOperational} />
+              <OperationalRow label="Cliente alto potencial sin contacto" value={operational.high_potential_account_days} suffix="días" onChange={value => updateOperational("high_potential_account_days", value)} disabled={!canWriteOperational} />
+              <OperationalRow label="Oportunidad sin movimiento" value={operational.opportunity_stale_days} suffix="días" onChange={value => updateOperational("opportunity_stale_days", value)} disabled={!canWriteOperational} />
+              <OperationalRow label="Cotización enviada sin respuesta" value={operational.quote_expiration_days} suffix="días" onChange={value => updateOperational("quote_expiration_days", value)} disabled={!canWriteOperational} />
+            </div>
+            {operationalStatus && <p className="p-sub" style={{ marginTop: 12 }}>{operationalStatus}</p>}
+          </div>
+        </div>
+
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Preferencias y control operativo</span>
+            </div>
+          </div>
+          <div className="p-body">
+            <p className="p-sub">La primera sección conserva preferencias locales por dispositivo. Los umbrales operativos se comparten mediante Supabase y sólo un Super Admin puede modificarlos.</p>
+          </div>
+        </div>
       </div>
     </Layout>
   );
@@ -146,11 +170,13 @@ export default function SettingsPage({ profile, onNavigate }) {
 
 function OperationalRow({ label, value, suffix, onChange, disabled }) {
   return (
-    <label className="settings-row settings-row--numeric">
-      <span>{label}</span>
-      <div>
-        <input type="number" min="1" value={value} onChange={e => onChange(e.target.value)} disabled={disabled} />
-        <small>{suffix}</small>
+    <label className="p-row" style={{ cursor: disabled ? "default" : "pointer" }}>
+      <div className="p-row__main">
+        <span className="p-row__name">{label}</span>
+      </div>
+      <div className="p-row__meta" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <input type="number" min="1" className="p-search" style={{ width: 72, textAlign: "right" }} value={value} onChange={e => onChange(e.target.value)} disabled={disabled} />
+        <span className="p-sub">{suffix}</span>
       </div>
     </label>
   );

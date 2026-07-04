@@ -235,293 +235,301 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
   const TABS = [
     { key: "todas",    label: `Todas (${opportunities.length})` },
     { key: "activas",  label: `Activas (${opportunities.filter((o) => !["Ganado","Perdido"].includes(o.stage)).length})` },
-    { key: "ganadas",  label: `✓ Ganadas (${metrics.won})` },
-    { key: "perdidas", label: `✗ Perdidas (${metrics.lost})` },
+    { key: "ganadas",  label: `Ganadas (${metrics.won})` },
+    { key: "perdidas", label: `Perdidas (${metrics.lost})` },
   ];
 
   return (
     <Layout title="Oportunidades" profile={profile} onNavigate={onNavigate}>
-      <div className="opp-page">
-        <ModuleHeader
-          title="Oportunidades"
-          subtitle="Pipeline comercial con forecast, probabilidad y próximas acciones."
-        />
+      <div className="p-page">
 
-        {/* KPIs */}
-        <section className="opp-kpis">
-          <MetricKpi label="Pipeline abierto"   value={moneyCompact(metrics.pipeline)} sub={money(metrics.pipeline)} />
-          <MetricKpi label="Forecast ponderado" value={moneyCompact(metrics.forecast)} sub="Monto x probabilidad" />
-          <MetricKpi label="Opps. abiertas"     value={metrics.open} />
-          <MetricKpi label="Sin próxima acción" value={metrics.noAction} accent="red" />
-          <MetricKpi label="Ganadas"            value={metrics.won}  accent="green" sub={metrics.won > 0 ? moneyCompact(metrics.wonAmount) : undefined} />
-          <MetricKpi label="Perdidas"           value={metrics.lost} accent="slate" />
-          <MetricKpi
-            label="Win rate"
-            value={metrics.winRate !== null ? `${metrics.winRate}%` : "—"}
-            accent={metrics.winRate >= 50 ? "green" : metrics.winRate !== null ? "amber" : undefined}
-            sub={metrics.winRate === null ? "Cargá resultados" : undefined}
-          />
-        </section>
-
-        {/* FORM */}
-        <section className="opp-form-card">
-          <div className="opp-form-head">
-            <div>
-              <h2>{form.id ? "Editar oportunidad" : "Nueva oportunidad"}</h2>
-              <p>El forecast se calcula automáticamente: monto × probabilidad.</p>
+        {/* METRICS PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Oportunidades</span>
+              <span className="p-sub">Pipeline comercial con forecast, probabilidad y próximas acciones.</span>
             </div>
-            {form.id && <button className="opp-ghost-btn" onClick={() => setForm(EMPTY_FORM)}>Cancelar edición</button>}
           </div>
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Pipeline abierto</span>
+              <span className="p-metric__val">{moneyCompact(metrics.pipeline)}</span>
+              <span className="p-metric__sub">{money(metrics.pipeline)}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Forecast ponderado</span>
+              <span className="p-metric__val">{moneyCompact(metrics.forecast)}</span>
+              <span className="p-metric__sub">Monto x probabilidad</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Opps. abiertas</span>
+              <span className="p-metric__val">{metrics.open}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Sin próxima acción</span>
+              <span className="p-metric__val p-metric__down">{metrics.noAction}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Ganadas</span>
+              <span className="p-metric__val p-metric__up">{metrics.won}</span>
+              {metrics.won > 0 && <span className="p-metric__sub">{moneyCompact(metrics.wonAmount)}</span>}
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Perdidas</span>
+              <span className="p-metric__val">{metrics.lost}</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Win rate</span>
+              <span className={`p-metric__val ${metrics.winRate !== null && metrics.winRate >= 50 ? "p-metric__up" : metrics.winRate !== null ? "p-metric__down" : ""}`}>
+                {metrics.winRate !== null ? `${metrics.winRate}%` : "—"}
+              </span>
+              {metrics.winRate === null && <span className="p-metric__sub">Cargá resultados</span>}
+            </div>
+          </div>
+        </div>
 
-          <form className="opp-form" onSubmit={saveOpportunity}>
-            <div>
-              <label>Nombre oportunidad</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej: EchoLaser Hospital Italiano" required />
+        {/* FORM PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">{form.id ? "Editar oportunidad" : "Nueva oportunidad"}</span>
+              <span className="p-sub">El forecast se calcula automáticamente: monto × probabilidad.</span>
             </div>
-            <div>
-              <label>Cliente</label>
-              <select value={form.account_id} onChange={(e) => setForm({ ...form, account_id: e.target.value })} required>
-                <option value="">Seleccionar cliente</option>
-                {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label>Producto</label>
-              <select value={form.product_id} onChange={(e) => setForm({ ...form, product_id: e.target.value })}>
-                <option value="">Seleccionar producto</option>
-                {products.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.line}</option>)}
-              </select>
-            </div>
-            <div>
-              <label>Campaña</label>
-              <select value={form.campaign_id} onChange={(e) => setForm({ ...form, campaign_id: e.target.value })}>
-                <option value="">Sin campaña</option>
-                {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label>Etapa</label>
-              <select value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
-                {stageConfig.map((item) => <option key={item.name}>{item.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label>Monto total ARS</label>
-              <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="1200000" />
-            </div>
-            <div>
-              <label>Probabilidad %</label>
-              <input type="number" min="0" max="100" value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} placeholder="70" />
-            </div>
-            <div>
-              <label>Fecha estimada cierre</label>
-              <input type="date" value={form.expected_close} onChange={(e) => setForm({ ...form, expected_close: e.target.value })} />
-            </div>
-            {form.amount && form.probability && (
-              <div className="opp-forecast-preview">
-                <span>Forecast ponderado</span>
-                <strong>{money((Number(form.amount) * Number(form.probability)) / 100)}</strong>
+            {form.id && (
+              <div className="p-hd-right">
+                <button className="p-btn p-btn--ghost" onClick={() => setForm(EMPTY_FORM)}>Cancelar edición</button>
               </div>
             )}
-            <div className="opp-form__wide">
-              <label>Próxima acción</label>
-              <input value={form.next_action} onChange={(e) => setForm({ ...form, next_action: e.target.value })} placeholder="Ej: llamar a compras, enviar cotización, coordinar demo..." />
-            </div>
-            <button className="opp-submit" disabled={loading}>
-              {loading ? "Guardando..." : form.id ? "Guardar cambios" : "Crear oportunidad"}
-            </button>
-          </form>
-        </section>
+          </div>
+          <div className="p-body">
+            <form className="p-form" onSubmit={saveOpportunity}>
+              <div className="p-field p-field--span2">
+                <label>Nombre oportunidad</label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej: EchoLaser Hospital Italiano" required />
+              </div>
+              <div className="p-field">
+                <label>Cliente</label>
+                <select className="p-select" value={form.account_id} onChange={(e) => setForm({ ...form, account_id: e.target.value })} required>
+                  <option value="">Seleccionar cliente</option>
+                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+              <div className="p-field">
+                <label>Producto</label>
+                <select className="p-select" value={form.product_id} onChange={(e) => setForm({ ...form, product_id: e.target.value })}>
+                  <option value="">Seleccionar producto</option>
+                  {products.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.line}</option>)}
+                </select>
+              </div>
+              <div className="p-field">
+                <label>Campaña</label>
+                <select className="p-select" value={form.campaign_id} onChange={(e) => setForm({ ...form, campaign_id: e.target.value })}>
+                  <option value="">Sin campaña</option>
+                  {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="p-field">
+                <label>Etapa</label>
+                <select className="p-select" value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
+                  {stageConfig.map((item) => <option key={item.name}>{item.name}</option>)}
+                </select>
+              </div>
+              <div className="p-field">
+                <label>Monto total ARS</label>
+                <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="1200000" />
+              </div>
+              <div className="p-field">
+                <label>Probabilidad %</label>
+                <input type="number" min="0" max="100" value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} placeholder="70" />
+              </div>
+              <div className="p-field">
+                <label>Fecha estimada cierre</label>
+                <input type="date" value={form.expected_close} onChange={(e) => setForm({ ...form, expected_close: e.target.value })} />
+              </div>
+              {form.amount && form.probability && (
+                <div className="p-field">
+                  <label>Forecast ponderado</label>
+                  <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, paddingTop: 6, display: "block" }}>
+                    {money((Number(form.amount) * Number(form.probability)) / 100)}
+                  </span>
+                </div>
+              )}
+              <div className="p-field p-field--span3">
+                <label>Próxima acción</label>
+                <input value={form.next_action} onChange={(e) => setForm({ ...form, next_action: e.target.value })} placeholder="Ej: llamar a compras, enviar cotización, coordinar demo..." />
+              </div>
+              <div className="p-form-actions">
+                <button className="p-btn p-btn--primary" disabled={loading}>
+                  {loading ? "Guardando..." : form.id ? "Guardar cambios" : "Crear oportunidad"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
 
-        {/* TABLA */}
-        <section className="opp-table-card">
-          <div className="opp-table-head">
-            <div>
-              <h2>Pipeline comercial</h2>
-              <p>Todas las oportunidades — activas, ganadas y perdidas.</p>
+        {/* PIPELINE PANEL */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Pipeline comercial</span>
+              <span className="p-sub">Todas las oportunidades — activas, ganadas y perdidas.</span>
             </div>
-            <div className="opp-filter-tabs">
-              <button className={`opp-tab ${viewMode === "table" ? "opp-tab--active" : ""}`} onClick={() => setViewMode("table")}>Tabla</button>
-              <button className={`opp-tab ${viewMode === "kanban" ? "opp-tab--active" : ""}`} onClick={() => setViewMode("kanban")}>Kanban</button>
+            <div className="p-hd-right">
+              <nav className="p-tabs">
+                <button className={`p-tab ${viewMode === "table" ? "p-tab--active" : ""}`} onClick={() => setViewMode("table")}>Tabla</button>
+                <button className={`p-tab ${viewMode === "kanban" ? "p-tab--active" : ""}`} onClick={() => setViewMode("kanban")}>Kanban</button>
+              </nav>
+            </div>
+          </div>
+
+          <div className="p-toolbar p-toolbar--top">
+            <nav className="p-pills">
               {TABS.map((t) => (
                 <button
                   key={t.key}
-                  className={`opp-tab ${filter === t.key ? "opp-tab--active" : ""} ${t.key === "ganadas" ? "opp-tab--won" : ""} ${t.key === "perdidas" ? "opp-tab--lost" : ""}`}
+                  className={`p-pill ${filter === t.key ? "p-pill--active" : ""}`}
                   onClick={() => setFilter(t.key)}
                 >
                   {t.label}
                 </button>
               ))}
-            </div>
+            </nav>
           </div>
 
           {viewMode === "kanban" && (
-            <div className="opp-kanban">
-              {stageConfig.map(({ name: stage }) => {
-                const rows = filteredOpps.filter(o => o.stage === stage);
-                const totalStage = rows.reduce((sum, o) => sum + Number(o.amount || 0), 0);
-                return (
-                  <section
-                    key={stage}
-                    className={`opp-kanban-col ${dragOverStage === stage ? "opp-kanban-col--over" : ""}`}
-                    onDragOver={(e) => handleKanbanDragOver(e, stage)}
-                    onDragLeave={() => setDragOverStage((current) => current === stage ? null : current)}
-                    onDrop={(e) => handleKanbanDrop(e, stage)}
-                  >
-                    <header>
-                      <strong>{stage}</strong>
-                      <span>{rows.length} · {money(totalStage)}</span>
-                    </header>
-                    <div>
+            <div className="p-body">
+              <div className="p-kanban">
+                {stageConfig.map(({ name: stage }) => {
+                  const rows = filteredOpps.filter(o => o.stage === stage);
+                  const totalStage = rows.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+                  return (
+                    <div
+                      key={stage}
+                      className={`p-kanban-col ${dragOverStage === stage ? "opp-kanban-col--over" : ""}`}
+                      onDragOver={(e) => handleKanbanDragOver(e, stage)}
+                      onDragLeave={() => setDragOverStage((current) => current === stage ? null : current)}
+                      onDrop={(e) => handleKanbanDrop(e, stage)}
+                    >
+                      <div className="p-kanban-hd">
+                        <strong>{stage}</strong>
+                        <span>{rows.length} · {money(totalStage)}</span>
+                      </div>
                       {rows.length === 0 ? (
-                        <p className="opp-kanban-empty">Sin oportunidades</p>
+                        <p className="p-empty">Sin oportunidades</p>
                       ) : rows.map(o => (
                         (() => {
                           const activity = activityInfo(o);
                           return (
-                        <article
-                          key={o.id}
-                          className={`opp-kanban-card ${draggingId === o.id ? "opp-kanban-card--dragging" : ""} ${movingId === o.id ? "opp-kanban-card--moving" : ""}`}
-                          draggable
-                          onDragStart={(e) => handleKanbanDragStart(e, o.id)}
-                          onDragEnd={handleKanbanDragEnd}
-                        >
-                          <strong>{o.name}</strong>
-                          <span>{o.accounts?.name || "Sin cliente"}</span>
-                          <small>{money(o.amount)} · {o.probability || 0}%</small>
-                          <small className={`opp-temperature opp-temperature--${activity.level}`}>{activity.label} · sin actividad: {activity.days}d</small>
-                          <div className="opp-kanban-card__actions">
-                            <span className="opp-kanban-card__hint">Arrastrar</span>
-                            <button onClick={() => editOpportunity(o)}>Editar</button>
-                          </div>
-                        </article>
+                            <div
+                              key={o.id}
+                              className={`p-kanban-card ${draggingId === o.id ? "opp-kanban-card--dragging" : ""} ${movingId === o.id ? "opp-kanban-card--moving" : ""}`}
+                              draggable
+                              onDragStart={(e) => handleKanbanDragStart(e, o.id)}
+                              onDragEnd={handleKanbanDragEnd}
+                            >
+                              <strong style={{ display: "block", fontSize: 13, color: "#fff", marginBottom: 2 }}>{o.name}</strong>
+                              <span style={{ display: "block", fontSize: 11.5, color: "#9ca3af", marginBottom: 4 }}>{o.accounts?.name || "Sin cliente"}</span>
+                              <span style={{ display: "block", fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>{money(o.amount)} · {o.probability || 0}%</span>
+                              <span className={`p-dot--${activity.level === "active" ? "green" : activity.level === "warm" ? "amber" : "gray"}`} style={{ fontSize: 11, marginRight: 4 }}></span>
+                              <span style={{ fontSize: 11, color: "#9ca3af" }}>{activity.label} · sin actividad: {activity.days}d</span>
+                              <div className="p-row__actions" style={{ marginTop: 8, display: "flex", gap: 6 }}>
+                                <span style={{ fontSize: 11, color: "#6b7280" }}>Arrastrar</span>
+                                <button className="p-btn p-btn--ghost" style={{ fontSize: 11, padding: "2px 8px", height: "auto" }} onClick={() => editOpportunity(o)}>Editar</button>
+                              </div>
+                            </div>
                           );
                         })()
                       ))}
                     </div>
-                  </section>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {viewMode === "table" && <div className="opp-table-wrap">
-            <table className="opp-table">
-              <thead>
-                <tr>
-                  <th>Oportunidad</th>
-                  <th>Cliente</th>
-                  <th>Etapa</th>
-                  <th>Monto</th>
-                  <th>Prob.</th>
-                  <th>Forecast</th>
-                  <th>Cierre</th>
-                  <th>Próxima acción</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOpps.length === 0 ? (
+          {viewMode === "table" && (
+            <div className="p-table-wrap">
+              <table className="p-table">
+                <thead>
                   <tr>
-                    <td colSpan="9" className="opp-empty">
-                      <EmptyState
-                        title="Sin oportunidades para este filtro"
-                        text="Cambiá el filtro o cargá una nueva oportunidad desde el formulario superior."
-                      />
-                    </td>
+                    <th>Oportunidad</th>
+                    <th>Cliente</th>
+                    <th>Etapa</th>
+                    <th>Monto</th>
+                    <th>Prob.</th>
+                    <th>Forecast</th>
+                    <th>Cierre</th>
+                    <th>Próxima acción</th>
+                    <th>Acciones</th>
                   </tr>
-                ) : filteredOpps.map((o) => {
-                  const isOpen   = !["Ganado","Perdido"].includes(o.stage);
-                  const isWon    = o.stage === "Ganado";
-                  const isLost   = o.stage === "Perdido";
-                  const weighted = (Number(o.amount || 0) * Number(o.probability || 0)) / 100;
-                  const overdue  = o.expected_close && new Date(o.expected_close) < new Date() && isOpen;
-
-                  let rowClass = "";
-                  if (isWon)    rowClass = "opp-row--won";
-                  else if (isLost)   rowClass = "opp-row--lost";
-                  else if (overdue)  rowClass = "opp-row--overdue";
-
-                  return (
-                    <tr key={o.id} className={rowClass}>
-                      <td className="opp-td-name">
-                        <strong>{o.name}</strong>
-                        <small>{o.product_line || o.products?.line || "—"} · {o.campaigns?.name || "—"}</small>
-                        <small className={`opp-temperature opp-temperature--${activityInfo(o).level}`}>{activityInfo(o).label} · sin actividad: {activityInfo(o).days}d</small>
-                      </td>
-                      <td>{o.accounts?.name || "—"}</td>
-                      <td>
-                        <span
-                          className="opp-stage-pill"
-                          style={{ background: `${STAGE_COLOR[o.stage]}18`, color: STAGE_COLOR[o.stage], borderColor: `${STAGE_COLOR[o.stage]}40` }}
-                        >
-                          {o.stage}
-                        </span>
-                      </td>
-                      <td>{money(o.amount)}</td>
-                      <td className="opp-td-center">{o.probability ? `${o.probability}%` : "—"}</td>
-                      <td>{isOpen ? money(weighted) : "—"}</td>
-                      <td className={overdue ? "opp-td-overdue" : ""}>{o.expected_close ? new Date(o.expected_close).toLocaleDateString("es-AR") : "—"}</td>
-                      <td className="opp-td-action">{o.next_action || <span className="opp-no-action">Sin acción</span>}</td>
-                      <td>
-                        <div className="opp-actions">
-                          {isOpen && <button className="opp-btn opp-btn--edit" onClick={() => editOpportunity(o)}>Editar</button>}
-                          {isOpen && <button className="opp-btn opp-btn--won"  onClick={() => quickClose(o.id, "Ganado")}>✓ Ganado</button>}
-                          {isOpen && <button className="opp-btn opp-btn--lost" onClick={() => quickClose(o.id, "Perdido")}>✗ Perdido</button>}
-                          {!isOpen && <button className="opp-btn opp-btn--reopen" onClick={() => reopen(o.id)}>↺ Reabrir</button>}
-                          <button className="opp-btn opp-btn--del" onClick={() => deleteOpportunity(o.id)}>Borrar</button>
-                        </div>
+                </thead>
+                <tbody>
+                  {filteredOpps.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="p-empty">
+                        Sin oportunidades para este filtro. Cambiá el filtro o cargá una nueva oportunidad desde el formulario superior.
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>}
+                  ) : filteredOpps.map((o) => {
+                    const isOpen   = !["Ganado","Perdido"].includes(o.stage);
+                    const isWon    = o.stage === "Ganado";
+                    const isLost   = o.stage === "Perdido";
+                    const weighted = (Number(o.amount || 0) * Number(o.probability || 0)) / 100;
+                    const overdue  = o.expected_close && new Date(o.expected_close) < new Date() && isOpen;
 
-          {viewMode === "table" && <div className="opp-mobile-list">
-            {filteredOpps.length === 0 ? (
-              <EmptyState
-                title="Sin oportunidades para este filtro"
-                text="Cambiá el filtro o cargá una nueva oportunidad desde el formulario superior."
-              />
-            ) : filteredOpps.map((o) => {
-              const isOpen   = !["Ganado","Perdido"].includes(o.stage);
-              const weighted = (Number(o.amount || 0) * Number(o.probability || 0)) / 100;
-              return (
-                <article key={o.id} className="opp-mobile-card">
-                  <div className="opp-mobile-card__top">
-                    <div>
-                      <strong>{o.name}</strong>
-                      <span>{o.accounts?.name || "Sin cliente"}</span>
-                    </div>
-                    <span
-                      className="opp-stage-pill"
-                      style={{ background: `${STAGE_COLOR[o.stage]}18`, color: STAGE_COLOR[o.stage], borderColor: `${STAGE_COLOR[o.stage]}40` }}
-                    >
-                      {o.stage}
-                    </span>
-                  </div>
-                  <div className="opp-mobile-card__meta">
-                    <span>Monto: {money(o.amount)}</span>
-                    <span>Prob.: {o.probability ? `${o.probability}%` : "—"}</span>
-                    <span>Forecast: {isOpen ? money(weighted) : "—"}</span>
-                    <span>Cierre: {o.expected_close ? new Date(o.expected_close).toLocaleDateString("es-AR") : "—"}</span>
-                  </div>
-                  <p>{o.next_action || "Sin próxima acción"}</p>
-                  <p className={`opp-temperature opp-temperature--${activityInfo(o).level}`}>{activityInfo(o).label} · sin actividad: {activityInfo(o).days}d</p>
-                  <div className="opp-actions">
-                    {isOpen && <button className="opp-btn opp-btn--edit" onClick={() => editOpportunity(o)}>Editar</button>}
-                    {isOpen && <button className="opp-btn opp-btn--won" onClick={() => quickClose(o.id, "Ganado")}>Ganado</button>}
-                    {isOpen && <button className="opp-btn opp-btn--lost" onClick={() => quickClose(o.id, "Perdido")}>Perdido</button>}
-                    {!isOpen && <button className="opp-btn opp-btn--reopen" onClick={() => reopen(o.id)}>Reabrir</button>}
-                    <button className="opp-btn opp-btn--del" onClick={() => deleteOpportunity(o.id)}>Borrar</button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>}
-        </section>
+                    let stageClass = "";
+                    if (isWon)       stageClass = "p-badge--green";
+                    else if (isLost) stageClass = "p-badge--gray";
+                    else if (o.stage === "Lead")        stageClass = "p-badge--gray";
+                    else if (o.stage === "Contactado")  stageClass = "p-badge--blue";
+                    else if (o.stage === "Reunión")     stageClass = "p-badge--purple";
+                    else if (o.stage === "Demo")        stageClass = "p-badge--amber";
+                    else if (o.stage === "Cotización")  stageClass = "p-badge--amber";
+                    else if (o.stage === "Negociación") stageClass = "p-badge--red";
+                    else stageClass = "p-badge--gray";
+
+                    const activity = activityInfo(o);
+
+                    return (
+                      <tr key={o.id}>
+                        <td>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            <strong style={{ color: "#fff", fontSize: 13 }}>{o.name}</strong>
+                            <span style={{ fontSize: 11, color: "#9ca3af" }}>{o.product_line || o.products?.line || "—"} · {o.campaigns?.name || "—"}</span>
+                            <span style={{ fontSize: 11, color: activity.level === "active" ? "#10b981" : activity.level === "warm" ? "#f59e0b" : "#94a3b8" }}>
+                              {activity.label} · sin actividad: {activity.days}d
+                            </span>
+                          </div>
+                        </td>
+                        <td>{o.accounts?.name || "—"}</td>
+                        <td>
+                          <span className={`p-badge ${stageClass}`}>{o.stage}</span>
+                        </td>
+                        <td>{money(o.amount)}</td>
+                        <td style={{ textAlign: "center" }}>{o.probability ? `${o.probability}%` : "—"}</td>
+                        <td>{isOpen ? money(weighted) : "—"}</td>
+                        <td style={{ color: overdue ? "#ef4444" : undefined }}>
+                          {o.expected_close ? new Date(o.expected_close).toLocaleDateString("es-AR") : "—"}
+                        </td>
+                        <td>{o.next_action || <span style={{ color: "#6b7280", fontStyle: "italic" }}>Sin acción</span>}</td>
+                        <td>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {isOpen && <button className="p-btn p-btn--ghost" onClick={() => editOpportunity(o)}>Editar</button>}
+                            {isOpen && <button className="p-btn p-btn--ghost" onClick={() => quickClose(o.id, "Ganado")}>Ganado</button>}
+                            {isOpen && <button className="p-btn p-btn--ghost" onClick={() => quickClose(o.id, "Perdido")}>Perdido</button>}
+                            {!isOpen && <button className="p-btn p-btn--ghost" onClick={() => reopen(o.id)}>Reabrir</button>}
+                            <button className="p-btn p-btn--danger" onClick={() => deleteOpportunity(o.id)}>Borrar</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
         {pendingMove && (
           <div className="opp-move-backdrop" role="presentation" onMouseDown={() => setPendingMove(null)}>
@@ -539,15 +547,15 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
                 <input type="number" min="0" max="100" value={pendingMove.probability} onChange={(event) => setPendingMove({ ...pendingMove, probability: event.target.value })} required />
               </label>
               <div className="opp-move-modal__actions">
-                <button type="button" className="opp-ghost-btn" onClick={() => setPendingMove(null)}>Cancelar</button>
-                <button className="opp-submit">Confirmar movimiento</button>
+                <button type="button" className="p-btn p-btn--ghost" onClick={() => setPendingMove(null)}>Cancelar</button>
+                <button className="p-btn p-btn--primary">Confirmar movimiento</button>
               </div>
             </form>
           </div>
         )}
 
-        <footer className="opp-footer">
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>
+        <footer style={{ textAlign: "center", padding: "12px 0", fontSize: 11, color: "#4b5563" }}>
+          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{ color: "#4b5563", textDecoration: "none" }}>Designed by Daniel Etchudez</a>
         </footer>
 
       </div>

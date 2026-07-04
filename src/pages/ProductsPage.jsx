@@ -225,57 +225,81 @@ Quedo atento para coordinar una presentación.`;
 
   return (
     <Layout title="Productos / Share Kit" profile={profile} onNavigate={onNavigate}>
-      <div className="products-page">
-        <ModuleHeader
-          title="Productos / Share Kit"
-          subtitle="Biblioteca comercial para preparar visitas y compartir materiales con el equipo."
-          actions={
-            <button type="button" className="products-new-btn" onClick={openNewProduct}>
-              <Plus size={17} />
-              Nuevo producto
-            </button>
-          }
-        />
+      <div className="p-page">
 
-        <section className="products-kpis">
-          <MetricKpi label="Productos cargados" value={total} sub={`${activeLines} líneas activas`} />
-          <MetricKpi label="Listos para compartir" value={readyToShare} sub={`${coverage}% del catálogo`} accent="green" />
-          <MetricKpi label="Material completo" value={completeKits} sub="Brochure, ficha y video" accent="blue" />
-          <MetricKpi label="Requieren atención" value={needsAttention} sub="Sin speech o sin material" accent={needsAttention ? "amber" : "green"} />
-        </section>
-
-        <section className="products-insight">
-          <div className="products-insight__icon">
-            <Layers3 size={19} />
-          </div>
-          <div>
-            <span>Preparación comercial</span>
-            <strong>{coverage}% del catálogo está listo para usar en una visita.</strong>
-            <small>
-              {needsAttention
-                ? `${needsAttention} producto${needsAttention === 1 ? "" : "s"} necesita${needsAttention === 1 ? "" : "n"} completar speech o materiales.`
-                : "Todos los productos tienen material disponible para compartir."}
-            </small>
-          </div>
-          {needsAttention > 0 && (
-            <button type="button" onClick={() => setReadinessFilter("incompletos")}>
-              Revisar pendientes
-            </button>
-          )}
-        </section>
-
-        <section className="products-catalog">
-          <div className="products-head products-head--catalog">
-            <div>
-              <span className="products-eyebrow">Biblioteca comercial</span>
-              <h2>Share Kit por producto</h2>
-              <p>Encontrá rápidamente el speech y el material indicado para cada visita.</p>
+        {/* Metrics Panel */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Productos / Share Kit</span>
+              <span className="p-sub">Biblioteca comercial para preparar visitas y compartir materiales con el equipo.</span>
             </div>
-            <span className="products-result-count">{filteredProducts.length} de {total} productos</span>
+            <div className="p-hd-right">
+              <button type="button" className="p-btn p-btn--primary" onClick={openNewProduct}>
+                <Plus size={17} />
+                Nuevo producto
+              </button>
+            </div>
           </div>
 
-          <div className="products-toolbar">
-            <label className="products-search">
+          <div className="p-metrics">
+            <div className="p-metric">
+              <span className="p-metric__ey">Productos cargados</span>
+              <span className="p-metric__val">{total}</span>
+              <span className="p-metric__sub">{activeLines} líneas activas</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Listos para compartir</span>
+              <span className="p-metric__val p-metric__up">{readyToShare}</span>
+              <span className="p-metric__sub">{coverage}% del catálogo</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Material completo</span>
+              <span className="p-metric__val">{completeKits}</span>
+              <span className="p-metric__sub">Brochure, ficha y video</span>
+            </div>
+            <div className="p-metric">
+              <span className="p-metric__ey">Requieren atención</span>
+              <span className={`p-metric__val ${needsAttention ? "p-metric__down" : "p-metric__up"}`}>{needsAttention}</span>
+              <span className="p-metric__sub">Sin speech o sin material</span>
+            </div>
+          </div>
+
+          <div className="p-body" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Layers3 size={19} style={{ color: "var(--p-gray, #888)", flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <span className="p-sub" style={{ marginRight: 8 }}>Preparación comercial</span>
+              <span style={{ color: "#fff", fontSize: 13, fontWeight: 500 }}>
+                {coverage}% del catálogo está listo para usar en una visita.
+              </span>
+              <div className="p-sub" style={{ marginTop: 2 }}>
+                {needsAttention
+                  ? `${needsAttention} producto${needsAttention === 1 ? "" : "s"} necesita${needsAttention === 1 ? "" : "n"} completar speech o materiales.`
+                  : "Todos los productos tienen material disponible para compartir."}
+              </div>
+            </div>
+            {needsAttention > 0 && (
+              <button type="button" className="p-btn p-btn--ghost" onClick={() => setReadinessFilter("incompletos")}>
+                Revisar pendientes
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Catalog Panel */}
+        <div className="p-panel">
+          <div className="p-hd">
+            <div className="p-hd-left">
+              <span className="p-title">Share Kit por producto</span>
+              <span className="p-sub">Encontrá rápidamente el speech y el material indicado para cada visita.</span>
+            </div>
+            <div className="p-hd-right">
+              <span className="p-sub">{filteredProducts.length} de {total} productos</span>
+            </div>
+          </div>
+
+          <div className="p-toolbar--top" style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <label className="p-search" style={{ flex: 1 }}>
               <Search size={17} />
               <input
                 value={search}
@@ -283,40 +307,35 @@ Quedo atento para coordinar una presentación.`;
                 placeholder="Buscar por producto, línea o contenido del speech..."
               />
             </label>
-            <label>
-              <span>Línea</span>
-              <select
-                value={lineFilter}
-                onChange={(event) => setLineFilter(event.target.value)}
-              >
-                <option>Todas</option>
-                {lineOptions.map((line) => <option key={line}>{line}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Estado del kit</span>
-              <select
-                value={readinessFilter}
-                onChange={(event) => setReadinessFilter(event.target.value)}
-              >
-                <option value="todos">Todos</option>
-                <option value="listos">Listos para compartir</option>
-                <option value="incompletos">Requieren atención</option>
-              </select>
-            </label>
+            <select
+              className="p-select"
+              value={lineFilter}
+              onChange={(event) => setLineFilter(event.target.value)}
+            >
+              <option>Todas</option>
+              {lineOptions.map((line) => <option key={line}>{line}</option>)}
+            </select>
+            <select
+              className="p-select"
+              value={readinessFilter}
+              onChange={(event) => setReadinessFilter(event.target.value)}
+            >
+              <option value="todos">Todos</option>
+              <option value="listos">Listos para compartir</option>
+              <option value="incompletos">Requieren atención</option>
+            </select>
             {(search || lineFilter !== "Todas" || readinessFilter !== "todos") && (
-              <button type="button" className="products-clear-btn" onClick={clearFilters} title="Limpiar filtros">
+              <button type="button" className="p-btn p-btn--ghost p-btn--icon" onClick={clearFilters} title="Limpiar filtros">
                 <X size={17} />
               </button>
             )}
           </div>
 
           {lineSummary.length > 0 && (
-            <div className="products-lines">
-              <span>Catálogo por línea</span>
+            <div className="p-pills" style={{ padding: "8px 16px", borderBottom: "1px solid #222" }}>
               <button
                 type="button"
-                className={lineFilter === "Todas" ? "active" : ""}
+                className={`p-pill ${lineFilter === "Todas" ? "p-pill--active" : ""}`}
                 onClick={() => setLineFilter("Todas")}
               >
                 Todas <strong>{total}</strong>
@@ -324,7 +343,7 @@ Quedo atento para coordinar una presentación.`;
               {lineSummary.map(({ line, count }) => (
                 <button
                   type="button"
-                  className={lineFilter === line ? "active" : ""}
+                  className={`p-pill ${lineFilter === line ? "p-pill--active" : ""}`}
                   key={line}
                   onClick={() => setLineFilter(line)}
                 >
@@ -334,210 +353,238 @@ Quedo atento para coordinar una presentación.`;
             </div>
           )}
 
-          <div className="products-grid">
+          <div className="p-list">
             {filteredProducts.length === 0 ? (
-              <EmptyState
-                title={products.length ? "No encontramos productos con esos filtros" : "No hay productos cargados"}
-                text={products.length
-                  ? "Probá otra búsqueda o limpiá los filtros para volver a ver el catálogo completo."
-                  : "Creá el primer producto para que el equipo pueda compartir speech, brochure y ficha técnica desde el CRM."}
-                action={
-                  <button type="button" className="products-empty-btn" onClick={products.length ? clearFilters : openNewProduct}>
-                    {products.length ? "Limpiar filtros" : "Crear primer producto"}
-                  </button>
-                }
-              />
+              <div className="p-empty">
+                <div style={{ fontWeight: 500, color: "#fff", marginBottom: 4 }}>
+                  {products.length ? "No encontramos productos con esos filtros" : "No hay productos cargados"}
+                </div>
+                <div className="p-sub">
+                  {products.length
+                    ? "Probá otra búsqueda o limpiá los filtros para volver a ver el catálogo completo."
+                    : "Creá el primer producto para que el equipo pueda compartir speech, brochure y ficha técnica desde el CRM."}
+                </div>
+                <button
+                  type="button"
+                  className="p-btn p-btn--ghost"
+                  style={{ marginTop: 12 }}
+                  onClick={products.length ? clearFilters : openNewProduct}
+                >
+                  {products.length ? "Limpiar filtros" : "Crear primer producto"}
+                </button>
+              </div>
             ) : (
               filteredProducts.map((p) => {
                 const resources = materialCount(p);
                 const ready = isReadyToShare(p);
 
                 return (
-                <article className={`product-card ${ready ? "product-card--ready" : "product-card--pending"}`} key={p.id}>
-                  <div className="product-top">
-                    <div>
-                      <span className="product-line">{p.line || "Sin línea"}</span>
-                      <h3>{p.name}</h3>
-                    </div>
-                    <span className={`product-readiness ${ready ? "product-readiness--ready" : "product-readiness--pending"}`}>
-                      {ready ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                      {ready ? "Listo para compartir" : "Completar kit"}
-                    </span>
-                  </div>
-
-                  <div className="product-speech">
-                    <span>Speech comercial</span>
-                    <p>{p.speech || "Todavía no se cargó un speech comercial para este producto."}</p>
-                  </div>
-
-                  <div className="product-material-head">
-                    <span>Material disponible</span>
-                    <strong>{resources}/{MATERIALS.length}</strong>
-                  </div>
-                  <div className="product-links">
-                    {MATERIALS.map(({ key, label, Icon }) => p[key] ? (
-                      <a href={p[key]} target="_blank" rel="noreferrer" key={key}>
-                        <Icon size={15} />
-                        {label}
-                      </a>
-                    ) : (
-                      <span className="product-link-missing" key={key}>
-                        <Icon size={15} />
-                        {label}
+                  <div className="p-row" key={p.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 0, padding: "14px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <span className={`p-badge--${ready ? "blue" : "amber"}`} style={{ marginRight: 8 }}>
+                          {p.line || "Sin línea"}
+                        </span>
+                        <span className="p-row__name">{p.name}</span>
+                      </div>
+                      <span className={`p-badge--${ready ? "green" : "red"}`} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {ready ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                        {ready ? "Listo para compartir" : "Completar kit"}
                       </span>
-                    ))}
-                  </div>
+                    </div>
 
-                  <div className="product-actions">
-                    <button type="button" onClick={() => shareWhatsApp(p)}>
-                      <MessageCircle size={16} />
-                      WhatsApp
-                    </button>
-                    <button type="button" className="secondary" onClick={() => copyShareKit(p)}>
-                      <Copy size={16} />
-                      Copiar
-                    </button>
-                    <button type="button" className="secondary" onClick={() => editProduct(p)}>
-                      <Pencil size={16} />
-                      Editar
-                    </button>
-                    <button type="button" className="danger" onClick={() => deleteProduct(p.id)} title="Borrar producto">
-                      <Trash2 size={16} />
-                      Borrar
-                    </button>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="p-section__label" style={{ marginBottom: 4 }}>Speech comercial</div>
+                      <div className="p-sub" style={{ fontSize: 12, lineHeight: 1.5 }}>
+                        {p.speech || "Todavía no se cargó un speech comercial para este producto."}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <div className="p-section__label">Material disponible</div>
+                      <span className="p-sub">{resources}/{MATERIALS.length}</span>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {MATERIALS.map(({ key, label, Icon }) => p[key] ? (
+                          <a
+                            href={p[key]}
+                            target="_blank"
+                            rel="noreferrer"
+                            key={key}
+                            className="p-btn p-btn--ghost"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, padding: "4px 10px", height: "auto" }}
+                          >
+                            <Icon size={13} />
+                            {label}
+                          </a>
+                        ) : (
+                          <span
+                            key={key}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#444", padding: "4px 10px" }}
+                          >
+                            <Icon size={13} />
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-row__actions" style={{ display: "flex", gap: 6 }}>
+                      <button type="button" className="p-btn p-btn--primary" style={{ fontSize: 12, height: 30 }} onClick={() => shareWhatsApp(p)}>
+                        <MessageCircle size={14} />
+                        WhatsApp
+                      </button>
+                      <button type="button" className="p-btn p-btn--ghost" style={{ fontSize: 12, height: 30 }} onClick={() => copyShareKit(p)}>
+                        <Copy size={14} />
+                        Copiar
+                      </button>
+                      <button type="button" className="p-btn p-btn--ghost" style={{ fontSize: 12, height: 30 }} onClick={() => editProduct(p)}>
+                        <Pencil size={14} />
+                        Editar
+                      </button>
+                      <button type="button" className="p-btn p-btn--danger" style={{ fontSize: 12, height: 30 }} onClick={() => deleteProduct(p.id)} title="Borrar producto">
+                        <Trash2 size={14} />
+                        Borrar
+                      </button>
+                    </div>
                   </div>
-                </article>
-              )})
+                );
+              })
             )}
           </div>
-        </section>
+        </div>
 
+        {/* Editor Panel */}
         {editorOpen && (
-          <section className="products-card products-editor" id="products-editor">
-            <div className="products-head">
-              <div>
-                <span className="products-eyebrow">Gestión de catálogo</span>
-                <h2>{editingId ? "Editar producto" : "Nuevo producto"}</h2>
-                <p>Cargá el speech y los enlaces disponibles para dejar el kit listo para el equipo comercial.</p>
+          <div className="p-panel" id="products-editor">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">{editingId ? "Editar producto" : "Nuevo producto"}</span>
+                <span className="p-sub">Cargá el speech y los enlaces disponibles para dejar el kit listo para el equipo comercial.</span>
               </div>
-              <button type="button" onClick={resetForm}>
-                <X size={16} />
-                Cerrar
-              </button>
+              <div className="p-hd-right">
+                <button type="button" className="p-btn p-btn--ghost p-btn--icon" onClick={resetForm}>
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
-            <form className="products-form" onSubmit={saveProduct}>
-              <div>
-                <label>Nombre del producto</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ej: EchoLaser SoracteLite"
-                  required
-                />
-              </div>
+            <div className="p-body">
+              <form className="p-form" onSubmit={saveProduct}>
+                <div className="p-field">
+                  <label>Nombre del producto</label>
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Ej: EchoLaser SoracteLite"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label>Línea</label>
-                <select
-                  value={form.line}
-                  onChange={(e) => setForm({ ...form, line: e.target.value })}
-                >
-                  {PRODUCT_LINES.map((line) => <option key={line}>{line}</option>)}
-                </select>
-              </div>
+                <div className="p-field">
+                  <label>Línea</label>
+                  <select
+                    className="p-select"
+                    value={form.line}
+                    onChange={(e) => setForm({ ...form, line: e.target.value })}
+                  >
+                    {PRODUCT_LINES.map((line) => <option key={line}>{line}</option>)}
+                  </select>
+                </div>
 
-              <div className="wide">
-                <label>Speech comercial</label>
-                <textarea
-                  value={form.speech}
-                  onChange={(e) => setForm({ ...form, speech: e.target.value })}
-                  placeholder="Texto introductorio para enviar o usar en visita..."
-                />
-              </div>
+                <div className="p-field p-field--span2" style={{ gridColumn: "1 / -1" }}>
+                  <label>Speech comercial</label>
+                  <textarea
+                    value={form.speech}
+                    onChange={(e) => setForm({ ...form, speech: e.target.value })}
+                    placeholder="Texto introductorio para enviar o usar en visita..."
+                    rows={4}
+                  />
+                </div>
 
-              <div>
-                <label>Empresa / Proveedor</label>
-                <input
-                  value={form.supplier}
-                  onChange={(e) => setForm({ ...form, supplier: e.target.value })}
-                  placeholder="Ej: MediCross"
-                />
-              </div>
+                <div className="p-field">
+                  <label>Empresa / Proveedor</label>
+                  <input
+                    value={form.supplier}
+                    onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                    placeholder="Ej: MediCross"
+                  />
+                </div>
 
-              <div>
-                <label>Código / SKU</label>
-                <input
-                  value={form.sku}
-                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                  placeholder="Ej: MC-001"
-                />
-              </div>
+                <div className="p-field">
+                  <label>Código / SKU</label>
+                  <input
+                    value={form.sku}
+                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                    placeholder="Ej: MC-001"
+                  />
+                </div>
 
-              <div>
-                <label>Marca</label>
-                <input
-                  value={form.brand}
-                  onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                  placeholder="Ej: EchoLaser"
-                />
-              </div>
+                <div className="p-field">
+                  <label>Marca</label>
+                  <input
+                    value={form.brand}
+                    onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                    placeholder="Ej: EchoLaser"
+                  />
+                </div>
 
-              <div>
-                <label>Precio base sugerido</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.base_price}
-                  onChange={(e) => setForm({ ...form, base_price: e.target.value })}
-                  placeholder="0,00"
-                />
-              </div>
+                <div className="p-field">
+                  <label>Precio base sugerido</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.base_price}
+                    onChange={(e) => setForm({ ...form, base_price: e.target.value })}
+                    placeholder="0,00"
+                  />
+                </div>
 
-              <div>
-                <label>Brochure PDF URL</label>
-                <input
-                  value={form.brochure_url}
-                  onChange={(e) => setForm({ ...form, brochure_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
+                <div className="p-field">
+                  <label>Brochure PDF URL</label>
+                  <input
+                    value={form.brochure_url}
+                    onChange={(e) => setForm({ ...form, brochure_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
 
-              <div>
-                <label>Ficha técnica URL</label>
-                <input
-                  value={form.tech_sheet_url}
-                  onChange={(e) => setForm({ ...form, tech_sheet_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
+                <div className="p-field">
+                  <label>Ficha técnica URL</label>
+                  <input
+                    value={form.tech_sheet_url}
+                    onChange={(e) => setForm({ ...form, tech_sheet_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
 
-              <div>
-                <label>Video URL</label>
-                <input
-                  value={form.video_url}
-                  onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
+                <div className="p-field">
+                  <label>Video URL</label>
+                  <input
+                    value={form.video_url}
+                    onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
 
-              <div className="products-form__actions">
-                <button type="button" className="products-form__cancel" onClick={resetForm}>
-                  Cancelar
-                </button>
-                <button type="submit" disabled={loading}>
-                  <PackageOpen size={17} />
-                  {loading
-                    ? "Guardando..."
-                    : editingId
-                    ? "Actualizar producto"
-                    : "Crear producto"}
-                </button>
-              </div>
-            </form>
-          </section>
+                <div className="p-form-actions" style={{ gridColumn: "1 / -1" }}>
+                  <button type="button" className="p-btn p-btn--ghost" onClick={resetForm}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="p-btn p-btn--primary" disabled={loading}>
+                    <PackageOpen size={17} />
+                    {loading
+                      ? "Guardando..."
+                      : editingId
+                      ? "Actualizar producto"
+                      : "Crear producto"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
+
       </div>
     </Layout>
   );
