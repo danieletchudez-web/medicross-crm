@@ -789,40 +789,44 @@ export default function ImporterPage({ profile, onNavigate }) {
                     </div>
                   </div>
 
-                  <section className="bi-decisions">
-                    <div className="bi-decisions__head">
-                      <span>Decisiones de BI</span>
-                      <strong>Lectura ejecutiva</strong>
-                    </div>
-                    {biDecisions.map((item, index) => (
-                      <article key={`${item.title}-${index}`} className={`bi-decision bi-decision--${item.tone}`}>
-                        <span>{String(index + 1).padStart(2, "0")}</span>
-                        <div>
-                          <strong>{item.title}</strong>
-                          <p>{item.text}</p>
-                        </div>
-                      </article>
-                    ))}
-                  </section>
+                  <div className="bi-unified-panel">
+                    <section className="bi-decisions">
+                      <div className="bi-decisions__head">
+                        <span>Decisiones de BI</span>
+                        <strong>Lectura ejecutiva</strong>
+                      </div>
+                      {biDecisions.map((item, index) => (
+                        <article key={`${item.title}-${index}`} className={`bi-decision bi-decision--${item.tone}`}>
+                          <span>{String(index + 1).padStart(2, "0")}</span>
+                          <div>
+                            <strong>{item.title}</strong>
+                            <p>{item.text}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </section>
 
-                  <section className="bi-support-grid" aria-label="Indicadores complementarios">
-                    <article className="bi-support-card">
-                      <span className="bi-support-card__icon bi-support-card__icon--amber"><Trophy size={16}/></span>
-                      <div><span>Mejor mes</span><strong>{kpis.mejorMes ? compact(kpis.mejorMes.valor) : "—"}</strong><small>{kpis.mejorMes?.mes || "Sin datos"}</small></div>
-                    </article>
-                    <article className="bi-support-card">
-                      <span className="bi-support-card__icon bi-support-card__icon--blue"><Target size={16}/></span>
-                      <div><span>Promedio mensual</span><strong>{compact(kpis.promedioMensual)}</strong><small>{kpis.cantMeses} {plural(kpis.cantMeses, "mes analizado", "meses analizados")}</small></div>
-                    </article>
-                    <article className="bi-support-card">
-                      <span className="bi-support-card__icon bi-support-card__icon--violet"><ReceiptText size={16}/></span>
-                      <div><span>Ticket promedio</span><strong>{compact(kpis.avgTicket)}</strong><small>{kpis.tickets} {plural(kpis.tickets, "factura única", "facturas únicas")}</small></div>
-                    </article>
-                    <article className="bi-support-card">
-                      <span className="bi-support-card__icon bi-support-card__icon--green"><Package size={16}/></span>
-                      <div><span>Productos activos</span><strong>{kpis.productos}</strong><small>{kpis.clientes} {plural(kpis.clientes, "cliente", "clientes")}</small></div>
-                    </article>
-                  </section>
+                    <div className="bi-unified-divider" aria-hidden="true" />
+
+                    <section className="bi-support-grid" aria-label="Indicadores complementarios">
+                      <article className="bi-support-card">
+                        <span className="bi-support-card__icon bi-support-card__icon--amber"><Trophy size={16}/></span>
+                        <div><span>Mejor mes</span><strong>{kpis.mejorMes ? compact(kpis.mejorMes.valor) : "—"}</strong><small>{kpis.mejorMes?.mes || "Sin datos"}</small></div>
+                      </article>
+                      <article className="bi-support-card">
+                        <span className="bi-support-card__icon bi-support-card__icon--blue"><Target size={16}/></span>
+                        <div><span>Promedio mensual</span><strong>{compact(kpis.promedioMensual)}</strong><small>{kpis.cantMeses} {plural(kpis.cantMeses, "mes analizado", "meses analizados")}</small></div>
+                      </article>
+                      <article className="bi-support-card">
+                        <span className="bi-support-card__icon bi-support-card__icon--violet"><ReceiptText size={16}/></span>
+                        <div><span>Ticket promedio</span><strong>{compact(kpis.avgTicket)}</strong><small>{kpis.tickets} {plural(kpis.tickets, "factura única", "facturas únicas")}</small></div>
+                      </article>
+                      <article className="bi-support-card">
+                        <span className="bi-support-card__icon bi-support-card__icon--green"><Package size={16}/></span>
+                        <div><span>Productos activos</span><strong>{kpis.productos}</strong><small>{kpis.clientes} {plural(kpis.clientes, "cliente", "clientes")}</small></div>
+                      </article>
+                    </section>
+                  </div>
 
                   <section className="bi-collections-band">
                     <article className="bi-collections-card">

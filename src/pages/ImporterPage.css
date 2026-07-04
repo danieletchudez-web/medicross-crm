@@ -245,6 +245,66 @@
 .bi-decision--danger { border-top-color: #ef4444; }
 .bi-decision--danger > span { background: rgba(239,68,68,.1); color: #dc2626; }
 
+/* ─── Unified 2-row Panel (Decisiones + Indicadores) ─────────────────── */
+.bi-unified-panel {
+  background: #ffffff;
+  border: 1px solid #e8ecf2;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(15,23,42,.05);
+}
+
+/* Row 1: flush grid, no gaps — dividers via border-right */
+.bi-unified-panel .bi-decisions {
+  display: grid;
+  grid-template-columns: 196px repeat(3, 1fr);
+  gap: 0;
+}
+.bi-unified-panel .bi-decisions__head {
+  background: transparent;
+  border: none;
+  border-left: 3px solid #185fa5;
+  border-right: 1px solid rgba(0,0,0,.065);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 18px 20px;
+}
+.bi-unified-panel .bi-decision {
+  background: transparent;
+  border: none;
+  border-top: 2px solid #3b82f6;
+  border-right: 1px solid rgba(0,0,0,.065);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 16px 18px;
+}
+.bi-unified-panel .bi-decision:last-child { border-right: none; }
+.bi-unified-panel .bi-decision--success { border-top-color: #10b981; }
+.bi-unified-panel .bi-decision--warning { border-top-color: #f59e0b; }
+.bi-unified-panel .bi-decision--danger  { border-top-color: #ef4444; }
+
+/* Horizontal divider between rows */
+.bi-unified-divider {
+  height: 1px;
+  background: rgba(0,0,0,.065);
+}
+
+/* Row 2: flush grid, no gaps — dividers via border-right */
+.bi-unified-panel .bi-support-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+.bi-unified-panel .bi-support-card {
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(0,0,0,.065);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 14px 18px;
+}
+.bi-unified-panel .bi-support-card:last-child { border-right: none; }
+
 /* ─── KPI Row ────────────────────────────────────────────────────────── */
 .bi-kpi-row {
   display: grid;
