@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 :root {
   --bg: #f3f6fb;
@@ -24,8 +24,8 @@
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 18px;
-  --font: "DM Sans", system-ui, sans-serif;
-  --font-mono: "DM Mono", monospace;
+  --font: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace, monospace;
 }
 
 .unified-dashboard {
@@ -325,7 +325,7 @@
   box-shadow: 0 8px 24px rgba(15,23,42,0.2);
   z-index: 999;
   pointer-events: none;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   letter-spacing: 0.1px;
 }
 .kpi-tooltip-box::before {
@@ -867,7 +867,7 @@
   padding: 3px;
   font-size: 11px;
   font-weight: 800;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   cursor: pointer;
   transition: all 0.15s;
   letter-spacing: 0.1px;

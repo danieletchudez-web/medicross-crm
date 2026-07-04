@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 :root {
   --ta-bg:      #f4f6f9;
@@ -11,8 +11,8 @@
   --ta-shadow-sm: 0 2px 8px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.04);
   --ta-shadow-md: 0 4px 16px rgba(15,23,42,0.07);
   --ta-radius:  14px;
-  --ta-font:    "DM Sans", system-ui, sans-serif;
-  --ta-mono:    "DM Mono", monospace;
+  --ta-font:    "Inter", system-ui, sans-serif;
+  --ta-mono:    "JetBrains Mono", monospace, monospace;
 }
 
 /* ─── Page ───────────────────────────────────────────────────────────── */

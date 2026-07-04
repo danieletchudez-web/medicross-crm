@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 :root {
   --sb-bg:           #ffffff;
@@ -41,7 +41,7 @@
   top: 0;
   display: grid;
   grid-template-rows: var(--sb-brand-height) minmax(0, 1fr);
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   box-sizing: border-box;
   overflow: visible;
   z-index: 100;
@@ -527,7 +527,7 @@
   padding: 3px 8px;
   font-size: 10px;
   font-weight: 700;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   cursor: pointer;
   transition: all 0.15s;
   letter-spacing: 0.2px;
@@ -585,7 +585,7 @@
   color: rgba(255,255,255,0.18);
   font-size: 10.5px;
   font-weight: 600;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
@@ -647,7 +647,7 @@
   font-weight: 600;
   color: var(--sb-toggle-color);
   flex: 1;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   white-space: nowrap;
   overflow: hidden;
   max-width: 180px;
@@ -699,7 +699,7 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--sb-logout-color);
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -755,7 +755,7 @@
   font-size: 12.5px;
   font-weight: 600;
   color: rgba(255,255,255,0.45);
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   transition: background 0.15s, color 0.15s;
   margin-bottom: 2px;
 }
@@ -778,7 +778,7 @@
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   white-space: nowrap;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35),
               0 2px 8px rgba(0, 0, 0, 0.2);
@@ -1265,7 +1265,7 @@
     background: transparent;
     color: #64748b;
     padding: 4px 3px;
-    font-family: "DM Sans", system-ui, sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
     cursor: pointer;
   }
 
@@ -1306,7 +1306,7 @@
     color: #fff;
     padding: 11px 14px;
     box-shadow: 0 12px 28px rgba(15,36,68,.24);
-    font: 800 12px "DM Sans", system-ui, sans-serif;
+    font: 800 12px "Inter", system-ui, sans-serif;
     cursor: pointer;
     transition: transform .2s var(--sb-ease), box-shadow .2s ease;
   }

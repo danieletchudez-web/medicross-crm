@@ -1,9 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 .cot-page {
   padding: 18px 24px 60px;
   display: flex; flex-direction: column; gap: 16px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   background: #f0f2f5; min-height: 100vh;
   position: relative;
 }
@@ -221,7 +221,7 @@
 }
 .cot-mk-card:hover { box-shadow: 0 2px 8px rgba(15,23,42,.07); }
 .cot-mk-card span  { font-size: 10.5px; color: #94a3b8; font-weight: 600; }
-.cot-mk-card strong{ font-size: 24px; font-weight: 700; color: #0f2444; font-family: "DM Mono", monospace; }
+.cot-mk-card strong{ font-size: 24px; font-weight: 700; color: #0f2444; font-family: "JetBrains Mono", monospace, monospace; }
 .cot-mk-card--ok { background: #f0fdf4; border-color: rgba(45,125,70,.2); }
 .cot-mk-card--ok span  { color: #2d7d46; }
 .cot-mk-card--ok strong{ color: #2d7d46; }
@@ -233,7 +233,7 @@
   padding: 10px 13px; display: flex; flex-direction: column; gap: 3px;
 }
 .cot-pv span  { font-size: 10.5px; color: #94a3b8; font-weight: 600; }
-.cot-pv strong{ font-size: 14px; font-weight: 700; color: #0f2444; font-family: "DM Mono", monospace; }
+.cot-pv strong{ font-size: 14px; font-weight: 700; color: #0f2444; font-family: "JetBrains Mono", monospace, monospace; }
 .cot-pv--acc { background: #eff6ff; border-color: rgba(24,95,165,.2); }
 .cot-pv--acc span  { color: #185fa5; }
 .cot-pv--acc strong{ color: #0f2444; font-size: 16px; }
@@ -247,7 +247,7 @@
 }
 .cot-subtotal div { display: flex; flex-direction: column; gap: 2px; }
 .cot-subtotal span  { font-size: 11.5px; opacity: .75; }
-.cot-subtotal strong{ font-size: 22px; font-weight: 700; font-family: "DM Mono", monospace; }
+.cot-subtotal strong{ font-size: 22px; font-weight: 700; font-family: "JetBrains Mono", monospace, monospace; }
 
 .cot-calc-placeholder {
   background: #f8fafc; border: 1.5px dashed rgba(15,36,68,.15); border-radius: 12px;
@@ -288,7 +288,7 @@
   display: flex; justify-content: space-between; align-items: center;
 }
 .cot-total-bar span  { font-size: 12px; opacity: .8; }
-.cot-total-bar strong{ font-size: 20px; font-weight: 700; font-family: "DM Mono", monospace; }
+.cot-total-bar strong{ font-size: 20px; font-weight: 700; font-family: "JetBrains Mono", monospace, monospace; }
 
 /* ── Acciones bottom ── */
 .cot-actions-bottom {
@@ -431,7 +431,7 @@
 .cot-kpi--blue { border-top-color: #185fa5; }
 .cot-kpi__icon { position: absolute; top: 10px; right: 12px; font-size: 18px; opacity: .12; pointer-events: none; }
 .cot-kpi__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; }
-.cot-kpi__val   { font-size: 26px; font-weight: 700; color: #0f2444; line-height: 1; font-family: "DM Mono", monospace; }
+.cot-kpi__val   { font-size: 26px; font-weight: 700; color: #0f2444; line-height: 1; font-family: "JetBrains Mono", monospace, monospace; }
 .cot-kpi__sub   { font-size: 11px; color: #64748b; }
 
 @media(max-width:600px){
@@ -444,7 +444,7 @@
 /* ── Price Intelligence Badge ── */
 .cot-pi-loading {
   font-size: 11px; color: #94a3b8; padding: 5px 2px; font-style: italic;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 .cot-pi-hint {
   margin: 7px 0 2px; padding: 8px 10px; border: 1px dashed #bfdbfe;
@@ -460,12 +460,12 @@
 .cot-pi-badge--neutral { background: #f8fafc; border-color: #e2e8f0; }
 
 .cot-pi-head { display: flex; align-items: center; justify-content: space-between; }
-.cot-pi-status { font-size: 11.5px; font-weight: 700; font-family: "DM Sans", system-ui, sans-serif; }
+.cot-pi-status { font-size: 11.5px; font-weight: 700; font-family: "Inter", system-ui, sans-serif; }
 .cot-pi-badge--ok     .cot-pi-status { color: #15803d; }
 .cot-pi-badge--cerca  .cot-pi-status { color: #92400e; }
 .cot-pi-badge--riesgo .cot-pi-status { color: #dc2626; }
 .cot-pi-badge--neutral .cot-pi-status { color: #475569; }
-.cot-pi-refs { font-size: 10.5px; color: #94a3b8; font-family: "DM Mono", monospace; }
+.cot-pi-refs { font-size: 10.5px; color: #94a3b8; font-family: "JetBrains Mono", monospace, monospace; }
 .cot-pi-description {
   margin: 0; padding-bottom: 6px; border-bottom: 1px solid rgba(15,36,68,.08);
   color: #334155; font-size: 11px; line-height: 1.45;
@@ -474,14 +474,14 @@
 .cot-pi-data { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .cot-pi-data span {
   display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: #64748b;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
-.cot-pi-data strong { font-family: "DM Mono", monospace; font-weight: 700; font-size: 12.5px; color: #0f172a; }
+.cot-pi-data strong { font-family: "JetBrains Mono", monospace, monospace; font-weight: 700; font-size: 12.5px; color: #0f172a; }
 
 .cot-pi-use {
   align-self: flex-start; border: none; border-radius: 7px;
   padding: 5px 12px; font-size: 11.5px; font-weight: 700;
-  cursor: pointer; font-family: "DM Sans", system-ui, sans-serif;
+  cursor: pointer; font-family: "Inter", system-ui, sans-serif;
   transition: filter 0.12s, transform 0.1s;
 }
 .cot-pi-badge--ok     .cot-pi-use { background: #dcfce7; color: #15803d; }

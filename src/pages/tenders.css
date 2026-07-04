@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 :root {
   --tn-navy:    #0f2444;
@@ -20,7 +20,7 @@
   --tn-page-x: 24px;
   padding: 18px 24px 40px;
   display: flex; flex-direction: column; gap: 14px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   background: var(--tn-bg);
   min-height: 100vh;
   color: var(--tn-text);
@@ -195,7 +195,7 @@
 }
 .tn-kpi__val {
   font-size: 26px; font-weight: 700; color: var(--tn-navy);
-  line-height: 1.1; font-family: "DM Mono", monospace;
+  line-height: 1.1; font-family: "JetBrains Mono", monospace, monospace;
   display: block; margin: 0 0 4px 0;
 }
 .tn-kpi__sub {
@@ -309,7 +309,7 @@
 /* ─── GRID ───────────────────────────────────────────────────────────── */
 .tn-grid-wrap { background: var(--tn-surface); border: 1px solid var(--tn-border); border-radius: var(--tn-radius3); overflow: hidden; box-shadow: 0 1px 4px rgba(15,23,42,.06); }
 .tn-grid-scroll { overflow-x: auto; overflow-y: auto; max-height: calc(100vh - 300px); }
-.tn-grid { border-collapse: collapse; font-family: "DM Sans", system-ui, sans-serif; font-size: 12.5px; white-space: nowrap; min-width: 100%; }
+.tn-grid { border-collapse: collapse; font-family: "Inter", system-ui, sans-serif; font-size: 12.5px; white-space: nowrap; min-width: 100%; }
 .tn-grid__head-row { position: sticky; top: 0; z-index: 3; }
 .tn-grid__th { background: var(--tn-navy); color: rgba(255,255,255,.85); padding: 11px 10px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; border-right: 1px solid rgba(255,255,255,.08); cursor: pointer; user-select: none; white-space: nowrap; }
 .tn-grid__th:hover { background: var(--tn-navy2); }
@@ -395,7 +395,7 @@
 /* ─── PROGRESS ───────────────────────────────────────────────────────── */
 .tn-prog { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
 .tn-prog__labels { display: flex; justify-content: space-between; align-items: center; }
-.tn-prog__days { font-size: 11px; font-weight: 600; font-family: "DM Mono", monospace; }
+.tn-prog__days { font-size: 11px; font-weight: 600; font-family: "JetBrains Mono", monospace, monospace; }
 .tn-prog__pct  { font-size: 10px; color: var(--tn-text3); }
 .tn-prog__bar  { height: 5px; background: #e8ecf2; border-radius: 10px; overflow: hidden; }
 .tn-prog__fill { height: 100%; border-radius: 10px; transition: width .4s ease; }
@@ -482,7 +482,7 @@
 .tn-resultado-label--ganada { color: #166534; }
 .tn-resultado-label--perdida { color: #7f1d1d; }
 .tn-resultado-label--pendiente { color: var(--tn-text3); }
-.tn-resultado-monto { font-size: 24px; font-weight: 700; font-family: "DM Mono", monospace; color: var(--tn-navy); }
+.tn-resultado-monto { font-size: 24px; font-weight: 700; font-family: "JetBrains Mono", monospace, monospace; color: var(--tn-navy); }
 
 /* ─── COTIZADOR LINK ────────────────────────────────────────────────── */
 .tn-cotizador-link { display: flex; align-items: center; gap: 12px; background: var(--tn-bg); border: 1px solid var(--tn-border2); border-radius: var(--tn-radius2); padding: 14px 16px; }
@@ -603,7 +603,7 @@
   letter-spacing: .7px;
 }
 .tn-workbench-head strong {
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace, monospace;
   color: var(--tn-navy);
   font-size: 22px;
 }
@@ -650,7 +650,7 @@
 }
 .tn-workbench-item b {
   color: var(--tn-accent);
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace, monospace;
 }
 .tn-workbench-empty {
   margin: 0;
@@ -697,7 +697,7 @@
 .tn-readiness--draft { border-color: #e2e8f0; background: #f8fafc; }
 .tn-readiness__score { display: flex; flex-direction: column; gap: 2px; }
 .tn-readiness__score strong {
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace, monospace;
   font-size: 24px;
   color: var(--tn-navy);
 }
@@ -793,7 +793,7 @@
   letter-spacing: .6px;
 }
 .tn-bac-metric strong {
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace, monospace;
   font-size: 24px;
   color: var(--tn-navy);
 }
@@ -822,7 +822,7 @@
 }
 .tn-bac-sample__row:last-child { border-bottom: none; }
 .tn-bac-sample__row span {
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace, monospace;
   color: var(--tn-accent);
   font-weight: 800;
 }
@@ -834,7 +834,7 @@
   text-overflow: ellipsis;
 }
 .tn-bac-sample__row b {
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace, monospace;
   color: var(--tn-navy);
 }
 

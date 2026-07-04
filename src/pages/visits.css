@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 /* ─── Page ───────────────────────────────────────────────────────────── */
 .visits-page {
@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   background: #f0f2f5;
   min-height: 100vh;
 }
@@ -168,7 +168,7 @@
   display: block;
   font-size: 26px; font-weight: 700;
   color: #0f2444; letter-spacing: -.5px;
-  line-height: 1; font-family: "DM Mono", monospace;
+  line-height: 1; font-family: "JetBrains Mono", monospace, monospace;
   margin-bottom: 3px;
 }
 .visits-kpi__sub {

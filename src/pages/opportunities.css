@@ -1,11 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 .opp-page {
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 .opp-kpis {
@@ -123,7 +123,7 @@
   font-size: 16px;
   font-weight: 800;
   color: #1d4ed8;
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace, monospace;
 }
 
 .opp-submit {
@@ -243,7 +243,7 @@
 
 .opp-td-name strong { display: block; font-weight: 700; color: #0f172a; }
 .opp-td-name small  { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; }
-.opp-td-center { text-align: center; font-family: "DM Mono", monospace; font-size: 12px; }
+.opp-td-center { text-align: center; font-family: "JetBrains Mono", monospace, monospace; font-size: 12px; }
 .opp-td-overdue { color: #ef4444; font-weight: 700; }
 .opp-td-action { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .opp-no-action { color: #cbd5e1; font-style: italic; }

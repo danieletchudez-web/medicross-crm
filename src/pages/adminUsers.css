@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 /* ─── Page ───────────────────────────────────────────────────────────── */
 .admin-page {
@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   min-height: 100vh;
 }
 
@@ -356,7 +356,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 .admin-desktop-table thead { background: #f8fafc; }
@@ -764,7 +764,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 .admin-mobile-card:hover { background: #f8fbff; }
@@ -799,7 +799,7 @@
   padding: 32px;
   font-size: 13px;
   font-weight: 500;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────── */
@@ -886,7 +886,7 @@
   border: 1px solid #e8ecf2;
   border-radius: 12px;
   padding: 14px 18px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 .adm-info-box__icon {
   border: 1px solid #bfdbfe;
@@ -949,7 +949,7 @@
   border-radius: 9px;
   padding: 10px 13px;
   font-size: 13px;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   color: #0f172a;
   outline: none;
   box-sizing: border-box;

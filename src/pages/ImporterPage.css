@@ -1,11 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 
 /* ─── Shell ──────────────────────────────────────────────────────────── */
 .bi-shell {
   display: flex;
   min-height: 100vh;
   background: #f1f5f9;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 .bi-main {
   flex: 1;
@@ -142,7 +142,7 @@
 .bi-hero__eyebrow { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: rgba(219,234,254,.64); }
 .bi-hero__big     { font-size: 34px; font-weight: 900; color: #fff; letter-spacing: 0; line-height: 1; }
 .bi-hero__scale   { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(219,234,254,.5); margin-top: -2px; }
-.bi-hero__sub     { font-size: 10px; color: rgba(219,234,254,.42); font-family: "DM Mono", monospace; }
+.bi-hero__sub     { font-size: 10px; color: rgba(219,234,254,.42); font-family: "JetBrains Mono", monospace, monospace; }
 .bi-hero__badge {
   display: inline-flex; align-items: center; gap: 3px;
   font-size: 11px; font-weight: 700;
@@ -270,7 +270,7 @@
 .bi-forecast-input {
   flex: 1; border: 1px solid #e8ecf2; background: #fff;
   border-radius: 7px; padding: 6px 9px;
-  font-size: 12.5px; font-family: "DM Mono", monospace; color: #0f172a; outline: none;
+  font-size: 12.5px; font-family: "JetBrains Mono", monospace, monospace; color: #0f172a; outline: none;
 }
 .bi-forecast-input:focus { border-color: #6366f1; }
 .bi-forecast-save {
@@ -284,7 +284,7 @@
 .bi-forecast-select {
   flex: 1; border: 1px solid #e8ecf2; background: #f8fafc;
   border-radius: 7px; padding: 5px 9px;
-  font-size: 11.5px; font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 11.5px; font-family: "Inter", system-ui, sans-serif;
   color: #334155; font-weight: 600; outline: none; cursor: pointer; transition: border-color .15s;
 }
 .bi-forecast-select:focus { border-color: #6366f1; background: #fff; }
@@ -332,7 +332,7 @@
 .bi-rank-name { display: block; font-size: 11px; font-weight: 600; color: #0f172a; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bi-rank-bar-bg { height: 4px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
 .bi-rank-bar-fill { height: 100%; border-radius: 999px; transition: width .5s; }
-.bi-rank-val { font-size: 11px; font-weight: 700; color: #0f172a; font-family: "DM Mono", monospace; min-width: 58px; text-align: right; flex-shrink: 0; }
+.bi-rank-val { font-size: 11px; font-weight: 700; color: #0f172a; font-family: "JetBrains Mono", monospace, monospace; min-width: 58px; text-align: right; flex-shrink: 0; }
 
 /* ─── Alertas ────────────────────────────────────────────────────────── */
 .bi-alertas { padding: 8px 16px 12px; display: flex; flex-direction: column; gap: 5px; }
@@ -425,7 +425,7 @@
 .bi-top3__row { display: flex; align-items: center; gap: 6px; }
 .bi-top3__pos  { font-size: 10px; font-weight: 800; min-width: 18px; flex-shrink: 0; }
 .bi-top3__name { font-size: 11px; font-weight: 500; color: #64748b; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bi-top3__val  { font-size: 11px; font-weight: 700; color: #0f172a; font-family: "DM Mono", monospace; flex-shrink: 0; }
+.bi-top3__val  { font-size: 11px; font-weight: 700; color: #0f172a; font-family: "JetBrains Mono", monospace, monospace; flex-shrink: 0; }
 
 /* ─── KPI card variants ──────────────────────────────────────────────── */
 .bi-kpi__divider { height: 1px; background: #f0f4f8; margin: 6px 0; flex-shrink: 0; }
@@ -856,7 +856,7 @@
   box-shadow: 0 8px 24px rgba(15,23,42,0.25);
   z-index: 999;
   pointer-events: none;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   letter-spacing: 0.1px;
 }
 .kpi-tooltip-box::before {
