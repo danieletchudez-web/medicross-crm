@@ -1,23 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <path
-    d="M92 401.6V336C170.4 278.8 237.6 198.4 294.4 87.2L322.4 52v319.2C235.2 381.6 158.4 392.8 92 401.6Z"
-    stroke="#147FF2"
-    stroke-width="38"
-    stroke-linejoin="round"
-    stroke-linecap="round"
-  />
-  <path
-    d="M322.4 268.8c57.6-47.2 105.6-100 144.8-160.8v278.4c-130.4 0.8-256 14.4-375.2 42.4"
-    stroke="#147FF2"
-    stroke-width="38"
-    stroke-linejoin="round"
-    stroke-linecap="round"
-  />
-  <path
-    d="M467.2 290.4c32.8-24 56.8-48 71.2-71.2v210.4C395.2 383.2 247.2 383.2 92 429.6"
-    stroke="#147FF2"
-    stroke-width="38"
-    stroke-linejoin="round"
-    stroke-linecap="round"
+    d="M72 408 L218 112 L292 242 L378 88 L446 408 Z"
+    stroke="white"
+    stroke-width="40"
+    stroke-linejoin="miter"
+    stroke-miterlimit="12"
+    fill="rgba(255,255,255,0.05)"
   />
 </svg>
