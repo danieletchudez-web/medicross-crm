@@ -28,8 +28,8 @@ function fmtDate(d) {
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return "Buenos días";
-  if (h < 19) return "Buenos tardes";
-  return "Buenos noches";
+  if (h < 19) return "Buenas tardes";
+  return "Buenas noches";
 }
 
 function getSpanishDate() {

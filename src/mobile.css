@@ -1,17 +1,15 @@
 /* ============================================================
-   mobile.css — Complete Mobile Stylesheet
-   Storing CRM
+   mobile.css — Storing CRM Mobile Stylesheet
    ============================================================
 
    SECTION 1 — @media (max-width: 768px) layout overrides
-     All rules are scoped to max-width:768px so desktop is
-     never affected.
+     Scoped so desktop is never affected.
 
-   SECTION 2 — .mob-* global component styles (no media query)
-     These components only render on mobile via React conditional,
-     so the selectors are global (no media query wrapper needed).
-     Both [data-theme="dark"] and light mode are handled here.
+   SECTION 2 — .mob-* global component styles
+     MobileNav + MobileDock only render on mobile via React
+     conditional, so no media query needed on their classes.
    ============================================================ */
+
 
 /* ============================================================
    SECTION 1: @media (max-width: 768px) layout overrides
@@ -22,15 +20,23 @@
   /* ── Core shell ── */
   .app-shell { display:block !important; }
   .sidebar   { display:none  !important; }
+
+  /* Sidebar renders mobile-bottom-nav + mobile-quick-visit-fab
+     outside its own div — hide them; dock replaces them */
+  .mobile-bottom-nav      { display:none !important; }
+  .mobile-quick-visit-fab { display:none !important; }
+
+  /* ── Main content ── */
   .main-content {
     margin-left:0 !important;
-    padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important;
+    /* extra room for bottom nav (60px) + dock (~56px) + gaps */
+    padding-bottom:calc(140px + env(safe-area-inset-bottom)) !important;
     overflow-x:hidden !important;
     width:100% !important;
   }
   body { overflow-x:hidden !important; }
 
-  /* ── Compact header ── */
+  /* ── Compact sticky header ── */
   .page-header {
     height:52px !important;
     min-height:52px !important;
@@ -57,7 +63,20 @@
     border-radius:10px !important;
   }
 
-  /* ── p-panel system on mobile ── */
+  /* ── Medix AI button ── */
+  /* Hidden on mobile — the dock handles triggering it */
+  .crm-ai-fab { display:none !important; }
+
+  /* AI panel: full-width, anchored above the dock */
+  .crm-ai-panel {
+    right:12px !important;
+    left:12px !important;
+    width:auto !important;
+    bottom:calc(140px + env(safe-area-inset-bottom)) !important;
+    max-height:60vh !important;
+  }
+
+  /* ── p-panel system ── */
   .p-page {
     padding:12px 16px !important;
     gap:10px !important;
@@ -122,7 +141,7 @@
   }
   .p-btn { height:40px !important; }
 
-  /* ── Module-specific fixes ── */
+  /* ── Module-specific ── */
   .acc-form-section { padding:12px 0 !important; }
   .tk-drawer {
     width:100% !important;
@@ -135,13 +154,6 @@
   .p-table th:nth-child(n+6),
   .p-table td:nth-child(n+6) { display:none !important; }
 
-  /* ── AI button: move left to avoid FAB overlap ── */
-  .crm-ai-fab {
-    right:84px !important;
-    bottom:calc(80px + env(safe-area-inset-bottom)) !important;
-    transition:right 180ms ease-out, bottom 180ms ease-out !important;
-  }
-
   /* ── Utility ── */
   .mob-only     { display:block !important; }
   .desktop-only { display:none  !important; }
@@ -150,12 +162,12 @@
 
 
 /* ============================================================
-   SECTION 2: .mob-* global component styles (no media query)
-   These only render on mobile (React conditional).
-   Both [data-theme="dark"] and light mode are handled below.
+   SECTION 2: .mob-* global component styles
+   MobileNav and MobileDock only render on mobile (React
+   conditional), so these selectors need no media query.
    ============================================================ */
 
-/* ── Bottom nav bar ── */
+/* ── Bottom navigation bar ────────────────────────────────── */
 .mob-bottom-nav {
   position:fixed;
   bottom:0;
@@ -167,11 +179,11 @@
   height:60px;
   padding-bottom:env(safe-area-inset-bottom);
   background:#FFFFFF;
-  border-top:1px solid rgba(0, 0, 0, .09);
+  border-top:1px solid rgba(0,0,0,.09);
 }
 [data-theme="dark"] .mob-bottom-nav {
   background:#111111;
-  border-top-color:rgba(255, 255, 255, .07);
+  border-top-color:rgba(255,255,255,.07);
 }
 
 .mob-nav-item {
@@ -184,7 +196,7 @@
   border:none;
   background:transparent;
   cursor:pointer;
-  color:rgba(0, 0, 0, .35);
+  color:rgba(0,0,0,.32);
   font-size:10px;
   font-weight:500;
   font-family:inherit;
@@ -193,46 +205,122 @@
   -webkit-tap-highlight-color:transparent;
 }
 .mob-nav-item span { line-height:1; }
-[data-theme="dark"] .mob-nav-item { color:rgba(255, 255, 255, .3); }
+[data-theme="dark"] .mob-nav-item { color:rgba(255,255,255,.28); }
 .mob-nav-item--active { color:#111111; }
 [data-theme="dark"] .mob-nav-item--active { color:#F4F4F5; }
 .mob-nav-item:active { transform:scale(0.93); }
 
-/* ── FAB button ── */
-.mob-fab {
+
+/* ── Dock pill ────────────────────────────────────────────── */
+.mob-dock {
   position:fixed;
-  bottom:calc(60px + env(safe-area-inset-bottom) + 18px);
-  right:20px;
-  z-index:102;
-  width:52px;
-  height:52px;
-  border-radius:50%;
-  border:none;
-  cursor:pointer;
+  bottom:calc(60px + env(safe-area-inset-bottom) + 10px);
+  left:50%;
+  transform:translateX(-50%);
+  z-index:101;
+  display:flex;
+  align-items:center;
+  background:#1B1B1B;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:26px;
+  padding:5px;
+  gap:0;
+  box-shadow:0 8px 32px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.2);
+  white-space:nowrap;
+  /* Never change width by theme — dock is always dark */
+}
+
+/* ── Dock buttons ── */
+.mob-dock-btn {
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#111111;
-  color:#FFFFFF;
-  box-shadow:0 2px 12px rgba(0, 0, 0, .18);
-  transition:transform 180ms ease-out, background 120ms;
+  gap:6px;
+  height:44px;
+  border:none;
+  background:transparent;
+  color:rgba(255,255,255,.65);
+  font-size:13px;
+  font-weight:500;
+  font-family:inherit;
+  cursor:pointer;
+  border-radius:21px;
+  padding:0 16px;
+  transition:background 120ms ease-out, color 120ms ease-out, transform 80ms ease-out;
   -webkit-tap-highlight-color:transparent;
+  letter-spacing:-0.15px;
+  flex-shrink:0;
 }
-[data-theme="dark"] .mob-fab {
-  background:#F4F4F5;
-  color:#111111;
-  box-shadow:0 2px 12px rgba(0, 0, 0, .35);
+.mob-dock-btn:active {
+  background:rgba(255,255,255,.1);
+  transform:scale(0.95);
 }
-.mob-fab--open  { transform:rotate(45deg) scale(1.06); }
-.mob-fab:active { transform:scale(0.93); }
-.mob-fab--open:active { transform:rotate(45deg) scale(0.93); }
+/* The menu button is icon-only (no text) */
+.mob-dock-btn--menu {
+  width:44px;
+  padding:0;
+}
+/* Active / open state */
+.mob-dock-btn--active {
+  background:rgba(255,255,255,.09);
+  color:rgba(255,255,255,.92);
+}
+/* Contextual center button: animate in when key changes */
+.mob-dock-btn--ctx {
+  animation:mob-ctx-enter 180ms ease-out both;
+}
+@keyframes mob-ctx-enter {
+  from { opacity:0; transform:scale(0.82); }
+  to   { opacity:1; transform:scale(1); }
+}
 
-/* ── Backdrop ── */
+/* ── Dock separator ── */
+.mob-dock-sep {
+  width:1px;
+  height:22px;
+  background:rgba(255,255,255,.08);
+  flex-shrink:0;
+  margin:0 1px;
+}
+
+/* ── Hamburger icon ── */
+.mob-dock-hamburger {
+  display:flex;
+  flex-direction:column;
+  gap:4.5px;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+.mob-dock-hline {
+  display:block;
+  width:16px;
+  height:1.5px;
+  background:rgba(255,255,255,.65);
+  border-radius:1px;
+  transition:background 120ms;
+}
+.mob-dock-btn--active .mob-dock-hline {
+  background:rgba(255,255,255,.9);
+}
+
+/* Middle-line micro-animation: 2 px nudge every ~12 s, 250 ms duration */
+@keyframes mob-menu-hint {
+  0%, 96%, 100%  { transform:translateX(0); }
+  97.5%          { transform:translateX(2px); }
+  99%            { transform:translateX(-0.5px); }
+}
+.mob-dock-hline--mid {
+  animation:mob-menu-hint 12s ease-in-out infinite;
+}
+
+
+/* ── Backdrop ─────────────────────────────────────────────── */
 .mob-backdrop {
   position:fixed;
   inset:0;
   z-index:108;
-  background:rgba(0, 0, 0, .45);
+  background:rgba(0,0,0,.45);
   animation:mob-fade-in 180ms ease-out both;
 }
 @keyframes mob-fade-in {
@@ -240,7 +328,8 @@
   to   { opacity:1; }
 }
 
-/* ── Bottom Sheet ── */
+
+/* ── Bottom Sheet ─────────────────────────────────────────── */
 .mob-sheet {
   position:fixed;
   bottom:0;
@@ -250,7 +339,7 @@
   border-radius:24px 24px 0 0;
   background:#FFFFFF;
   transform:translateY(100%);
-  transition:transform 220ms cubic-bezier(.32, .72, 0, 1);
+  transition:transform 220ms cubic-bezier(.32,.72,0,1);
   max-height:88vh;
   display:flex;
   flex-direction:column;
@@ -263,11 +352,11 @@
   width:36px;
   height:4px;
   border-radius:2px;
-  background:rgba(0, 0, 0, .15);
+  background:rgba(0,0,0,.15);
   margin:12px auto 4px;
   flex-shrink:0;
 }
-[data-theme="dark"] .mob-sheet-handle { background:rgba(255, 255, 255, .2); }
+[data-theme="dark"] .mob-sheet-handle { background:rgba(255,255,255,.2); }
 
 .mob-sheet-scroll {
   overflow-y:auto;
@@ -281,10 +370,10 @@
   font-weight:700;
   letter-spacing:0.12em;
   text-transform:uppercase;
-  color:rgba(0, 0, 0, .35);
+  color:rgba(0,0,0,.32);
   padding:18px 20px 8px;
 }
-[data-theme="dark"] .mob-sheet-section-label { color:rgba(255, 255, 255, .3); }
+[data-theme="dark"] .mob-sheet-section-label { color:rgba(255,255,255,.28); }
 
 .mob-sheet-row {
   display:flex;
@@ -297,14 +386,14 @@
   text-align:left;
   cursor:pointer;
   font-family:inherit;
-  border-top:1px solid rgba(0, 0, 0, .06);
+  border-top:1px solid rgba(0,0,0,.06);
   transition:background 100ms;
   -webkit-tap-highlight-color:transparent;
 }
-[data-theme="dark"] .mob-sheet-row { border-top-color:rgba(255, 255, 255, .05); }
+[data-theme="dark"] .mob-sheet-row { border-top-color:rgba(255,255,255,.05); }
 .mob-sheet-row:first-of-type { border-top:none; }
-.mob-sheet-row:active { background:rgba(0, 0, 0, .04); }
-[data-theme="dark"] .mob-sheet-row:active { background:rgba(255, 255, 255, .05); }
+.mob-sheet-row:active { background:rgba(0,0,0,.04); }
+[data-theme="dark"] .mob-sheet-row:active { background:rgba(255,255,255,.05); }
 .mob-sheet-row--danger .mob-sheet-row__label { color:#dc2626; }
 [data-theme="dark"] .mob-sheet-row--danger .mob-sheet-row__label { color:#f87171; }
 
@@ -314,10 +403,10 @@
   display:flex;
   align-items:center;
   justify-content:center;
-  color:rgba(0, 0, 0, .4);
+  color:rgba(0,0,0,.38);
   flex-shrink:0;
 }
-[data-theme="dark"] .mob-sheet-row__icon { color:rgba(255, 255, 255, .45); }
+[data-theme="dark"] .mob-sheet-row__icon { color:rgba(255,255,255,.42); }
 .mob-sheet-row__label {
   flex:1;
   font-size:15px;
@@ -325,13 +414,14 @@
   color:#111111;
 }
 [data-theme="dark"] .mob-sheet-row__label { color:#F4F4F5; }
-.mob-sheet-row__plus { color:rgba(0, 0, 0, .25); }
-[data-theme="dark"] .mob-sheet-row__plus { color:rgba(255, 255, 255, .25); }
+.mob-sheet-row__plus { color:rgba(0,0,0,.22); }
+[data-theme="dark"] .mob-sheet-row__plus { color:rgba(255,255,255,.22); }
 
-/* ── Module grid ── */
+
+/* ── Module grid (IR A section) ───────────────────────────── */
 .mob-module-grid {
   display:grid;
-  grid-template-columns:repeat(3, 1fr);
+  grid-template-columns:repeat(3,1fr);
   gap:8px;
   padding:8px 16px 4px;
 }
@@ -346,56 +436,72 @@
   border:none;
   cursor:pointer;
   font-family:inherit;
-  background:rgba(0, 0, 0, .04);
+  background:rgba(0,0,0,.04);
   border-radius:16px;
   transition:background 120ms, transform 120ms;
   -webkit-tap-highlight-color:transparent;
   text-align:center;
   aspect-ratio:1;
 }
-[data-theme="dark"] .mob-module-btn { background:rgba(255, 255, 255, .06); }
+[data-theme="dark"] .mob-module-btn { background:rgba(255,255,255,.06); }
 .mob-module-btn:active {
-  background:rgba(0, 0, 0, .09);
+  background:rgba(0,0,0,.09);
   transform:scale(0.95);
 }
-[data-theme="dark"] .mob-module-btn:active { background:rgba(255, 255, 255, .11); }
-.mob-module-btn__icon { color:rgba(0, 0, 0, .55); }
-[data-theme="dark"] .mob-module-btn__icon { color:rgba(255, 255, 255, .6); }
+[data-theme="dark"] .mob-module-btn:active { background:rgba(255,255,255,.11); }
+.mob-module-btn__icon { color:rgba(0,0,0,.5); }
+[data-theme="dark"] .mob-module-btn__icon { color:rgba(255,255,255,.58); }
 .mob-module-btn__label {
   font-size:11.5px;
   font-weight:500;
   color:#111111;
   line-height:1.2;
 }
-[data-theme="dark"] .mob-module-btn__label { color:rgba(255, 255, 255, .75); }
+[data-theme="dark"] .mob-module-btn__label { color:rgba(255,255,255,.72); }
 
 .mob-sheet-safe-area {
   height:env(safe-area-inset-bottom);
   min-height:20px;
 }
 
-/* ── Mobile home ── */
+
+/* ── Mobile home page ─────────────────────────────────────── */
 .mob-home {
   display:flex;
   flex-direction:column;
   gap:10px;
   padding:10px 16px calc(16px + env(safe-area-inset-bottom));
 }
-.mob-home-greeting { padding:8px 2px 2px; }
+
+/* Greeting block — always stacked, never inline */
+.mob-home-greeting {
+  padding:8px 2px 4px;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
 .mob-home-greeting__name {
-  font-size:23px;
-  font-weight:600;
+  display:block;
+  font-size:24px;
+  font-weight:700;
   color:#111111;
-  letter-spacing:-0.4px;
+  letter-spacing:-0.5px;
+  line-height:1.15;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
   margin:0;
-  line-height:1.2;
 }
 [data-theme="dark"] .mob-home-greeting__name { color:#F4F4F5; }
 .mob-home-greeting__date {
-  font-size:13px;
-  color:#6B7280;
-  margin:3px 0 0;
+  display:block;
+  font-size:14px;
+  color:rgba(0,0,0,.42);
+  margin:0;
+  line-height:1.3;
 }
+[data-theme="dark"] .mob-home-greeting__date { color:rgba(255,255,255,.38); }
+
 .mob-home-item {
   display:flex;
   flex-direction:column;
@@ -418,6 +524,7 @@
   height:200px;
 }
 
-/* ── Utility (global defaults — overridden inside @media above on mobile) ── */
+
+/* ── Utility ─────────────────────────────────────────────── */
 .mob-only     { display:none;  }
 .desktop-only { display:block; }

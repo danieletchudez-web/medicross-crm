@@ -105,6 +105,18 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
 
+  // Allow MobileDock to toggle Medix via custom event
+  useEffect(() => {
+    const toggle = () => setOpen(o => !o);
+    document.addEventListener("crm:toggle-medix", toggle);
+    return () => document.removeEventListener("crm:toggle-medix", toggle);
+  }, []);
+
+  // Broadcast open/close state so MobileDock can reflect it in the center button
+  useEffect(() => {
+    document.dispatchEvent(new CustomEvent(open ? "crm:medix-opened" : "crm:medix-closed"));
+  }, [open]);
+
   async function sendMessage(e) {
     e?.preventDefault();
     if (!input.trim() || loading) return;

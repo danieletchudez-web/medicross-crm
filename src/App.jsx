@@ -6,6 +6,7 @@ import LoginPage          from "./pages/LoginPage";
 import CRMAssistant       from "./components/CRMAssistant";
 import DialogSystem       from "./components/DialogSystem";
 import MobileNav          from "./components/MobileNav";
+import MobileDock         from "./components/MobileDock";
 
 class PageErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
@@ -375,7 +376,8 @@ export default function App() {
       {routeLoading && <FullPageLoader label="Preparando módulo…" overlay />}
       <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
       <DialogSystem />
-      <MobileNav currentPage={currentPage} onNavigate={navigate} profile={safeProfile} onLogout={handleLogout} />
+      <MobileNav currentPage={currentPage} onNavigate={navigate} />
+      <MobileDock currentPage={currentPage} onNavigate={navigate} profile={safeProfile} onLogout={handleLogout} />
     </>
   );
 }
