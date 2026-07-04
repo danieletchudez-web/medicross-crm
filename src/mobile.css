@@ -509,8 +509,8 @@
 .mob-module-grid {
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:8px;
-  padding:8px 16px 4px;
+  gap:10px;
+  padding:10px 16px 4px;
 }
 
 .mob-module-btn {
@@ -518,17 +518,19 @@
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:10px;
-  padding:18px 8px;
+  gap:8px;
+  padding:14px 6px;
+  width:100%;
   border:none;
   cursor:pointer;
   font-family:inherit;
   background:rgba(0,0,0,.04);
-  border-radius:16px;
+  border-radius:14px;
   transition:background 120ms, transform 120ms;
   -webkit-tap-highlight-color:transparent;
   text-align:center;
   aspect-ratio:1;
+  overflow:hidden;
 }
 [data-theme="dark"] .mob-module-btn { background:rgba(255,255,255,.06); }
 .mob-module-btn:active {
@@ -539,10 +541,14 @@
 .mob-module-btn__icon { color:rgba(0,0,0,.5); }
 [data-theme="dark"] .mob-module-btn__icon { color:rgba(255,255,255,.58); }
 .mob-module-btn__label {
-  font-size:11.5px;
+  font-size:11px;
   font-weight:500;
   color:#111111;
   line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
 }
 [data-theme="dark"] .mob-module-btn__label { color:rgba(255,255,255,.72); }
 
@@ -957,6 +963,7 @@
 /* ── Module grid star/favorito button ────────────────────────────── */
 .mob-module-btn-wrap {
   position:relative;
+  display:flex;
 }
 .mob-module-btn__star {
   position:absolute;
