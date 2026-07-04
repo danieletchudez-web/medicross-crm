@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
+import { Moon, Sun,
   BarChart3,
   BellRing,
   Building2,
@@ -119,16 +119,19 @@ export default function Sidebar({ profile, onNavigate }) {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
   });
-  const [tooltip, setTooltip] = useState(null); // { label, y }
+  const [tooltip, setTooltip] = useState(null);
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
+  const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
   const dragIdx = useRef(null);
   const notificationCount = useNotificationCount(profile?.id);
   const { count: taskAlertCount } = useTaskAlerts(profile?.id);
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "light");
-    localStorage.removeItem("theme");
-  }, []);
+  function toggleTheme() {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
+    localStorage.setItem("theme", next ? "dark" : "light");
+  }
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -379,6 +382,19 @@ export default function Sidebar({ profile, onNavigate }) {
           </nav>
 
           <div className="sidebar-footer">
+            <button
+              type="button"
+              className="sidebar-theme-toggle"
+              onClick={toggleTheme}
+              aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              onMouseEnter={(e) => showTooltip(e, isDark ? "Modo claro" : "Modo oscuro")}
+              onMouseLeave={hideTooltip}
+            >
+              <span className="sidebar-logout__icon">
+                {isDark ? <Sun size={16} aria-hidden="true"/> : <Moon size={16} aria-hidden="true"/>}
+              </span>
+              <span className="sidebar-logout__label">{isDark ? "Modo claro" : "Modo oscuro"}</span>
+            </button>
             <button
               type="button"
               className="sidebar-logout"
