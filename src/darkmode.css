@@ -30,9 +30,9 @@
 /* ── BI Comercial ─────────────────────────────────────────────────────────── */
 [data-theme="dark"] .bi-shell,
 [data-theme="dark"] .bi-main     { background: #111111 !important; }
-[data-theme="dark"] .bi-header   { background: #1c1c1c !important; border-color: rgba(255,255,255,0.05) !important; }
-[data-theme="dark"] .bi-header__tab { color: #A1A1AA !important; background: transparent !important; }
-[data-theme="dark"] .bi-header__tab.active { color: #58a6ff !important; border-color: #58a6ff !important; }
+[data-theme="dark"] .bi-header   { background: #111111 !important; border-color: rgba(255,255,255,0.04) !important; box-shadow: none !important; }
+[data-theme="dark"] .bi-header__tab { color: #6B7280 !important; background: transparent !important; font-weight: 400 !important; }
+[data-theme="dark"] .bi-header__tab.active { color: #F4F4F5 !important; border-color: rgba(255,255,255,0.35) !important; font-weight: 500 !important; }
 [data-theme="dark"] .bi-content  { background: #111111 !important; }
 [data-theme="dark"] .bi-hero     { background: #1a1a1a !important; }
 [data-theme="dark"] .bi-hero__eyebrow { color: rgba(255,255,255,.45) !important; }
@@ -49,9 +49,9 @@
 [data-theme="dark"] .bi-panel p  { color: #A1A1AA !important; }
 [data-theme="dark"] .bi-panel__hd { border-color: rgba(255,255,255,0.05) !important; }
 [data-theme="dark"] .bi-kpi      { background: #1c1c1c !important; border-color: rgba(255,255,255,0.05) !important; }
-[data-theme="dark"] .bi-kpi__label { color: #484f58 !important; }
+[data-theme="dark"] .bi-kpi__label { color: #6B7280 !important; }
 [data-theme="dark"] .bi-kpi__val   { color: #F4F4F5 !important; }
-[data-theme="dark"] .bi-kpi__sub   { color: #484f58 !important; }
+[data-theme="dark"] .bi-kpi__sub   { color: #6B7280 !important; }
 [data-theme="dark"] .bi-kpi__divider { background: #262626 !important; }
 [data-theme="dark"] .bi-kpi__stat span   { color: #A1A1AA !important; }
 [data-theme="dark"] .bi-kpi__stat strong { color: #F4F4F5 !important; }
@@ -77,8 +77,9 @@
 [data-theme="dark"] .bi-tbl tr:hover td { background: #232323 !important; }
 [data-theme="dark"] .bi-legend-label { color: #A1A1AA !important; }
 [data-theme="dark"] .bi-legend-pct   { color: #484f58 !important; }
-[data-theme="dark"] .bi-toggle button { background: #111111 !important; border-color: rgba(255,255,255,0.05) !important; color: #A1A1AA !important; }
-[data-theme="dark"] .bi-toggle button.active { background: #58a6ff !important; color: #fff !important; }
+[data-theme="dark"] .bi-toggle { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 10px !important; }
+[data-theme="dark"] .bi-toggle button { background: transparent !important; color: #6B7280 !important; font-weight: 500 !important; }
+[data-theme="dark"] .bi-toggle button.active { background: rgba(255,255,255,0.09) !important; color: #F4F4F5 !important; box-shadow: none !important; }
 [data-theme="dark"] .bi-forecast-input { background: #111111 !important; border-color: rgba(255,255,255,0.05) !important; color: #F4F4F5 !important; }
 [data-theme="dark"] .bi-forecast-select { background: #111111 !important; border-color: rgba(255,255,255,0.05) !important; color: #F4F4F5 !important; }
 [data-theme="dark"] .bi-drop { background: #1c1c1c !important; border-color: rgba(255,255,255,0.05) !important; }
@@ -1984,3 +1985,62 @@
 
 /* ── Filter select ──────────────────────────────────────────────────────── */
 [data-theme="dark"] .dash-filter-select { font-weight: 400 !important; border-radius: 10px !important; }
+
+/* ── BI Comercial — ajustes finales hacia Rimu ───────────────────────────── */
+
+/* Eliminar indicador azul izquierdo del bi-header */
+[data-theme="dark"] .bi-header::before { display: none !important; }
+
+/* Hero: más padding, sin gradiente azul, fondo sutil */
+[data-theme="dark"] .bi-hero {
+  background: #1c1c1c !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 28px 32px !important;
+  border-radius: 16px !important;
+}
+[data-theme="dark"] .bi-hero::before { display: none !important; }
+
+/* Hero typography — bajar pesos extremos */
+[data-theme="dark"] .bi-hero__eyebrow { font-weight: 500 !important; color: #6B7280 !important; }
+[data-theme="dark"] .bi-hero__big     { font-weight: 600 !important; color: #F4F4F5 !important; }
+[data-theme="dark"] .bi-hero__val     { font-weight: 600 !important; color: #F4F4F5 !important; }
+[data-theme="dark"] .bi-hero__scale   { font-weight: 400 !important; color: #6B7280 !important; }
+[data-theme="dark"] .bi-hero__meta    { font-weight: 400 !important; color: #6B7280 !important; }
+[data-theme="dark"] .bi-hero__pct     { font-weight: 500 !important; }
+
+/* Hero stat boxes — sin borde, muy sutiles */
+[data-theme="dark"] .bi-hero__stat {
+  background: rgba(255,255,255,0.04) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+}
+[data-theme="dark"] .bi-hero__stat strong { font-weight: 600 !important; font-size: 15px !important; }
+[data-theme="dark"] .bi-hero__stat span   { font-weight: 400 !important; color: #6B7280 !important; }
+[data-theme="dark"] .bi-hero__sep { background: rgba(255,255,255,0.04) !important; }
+
+/* bi-kpi — sin borde superior azul, más padding, fondo ajustado */
+[data-theme="dark"] .bi-kpi {
+  background: #1c1c1c !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+}
+[data-theme="dark"] .bi-kpi--forecast { border: 1px solid rgba(255,255,255,0.05) !important; border-top: none !important; }
+
+/* bi-kpi typography */
+[data-theme="dark"] .bi-kpi__val   { font-weight: 600 !important; font-size: 20px !important; }
+[data-theme="dark"] .bi-kpi__label { font-weight: 500 !important; color: #6B7280 !important; }
+[data-theme="dark"] .bi-kpi__sub   { font-weight: 400 !important; color: #6B7280 !important; }
+
+/* bi-panel — más padding interno */
+[data-theme="dark"] .bi-panel { background: #1c1c1c !important; border: none !important; box-shadow: none !important; border-radius: 16px !important; }
+
+/* Filter selects — más minimal */
+[data-theme="dark"] .bi-fg select,
+[data-theme="dark"] .bi-fg label { font-weight: 400 !important; }
+
+/* bi-badge — gris, no azul */
+[data-theme="dark"] .bi-badge       { background: rgba(255,255,255,0.06) !important; color: #A1A1AA !important; border: none !important; }
+[data-theme="dark"] .bi-badge--blue { background: rgba(88,166,255,0.1) !important; color: #93c5fd !important; border: none !important; }
