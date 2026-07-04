@@ -923,16 +923,6 @@ export default function ImporterPage({ profile, onNavigate }) {
 
                   {biMode === "complete" ? (
                     <>
-                      <div className="bi-row bi-row--single">
-                        <div className="bi-panel">
-                          <div className="bi-panel__hd">
-                            <div><h3>Ticket promedio por mes</h3><p>Valor promedio por comprobante</p></div>
-                            <Tooltip text="Monto promedio por factura cada mes. Si sube, tus operaciones son más grandes. Si baja, puede indicar más clientes chicos o descuentos. Calculado sobre comprobantes únicos."/>
-                          </div>
-                          <div style={{ height: 240, padding: "10px 14px 14px" }}><canvas ref={ticketRef}/></div>
-                        </div>
-                      </div>
-
                       <div className="bi-row bi-row--33-33-33">
                         <div className="bi-panel">
                           <div className="bi-panel__hd">
