@@ -1,29 +1,25 @@
-import { useEffect, useState } from "react";
-import { AlertTriangle, ChevronRight, CheckSquare, MapPin, Target, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  MapPin, CheckSquare, Target, Sparkles, Navigation,
+  ChevronRight, Clock, RefreshCw, Zap, FileText,
+} from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function compactMoney(n) {
-  const val = Number(n || 0);
-  if (val === 0) return "$0";
-  if (Math.abs(val) >= 1_000_000_000) return `$${(val / 1_000_000_000).toFixed(1)} B`;
-  if (Math.abs(val) >= 1_000_000)     return `$${(val / 1_000_000).toFixed(0)} M`;
-  if (Math.abs(val) >= 1_000)         return `$${(val / 1_000).toFixed(0)} K`;
-  return `$${val.toFixed(0)}`;
-}
-
 function fmtDate(d) {
   if (!d) return "—";
-  const target = new Date(d + "T00:00:00");
-  const today  = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diff = Math.round((target - today) / 86_400_000);
-  if (diff === 0) return "Hoy";
-  if (diff === 1) return "Mañana";
-  return target.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+  const dt    = new Date(d + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff  = Math.round((dt - today) / 86_400_000);
+  if (diff === 0)  return "Hoy";
+  if (diff === 1)  return "Mañana";
+  if (diff < 0)   return `Hace ${Math.abs(diff)}d`;
+  return dt.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 }
+
+function fmtTime(t) { return t ? t.slice(0, 5) : null; }
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -32,264 +28,270 @@ function getGreeting() {
   return "Buenas noches";
 }
 
-function getSpanishDate() {
-  return new Date().toLocaleDateString("es-AR", {
-    weekday: "long",
-    day:     "numeric",
-    month:   "long",
-  });
+function mapsURL(addr, name) {
+  return `https://maps.google.com/?q=${encodeURIComponent(addr || name || "")}`;
 }
 
-function probDot(prob) {
-  if (prob >= 80) return "p-dot p-dot--green";
-  if (prob >= 60) return "p-dot p-dot--amber";
-  return "p-dot p-dot--red";
+// ─── Loading skeleton ────────────────────────────────────────────────────────
+
+function Skeleton() {
+  return (
+    <div className="hoy-page">
+      <div className="hoy-skeleton hoy-skeleton--sm" />
+      <div className="hoy-skeleton hoy-skeleton--xs" />
+      <div className="hoy-skeleton hoy-skeleton--lg" />
+      <div className="hoy-skeleton" />
+      <div className="hoy-skeleton hoy-skeleton--sm" />
+    </div>
+  );
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function MobileHomePage({ profile, onNavigate, pageKey }) {
-  const [loading,  setLoading]  = useState(true);
-  const [opps,     setOpps]     = useState([]);
-  const [tasks,    setTasks]    = useState([]);
-  const [visits,   setVisits]   = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [visits,      setVisits]      = useState([]);
+  const [tasks,       setTasks]       = useState([]);
+  const [opps,        setOpps]        = useState([]);
+  const [quotesCount, setQuotesCount] = useState(0);
 
   const firstName = (profile?.full_name || profile?.email || "").split(" ")[0] || "Vendedor";
+  const todayStr  = new Date().toISOString().split("T")[0];
 
-  useEffect(() => { load(); }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
-    const today = new Date().toISOString().split("T")[0];
-
-    const [oppsRes, tasksRes, visitsRes] = await Promise.all([
+    const [visitsRes, tasksRes, oppsRes, quotesRes] = await Promise.all([
       supabase
-        .from("opportunities")
-        .select("id, name, amount, probability, stage, expected_close, accounts(name)")
-        .not("stage", "in", '("Ganado","Perdido")')
-        .order("probability", { ascending: false })
-        .limit(20),
+        .from("visits")
+        .select("id, visit_date, visit_time, status, accounts(id, name, address)")
+        .eq("status", "programada")
+        .gte("visit_date", todayStr)
+        .order("visit_date", { ascending: true })
+        .order("visit_time", { ascending: true, nullsFirst: false })
+        .limit(6),
       supabase
         .from("tasks")
         .select("id, title, due_date, priority, status")
         .in("status", ["pendiente", "en_progreso"])
         .order("due_date", { ascending: true })
+        .limit(8),
+      supabase
+        .from("opportunities")
+        .select("id, name, amount, probability, stage, accounts(name)")
+        .not("stage", "in", '("Ganado","Perdido")')
+        .gte("probability", 60)
+        .order("probability", { ascending: false })
         .limit(5),
       supabase
-        .from("visits")
-        .select("id, visit_date, status, accounts(name)")
-        .eq("status", "programada")
-        .gte("visit_date", today)
-        .order("visit_date", { ascending: true })
-        .limit(3),
+        .from("cotizaciones")
+        .select("id", { count: "exact", head: true })
+        .eq("estado", "pendiente")
+        .eq("deleted", false),
     ]);
 
-    setOpps(oppsRes.data   || []);
-    setTasks(tasksRes.data || []);
-    setVisits(visitsRes.data || []);
+    setVisits(visitsRes.data   || []);
+    setTasks(tasksRes.data     || []);
+    setOpps(oppsRes.data       || []);
+    setQuotesCount(quotesRes.count || 0);
     setLoading(false);
-  }
+  }, [todayStr]);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
-  const pipeline  = opps.reduce((s, o) => s + Number(o.amount || 0), 0);
-  const forecast  = opps.reduce((s, o) => s + Number(o.amount || 0) * (Number(o.probability || 0) / 100), 0);
-  const hotOpps   = opps.filter(o => Number(o.probability || 0) >= 70).slice(0, 3);
-  const today     = new Date().toISOString().split("T")[0];
-  const overdue   = opps.filter(o => o.expected_close && o.expected_close < today);
-  const nextTask  = tasks[0] || null;
-  const nextVisit = visits[0] || null;
+  useEffect(() => { load(); }, [load]);
 
-  // ── Loading screen ─────────────────────────────────────────────────────────
+  // ── Derived ─────────────────────────────────────────────────────────────
+  const todayVisits  = visits.filter(v => v.visit_date === todayStr);
+  const nextVisit    = visits[0] || null;
+  const pendingTasks = tasks.slice(0, 4);
+  const hotOpps      = opps.filter(o => Number(o.probability) >= 70).slice(0, 3);
+  const isQuiet      = todayVisits.length === 0 && tasks.length === 0 && hotOpps.length === 0 && quotesCount === 0;
+
   if (loading) {
     return (
-      <Layout title="Inicio" profile={profile} onNavigate={onNavigate} pageKey={pageKey}>
-        <div className="p-page mob-home">
-          <div className="mob-home-loading">
-            <div className="mob-home-loading__spinner" />
-            <span>Cargando…</span>
-          </div>
-        </div>
+      <Layout title="HOY" profile={profile} onNavigate={onNavigate} pageKey={pageKey}>
+        <Skeleton />
       </Layout>
     );
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <Layout title="Inicio" profile={profile} onNavigate={onNavigate} pageKey={pageKey}>
-      <div className="p-page mob-home">
+    <Layout title="HOY" profile={profile} onNavigate={onNavigate} pageKey={pageKey}>
+      <div className="hoy-page">
 
-        {/* ── Greeting ─────────────────────────────────────────────────── */}
-        <div className="mob-home-greeting">
-          <span className="mob-home-greeting__name">{getGreeting()}, {firstName}.</span>
-          <span className="mob-home-greeting__date">{getSpanishDate()}</span>
+        {/* ── GREETING ──────────────────────────────────────────────── */}
+        <div className="hoy-greeting">
+          <p className="hoy-greeting__text">{getGreeting()}, {firstName}.</p>
         </div>
 
-        {/* ── KPI Panel ────────────────────────────────────────────────── */}
-        <div className="p-panel mob-home-item" onClick={() => onNavigate("opportunities")} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onNavigate("opportunities")}>
-          <div className="p-hd">
-            <div className="p-hd-left">
-              <span className="p-title">Pipeline comercial</span>
-              <span className="p-sub">Oportunidades activas</span>
-            </div>
-            <div className="p-hd-right">
-              <ChevronRight size={18} strokeWidth={1.5} />
-            </div>
-          </div>
-          <div className="p-metrics">
-            <div className="p-metric">
-              <span className="p-metric__ey">Pipeline total</span>
-              <span className="p-metric__val">{compactMoney(pipeline)}</span>
-              <span className="p-metric__sub">{opps.length} oportunidades</span>
-            </div>
-            <div className="p-metric">
-              <span className="p-metric__ey">Forecast ponderado</span>
-              <span className="p-metric__val">{compactMoney(forecast)}</span>
-              <span className="p-metric__sub">prob. ponderada</span>
-            </div>
+        {/* ── HOY TENÉS ─────────────────────────────────────────────── */}
+        <div className="hoy-tenés-wrap">
+          <p className="hoy-eyebrow">HOY TENÉS</p>
+          <div className="hoy-chips">
+            {todayVisits.length > 0 && (
+              <button className="hoy-chip hoy-chip--visit" onClick={() => onNavigate("visits")}>
+                <MapPin size={12} strokeWidth={1.5} />
+                {todayVisits.length} {todayVisits.length === 1 ? "visita" : "visitas"}
+              </button>
+            )}
+            {tasks.length > 0 && (
+              <button className="hoy-chip hoy-chip--task" onClick={() => onNavigate("tasks")}>
+                <CheckSquare size={12} strokeWidth={1.5} />
+                {tasks.length} {tasks.length === 1 ? "tarea" : "tareas"}
+              </button>
+            )}
+            {hotOpps.length > 0 && (
+              <button className="hoy-chip hoy-chip--hot" onClick={() => onNavigate("opportunities")}>
+                <Target size={12} strokeWidth={1.5} />
+                {hotOpps.length} {hotOpps.length === 1 ? "caliente" : "calientes"}
+              </button>
+            )}
+            {quotesCount > 0 && (
+              <button className="hoy-chip hoy-chip--quote" onClick={() => onNavigate("cotizador")}>
+                <FileText size={12} strokeWidth={1.5} />
+                {quotesCount} {quotesCount === 1 ? "cotización" : "cotizaciones"}
+              </button>
+            )}
+            {isQuiet && (
+              <span className="hoy-chip hoy-chip--free">Día tranquilo</span>
+            )}
           </div>
         </div>
 
-        {/* ── Next pending task ────────────────────────────────────────── */}
-        <div className="p-panel mob-home-item" onClick={() => onNavigate("tasks")} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onNavigate("tasks")}>
-          <div className="p-hd">
-            <div className="p-hd-left">
-              <span className="p-title"><CheckSquare size={15} strokeWidth={1.5} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />Próxima tarea</span>
-            </div>
-            <div className="p-hd-right">
-              <ChevronRight size={18} strokeWidth={1.5} />
+        {/* ── PRÓXIMA VISITA ─────────────────────────────────────────── */}
+        {nextVisit && (
+          <div className="hoy-card">
+            <p className="hoy-card__eyebrow">
+              <MapPin size={11} strokeWidth={2} />
+              {nextVisit.visit_date === todayStr ? "VISITA HOY" : "PRÓXIMA VISITA"}
+            </p>
+            <p className="hoy-card__title">{nextVisit.accounts?.name || "Visita programada"}</p>
+            {fmtTime(nextVisit.visit_time) ? (
+              <p className="hoy-card__time">
+                <Clock size={12} strokeWidth={2} />
+                {fmtTime(nextVisit.visit_time)}
+                {nextVisit.visit_date !== todayStr && ` · ${fmtDate(nextVisit.visit_date)}`}
+              </p>
+            ) : nextVisit.visit_date !== todayStr ? (
+              <p className="hoy-card__time">
+                <Clock size={12} strokeWidth={2} />
+                {fmtDate(nextVisit.visit_date)}
+              </p>
+            ) : null}
+            {nextVisit.accounts?.address && (
+              <p className="hoy-card__address">{nextVisit.accounts.address}</p>
+            )}
+            <div className="hoy-card__actions">
+              {nextVisit.accounts?.address || nextVisit.accounts?.name ? (
+                <a
+                  className="hoy-action-btn hoy-action-btn--ghost"
+                  href={mapsURL(nextVisit.accounts?.address, nextVisit.accounts?.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Navigation size={13} strokeWidth={2} />
+                  Cómo llegar
+                </a>
+              ) : null}
+              <button
+                className="hoy-action-btn hoy-action-btn--primary"
+                onClick={() => onNavigate("visits")}
+              >
+                <MapPin size={13} strokeWidth={2} />
+                Ver visitas
+              </button>
             </div>
           </div>
-          {nextTask ? (
-            <div className="p-list">
-              <div className="p-row">
-                <div className="p-row__main">
-                  <div className="p-row__name">{nextTask.title}</div>
-                  <div className="p-row__sub">
-                    Vence: {fmtDate(nextTask.due_date)}
-                    {nextTask.priority && <> · Prioridad {nextTask.priority}</>}
-                  </div>
-                </div>
-                <div className="p-row__meta">
-                  <span className="p-row__val">{nextTask.status === "en_progreso" ? "En curso" : "Pendiente"}</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="p-body">
-              <div className="p-empty">Sin tareas pendientes</div>
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* ── Next scheduled visit ─────────────────────────────────────── */}
-        <div className="p-panel mob-home-item" onClick={() => onNavigate("visits")} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onNavigate("visits")}>
-          <div className="p-hd">
-            <div className="p-hd-left">
-              <span className="p-title"><MapPin size={15} strokeWidth={1.5} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />Próxima visita</span>
-            </div>
-            <div className="p-hd-right">
-              <ChevronRight size={18} strokeWidth={1.5} />
+        {/* ── PRÓXIMA TAREA (if no visits today) ────────────────────── */}
+        {!nextVisit && pendingTasks.length > 0 && (
+          <div className="hoy-card">
+            <p className="hoy-card__eyebrow">
+              <CheckSquare size={11} strokeWidth={2} />
+              PRÓXIMA TAREA
+            </p>
+            <p className="hoy-card__title">{pendingTasks[0].title}</p>
+            {pendingTasks[0].due_date && (
+              <p className="hoy-card__time">
+                <Clock size={12} strokeWidth={2} />
+                Vence {fmtDate(pendingTasks[0].due_date)}
+              </p>
+            )}
+            <div className="hoy-card__actions">
+              <button
+                className="hoy-action-btn hoy-action-btn--primary"
+                onClick={() => onNavigate("tasks")}
+              >
+                <CheckSquare size={13} strokeWidth={2} />
+                Ver tareas
+              </button>
             </div>
           </div>
-          {nextVisit ? (
-            <div className="p-list">
-              <div className="p-row">
-                <div className="p-row__main">
-                  <div className="p-row__name">{nextVisit.accounts?.name || "—"}</div>
-                  <div className="p-row__sub">{fmtDate(nextVisit.visit_date)}</div>
-                </div>
-                <div className="p-row__meta">
-                  <span className="p-row__val">Programada</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="p-body">
-              <div className="p-empty">Sin visitas programadas</div>
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* ── Hot opportunities ────────────────────────────────────────── */}
-        <div className="p-panel mob-home-item" onClick={() => onNavigate("opportunities")} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onNavigate("opportunities")}>
-          <div className="p-hd">
-            <div className="p-hd-left">
-              <span className="p-title"><Target size={15} strokeWidth={1.5} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />Oportunidades calientes</span>
-              <span className="p-sub">Probabilidad ≥ 70 %</span>
+        {/* ── PENDIENTES ─────────────────────────────────────────────── */}
+        {pendingTasks.length > 0 && (
+          <div className="hoy-section">
+            <div className="hoy-section__head">
+              <p className="hoy-eyebrow">PENDIENTES</p>
+              <button className="hoy-section__more" onClick={() => onNavigate("tasks")}>
+                Ver todas <ChevronRight size={12} strokeWidth={2} />
+              </button>
             </div>
-            <div className="p-hd-right">
-              <ChevronRight size={18} strokeWidth={1.5} />
+            <div className="hoy-list">
+              {pendingTasks.map(t => (
+                <button key={t.id} className="hoy-list-item" onClick={() => onNavigate("tasks")}>
+                  <span className={`hoy-list-item__dot hoy-dot--${t.priority || "media"}`} />
+                  <span className="hoy-list-item__label">{t.title}</span>
+                  <span className="hoy-list-item__date">{fmtDate(t.due_date)}</span>
+                  <ChevronRight size={13} strokeWidth={1.5} className="hoy-list-item__chevron" />
+                </button>
+              ))}
             </div>
           </div>
-          {hotOpps.length > 0 ? (
-            <div className="p-list">
+        )}
+
+        {/* ── OPORTUNIDADES ──────────────────────────────────────────── */}
+        {hotOpps.length > 0 && (
+          <div className="hoy-section">
+            <div className="hoy-section__head">
+              <p className="hoy-eyebrow">OPORTUNIDADES</p>
+              <button className="hoy-section__more" onClick={() => onNavigate("opportunities")}>
+                Ver todas <ChevronRight size={12} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="hoy-list">
               {hotOpps.map(o => (
-                <div key={o.id} className="p-row">
-                  <span className={probDot(o.probability)} aria-hidden="true" />
-                  <div className="p-row__main">
-                    <div className="p-row__name">{o.name}</div>
-                    <div className="p-row__sub">
-                      {o.accounts?.name || "—"} · {o.stage}
-                    </div>
-                  </div>
-                  <div className="p-row__meta">
-                    <span className="p-row__val">{compactMoney(o.amount)}</span>
-                    <span className="p-row__sub">{o.probability}%</span>
-                  </div>
-                </div>
+                <button key={o.id} className="hoy-list-item" onClick={() => onNavigate("opportunities")}>
+                  <span className={`hoy-list-item__dot hoy-dot--${Number(o.probability) >= 80 ? "alta" : "media"}`} />
+                  <span className="hoy-list-item__label">{o.accounts?.name || o.name}</span>
+                  <span className="hoy-list-item__date">{o.probability}%</span>
+                  <ChevronRight size={13} strokeWidth={1.5} className="hoy-list-item__chevron" />
+                </button>
               ))}
-            </div>
-          ) : (
-            <div className="p-body">
-              <div className="p-empty">Sin oportunidades calientes</div>
-            </div>
-          )}
-        </div>
-
-        {/* ── Alerts: overdue opps ─────────────────────────────────────── */}
-        <div className="p-panel mob-home-item" onClick={() => onNavigate("opportunities")} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onNavigate("opportunities")}>
-          <div className="p-hd">
-            <div className="p-hd-left">
-              <span className="p-title"><AlertTriangle size={15} strokeWidth={1.5} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />Alertas</span>
-              <span className="p-sub">Oportunidades vencidas</span>
-            </div>
-            <div className="p-hd-right">
-              <ChevronRight size={18} strokeWidth={1.5} />
             </div>
           </div>
-          {overdue.length > 0 ? (
-            <div className="p-list">
-              {overdue.slice(0, 5).map(o => (
-                <div key={o.id} className="p-row">
-                  <span className="p-dot p-dot--red" aria-hidden="true" />
-                  <div className="p-row__main">
-                    <div className="p-row__name">{o.name}</div>
-                    <div className="p-row__sub">
-                      {o.accounts?.name || "—"} · Cierre {fmtDate(o.expected_close)}
-                    </div>
-                  </div>
-                  <div className="p-row__meta">
-                    <span className="p-row__val">{compactMoney(o.amount)}</span>
-                  </div>
-                </div>
-              ))}
-              {overdue.length > 5 && (
-                <div className="p-body" style={{ paddingTop: 0 }}>
-                  <span className="p-sub">+{overdue.length - 5} más vencidas</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-body">
-              <div className="p-empty">Sin oportunidades vencidas</div>
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* ── Refresh footer ───────────────────────────────────────────── */}
-        <div style={{ display: "flex", justifyContent: "center", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}>
-          <button className="p-btn p-btn--ghost" type="button" onClick={load}>
-            <RefreshCw size={15} strokeWidth={1.5} /> Actualizar
+        {/* ── MEDIX ──────────────────────────────────────────────────── */}
+        <button
+          className="hoy-medix"
+          onClick={() => document.dispatchEvent(new CustomEvent("crm:toggle-medix"))}
+        >
+          <div className="hoy-medix__left">
+            <span className="hoy-medix__dot" aria-hidden="true" />
+            <div>
+              <p className="hoy-medix__eyebrow">MEDIX</p>
+              <p className="hoy-medix__prompt">¿Con qué querés que te ayude hoy?</p>
+            </div>
+          </div>
+          <Sparkles size={18} strokeWidth={1.5} className="hoy-medix__icon" aria-hidden="true" />
+        </button>
+
+        {/* ── Refresh ────────────────────────────────────────────────── */}
+        <div className="hoy-footer">
+          <button className="hoy-refresh-btn" onClick={load}>
+            <RefreshCw size={13} strokeWidth={1.5} />
+            Actualizar
           </button>
         </div>
 

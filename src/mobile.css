@@ -631,6 +631,357 @@
 .page-header__mobile-date { display:none; }
 
 
+/* ============================================================
+   HOY / Mi Jornada screen
+   ============================================================ */
+
+.hoy-page {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:14px 16px calc(20px + env(safe-area-inset-bottom));
+}
+
+/* ── Loading skeletons ── */
+.hoy-skeleton {
+  background:rgba(0,0,0,.06);
+  border-radius:18px;
+  height:90px;
+  animation:hoy-shimmer 1.6s ease-in-out infinite;
+}
+.hoy-skeleton--sm { height:60px; }
+.hoy-skeleton--xs { height:36px; }
+.hoy-skeleton--lg { height:130px; animation-delay:.1s; }
+@keyframes hoy-shimmer {
+  0%,100% { opacity:.5; }
+  50%      { opacity:1; }
+}
+[data-theme="dark"] .hoy-skeleton { background:rgba(255,255,255,.07); }
+
+/* ── Greeting ── */
+.hoy-greeting { padding:4px 2px 0; }
+.hoy-greeting__text {
+  font-size:23px;
+  font-weight:700;
+  color:#111111;
+  letter-spacing:-.5px;
+  line-height:1.2;
+  margin:0;
+}
+[data-theme="dark"] .hoy-greeting__text { color:#F4F4F5; }
+
+/* ── Shared eyebrow label ── */
+.hoy-eyebrow {
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:rgba(0,0,0,.32);
+  margin:0 0 8px;
+}
+[data-theme="dark"] .hoy-eyebrow { color:rgba(255,255,255,.28); }
+
+/* ── HOY TENÉS chips ── */
+.hoy-tenés-wrap { padding:2px 0; }
+.hoy-chips {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.hoy-chip {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:7px 13px;
+  border-radius:20px;
+  font-size:13px;
+  font-weight:500;
+  font-family:inherit;
+  border:none;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform 80ms ease-out, opacity 120ms;
+  line-height:1;
+}
+.hoy-chip:active { transform:scale(.96); opacity:.85; }
+.hoy-chip--visit { background:rgba(37,99,235,.1);  color:#1d4ed8; }
+.hoy-chip--task  { background:rgba(217,119,6,.1);  color:#b45309; }
+.hoy-chip--hot   { background:rgba(220,38,38,.1);  color:#b91c1c; }
+.hoy-chip--quote { background:rgba(99,102,241,.1); color:#4f46e5; }
+.hoy-chip--free  { background:rgba(0,0,0,.04); color:rgba(0,0,0,.4); }
+[data-theme="dark"] .hoy-chip--visit { background:rgba(59,130,246,.15);  color:#93c5fd; }
+[data-theme="dark"] .hoy-chip--task  { background:rgba(245,158,11,.15);  color:#fcd34d; }
+[data-theme="dark"] .hoy-chip--hot   { background:rgba(239,68,68,.15);   color:#fca5a5; }
+[data-theme="dark"] .hoy-chip--quote { background:rgba(99,102,241,.15);  color:#a5b4fc; }
+[data-theme="dark"] .hoy-chip--free  { background:rgba(255,255,255,.07); color:rgba(255,255,255,.38); }
+
+/* ── Action card (next visit / next task) ── */
+.hoy-card {
+  background:#ffffff;
+  border:1px solid #e8ecf2;
+  border-radius:20px;
+  padding:18px 18px 16px;
+  box-shadow:0 2px 12px rgba(15,23,42,.05);
+}
+[data-theme="dark"] .hoy-card {
+  background:#1C1C1E;
+  border-color:rgba(255,255,255,.07);
+  box-shadow:0 2px 16px rgba(0,0,0,.3);
+}
+.hoy-card__eyebrow {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:rgba(0,0,0,.32);
+  margin:0 0 10px;
+}
+[data-theme="dark"] .hoy-card__eyebrow { color:rgba(255,255,255,.28); }
+.hoy-card__title {
+  font-size:19px;
+  font-weight:700;
+  color:#111111;
+  letter-spacing:-.4px;
+  margin:0 0 4px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+[data-theme="dark"] .hoy-card__title { color:#F4F4F5; }
+.hoy-card__time {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:13px;
+  font-weight:600;
+  color:#2563eb;
+  margin:4px 0 0;
+}
+[data-theme="dark"] .hoy-card__time { color:#93c5fd; }
+.hoy-card__address {
+  font-size:12px;
+  color:rgba(0,0,0,.4);
+  margin:5px 0 0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+[data-theme="dark"] .hoy-card__address { color:rgba(255,255,255,.36); }
+.hoy-card__actions {
+  display:flex;
+  gap:8px;
+  margin-top:16px;
+}
+
+/* ── Action buttons ── */
+.hoy-action-btn {
+  flex:1;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  height:42px;
+  border-radius:13px;
+  font-size:13.5px;
+  font-weight:600;
+  font-family:inherit;
+  border:none;
+  cursor:pointer;
+  text-decoration:none;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform 80ms ease-out, opacity 120ms;
+}
+.hoy-action-btn:active { transform:scale(.97); opacity:.85; }
+.hoy-action-btn--primary { background:#111111; color:#ffffff; }
+[data-theme="dark"] .hoy-action-btn--primary { background:#F4F4F5; color:#111111; }
+.hoy-action-btn--ghost { background:rgba(0,0,0,.06); color:#111111; }
+[data-theme="dark"] .hoy-action-btn--ghost { background:rgba(255,255,255,.09); color:#F4F4F5; }
+
+/* ── Section: PENDIENTES / OPORTUNIDADES ── */
+.hoy-section { display:flex; flex-direction:column; }
+.hoy-section__head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.hoy-section__head .hoy-eyebrow { margin:0; }
+.hoy-section__more {
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  font-size:12px;
+  font-weight:500;
+  color:rgba(0,0,0,.38);
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  font-family:inherit;
+  -webkit-tap-highlight-color:transparent;
+  padding:0;
+}
+[data-theme="dark"] .hoy-section__more { color:rgba(255,255,255,.32); }
+
+.hoy-list {
+  background:#ffffff;
+  border:1px solid #e8ecf2;
+  border-radius:16px;
+  overflow:hidden;
+}
+[data-theme="dark"] .hoy-list {
+  background:#1C1C1E;
+  border-color:rgba(255,255,255,.07);
+}
+.hoy-list-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:13px 16px;
+  width:100%;
+  text-align:left;
+  border:none;
+  background:transparent;
+  border-top:1px solid rgba(0,0,0,.05);
+  cursor:pointer;
+  font-family:inherit;
+  -webkit-tap-highlight-color:transparent;
+  transition:background 100ms;
+}
+.hoy-list-item:first-child { border-top:none; }
+[data-theme="dark"] .hoy-list-item { border-top-color:rgba(255,255,255,.05); }
+.hoy-list-item:active { background:rgba(0,0,0,.04); }
+[data-theme="dark"] .hoy-list-item:active { background:rgba(255,255,255,.05); }
+.hoy-list-item__dot {
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.hoy-dot--alta, .hoy-dot--hot   { background:#ef4444; }
+.hoy-dot--media, .hoy-dot--warm { background:#f59e0b; }
+.hoy-dot--baja                  { background:#94a3b8; }
+.hoy-list-item__label {
+  flex:1;
+  font-size:14px;
+  font-weight:400;
+  color:#111111;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+[data-theme="dark"] .hoy-list-item__label { color:#F4F4F5; }
+.hoy-list-item__date {
+  font-size:12px;
+  color:rgba(0,0,0,.36);
+  flex-shrink:0;
+}
+[data-theme="dark"] .hoy-list-item__date { color:rgba(255,255,255,.3); }
+.hoy-list-item__chevron { color:rgba(0,0,0,.2); flex-shrink:0; }
+[data-theme="dark"] .hoy-list-item__chevron { color:rgba(255,255,255,.18); }
+
+/* ── Medix card ── */
+.hoy-medix {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  background:#111111;
+  border-radius:20px;
+  padding:18px;
+  border:none;
+  cursor:pointer;
+  font-family:inherit;
+  width:100%;
+  text-align:left;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform 80ms ease-out, opacity 120ms;
+  box-shadow:0 4px 20px rgba(0,0,0,.16);
+}
+.hoy-medix:active { transform:scale(.98); opacity:.9; }
+[data-theme="dark"] .hoy-medix { background:#232323; box-shadow:0 4px 20px rgba(0,0,0,.45); }
+.hoy-medix__left {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.hoy-medix__dot {
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#34d399;
+  box-shadow:0 0 6px rgba(52,211,153,.55);
+  animation:crm-pulse 2s ease-in-out infinite;
+  flex-shrink:0;
+}
+.hoy-medix__eyebrow {
+  font-size:10px;
+  font-weight:700;
+  color:rgba(255,255,255,.4);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  margin:0 0 3px;
+}
+.hoy-medix__prompt {
+  font-size:15px;
+  font-weight:600;
+  color:#ffffff;
+  margin:0;
+  letter-spacing:-.2px;
+}
+[data-theme="dark"] .hoy-medix__prompt { color:rgba(255,255,255,.88); }
+.hoy-medix__icon { color:rgba(255,255,255,.38); flex-shrink:0; }
+
+/* ── Refresh footer ── */
+.hoy-footer { display:flex; justify-content:center; padding:2px 0; }
+.hoy-refresh-btn {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:500;
+  color:rgba(0,0,0,.32);
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  font-family:inherit;
+  -webkit-tap-highlight-color:transparent;
+  padding:8px 12px;
+  border-radius:8px;
+}
+[data-theme="dark"] .hoy-refresh-btn { color:rgba(255,255,255,.28); }
+
+
+/* ── Module grid star/favorito button ────────────────────────────── */
+.mob-module-btn-wrap {
+  position:relative;
+}
+.mob-module-btn__star {
+  position:absolute;
+  top:5px;
+  right:5px;
+  width:22px;
+  height:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  color:rgba(0,0,0,.2);
+  border-radius:50%;
+  -webkit-tap-highlight-color:transparent;
+  transition:color 150ms, transform 120ms;
+  padding:0;
+}
+[data-theme="dark"] .mob-module-btn__star { color:rgba(255,255,255,.18); }
+.mob-module-btn__star--on { color:#f59e0b; }
+[data-theme="dark"] .mob-module-btn__star--on { color:#fcd34d; }
+.mob-module-btn__star:active { transform:scale(.88); }
+
+
 /* ── Utility ─────────────────────────────────────────────── */
 .mob-only     { display:none;  }
 .desktop-only { display:block; }

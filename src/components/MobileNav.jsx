@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Calendar, Bell, Sparkles } from "lucide-react";
+import { Sun, Users, Calendar, Bell, Sparkles } from "lucide-react";
 
 const NAV_ITEMS = [
-  { key: "mobileHome",    label: "Inicio",   Icon: Home },
+  { key: "mobileHome",    label: "HOY",      Icon: Sun },
   { key: "accounts",      label: "Clientes", Icon: Users },
   { key: "calendar",      label: "Agenda",   Icon: Calendar },
   { key: "notifications", label: "Alertas",  Icon: Bell },
