@@ -1943,3 +1943,582 @@
 [data-theme="dark"] .p-dot--amber  { background: #fbbf24; }
 [data-theme="dark"] .p-dot--blue   { background: #93c5fd; }
 [data-theme="dark"] .p-dot--gray   { background: rgba(255,255,255,.2); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QUIET UI 2.0 — FULL DESIGN SYSTEM
+   Applied to BOTH themes. Overrides CRMUI.css, index.css, Sidebar.css.
+   Philosophy: space instead of borders, information over chrome.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. Design tokens (both modes) ────────────────────────────────────── */
+:root {
+  --qui-bg:       #f4f5f7;
+  --qui-surface:  #ffffff;
+  --qui-border:   rgba(0,0,0,.06);
+  --qui-t1:       #111111;
+  --qui-t2:       #6b7280;
+  --qui-t3:       #9ca3af;
+  --qui-r:        12px;
+  --qui-ease:     cubic-bezier(0.16, 1, 0.3, 1);
+  --qui-dur:      180ms;
+}
+[data-theme="dark"] {
+  --qui-bg:       #111111;
+  --qui-surface:  #171717;
+  --qui-border:   rgba(255,255,255,.05);
+  --qui-t1:       #F4F4F5;
+  --qui-t2:       #9ca3af;
+  --qui-t3:       #6B7280;
+}
+
+/* ─── 2. Page background — neutral grey (both modes) ───────────────────── */
+body,
+.app-shell,
+.main-content {
+  background: var(--qui-bg) !important;
+}
+
+/* ─── 3. Header — 35% smaller, no shadow, lighter border ───────────────── */
+.page-header,
+[data-theme="dark"] .page-header {
+  height: 44px !important;
+  min-height: 44px !important;
+  margin-bottom: 0 !important;
+  box-shadow: none !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+}
+.page-header {
+  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  padding: 0 28px !important;
+  background: #ffffff !important;
+}
+[data-theme="dark"] .page-header {
+  border-bottom: 1px solid rgba(255,255,255,.04) !important;
+  padding: 0 28px !important;
+  background: #111111 !important;
+}
+.page-header h1,
+[data-theme="dark"] .page-header h1,
+[data-theme="dark"] .page-header__title-block h1 {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.2px !important;
+  color: #111111 !important;
+}
+[data-theme="dark"] .page-header h1,
+[data-theme="dark"] .page-header__title-block h1 { color: #F4F4F5 !important; }
+.page-header__sep {
+  background: var(--qui-border) !important;
+  height: 18px !important;
+}
+.page-header__avatar {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 7px !important;
+  font-size: 10px !important;
+  background: rgba(0,0,0,.1) !important;
+  color: rgba(0,0,0,.55) !important;
+}
+[data-theme="dark"] .page-header__avatar {
+  background: rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.45) !important;
+}
+.page-header__user-name { font-size: 12px !important; font-weight: 500 !important; color: var(--qui-t1) !important; }
+.page-header__user-role { font-size: 10px !important; font-weight: 400 !important; color: var(--qui-t3) !important; }
+.layout-clock__time { font-size: 12px !important; font-weight: 500 !important; color: var(--qui-t3) !important; letter-spacing: 0.3px !important; }
+.layout-clock__date { font-size: 10px !important; color: var(--qui-t3) !important; }
+
+/* ─── 4. Sidebar — remove section labels, remove scale transforms ───────── */
+.sidebar-section__label,
+.sidebar-nav__group-label { display: none !important; }
+
+/* Group spacing via padding instead of labels */
+.sidebar-section { padding-bottom: 4px !important; }
+
+/* No scale/bounce on hover — Quiet UI */
+.sidebar-nav__item:hover { transform: none !important; }
+.sidebar-nav__item:hover .sidebar-nav__icon { transform: none !important; color: rgba(255,255,255,.75) !important; }
+.sidebar-nav__item:active { transform: none !important; }
+
+/* Remove chevron on hover */
+.sidebar-nav__item::after { display: none !important; }
+
+/* Nav item transitions: 180ms ease-out only */
+.sidebar-nav__item { transition: background var(--qui-dur) ease-out !important; }
+
+/* Collapsed sidebar: no scale/bounce */
+.sidebar--collapsed .sidebar-nav__item:hover { transform: none !important; }
+.sidebar--collapsed .sidebar-theme-toggle:hover { transform: none !important; }
+.sidebar--collapsed .sidebar-logout:hover { transform: none !important; }
+.sidebar--collapsed .sidebar-nav__item:hover .sidebar-nav__icon { transform: none !important; }
+.sidebar--collapsed .sidebar-quick button:hover { transform: translateY(-1px) !important; }
+
+/* User card — simpler */
+.sidebar-user {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  border-radius: 10px !important;
+  margin: 12px 10px 4px !important;
+  padding: 10px 12px !important;
+}
+
+/* ─── 5. crm-module-header — flatten, no card ───────────────────────────── */
+.crm-module-header {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 22px 28px 14px !important;
+}
+
+/* Remove the blue accent bar before h2 */
+.crm-module-header h2::before { display: none !important; }
+
+.crm-module-header h2 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--qui-t1) !important;
+  letter-spacing: -0.2px !important;
+  gap: 0 !important;
+}
+
+.crm-module-header p {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: var(--qui-t3) !important;
+  margin: 3px 0 0 !important;
+}
+
+/* ─── 6. crm-kpi — remove colored top border, no shadow ────────────────── */
+.crm-kpi {
+  border-top: none !important;
+  border: 1px solid var(--qui-border) !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+  padding: 14px 16px !important;
+  background: var(--qui-surface) !important;
+}
+
+[data-theme="dark"] .crm-kpi {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255,255,255,.05) !important;
+}
+
+.crm-kpi__label {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--qui-t3) !important;
+}
+
+.crm-kpi__value {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  color: var(--qui-t1) !important;
+  letter-spacing: -0.3px !important;
+}
+
+.crm-kpi__sub {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: var(--qui-t3) !important;
+}
+
+/* Keep value colors for KPI variants — only remove top border accent */
+.crm-kpi--blue  { border-top: none !important; }
+.crm-kpi--green { border-top: none !important; }
+.crm-kpi--amber { border-top: none !important; }
+.crm-kpi--red   { border-top: none !important; }
+.crm-kpi--slate { border-top: none !important; }
+
+/* In dark mode, value colors remain from the variant — just mute them slightly */
+[data-theme="dark"] .crm-kpi--green .crm-kpi__value { color: #34d399 !important; }
+[data-theme="dark"] .crm-kpi--amber .crm-kpi__value { color: #fbbf24 !important; }
+[data-theme="dark"] .crm-kpi--red   .crm-kpi__value { color: #f87171 !important; }
+[data-theme="dark"] .crm-kpi--blue  .crm-kpi__value { color: #93c5fd !important; }
+[data-theme="dark"] .crm-kpi--slate .crm-kpi__value { color: var(--qui-t2) !important; }
+
+/* ─── 7. Empty state — lighter, less bordered ───────────────────────────── */
+.crm-empty-state {
+  border: 1px dashed rgba(0,0,0,.10) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .crm-empty-state {
+  border-color: rgba(255,255,255,.08) !important;
+  background: transparent !important;
+}
+
+/* ─── 8. Global microinteractions ───────────────────────────────────────── */
+button,
+a { transition: opacity var(--qui-dur) ease-out, background var(--qui-dur) ease-out, color var(--qui-dur) ease-out, transform var(--qui-dur) ease-out !important; }
+
+/* ─── 9. Light mode global: tables ─────────────────────────────────────── */
+/* Applies to all known table classes in light mode */
+.bi-tbl thead,
+.sa-table thead,
+.opp-table thead,
+.acc-table thead {
+  background: transparent !important;
+}
+.bi-tbl th,
+.sa-table th,
+.opp-table th,
+.acc-table th {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--qui-t3) !important;
+  border-bottom: 1px solid var(--qui-border) !important;
+  border-top: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.bi-tbl td,
+.sa-table td,
+.opp-table td,
+.acc-table td {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: var(--qui-t2) !important;
+  border-bottom: 1px solid var(--qui-border) !important;
+  border-top: none !important;
+  background: transparent !important;
+}
+.bi-tbl tbody tr:hover td,
+.sa-table tbody tr:hover td,
+.opp-table tbody tr:hover td,
+.acc-table tbody tr:hover td { background: rgba(0,0,0,.02) !important; }
+
+/* ─── 10. Light mode: reduce shadows globally on panels & cards ─────────── */
+/* Only target known module containers, not third-party or native elements */
+.unified-dashboard,
+.visits-page,
+.sd,
+.bi-page,
+.sa-page,
+.acc-page,
+.opp-page,
+.tk-page,
+.camp-page,
+.prod-page,
+.supp-page,
+.tn-page {
+  background: var(--qui-bg) !important;
+}
+
+.dash-panel,
+.visits-panel,
+.sd-panel,
+.dash-primary-kpis,
+.dash-kpi-grid,
+.dash-header,
+.dash-hero,
+.dash-comparison,
+.dash-banner {
+  box-shadow: none !important;
+  border-color: var(--qui-border) !important;
+}
+
+/* ─── 11. Light mode: dash-header narrative style ───────────────────────── */
+.dash-title {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: var(--qui-t1) !important;
+  letter-spacing: -0.3px !important;
+}
+.dash-subtitle {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: var(--qui-t2) !important;
+}
+.dash-wordmark {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--qui-t3) !important;
+}
+
+/* Primary KPI values — bigger, cleaner */
+.dash-primary-kpi__label {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--qui-t3) !important;
+}
+.dash-primary-kpi__value {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.5px !important;
+  color: var(--qui-t1) !important;
+}
+.dash-primary-kpi__sub {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: var(--qui-t3) !important;
+}
+
+/* Smaller KPI values */
+.dash-kpi__label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--qui-t2) !important;
+}
+.dash-kpi__value {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: var(--qui-t1) !important;
+}
+.dash-kpi:hover { transform: none !important; }
+
+/* Panel titles */
+.dash-panel__title {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--qui-t3) !important;
+}
+
+/* List rows */
+.dash-list-row { border-color: var(--qui-border) !important; }
+.dash-hot-row:hover { transform: none !important; }
+
+/* ─── 12. Horizontal filter bar ─────────────────────────────────────────── */
+/* Use .qui-filter-bar on any filter toolbar to get the smart bar style */
+.qui-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 28px;
+  border-bottom: 1px solid var(--qui-border);
+  background: var(--qui-surface);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.qui-filter-bar::-webkit-scrollbar { display: none; }
+
+.qui-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.qui-filter-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--qui-t3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+.qui-filter select,
+.qui-filter-select {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--qui-border) !important;
+  border-radius: 0 !important;
+  color: var(--qui-t1) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  padding: 2px 20px 2px 0 !important;
+  height: auto !important;
+  cursor: pointer !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Cpath fill='%239CA3AF' d='M4.5 6.5L1 3h7z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 4px center !important;
+}
+.qui-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--qui-t3);
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 0;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: color var(--qui-dur) ease-out;
+}
+.qui-filter-reset:hover { color: var(--qui-t1); }
+
+[data-theme="dark"] .qui-filter-bar {
+  background: #171717;
+  border-bottom-color: rgba(255,255,255,.05);
+}
+[data-theme="dark"] .qui-filter select,
+[data-theme="dark"] .qui-filter-select {
+  color: #F4F4F5 !important;
+  border-bottom-color: rgba(255,255,255,.1) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Cpath fill='%236B7280' d='M4.5 6.5L1 3h7z'/%3E%3C/svg%3E") !important;
+}
+
+/* ─── 13. Narrative numbers ─────────────────────────────────────────────── */
+/* .qui-stat: a KPI with narrative context sentence below it */
+.qui-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.qui-stat__value {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--qui-t1);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.qui-stat__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--qui-t3);
+}
+.qui-stat__narrative {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--qui-t2);
+  line-height: 1.45;
+  max-width: 280px;
+}
+
+/* ─── 14. Light mode panel system ───────────────────────────────────────── */
+/* Overrides legacy card styles in individual page CSS files */
+
+/* Generic card patterns — many modules use .X-panel, .X-card naming */
+/* We strip heavy borders/shadows off any element with a panel-like name in light mode */
+[class$="-panel"],
+[class$="-card"],
+[class*="-panel "],
+[class*="-card "] {
+  box-shadow: none !important;
+}
+
+/* ─── 15. Main content content area: consistent padding ────────────────── */
+/* Most page containers: ensure minimal outer padding */
+.p-page,
+.unified-dashboard,
+.bi-page,
+.sa-page {
+  padding: 20px 24px !important;
+  gap: 12px !important;
+}
+
+/* ─── 16. Reduced border / separator colors in light mode ───────────────── */
+/* Separators should breathe, not draw attention */
+hr { border-color: var(--qui-border) !important; }
+
+/* ─── 17. Form inputs — minimal style (light mode) ─────────────────────── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+textarea,
+select {
+  font-size: 13px;
+  font-family: inherit;
+}
+
+/* ─── 18. Toast — cleaner ───────────────────────────────────────────────── */
+.crm-toast {
+  border-left: 3px solid #185fa5 !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.14) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+[data-theme="dark"] .crm-toast {
+  background: #1f1f1f !important;
+  border-left-color: rgba(255,255,255,.25) !important;
+  color: #F4F4F5 !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5) !important;
+}
+
+/* ─── 19. Dashboard shadow variables → zero ─────────────────────────────── */
+/* These are defined in managerDashboard.css / sellerDashboard.css :root.
+   Overriding here (last stylesheet) cascades to all usages. */
+:root {
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+}
+
+/* Remove colored top borders from dash-primary-kpi and dash-kpi (light mode) */
+.dash-primary-kpi--blue,
+.dash-primary-kpi--green,
+.dash-primary-kpi--amber,
+.dash-primary-kpi--red,
+.dash-primary-kpi--slate,
+.dash-primary-kpi--yellow,
+.dash-kpi { border-top: none !important; }
+
+/* No lift on hover for KPI cards */
+.dash-primary-kpi:hover,
+.dash-kpi:hover { transform: none !important; box-shadow: none !important; }
+
+/* dash-primary-kpi light mode: simple border, no shadow */
+.dash-primary-kpi {
+  border: 1px solid var(--qui-border) !important;
+  box-shadow: none !important;
+  background: var(--qui-surface) !important;
+  min-height: auto !important;
+}
+.dash-kpi {
+  border: 1px solid var(--qui-border) !important;
+  box-shadow: none !important;
+  background: var(--qui-surface) !important;
+}
+
+/* Seller dashboard KPI cards */
+.sd-kpi,
+.sd-primary-kpi {
+  border-top: none !important;
+  box-shadow: none !important;
+}
+
+/* ─── 20. Filter selects — light mode: minimal underline style ──────────── */
+.dash-filter-select {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(0,0,0,.10) !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--qui-t1) !important;
+  box-shadow: none !important;
+  min-width: auto !important;
+  padding: 3px 22px 3px 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Cpath fill='%239CA3AF' d='M4.5 6.5L1 3h7z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 4px center !important;
+}
+.dash-filter-select:focus { border-bottom-color: rgba(0,0,0,.25) !important; }
+
+/* ─── 21. Visits page — remove card stacking ────────────────────────────── */
+.visits-panel,
+.visits-kpi { box-shadow: none !important; border-color: var(--qui-border) !important; }
+.visits-kpi:hover { transform: none !important; }
+
+/* ─── 22. Accounts page — flat rows ────────────────────────────────────── */
+/* acc-panel / acc-header shadows */
+[class^="acc-"] { box-shadow: none !important; }
+
+/* ─── END QUIET UI 2.0 ──────────────────────────────────────────────────── */

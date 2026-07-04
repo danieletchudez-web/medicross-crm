@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CalendarPlus, Sparkles, UserPlus, Target, MapPin, Calendar,
   CheckSquare, FileText, Briefcase, Package, Truck, Megaphone, Bell,
   BarChart2, Users, Settings, User, ChevronRight, LogOut, Moon, Sun,
-  Plus, X, Star, Clock,
+  Plus, X, Eye, EyeOff, RotateCcw,
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -42,20 +42,11 @@ const ALL_MODULES = [
 ];
 
 const PAGE_LABELS = {
-  mobileHome:       "HOY",
-  accounts:         "Clientes",
-  opportunities:    "Oportunidades",
-  calendar:         "Agenda",
-  visits:           "Visitas",
-  tenders:          "Licitaciones",
-  tasks:            "Tareas",
-  products:         "Productos",
-  salesAnalytics:   "Análisis",
-  suppliers:        "Proveedores",
-  campaigns:        "Campañas",
-  cotizador:        "Cotizador",
-  notifications:    "Alertas",
-  settings:         "Configuración",
+  mobileHome: "HOY", accounts: "Clientes", opportunities: "Oportunidades",
+  calendar: "Agenda", visits: "Visitas", tenders: "Licitaciones",
+  tasks: "Tareas", products: "Productos", salesAnalytics: "Análisis",
+  suppliers: "Proveedores", campaigns: "Campañas", cotizador: "Cotizador",
+  notifications: "Alertas", settings: "Configuración",
 };
 
 const QUICK_ACTIONS = [
@@ -67,15 +58,26 @@ const QUICK_ACTIONS = [
   { key: "tenders",       label: "Nueva licitación",  Icon: Briefcase },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+const DEFAULT_CONFIG = ALL_MODULES.map(m => ({ key: m.key, visible: true, fav: false }));
 
-function loadFavoritos() {
-  try { return new Set(JSON.parse(localStorage.getItem("mob_favoritos") || "[]")); }
-  catch { return new Set(); }
+// ─── Persistence ─────────────────────────────────────────────────────────────
+
+function loadModuleConfig() {
+  try {
+    const raw = localStorage.getItem("mob_module_config");
+    if (!raw) return DEFAULT_CONFIG;
+    const stored = JSON.parse(raw);
+    // Merge: keep stored order/prefs, append any new modules at the end
+    const storedKeys = new Set(stored.map(m => m.key));
+    const newMods = ALL_MODULES
+      .filter(m => !storedKeys.has(m.key))
+      .map(m => ({ key: m.key, visible: true, fav: false }));
+    return [...stored, ...newMods];
+  } catch { return DEFAULT_CONFIG; }
 }
 
-function saveFavoritos(set) {
-  localStorage.setItem("mob_favoritos", JSON.stringify([...set]));
+function saveModuleConfig(config) {
+  localStorage.setItem("mob_module_config", JSON.stringify(config));
 }
 
 function loadRecientes() {
@@ -83,13 +85,12 @@ function loadRecientes() {
   catch { return []; }
 }
 
-function pushReciente(pageKey) {
-  const label = PAGE_LABELS[pageKey];
+function pushReciente(key) {
+  const label = PAGE_LABELS[key];
   if (!label) return;
-  const mod   = ALL_MODULES.find(m => m.key === pageKey);
-  const stored = loadRecientes();
-  const updated = [{ key: pageKey, label, ts: Date.now() }]
-    .concat(stored.filter(r => r.key !== pageKey))
+  const stored  = loadRecientes();
+  const updated = [{ key, label, ts: Date.now() }]
+    .concat(stored.filter(r => r.key !== key))
     .slice(0, 6);
   localStorage.setItem("mob_recientes", JSON.stringify(updated));
 }
@@ -97,20 +98,22 @@ function pushReciente(pageKey) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function MobileDock({ currentPage, onNavigate, profile, onLogout }) {
-  const [isMobile,    setIsMobile]    = useState(() => window.matchMedia("(max-width: 768px)").matches);
-  const [sheetOpen,   setSheetOpen]   = useState(false);
-  const [theme,       setTheme]       = useState(() => document.documentElement.getAttribute("data-theme") || "light");
-  const [medixActive, setMedixActive] = useState(false);
-  const [contextKey,  setContextKey]  = useState(currentPage);
-  const [favoritos,   setFavoritos]   = useState(() => loadFavoritos());
-  const [recientes,   setRecientes]   = useState(() => loadRecientes());
-  const prevPage = useRef(currentPage);
+  const [isMobile,      setIsMobile]      = useState(() => window.matchMedia("(max-width: 768px)").matches);
+  const [sheetOpen,     setSheetOpen]     = useState(false);
+  const [theme,         setTheme]         = useState(() => document.documentElement.getAttribute("data-theme") || "light");
+  const [medixActive,   setMedixActive]   = useState(false);
+  const [contextKey,    setContextKey]    = useState(currentPage);
+  const [editMode,      setEditMode]      = useState(false);
+  const [moduleConfig,  setModuleConfig]  = useState(loadModuleConfig);
+  const [draggingKey,   setDraggingKey]   = useState(null);
+  const [hoverKey,      setHoverKey]      = useState(null);
+  const [toast,         setToast]         = useState(null);
 
-  // Swipe-to-dismiss
-  const [dragDelta,    setDragDelta]    = useState(0);
-  const isDraggingRef  = useRef(false);
-  const dragStartY     = useRef(0);
-  const currentDelta   = useRef(0);
+  const prevPage        = useRef(currentPage);
+  const ghostRef        = useRef(null);
+  const dragState       = useRef({ active: false, sourceKey: null, currentHoverKey: null, offsetX: 0, offsetY: 0 });
+  const toastTimer      = useRef(null);
+  const longPressTimer  = useRef(null);
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -125,14 +128,12 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     if (prevPage.current !== currentPage) {
       prevPage.current = currentPage;
       setContextKey(currentPage);
-      // Track recientes
       pushReciente(currentPage);
-      setRecientes(loadRecientes());
     }
   }, [currentPage]);
 
-  useEffect(() => { setSheetOpen(false); }, [currentPage]);
-  useEffect(() => { if (!isMobile) setSheetOpen(false); }, [isMobile]);
+  useEffect(() => { setSheetOpen(false); setEditMode(false); }, [currentPage]);
+  useEffect(() => { if (!isMobile) { setSheetOpen(false); setEditMode(false); } }, [isMobile]);
 
   useEffect(() => {
     const obs = new MutationObserver(() => {
@@ -159,31 +160,94 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     };
   }, []);
 
+  // Reset edit mode when sheet closes
+  useEffect(() => { if (!sheetOpen) setEditMode(false); }, [sheetOpen]);
+
+  useEffect(() => () => {
+    clearTimeout(toastTimer.current);
+    clearTimeout(longPressTimer.current);
+  }, []);
+
   if (!isMobile) return null;
 
   // ── Derived ──────────────────────────────────────────────────────────────
+
   const isDark    = theme === "dark";
   const firstName = (profile?.full_name || profile?.email || "").split(" ")[0] || "Usuario";
   const ctx       = DOCK_CONTEXTS[contextKey] || DOCK_CONTEXTS.mobileHome;
   const { Icon: CtxIcon, label: ctxLabel, action: ctxAction } = ctx;
   const isCtxMedix = ctxAction === "medix";
 
-  const favList = ALL_MODULES.filter(m => favoritos.has(m.key));
-  const recList = recientes.filter(r => r.key !== currentPage).slice(0, 5);
+  // Compute display order (live reorder preview while dragging)
+  let displayConfig = [...moduleConfig];
+  if (draggingKey && hoverKey && draggingKey !== hoverKey) {
+    const si = displayConfig.findIndex(m => m.key === draggingKey);
+    const ti = displayConfig.findIndex(m => m.key === hoverKey);
+    if (si !== -1 && ti !== -1) {
+      const [item] = displayConfig.splice(si, 1);
+      displayConfig.splice(ti, 0, item);
+    }
+  }
 
-  // ── Swipe-to-dismiss ─────────────────────────────────────────────────────
-  function onDragStart(e) {
+  const allVisible = displayConfig
+    .filter(m => m.visible)
+    .map(m => ({ ...m, ...ALL_MODULES.find(a => a.key === m.key) }))
+    .filter(Boolean);
+
+  const hiddenMods = displayConfig
+    .filter(m => !m.visible)
+    .map(m => ({ ...m, ...ALL_MODULES.find(a => a.key === m.key) }))
+    .filter(Boolean);
+
+  // ── Toast helper ─────────────────────────────────────────────────────────
+
+  function showToast(msg = "Menú actualizado") {
+    clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 1400);
+  }
+
+  // ── Module config helpers ─────────────────────────────────────────────────
+
+  function updateConfig(updater) {
+    setModuleConfig(prev => {
+      const next = updater(prev);
+      saveModuleConfig(next);
+      showToast();
+      return next;
+    });
+  }
+
+  function toggleVisible(key) {
+    updateConfig(prev => prev.map(m => m.key === key ? { ...m, visible: !m.visible } : m));
+  }
+
+  function resetConfig() {
+    saveModuleConfig(DEFAULT_CONFIG);
+    setModuleConfig(DEFAULT_CONFIG);
+    showToast("Orden restaurado");
+  }
+
+  // ── Sheet swipe-to-dismiss ────────────────────────────────────────────────
+
+  const [dragDelta,    setDragDelta]    = useState(0);
+  const isDraggingRef  = useRef(false);
+  const dragStartY     = useRef(0);
+  const currentDelta   = useRef(0);
+
+  function onSheetDragStart(e) {
+    if (editMode) return; // don't swipe-close in edit mode
     dragStartY.current   = e.touches[0].clientY;
     currentDelta.current = 0;
     isDraggingRef.current = true;
   }
-  function onDragMove(e) {
+  function onSheetDragMove(e) {
     if (!isDraggingRef.current) return;
     const delta = Math.max(0, e.touches[0].clientY - dragStartY.current);
     currentDelta.current = delta;
     setDragDelta(delta);
   }
-  function onDragEnd() {
+  function onSheetDragEnd() {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     const delta = currentDelta.current;
@@ -192,11 +256,107 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     if (delta > 80) setSheetOpen(false);
   }
 
-  // ── Actions ──────────────────────────────────────────────────────────────
+  const sheetDragStyle = dragDelta > 0
+    ? { transform: `translateY(${dragDelta}px)`, transition: "none" }
+    : undefined;
+
+  // ── Drag & drop for module reordering ────────────────────────────────────
+
+  const handleDragMove = useCallback((e) => {
+    if (!dragState.current.active) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const ds    = dragState.current;
+
+    if (ghostRef.current) {
+      ghostRef.current.style.left = `${touch.clientX - ds.offsetX}px`;
+      ghostRef.current.style.top  = `${touch.clientY - ds.offsetY}px`;
+    }
+
+    const el    = document.elementFromPoint(touch.clientX, touch.clientY);
+    const modEl = el?.closest("[data-mod-key]");
+    if (modEl) {
+      const targetKey = modEl.dataset.modKey;
+      if (targetKey && targetKey !== ds.currentHoverKey && targetKey !== ds.sourceKey) {
+        ds.currentHoverKey = targetKey;
+        setHoverKey(targetKey);
+      }
+    }
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (!dragState.current.active) return;
+    dragState.current.active = false;
+
+    document.removeEventListener("touchmove", handleDragMove);
+    document.removeEventListener("touchend",  handleDragEnd);
+
+    if (ghostRef.current) ghostRef.current.style.display = "none";
+
+    const { sourceKey, currentHoverKey } = dragState.current;
+
+    if (sourceKey && currentHoverKey && sourceKey !== currentHoverKey) {
+      setModuleConfig(prev => {
+        const next = [...prev];
+        const si = next.findIndex(m => m.key === sourceKey);
+        const ti = next.findIndex(m => m.key === currentHoverKey);
+        if (si !== -1 && ti !== -1) {
+          const [item] = next.splice(si, 1);
+          next.splice(ti, 0, item);
+          saveModuleConfig(next);
+        }
+        return next;
+      });
+    }
+
+    setDraggingKey(null);
+    setHoverKey(null);
+    showToast();
+  }, [handleDragMove]); // eslint-disable-line
+
+  function startModuleDrag(e, key) {
+    if (!editMode) return;
+    const touch = e.touches[0];
+    const rect  = e.currentTarget.getBoundingClientRect();
+
+    dragState.current = {
+      active:          true,
+      sourceKey:       key,
+      currentHoverKey: null,
+      offsetX:         touch.clientX - rect.left,
+      offsetY:         touch.clientY - rect.top,
+    };
+
+    if (ghostRef.current) {
+      ghostRef.current.style.left    = `${rect.left}px`;
+      ghostRef.current.style.top     = `${rect.top}px`;
+      ghostRef.current.style.width   = `${rect.width}px`;
+      ghostRef.current.style.height  = `${rect.height}px`;
+      ghostRef.current.style.display = "flex";
+    }
+
+    setDraggingKey(key);
+    document.addEventListener("touchmove", handleDragMove, { passive: false });
+    document.addEventListener("touchend",  handleDragEnd,  { passive: true  });
+  }
+
+  // ── Long press to enter edit mode ────────────────────────────────────────
+
+  function onModuleLongPressStart(e, key) {
+    longPressTimer.current = setTimeout(() => {
+      setEditMode(true);
+    }, 600);
+  }
+  function onModuleLongPressCancel() {
+    clearTimeout(longPressTimer.current);
+  }
+
+  // ── Nav actions ──────────────────────────────────────────────────────────
+
   function handleCtx() {
-    if (ctxAction === "medix")       document.dispatchEvent(new CustomEvent("crm:toggle-medix"));
+    if (ctxAction === "medix")            document.dispatchEvent(new CustomEvent("crm:toggle-medix"));
     else if (ctxAction === "quick-visit") onNavigate("visits", { action: "quick", source: "dock" });
-    else                             onNavigate(ctxAction);
+    else                                  onNavigate(ctxAction);
   }
 
   function toggleTheme() {
@@ -211,18 +371,11 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     document.dispatchEvent(new CustomEvent("crm:toggle-medix"));
   }
 
-  function toggleFavorito(key) {
-    setFavoritos(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      saveFavoritos(next);
-      return next;
-    });
-  }
+  // ── Ghost content (resolved from draggingKey) ─────────────────────────────
 
-  const sheetDragStyle = dragDelta > 0
-    ? { transform: `translateY(${dragDelta}px)`, transition: "none" }
-    : undefined;
+  const ghostMod = ALL_MODULES.find(m => m.key === draggingKey);
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -271,7 +424,11 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
 
       {/* ── Backdrop ──────────────────────────────────────────────────── */}
       {sheetOpen && (
-        <div className="mob-backdrop" onClick={() => setSheetOpen(false)} aria-hidden="true" />
+        <div
+          className="mob-backdrop"
+          onClick={() => !editMode && setSheetOpen(false)}
+          aria-hidden="true"
+        />
       )}
 
       {/* ── Bottom sheet ──────────────────────────────────────────────── */}
@@ -285,52 +442,123 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
         {/* Handle */}
         <div
           className="mob-sheet-handle"
-          onTouchStart={onDragStart}
-          onTouchMove={onDragMove}
-          onTouchEnd={onDragEnd}
+          onTouchStart={onSheetDragStart}
+          onTouchMove={onSheetDragMove}
+          onTouchEnd={onSheetDragEnd}
         />
 
-        {/* Fixed header */}
+        {/* Header */}
         <div
           className="mob-sheet-header"
-          onTouchStart={onDragStart}
-          onTouchMove={onDragMove}
-          onTouchEnd={onDragEnd}
+          onTouchStart={onSheetDragStart}
+          onTouchMove={onSheetDragMove}
+          onTouchEnd={onSheetDragEnd}
         >
-          <span className="mob-sheet-header__spacer" aria-hidden="true" />
+          {/* Left: Editar / Listo */}
+          <button
+            className={`mob-sheet-header__edit-btn${editMode ? " mob-sheet-header__edit-btn--done" : ""}`}
+            onClick={() => {
+              if (editMode) setEditMode(false);
+              else setEditMode(true);
+            }}
+          >
+            {editMode ? "Listo" : "Editar"}
+          </button>
+
           <span className="mob-sheet-header__title">Menú</span>
+
+          {/* Right: Close (always) */}
           <button
             className="mob-sheet-header__close"
-            onClick={() => setSheetOpen(false)}
+            onClick={() => { setSheetOpen(false); setEditMode(false); }}
             aria-label="Cerrar"
           >
             <X size={18} strokeWidth={1.5} />
           </button>
         </div>
 
+        {/* Edit mode bar */}
+        {editMode && (
+          <div className="mob-edit-bar">
+            <span className="mob-edit-bar__hint">Arrastrá para reordenar · Tocá el ojo para ocultar</span>
+            <button className="mob-edit-bar__reset" onClick={resetConfig}>
+              <RotateCcw size={12} strokeWidth={2} />
+              Restaurar
+            </button>
+          </div>
+        )}
+
         {/* Scrollable content */}
         <div className="mob-sheet-scroll">
 
-          {/* FAVORITOS */}
-          {favList.length > 0 && (
+          {/* CREAR (only when not editing) */}
+          {!editMode && (
             <>
-              <div className="mob-sheet-section-label">FAVORITOS</div>
+              <div className="mob-sheet-section-label">CREAR</div>
+              {QUICK_ACTIONS.map(({ key, label, Icon: Ic }) => (
+                <button
+                  key={key}
+                  className="mob-sheet-row"
+                  onClick={() => { setSheetOpen(false); onNavigate(key); }}
+                >
+                  <span className="mob-sheet-row__icon"><Ic size={18} strokeWidth={1.5} /></span>
+                  <span className="mob-sheet-row__label">{label}</span>
+                  <Plus size={14} strokeWidth={2} className="mob-sheet-row__plus" />
+                </button>
+              ))}
+            </>
+          )}
+
+          {/* IR A */}
+          <div className="mob-sheet-section-label">IR A</div>
+          <div className={`mob-module-grid${editMode ? " mob-module-grid--editing" : ""}`}>
+            {allVisible.map(({ key, label, Icon: Ic }, idx) => (
+              <div
+                key={key}
+                className="mob-module-btn-wrap"
+                data-mod-key={key}
+                onTouchStart={editMode
+                  ? (e) => startModuleDrag(e, key)
+                  : (e) => onModuleLongPressStart(e, key)
+                }
+                onTouchEnd={editMode ? undefined : onModuleLongPressCancel}
+                onTouchMove={editMode ? undefined : onModuleLongPressCancel}
+              >
+                <button
+                  className={`mob-module-btn${editMode ? " mob-module-btn--editing" : ""}${draggingKey === key ? " mob-module-btn--dragging" : ""}${hoverKey === key && draggingKey && draggingKey !== key ? " mob-module-btn--drop-target" : ""}`}
+                  style={editMode ? { "--wiggle-delay": `${(idx % 4) * 55}ms` } : undefined}
+                  onClick={() => { if (!editMode) { setSheetOpen(false); onNavigate(key); } }}
+                  aria-label={label}
+                >
+                  <span className="mob-module-btn__icon"><Ic size={22} strokeWidth={1.5} /></span>
+                  <span className="mob-module-btn__label">{label}</span>
+                </button>
+                {editMode && (
+                  <button className="mob-mod-eye" onClick={() => toggleVisible(key)} aria-label="Ocultar">
+                    <Eye size={11} strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* OCULTOS — only in edit mode */}
+          {editMode && hiddenMods.length > 0 && (
+            <>
+              <div className="mob-sheet-section-label">MÓDULOS OCULTOS</div>
               <div className="mob-module-grid">
-                {favList.map(({ key, label, Icon: Ic }) => (
+                {hiddenMods.map(({ key, label, Icon: Ic }) => (
                   <div key={key} className="mob-module-btn-wrap">
                     <button
-                      className="mob-module-btn"
-                      onClick={() => { setSheetOpen(false); onNavigate(key); }}
+                      className="mob-module-btn mob-module-btn--hidden"
+                      onClick={() => toggleVisible(key)}
+                      aria-label={`Mostrar ${label}`}
                     >
                       <span className="mob-module-btn__icon"><Ic size={22} strokeWidth={1.5} /></span>
                       <span className="mob-module-btn__label">{label}</span>
                     </button>
-                    <button
-                      className="mob-module-btn__star mob-module-btn__star--on"
-                      onClick={() => toggleFavorito(key)}
-                      aria-label={`Quitar de favoritos: ${label}`}
-                    >
-                      <Star size={11} strokeWidth={2} />
+                    <button className="mob-mod-eye mob-mod-eye--off" onClick={() => toggleVisible(key)} aria-label="Mostrar">
+                      <EyeOff size={11} strokeWidth={2} />
                     </button>
                   </div>
                 ))}
@@ -338,107 +566,74 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
             </>
           )}
 
-          {/* RECIENTES */}
-          {recList.length > 0 && (
+          {/* ASISTENTE IA (only when not editing) */}
+          {!editMode && (
             <>
-              <div className="mob-sheet-section-label">RECIENTES</div>
-              {recList.map(r => {
-                const mod = ALL_MODULES.find(m => m.key === r.key);
-                const Ic  = mod?.Icon || Clock;
-                return (
-                  <button
-                    key={r.key}
-                    className="mob-sheet-row"
-                    onClick={() => { setSheetOpen(false); onNavigate(r.key); }}
-                  >
-                    <span className="mob-sheet-row__icon"><Ic size={18} strokeWidth={1.5} /></span>
-                    <span className="mob-sheet-row__label">{r.label}</span>
-                    <ChevronRight size={14} strokeWidth={1.5} className="mob-sheet-row__plus" />
-                  </button>
-                );
-              })}
+              <div className="mob-sheet-section-label">ASISTENTE IA</div>
+              <button className="mob-sheet-row" onClick={openMedix}>
+                <span className="mob-sheet-row__icon mob-sheet-row__icon--medix">
+                  <Sparkles size={18} strokeWidth={1.5} />
+                </span>
+                <span className="mob-sheet-row__label">Medix</span>
+                <span className="mob-sheet-ai-badge">IA</span>
+              </button>
             </>
           )}
 
-          {/* CREAR */}
-          <div className="mob-sheet-section-label">CREAR</div>
-          {QUICK_ACTIONS.map(({ key, label, Icon: Ic }) => (
-            <button
-              key={key}
-              className="mob-sheet-row"
-              onClick={() => { setSheetOpen(false); onNavigate(key); }}
-            >
-              <span className="mob-sheet-row__icon"><Ic size={18} strokeWidth={1.5} /></span>
-              <span className="mob-sheet-row__label">{label}</span>
-              <Plus size={14} strokeWidth={2} className="mob-sheet-row__plus" />
-            </button>
-          ))}
-
-          {/* IR A */}
-          <div className="mob-sheet-section-label">IR A</div>
-          <div className="mob-module-grid">
-            {ALL_MODULES.map(({ key, label, Icon: Ic }) => (
-              <div key={key} className="mob-module-btn-wrap">
-                <button
-                  className="mob-module-btn"
-                  onClick={() => { setSheetOpen(false); onNavigate(key); }}
-                >
-                  <span className="mob-module-btn__icon"><Ic size={22} strokeWidth={1.5} /></span>
-                  <span className="mob-module-btn__label">{label}</span>
-                </button>
-                <button
-                  className={`mob-module-btn__star${favoritos.has(key) ? " mob-module-btn__star--on" : ""}`}
-                  onClick={() => toggleFavorito(key)}
-                  aria-label={`${favoritos.has(key) ? "Quitar de" : "Agregar a"} favoritos: ${label}`}
-                >
-                  <Star size={11} strokeWidth={2} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* ASISTENTE IA */}
-          <div className="mob-sheet-section-label">ASISTENTE IA</div>
-          <button className="mob-sheet-row" onClick={openMedix}>
-            <span className="mob-sheet-row__icon mob-sheet-row__icon--medix">
-              <Sparkles size={18} strokeWidth={1.5} />
-            </span>
-            <span className="mob-sheet-row__label">Medix</span>
-            <span className="mob-sheet-ai-badge">IA</span>
-          </button>
-
-          {/* CUENTA */}
-          <div className="mob-sheet-section-label">CUENTA</div>
-          <button
-            className="mob-sheet-row"
-            onClick={() => { setSheetOpen(false); onNavigate("settings"); }}
-          >
-            <span className="mob-sheet-row__icon"><User size={18} strokeWidth={1.5} /></span>
-            <span className="mob-sheet-row__label">Perfil · {firstName}</span>
-            <ChevronRight size={14} strokeWidth={1.5} className="mob-sheet-row__plus" />
-          </button>
-          <button
-            className="mob-sheet-row"
-            onClick={() => { setSheetOpen(false); onNavigate("settings"); }}
-          >
-            <span className="mob-sheet-row__icon"><Settings size={18} strokeWidth={1.5} /></span>
-            <span className="mob-sheet-row__label">Configuración</span>
-            <ChevronRight size={14} strokeWidth={1.5} className="mob-sheet-row__plus" />
-          </button>
-          <button className="mob-sheet-row" onClick={toggleTheme}>
-            <span className="mob-sheet-row__icon">
-              {isDark ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
-            </span>
-            <span className="mob-sheet-row__label">Tema: {isDark ? "Oscuro" : "Claro"}</span>
-          </button>
-          <button className="mob-sheet-row mob-sheet-row--danger" onClick={onLogout}>
-            <span className="mob-sheet-row__icon"><LogOut size={18} strokeWidth={1.5} /></span>
-            <span className="mob-sheet-row__label">Cerrar sesión</span>
-          </button>
+          {/* CUENTA (only when not editing) */}
+          {!editMode && (
+            <>
+              <div className="mob-sheet-section-label">CUENTA</div>
+              <button
+                className="mob-sheet-row"
+                onClick={() => { setSheetOpen(false); onNavigate("settings"); }}
+              >
+                <span className="mob-sheet-row__icon"><User size={18} strokeWidth={1.5} /></span>
+                <span className="mob-sheet-row__label">Perfil · {firstName}</span>
+                <ChevronRight size={14} strokeWidth={1.5} className="mob-sheet-row__plus" />
+              </button>
+              <button
+                className="mob-sheet-row"
+                onClick={() => { setSheetOpen(false); onNavigate("settings"); }}
+              >
+                <span className="mob-sheet-row__icon"><Settings size={18} strokeWidth={1.5} /></span>
+                <span className="mob-sheet-row__label">Configuración</span>
+                <ChevronRight size={14} strokeWidth={1.5} className="mob-sheet-row__plus" />
+              </button>
+              <button className="mob-sheet-row" onClick={toggleTheme}>
+                <span className="mob-sheet-row__icon">
+                  {isDark ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
+                </span>
+                <span className="mob-sheet-row__label">Tema: {isDark ? "Oscuro" : "Claro"}</span>
+              </button>
+              <button className="mob-sheet-row mob-sheet-row--danger" onClick={onLogout}>
+                <span className="mob-sheet-row__icon"><LogOut size={18} strokeWidth={1.5} /></span>
+                <span className="mob-sheet-row__label">Cerrar sesión</span>
+              </button>
+            </>
+          )}
 
           <div className="mob-sheet-safe-area" />
         </div>
       </div>
+
+      {/* ── Drag ghost (always mounted, shown via direct DOM) ─────────── */}
+      <div ref={ghostRef} className="mob-drag-ghost" style={{ display: "none" }} aria-hidden="true">
+        {ghostMod && (() => {
+          const Ic = ghostMod.Icon;
+          return (
+            <>
+              <span className="mob-module-btn__icon"><Ic size={22} strokeWidth={1.5} /></span>
+              <span className="mob-module-btn__label">{ghostMod.label}</span>
+            </>
+          );
+        })()}
+      </div>
+
+      {/* ── Toast ─────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className="mob-toast" role="status" aria-live="polite">{toast}</div>
+      )}
     </>
   );
 }

@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import Sidebar from "./Sidebar";
 import GlobalSearch from "./GlobalSearch";
 import TaskAlertBanner from "./TaskAlertBanner";
+import MobileSearch from "./MobileSearch";
 import useTaskAlerts from "../hooks/useTaskAlerts";
 
 const ROLE_LABELS = {
@@ -9,6 +11,8 @@ const ROLE_LABELS = {
   manager:     "Manager",
   seller:      "Vendedor",
 };
+
+// ─── Desktop live clock ───────────────────────────────────────────────────────
 
 function LiveClock() {
   const [now, setNow] = useState(new Date());
@@ -26,57 +30,108 @@ function LiveClock() {
   );
 }
 
-// Mobile-only date shown below the module title in the header
+// ─── Mobile header date ───────────────────────────────────────────────────────
+
 function MobileHeaderDate() {
   const raw = new Date().toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
-  // Capitalize only the first character; avoid CSS capitalize which uppercases every word
   const date = raw.charAt(0).toUpperCase() + raw.slice(1);
   return <span className="page-header__mobile-date">{date}</span>;
 }
+
+// ─── Mobile page header ───────────────────────────────────────────────────────
+
+function MobilePageHeader({ title, initials, onSearchOpen, scrolled }) {
+  return (
+    <header className={`mob-ph${scrolled ? " mob-ph--compact" : ""}`}>
+      <div className="mob-ph__left">
+        <h1 className="mob-ph__title">{title}</h1>
+        {!scrolled && <MobileHeaderDate />}
+      </div>
+      <div className="mob-ph__actions">
+        <button
+          className="mob-ph__icon-btn"
+          onClick={onSearchOpen}
+          aria-label="Buscar"
+        >
+          <Search size={17} strokeWidth={1.5} />
+        </button>
+        <div className="mob-ph__avatar" aria-hidden="true">{initials}</div>
+      </div>
+    </header>
+  );
+}
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function Layout({ title, profile, onNavigate, pageKey, children }) {
   const initials  = (profile?.full_name || profile?.email || "U").slice(0, 2).toUpperCase();
   const fullName  = profile?.full_name  || profile?.email || "Usuario";
   const roleLabel = ROLE_LABELS[profile?.role] || profile?.role || "Usuario";
 
+  const [isMobile,    setIsMobile]    = useState(() => window.matchMedia("(max-width: 768px)").matches);
+  const [searchOpen,  setSearchOpen]  = useState(false);
+  const [scrolled,    setScrolled]    = useState(false);
+
   const { alerts: taskAlerts } = useTaskAlerts(profile?.id ?? null);
   const hasAlert = taskAlerts.length > 0;
+
+  // Respond to viewport changes
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const fn = e => setIsMobile(e.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, []);
+
+  // Compact header on scroll (mobile only)
+  useEffect(() => {
+    if (!isMobile) return;
+    const fn = () => setScrolled(window.scrollY > 48);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, [isMobile]);
+
+  // Close search on navigate (page change)
+  useEffect(() => { setSearchOpen(false); }, [pageKey]);
 
   return (
     <div className="app-shell">
       <Sidebar profile={profile} onNavigate={onNavigate} />
 
       <main className="main-content">
-        <header className={`page-header${hasAlert ? " page-header--has-alert" : ""}`}>
-
-          <div className="page-header__title-block">
-            <h1>{title}</h1>
-            <MobileHeaderDate />
-          </div>
-
-          <div className="page-header__actions">
-            <GlobalSearch onNavigate={onNavigate} />
-
-            <div className="page-header__sep" aria-hidden="true" />
-
-            <div className="page-header__user">
-              <div className="page-header__avatar" aria-hidden="true">{initials}</div>
-              <div className="page-header__user-info">
-                <span className="page-header__user-name">{fullName}</span>
-                <span className="page-header__user-role">{roleLabel}</span>
-              </div>
+        {isMobile ? (
+          /* ── Mobile header ── */
+          <MobilePageHeader
+            title={title}
+            initials={initials}
+            onSearchOpen={() => setSearchOpen(true)}
+            scrolled={scrolled}
+          />
+        ) : (
+          /* ── Desktop header ── */
+          <header className={`page-header${hasAlert ? " page-header--has-alert" : ""}`}>
+            <div className="page-header__title-block">
+              <h1>{title}</h1>
             </div>
-
-            <div className="page-header__sep" aria-hidden="true" />
-
-            <LiveClock />
-          </div>
-
-        </header>
+            <div className="page-header__actions">
+              <GlobalSearch onNavigate={onNavigate} />
+              <div className="page-header__sep" aria-hidden="true" />
+              <div className="page-header__user">
+                <div className="page-header__avatar" aria-hidden="true">{initials}</div>
+                <div className="page-header__user-info">
+                  <span className="page-header__user-name">{fullName}</span>
+                  <span className="page-header__user-role">{roleLabel}</span>
+                </div>
+              </div>
+              <div className="page-header__sep" aria-hidden="true" />
+              <LiveClock />
+            </div>
+          </header>
+        )}
 
         {hasAlert && (
           <TaskAlertBanner alerts={taskAlerts} onNavigate={onNavigate} />
@@ -86,6 +141,16 @@ export default function Layout({ title, profile, onNavigate, pageKey, children }
           {children}
         </div>
       </main>
+
+      {/* Mobile Spotlight search — rendered outside main-content for fixed overlay */}
+      {isMobile && (
+        <MobileSearch
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={onNavigate}
+          profile={profile}
+        />
+      )}
     </div>
   );
 }
