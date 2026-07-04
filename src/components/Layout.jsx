@@ -26,6 +26,16 @@ function LiveClock() {
   );
 }
 
+// Mobile-only date shown below the module title in the header
+function MobileHeaderDate() {
+  const date = new Date().toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return <span className="page-header__mobile-date">{date}</span>;
+}
+
 export default function Layout({ title, profile, onNavigate, pageKey, children }) {
   const initials  = (profile?.full_name || profile?.email || "U").slice(0, 2).toUpperCase();
   const fullName  = profile?.full_name  || profile?.email || "Usuario";
@@ -43,6 +53,7 @@ export default function Layout({ title, profile, onNavigate, pageKey, children }
 
           <div className="page-header__title-block">
             <h1>{title}</h1>
+            <MobileHeaderDate />
           </div>
 
           <div className="page-header__actions">

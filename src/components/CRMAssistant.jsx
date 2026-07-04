@@ -48,9 +48,7 @@ INSTRUCCIONES:
 async function callClaude(messages, systemPrompt) {
   const response = await fetch("/api/assistant", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       system: systemPrompt,
       messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -75,16 +73,27 @@ const QUICK_SUGGESTIONS = [
   "¿Qué clientes reactivar?",
 ];
 
+// panelState: "closed" | "minimized" | "expanded"
 export default function CRMAssistant({ profile, currentPage, crmData }) {
-  const [open,     setOpen]     = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [input,    setInput]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [panelState, setPanelState] = useState("closed");
+  const [messages,   setMessages]   = useState([]);
+  const [input,      setInput]      = useState("");
+  const [loading,    setLoading]    = useState(false);
   const bottomRef  = useRef(null);
   const inputRef   = useRef(null);
+  const isMobileRef = useRef(window.matchMedia("(max-width: 768px)").matches);
 
+  // Keep isMobileRef current
   useEffect(() => {
-    if (open && messages.length === 0) {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const fn = e => { isMobileRef.current = e.matches; };
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, []);
+
+  // Init greeting when panel expands for the first time
+  useEffect(() => {
+    if (panelState === "expanded" && messages.length === 0) {
       const name = profile?.full_name?.split(" ")[0] || "vendedor";
       const pageNames = {
         managerDashboard:"Dashboard Comercial", sellerDashboard:"Dashboard Vendedor",
@@ -97,25 +106,31 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
       const now = new Date().toLocaleDateString("es-AR", { weekday:"long", day:"2-digit", month:"long", year:"numeric" });
       setMessages([{
         role: "assistant",
-        content: `Hola **${name}** 👋 Soy tu asistente comercial con IA.\n\nHoy es **${now}**. Estás en **${pageName}**.\n\nTengo acceso a los datos reales de tu CRM. Preguntame lo que quieras.`
+        content: `Hola **${name}** 👋 Soy tu asistente comercial con IA.\n\nHoy es **${now}**. Estás en **${pageName}**.\n\nTengo acceso a los datos reales de tu CRM. Preguntame lo que quieras.`,
       }]);
     }
-  }, [open]);
+  }, [panelState]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
-  useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
+  useEffect(() => { if (panelState === "expanded") inputRef.current?.focus(); }, [panelState]);
 
-  // Allow MobileDock to toggle Medix via custom event
+  // Toggle via MobileNav/MobileDock event
   useEffect(() => {
-    const toggle = () => setOpen(o => !o);
+    const toggle = () => setPanelState(s => {
+      if (s === "closed")    return "expanded";
+      if (s === "minimized") return "expanded";
+      // On mobile: expand → minimize; on desktop: expand → close
+      return isMobileRef.current ? "minimized" : "closed";
+    });
     document.addEventListener("crm:toggle-medix", toggle);
     return () => document.removeEventListener("crm:toggle-medix", toggle);
   }, []);
 
-  // Broadcast open/close state so MobileDock can reflect it in the center button
+  // Broadcast state so MobileDock center button + MobileNav tab can reflect it
   useEffect(() => {
-    document.dispatchEvent(new CustomEvent(open ? "crm:medix-opened" : "crm:medix-closed"));
-  }, [open]);
+    const isVisible = panelState !== "closed";
+    document.dispatchEvent(new CustomEvent(isVisible ? "crm:medix-opened" : "crm:medix-closed"));
+  }, [panelState]);
 
   async function sendMessage(e) {
     e?.preventDefault();
@@ -180,22 +195,54 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
 
   return (
     <>
-      <button className={`crm-ai-fab ${open ? "crm-ai-fab--open" : ""}`}
-        onClick={() => setOpen(o => !o)} title="Asistente Comercial IA">
-        {open ? "✕" : "✦"}
+      {/* Desktop-only FAB (hidden on mobile via CSS) */}
+      <button
+        className={`crm-ai-fab ${panelState !== "closed" ? "crm-ai-fab--open" : ""}`}
+        onClick={() => setPanelState(s => s !== "closed" ? "closed" : "expanded")}
+        title="Asistente Comercial IA"
+      >
+        {panelState !== "closed" ? "✕" : "✦"}
       </button>
 
-      {open && (
+      {/* Minimized bar — mobile only, shown when panelState === "minimized" */}
+      {panelState === "minimized" && (
+        <div
+          className="crm-ai-mini"
+          onClick={() => setPanelState("expanded")}
+          role="button"
+          tabIndex={0}
+          aria-label="Expandir Medix"
+          onKeyDown={e => e.key === "Enter" && setPanelState("expanded")}
+        >
+          <span className="crm-ai-mini__dot" aria-hidden="true" />
+          <span className="crm-ai-mini__label">Medix</span>
+          <span className="crm-ai-mini__hint">Asistente IA</span>
+          <span className="crm-ai-mini__expand" aria-hidden="true">↑</span>
+        </div>
+      )}
+
+      {/* Expanded panel */}
+      {panelState === "expanded" && (
         <div className="crm-ai-panel">
           <div className="crm-ai-header">
             <div className="crm-ai-header__left">
-              <div className="crm-ai-header__dot"/>
+              <div className="crm-ai-header__dot" />
               <div>
-                <span className="crm-ai-header__title">Medix - Asistente Comercial</span>
-                <span className="crm-ai-header__sub">MediCross CRM</span>
+                <span className="crm-ai-header__title">Medix</span>
+                <span className="crm-ai-header__sub">Asistente comercial IA</span>
               </div>
             </div>
-            <button className="crm-ai-clear" onClick={clearChat} title="Nueva conversación">↺</button>
+            <div className="crm-ai-header__controls">
+              <button className="crm-ai-ctrl crm-ai-ctrl--minimize" onClick={() => setPanelState("minimized")} title="Minimizar" aria-label="Minimizar">
+                ↓
+              </button>
+              <button className="crm-ai-ctrl crm-ai-ctrl--close" onClick={() => setPanelState("closed")} title="Cerrar" aria-label="Cerrar">
+                ✕
+              </button>
+              <button className="crm-ai-clear" onClick={clearChat} title="Nueva conversación" aria-label="Nueva conversación">
+                ↺
+              </button>
+            </div>
           </div>
 
           <div className="crm-ai-messages">
@@ -215,7 +262,7 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
                 <div className="crm-ai-msg__bubble crm-ai-msg__bubble--loading"><span/><span/><span/></div>
               </div>
             )}
-            <div ref={bottomRef}/>
+            <div ref={bottomRef} />
           </div>
 
           {messages.length <= 1 && (
@@ -227,9 +274,16 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
           )}
 
           <form className="crm-ai-input-wrap" onSubmit={sendMessage}>
-            <textarea ref={inputRef} className="crm-ai-input" value={input}
-              onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-              placeholder="Preguntá cualquier cosa sobre el CRM…" rows={2} disabled={loading}/>
+            <textarea
+              ref={inputRef}
+              className="crm-ai-input"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Preguntá cualquier cosa sobre el CRM…"
+              rows={2}
+              disabled={loading}
+            />
             <button type="submit" className="crm-ai-send" disabled={loading || !input.trim()}>↑</button>
           </form>
         </div>

@@ -46,9 +46,27 @@
     z-index:40 !important;
   }
   .page-header__title-block h1 {
-    font-size:17px !important;
+    font-size:16px !important;
     font-weight:600 !important;
     letter-spacing:-0.2px !important;
+    margin:0 !important;
+    line-height:1.2 !important;
+  }
+  /* Mobile date shown below the module title */
+  .page-header__mobile-date {
+    display:block !important;
+    font-size:11px !important;
+    font-weight:400 !important;
+    color:rgba(0,0,0,.38) !important;
+    letter-spacing:0 !important;
+    text-transform:capitalize !important;
+    line-height:1.2 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+  [data-theme="dark"] .page-header__mobile-date {
+    color:rgba(255,255,255,.32) !important;
   }
   .layout-clock         { display:none !important; }
   .page-header__user    { display:none !important; }
@@ -64,8 +82,24 @@
   }
 
   /* ── Medix AI button ── */
-  /* Hidden on mobile — the dock handles triggering it */
   .crm-ai-fab { display:none !important; }
+
+  /* Minimized Medix bar: pill above the dock */
+  .crm-ai-mini {
+    display:flex !important;
+    position:fixed;
+    bottom:calc(60px + env(safe-area-inset-bottom) + 10px + 54px + 10px);
+    left:16px;
+    right:16px;
+    height:50px;
+    background:#1B1B1B;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:16px;
+    padding:0 18px;
+    z-index:102;
+    box-shadow:0 4px 20px rgba(0,0,0,.3);
+    -webkit-tap-highlight-color:transparent;
+  }
 
   /* AI panel: full-width, anchored above the dock */
   .crm-ai-panel {
@@ -523,6 +557,25 @@
   justify-content:center;
   height:200px;
 }
+
+
+/* ── Sheet AI badge & Medix icon accent ───────────────────── */
+.mob-sheet-ai-badge {
+  font-size:9.5px;
+  font-weight:700;
+  letter-spacing:0.06em;
+  color:rgba(52,211,153,.8);
+  background:rgba(52,211,153,.1);
+  border:1px solid rgba(52,211,153,.2);
+  border-radius:5px;
+  padding:2px 5px;
+  flex-shrink:0;
+}
+.mob-sheet-row__icon--medix { color:rgba(52,211,153,.75) !important; }
+
+
+/* ── Mobile header date (hidden on desktop) ───────────────── */
+.page-header__mobile-date { display:none; }
 
 
 /* ── Utility ─────────────────────────────────────────────── */

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   CalendarPlus, Sparkles, UserPlus, Target, MapPin, Calendar,
   CheckSquare, FileText, Briefcase, Package, Truck, Megaphone, Bell,
-  BarChart2, Users, Settings, ChevronRight, LogOut, Moon, Sun, Plus,
+  BarChart2, Users, Settings, User, ChevronRight, LogOut, Moon, Sun, Plus,
 } from "lucide-react";
 
 // ── Contextual center button map ─────────────────────────────────────────────
@@ -51,7 +51,6 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
   const [sheetOpen,   setSheetOpen]   = useState(false);
   const [theme,       setTheme]       = useState(() => document.documentElement.getAttribute("data-theme") || "light");
   const [medixActive, setMedixActive] = useState(false);
-  // contextKey forces re-mount of the center button → triggers its enter animation
   const [contextKey,  setContextKey]  = useState(currentPage);
   const prevPage = useRef(currentPage);
 
@@ -67,7 +66,6 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     return () => mq.removeEventListener("change", fn);
   }, []);
 
-  // Update contextKey when page changes (drives center button re-mount + animation)
   useEffect(() => {
     if (prevPage.current !== currentPage) {
       prevPage.current = currentPage;
@@ -75,11 +73,9 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     }
   }, [currentPage]);
 
-  // Close sheet on navigate or viewport change
   useEffect(() => { setSheetOpen(false); }, [currentPage]);
   useEffect(() => { if (!isMobile) setSheetOpen(false); }, [isMobile]);
 
-  // Sync theme from document attribute
   useEffect(() => {
     const obs = new MutationObserver(() => {
       setTheme(document.documentElement.getAttribute("data-theme") || "light");
@@ -88,14 +84,12 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     return () => obs.disconnect();
   }, []);
 
-  // Bottom nav "Más" tab dispatches this to toggle the sheet
   useEffect(() => {
     const handler = () => setSheetOpen(o => !o);
     document.addEventListener("crm:toggle-sheet", handler);
     return () => document.removeEventListener("crm:toggle-sheet", handler);
   }, []);
 
-  // Track whether Medix panel is open (emitted by CRMAssistant)
   useEffect(() => {
     const onOpen  = () => setMedixActive(true);
     const onClose = () => setMedixActive(false);
@@ -136,12 +130,16 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     setTheme(next);
   }
 
+  function openMedix() {
+    setSheetOpen(false);
+    document.dispatchEvent(new CustomEvent("crm:toggle-medix"));
+  }
+
   return (
     <>
       {/* ── Dock pill ────────────────────────────────────────────────────── */}
       <div className="mob-dock" role="toolbar" aria-label="Acciones rápidas">
 
-        {/* Left — Visita rápida (always) */}
         <button className="mob-dock-btn mob-dock-btn--side" onClick={handleQuickVisit} aria-label="Visita rápida">
           <CalendarPlus size={15} strokeWidth={1.5} aria-hidden="true" />
           <span>Visita rápida</span>
@@ -149,7 +147,6 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
 
         <div className="mob-dock-sep" aria-hidden="true" />
 
-        {/* Center — contextual, re-mounts on page change to animate */}
         <button
           key={contextKey}
           className={`mob-dock-btn mob-dock-btn--ctx${isCtxMedix && medixActive ? " mob-dock-btn--active" : ""}`}
@@ -162,7 +159,6 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
 
         <div className="mob-dock-sep" aria-hidden="true" />
 
-        {/* Right — hamburger menu */}
         <button
           className={`mob-dock-btn mob-dock-btn--menu${sheetOpen ? " mob-dock-btn--active" : ""}`}
           onClick={() => setSheetOpen(o => !o)}
@@ -193,6 +189,7 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
         <div className="mob-sheet-handle" />
         <div className="mob-sheet-scroll">
 
+          {/* CREAR */}
           <div className="mob-sheet-section-label">CREAR</div>
           {QUICK_ACTIONS.map(({ key, label, Icon: Ic }) => (
             <button key={key} className="mob-sheet-row" onClick={() => { setSheetOpen(false); onNavigate(key); }}>
@@ -202,6 +199,7 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
             </button>
           ))}
 
+          {/* IR A */}
           <div className="mob-sheet-section-label">IR A</div>
           <div className="mob-module-grid">
             {modules.map(({ key, label, Icon: Ic }) => (
@@ -212,10 +210,26 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
             ))}
           </div>
 
+          {/* ASISTENTE IA */}
+          <div className="mob-sheet-section-label">ASISTENTE IA</div>
+          <button className="mob-sheet-row" onClick={openMedix}>
+            <span className="mob-sheet-row__icon mob-sheet-row__icon--medix">
+              <Sparkles size={18} strokeWidth={1.5} />
+            </span>
+            <span className="mob-sheet-row__label">Medix</span>
+            <span className="mob-sheet-ai-badge">IA</span>
+          </button>
+
+          {/* CUENTA */}
           <div className="mob-sheet-section-label">CUENTA</div>
           <button className="mob-sheet-row" onClick={() => { setSheetOpen(false); onNavigate("settings"); }}>
-            <span className="mob-sheet-row__icon"><Settings size={18} strokeWidth={1.5} /></span>
+            <span className="mob-sheet-row__icon"><User size={18} strokeWidth={1.5} /></span>
             <span className="mob-sheet-row__label">Perfil · {firstName}</span>
+            <ChevronRight size={15} strokeWidth={1.5} className="mob-sheet-row__plus" />
+          </button>
+          <button className="mob-sheet-row" onClick={() => { setSheetOpen(false); onNavigate("settings"); }}>
+            <span className="mob-sheet-row__icon"><Settings size={18} strokeWidth={1.5} /></span>
+            <span className="mob-sheet-row__label">Configuración</span>
             <ChevronRight size={15} strokeWidth={1.5} className="mob-sheet-row__plus" />
           </button>
           <button className="mob-sheet-row" onClick={toggleTheme}>

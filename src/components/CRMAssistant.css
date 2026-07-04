@@ -1,4 +1,4 @@
-/* ─── FAB ────────────────────────────────────────────────────────────── */
+/* ─── Desktop FAB ─────────────────────────────────────────── */
 .crm-ai-fab {
   position: fixed;
   bottom: 28px;
@@ -7,30 +7,61 @@
   height: 52px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #0f2444, #1d4ed8);
+  background: #111111;
   color: #ffffff;
   font-size: 20px;
   cursor: pointer;
   z-index: 1000;
-  box-shadow: 0 4px 20px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.2s, box-shadow 0.2s;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
-
 .crm-ai-fab:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 28px rgba(29, 78, 216, 0.5);
+  transform: scale(1.07);
+  box-shadow: 0 6px 28px rgba(0,0,0,.35);
+}
+.crm-ai-fab--open { background: #2a2a2a; }
+
+/* ─── Minimized bar (mobile only, positioned via mobile.css) ─ */
+.crm-ai-mini {
+  display: none; /* shown only on mobile via mobile.css */
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: crm-slide-up 0.18s ease-out both;
+}
+.crm-ai-mini__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 5px rgba(52,211,153,.6);
+  animation: crm-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.crm-ai-mini__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,.88);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+}
+.crm-ai-mini__hint {
+  font-size: 12px;
+  color: rgba(255,255,255,.35);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  flex: 1;
+}
+.crm-ai-mini__expand {
+  font-size: 14px;
+  color: rgba(255,255,255,.4);
+  line-height: 1;
 }
 
-.crm-ai-fab--open {
-  background: linear-gradient(135deg, #374151, #1f2937);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-
-/* ─── Panel ──────────────────────────────────────────────────────────── */
+/* ─── Panel ──────────────────────────────────────────────── */
 .crm-ai-panel {
   position: fixed;
   bottom: 92px;
@@ -38,74 +69,104 @@
   width: 380px;
   max-height: 580px;
   background: #ffffff;
-  border: 1px solid #e8ecf2;
+  border: 1px solid rgba(0,0,0,.08);
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14), 0 4px 16px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 20px 60px rgba(15,23,42,.12), 0 4px 16px rgba(15,23,42,.06);
   display: flex;
   flex-direction: column;
   z-index: 999;
   overflow: hidden;
-  animation: crm-slide-up 0.18s ease;
+  animation: crm-slide-up 0.18s ease-out both;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
+}
+[data-theme="dark"] .crm-ai-panel {
+  background: #1C1C1E;
+  border-color: rgba(255,255,255,.07);
+  box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.3);
 }
 
 @keyframes crm-slide-up {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Header ─────────────────────────────────────────────────────────── */
+/* ─── Header ─────────────────────────────────────────────── */
 .crm-ai-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #0f2444, #1d4ed8);
+  padding: 13px 14px;
+  background: #111111;
+  border-bottom: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
 }
-
 .crm-ai-header__left {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .crm-ai-header__dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #34d399;
-  box-shadow: 0 0 6px #34d399;
+  box-shadow: 0 0 5px rgba(52,211,153,.6);
   animation: crm-pulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
-
 @keyframes crm-pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  50%       { opacity: 0.35; }
 }
-
 .crm-ai-header__title {
   display: block;
   font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
+  font-weight: 600;
+  color: rgba(255,255,255,.9);
+  letter-spacing: -0.1px;
 }
-
 .crm-ai-header__sub {
   display: block;
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.45);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: rgba(255,255,255,.35);
 }
 
+/* Header controls group */
+.crm-ai-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Minimize / Close buttons */
+.crm-ai-ctrl {
+  background: rgba(255,255,255,.07);
+  border: none;
+  color: rgba(255,255,255,.55);
+  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.crm-ai-ctrl:hover { background: rgba(255,255,255,.14); color: rgba(255,255,255,.85); }
+.crm-ai-ctrl--minimize { font-size: 15px; }
+.crm-ai-ctrl--close { font-size: 12px; }
+
+/* Clear / restart button */
 .crm-ai-clear {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
-  width: 28px;
-  height: 28px;
+  background: rgba(255,255,255,.07);
+  border: none;
+  color: rgba(255,255,255,.45);
+  border-radius: 7px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,10 +174,9 @@
   font-size: 14px;
   transition: background 0.15s;
 }
+.crm-ai-clear:hover { background: rgba(255,255,255,.14); color: rgba(255,255,255,.8); }
 
-.crm-ai-clear:hover { background: rgba(255,255,255,0.2); color: #fff; }
-
-/* ─── Messages ───────────────────────────────────────────────────────── */
+/* ─── Messages ───────────────────────────────────────────── */
 .crm-ai-messages {
   flex: 1;
   overflow-y: auto;
@@ -125,7 +185,10 @@
   flex-direction: column;
   gap: 10px;
   scrollbar-width: thin;
-  scrollbar-color: #e8ecf2 transparent;
+  scrollbar-color: rgba(0,0,0,.08) transparent;
+}
+[data-theme="dark"] .crm-ai-messages {
+  scrollbar-color: rgba(255,255,255,.08) transparent;
 }
 
 .crm-ai-msg {
@@ -133,15 +196,15 @@
   gap: 8px;
   align-items: flex-start;
 }
-
 .crm-ai-msg--user { flex-direction: row-reverse; }
 
 .crm-ai-msg__avatar {
   width: 26px;
   height: 26px;
   border-radius: 7px;
-  background: linear-gradient(135deg, #0f2444, #1d4ed8);
-  color: #fff;
+  background: #1B1B1B;
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.65);
   font-size: 11px;
   display: flex;
   align-items: center;
@@ -157,16 +220,18 @@
   font-size: 12.5px;
   line-height: 1.5;
 }
-
 .crm-ai-msg--assistant .crm-ai-msg__bubble {
-  background: #f4f6f9;
+  background: rgba(0,0,0,.04);
   color: #0f172a;
   border-bottom-left-radius: 4px;
 }
-
+[data-theme="dark"] .crm-ai-msg--assistant .crm-ai-msg__bubble {
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.82);
+}
 .crm-ai-msg--user .crm-ai-msg__bubble {
-  background: linear-gradient(135deg, #0f2444, #1d4ed8);
-  color: #ffffff;
+  background: #1B1B1B;
+  color: rgba(255,255,255,.88);
   border-bottom-right-radius: 4px;
 }
 
@@ -178,12 +243,12 @@
   flex-direction: column;
   gap: 3px;
 }
-
 .crm-ai-msg__content p  { margin: 0; }
 .crm-ai-msg__content li { margin: 0; padding-left: 10px; position: relative; }
-.crm-ai-msg__content li::before { content: "·"; position: absolute; left: 0; color: #3b82f6; font-weight: 800; }
+.crm-ai-msg__content li::before { content: "·"; position: absolute; left: 0; color: rgba(0,0,0,.3); font-weight: 800; }
+[data-theme="dark"] .crm-ai-msg__content li::before { color: rgba(255,255,255,.3); }
+.crm-ai-msg--user .crm-ai-msg__content li::before { color: rgba(255,255,255,.4); }
 .crm-ai-msg__content strong { font-weight: 700; }
-.crm-ai-msg--user .crm-ai-msg__content li::before { color: rgba(255,255,255,0.6); }
 
 /* Loading dots */
 .crm-ai-msg__bubble--loading {
@@ -192,62 +257,65 @@
   align-items: center;
   padding: 14px 16px;
 }
-
 .crm-ai-msg__bubble--loading span {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: rgba(0,0,0,.2);
   animation: crm-dots 1.2s ease-in-out infinite;
 }
-
+[data-theme="dark"] .crm-ai-msg__bubble--loading span { background: rgba(255,255,255,.25); }
 .crm-ai-msg__bubble--loading span:nth-child(2) { animation-delay: 0.2s; }
 .crm-ai-msg__bubble--loading span:nth-child(3) { animation-delay: 0.4s; }
-
 @keyframes crm-dots {
   0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
   40%           { transform: scale(1);   opacity: 1; }
 }
 
-/* ─── Sugerencias ────────────────────────────────────────────────────── */
+/* ─── Suggestions ────────────────────────────────────────── */
 .crm-ai-suggestions {
   padding: 0 12px 10px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 5px;
 }
-
 .crm-ai-suggestion {
-  background: #f0f7ff;
-  border: 1px solid rgba(59,130,246,0.18);
-  color: #1d4ed8;
+  background: rgba(0,0,0,.04);
+  border: 1px solid rgba(0,0,0,.07);
+  color: #111111;
   border-radius: 9px;
   padding: 7px 10px;
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   cursor: pointer;
   text-align: left;
   transition: background 0.15s;
   line-height: 1.3;
 }
+.crm-ai-suggestion:hover { background: rgba(0,0,0,.08); }
+[data-theme="dark"] .crm-ai-suggestion {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.72);
+}
+[data-theme="dark"] .crm-ai-suggestion:hover { background: rgba(255,255,255,.1); }
 
-.crm-ai-suggestion:hover { background: #dbeafe; }
-
-/* ─── Input ──────────────────────────────────────────────────────────── */
+/* ─── Input ──────────────────────────────────────────────── */
 .crm-ai-input-wrap {
   display: flex;
   gap: 8px;
   padding: 10px 12px;
-  border-top: 1px solid #f0f4f8;
+  border-top: 1px solid rgba(0,0,0,.06);
   flex-shrink: 0;
   align-items: flex-end;
 }
+[data-theme="dark"] .crm-ai-input-wrap { border-top-color: rgba(255,255,255,.06); }
 
 .crm-ai-input {
   flex: 1;
-  border: 1px solid #e8ecf2;
-  background: #f8fafc;
+  border: 1px solid rgba(0,0,0,.1);
+  background: rgba(0,0,0,.03);
   border-radius: 11px;
   padding: 9px 12px;
   font-size: 13px;
@@ -258,18 +326,24 @@
   line-height: 1.4;
   transition: border-color 0.15s;
 }
-
-.crm-ai-input:focus { border-color: #3b82f6; background: #fff; }
+.crm-ai-input:focus { border-color: rgba(0,0,0,.25); background: #fff; }
 .crm-ai-input:disabled { opacity: 0.5; }
-.crm-ai-input::placeholder { color: #94a3b8; }
+.crm-ai-input::placeholder { color: rgba(0,0,0,.3); }
+[data-theme="dark"] .crm-ai-input {
+  border-color: rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.82);
+}
+[data-theme="dark"] .crm-ai-input:focus { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.07); }
+[data-theme="dark"] .crm-ai-input::placeholder { color: rgba(255,255,255,.25); }
 
 .crm-ai-send {
   width: 34px;
   height: 34px;
   border-radius: 9px;
   border: none;
-  background: linear-gradient(135deg, #0f2444, #1d4ed8);
-  color: #ffffff;
+  background: #111111;
+  color: rgba(255,255,255,.85);
   font-size: 16px;
   cursor: pointer;
   display: flex;
@@ -278,14 +352,6 @@
   flex-shrink: 0;
   transition: opacity 0.15s, transform 0.1s;
 }
-
-.crm-ai-send:hover:not(:disabled) { opacity: 0.9; }
+.crm-ai-send:hover:not(:disabled) { opacity: 0.85; }
 .crm-ai-send:active { transform: scale(0.95); }
-.crm-ai-send:disabled { opacity: 0.3; cursor: not-allowed; }
-
-/* ─── Responsive ─────────────────────────────────────────────────────── */
-@media (max-width: 480px) {
-  .crm-ai-panel { width: calc(100vw - 32px); right: 16px; bottom: calc(136px + env(safe-area-inset-bottom)); }
-  .crm-ai-fab   { right: 16px; bottom: calc(70px + env(safe-area-inset-bottom)); }
-  .crm-ai-suggestions { grid-template-columns: 1fr; }
-}
+.crm-ai-send:disabled { opacity: 0.25; cursor: not-allowed; }

@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Calendar, Bell, MoreHorizontal } from "lucide-react";
+import { Home, Users, Calendar, Bell, Sparkles } from "lucide-react";
 
 const NAV_ITEMS = [
   { key: "mobileHome",    label: "Inicio",   Icon: Home },
   { key: "accounts",      label: "Clientes", Icon: Users },
   { key: "calendar",      label: "Agenda",   Icon: Calendar },
   { key: "notifications", label: "Alertas",  Icon: Bell },
-  { key: "more",          label: "Más",      Icon: MoreHorizontal },
+  { key: "medix",         label: "Medix",    Icon: Sparkles },
 ];
 
 export default function MobileNav({ currentPage, onNavigate }) {
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 768px)").matches);
+  const [isMobile,    setIsMobile]    = useState(() => window.matchMedia("(max-width: 768px)").matches);
+  const [medixActive, setMedixActive] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 768px)");
@@ -19,12 +20,23 @@ export default function MobileNav({ currentPage, onNavigate }) {
     return () => mq.removeEventListener("change", fn);
   }, []);
 
+  // Sync Medix tab active state with the panel open/close events
+  useEffect(() => {
+    const onOpen  = () => setMedixActive(true);
+    const onClose = () => setMedixActive(false);
+    document.addEventListener("crm:medix-opened", onOpen);
+    document.addEventListener("crm:medix-closed", onClose);
+    return () => {
+      document.removeEventListener("crm:medix-opened", onOpen);
+      document.removeEventListener("crm:medix-closed", onClose);
+    };
+  }, []);
+
   if (!isMobile) return null;
 
   function handleItem(key) {
-    if (key === "more") {
-      // Sheet lives in MobileDock — dispatch event
-      document.dispatchEvent(new CustomEvent("crm:toggle-sheet"));
+    if (key === "medix") {
+      document.dispatchEvent(new CustomEvent("crm:toggle-medix"));
       return;
     }
     onNavigate(key);
@@ -33,7 +45,7 @@ export default function MobileNav({ currentPage, onNavigate }) {
   return (
     <nav className="mob-bottom-nav" aria-label="Navegación principal">
       {NAV_ITEMS.map(({ key, label, Icon }) => {
-        const isActive = currentPage === key;
+        const isActive = key === "medix" ? medixActive : currentPage === key;
         return (
           <button
             key={key}
