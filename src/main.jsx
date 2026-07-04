@@ -6,6 +6,7 @@ import "./components/CRMUI.css";
 import "./components/GlobalSearch.css";
 import "./index.css";
 import "./darkmode.css";
+import "./premium.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
