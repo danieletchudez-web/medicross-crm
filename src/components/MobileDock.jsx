@@ -175,12 +175,13 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
   // Reset edit mode when sheet closes
   useEffect(() => { if (!sheetOpen) setEditMode(false); }, [sheetOpen]);
 
+  const activeDragHandlers = useRef({ move: null, end: null });
   useEffect(() => () => {
     clearTimeout(toastTimer.current);
     clearTimeout(longPressTimer.current);
-    document.removeEventListener("touchmove", handleDragMove);
-    document.removeEventListener("touchend", handleDragEnd);
-  }, [handleDragMove, handleDragEnd]);
+    if (activeDragHandlers.current.move) document.removeEventListener("touchmove", activeDragHandlers.current.move);
+    if (activeDragHandlers.current.end)  document.removeEventListener("touchend",  activeDragHandlers.current.end);
+  }, []);
 
   if (!isMobile) return null;
 
@@ -350,6 +351,8 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
     }
 
     setDraggingKey(key);
+    activeDragHandlers.current.move = handleDragMove;
+    activeDragHandlers.current.end  = handleDragEnd;
     document.addEventListener("touchmove", handleDragMove, { passive: false });
     document.addEventListener("touchend",  handleDragEnd,  { passive: true  });
   }
