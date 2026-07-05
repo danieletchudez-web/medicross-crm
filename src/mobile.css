@@ -1235,10 +1235,7 @@
 /* CSS-only theme switching */
 .mob-ph__logo--dark                      { display: none; }
 [data-theme="dark"] .mob-ph__logo--light { display: none; }
-[data-theme="dark"] .mob-ph__logo--dark  {
-  display: block;
-  mix-blend-mode: screen; /* black bg → transparent on dark header */
-}
+[data-theme="dark"] .mob-ph__logo--dark  { display: block; }
 
 .mob-ph__title {
   font-size: 17px;
