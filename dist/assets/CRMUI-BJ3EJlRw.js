@@ -1,0 +1,1 @@
+import{g as e}from"./users-BmrhEzV1.js";var t=e();function n({title:e,text:n,action:r}){return(0,t.jsxs)(`div`,{className:`crm-empty-state`,children:[(0,t.jsx)(`strong`,{children:e}),n&&(0,t.jsx)(`p`,{children:n}),r]})}export{n as t};
