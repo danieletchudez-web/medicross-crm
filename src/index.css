@@ -192,6 +192,17 @@ button, input, select, textarea { font-family: inherit; }
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   color: #0f2444;
 }
+[data-theme="dark"] .crm-loader {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(29, 155, 215, 0.08), transparent 28%),
+    #000000;
+  color: #f4f4f5;
+}
+[data-theme="dark"] .crm-loader--overlay {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(29, 155, 215, 0.08), transparent 28%),
+    rgba(0, 0, 0, 0.85);
+}
 
 .crm-loader--overlay {
   position: fixed;

@@ -27,6 +27,16 @@ class PageErrorBoundary extends Component {
   }
 }
 
+class SafeRender extends Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err) { console.error("[SafeRender]", err); }
+  componentDidUpdate(_, prevState) {
+    if (prevState.hasError) this.setState({ hasError: false });
+  }
+  render() { return this.state.hasError ? null : this.props.children; }
+}
+
 const ManagerDashboard      = lazy(() => import("./pages/ManagerDashboard"));
 const SellerDashboard       = lazy(() => import("./pages/SellerDashboard"));
 const AccountsPage          = lazy(() => import("./pages/AccountsPage"));
@@ -408,10 +418,10 @@ export default function App() {
         );
       })}
       {routeLoading && <FullPageLoader label="Preparando módulo…" overlay />}
-      <CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} />
-      <DialogSystem />
-      <MobileNav currentPage={currentPage} onNavigate={navigate} />
-      <MobileDock currentPage={currentPage} onNavigate={navigate} profile={safeProfile} onLogout={handleLogout} />
+      <SafeRender><CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} /></SafeRender>
+      <SafeRender><DialogSystem /></SafeRender>
+      <SafeRender><MobileNav currentPage={currentPage} onNavigate={navigate} /></SafeRender>
+      <SafeRender><MobileDock currentPage={currentPage} onNavigate={navigate} profile={safeProfile} onLogout={handleLogout} /></SafeRender>
     </>
   );
 }

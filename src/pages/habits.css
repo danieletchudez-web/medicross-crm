@@ -261,6 +261,8 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--hb-border) transparent;
+  /* breathing room so sticky name col and last col don't sit at viewport edge */
+  padding-right: 20px;
 }
 .hb-grid-outer::-webkit-scrollbar { height: 4px; }
 .hb-grid-outer::-webkit-scrollbar-thumb { background: var(--hb-border); border-radius: 4px; }
@@ -937,14 +939,19 @@
    ============================================================ */
 
 @media (max-width: 767px) {
-  .hb-header { padding: 18px 16px 14px; }
+  .hb-header { padding: 18px 20px 14px; }
   .hb-title  { font-size: 22px; }
-  .hb-month-nav { padding: 10px 16px; }
+  .hb-month-nav { padding: 10px 20px; }
+  /* Left padding on the sticky scroll container so name col has breathing room */
+  .hb-grid-outer { padding-left: 14px; padding-right: 14px; }
   .hb-th-name,
-  .hb-td-name { min-width: 140px; max-width: 160px; }
-  .hb-table col.hb-col-name { width: 140px; }
+  .hb-td-name { min-width: 130px; max-width: 150px; }
+  .hb-table col.hb-col-name { width: 130px; }
   .hb-table col.hb-col-cnt  { width: 44px; }
-  .hb-td-cnt { padding: 0 12px 0 4px; }
+  .hb-td-cnt { padding: 0 10px 0 4px; }
+  .hb-th-name.hb-tr-labels-name { padding-left: 16px; }
+  .hb-td-name { padding: 10px 8px 10px 16px; }
+  .hb-td-stats-name { padding: 0 0 10px 16px; }
   .hb-name-text { font-size: 12px; }
   .hb-check { width: 18px; height: 18px; }
   .hb-table col.hb-col-day { width: 28px; }
