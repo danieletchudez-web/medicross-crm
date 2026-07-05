@@ -485,21 +485,23 @@
   pointer-events: none;
 }
 
-/* Drag handle icon */
+/* Drag handle icon — draggable span, always present, visible on row hover */
 .tk2-qtask__drag-handle {
-  font-size: 14px;
-  color: rgba(255,255,255,.18);
+  font-size: 15px;
+  color: rgba(255,255,255,.20);
   cursor: grab;
   flex-shrink: 0;
   line-height: 1;
-  padding: 2px;
+  padding: 4px 3px;
   opacity: 0;
-  transition: opacity 120ms;
+  transition: opacity 120ms, color 120ms;
   user-select: none;
+  -webkit-user-drag: element;
+  touch-action: none;
 }
 .tk2-qtask:hover .tk2-qtask__drag-handle { opacity: 1; }
-.tk2-qtask[draggable="true"] { cursor: grab; }
-.tk2-qtask[draggable="true"]:active { cursor: grabbing; }
+.tk2-qtask__drag-handle:hover { color: rgba(255,255,255,.55); }
+.tk2-qtask__drag-handle:active { cursor: grabbing; }
 
 .tk2-quadrant__add {
   margin-top: 10px;

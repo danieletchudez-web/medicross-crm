@@ -520,10 +520,17 @@ export default function TasksPage({ profile, onNavigate }) {
                     <div
                       key={task.id}
                       className={`tk2-qtask${done ? " tk2-qtask--done" : ""}${draggingId === task.id ? " tk2-qtask--dragging" : ""}`}
-                      draggable={isOwner}
-                      onDragStart={e => { if (isOwner) { setDraggingId(task.id); e.dataTransfer.effectAllowed = "move"; } }}
-                      onDragEnd={() => { setDraggingId(null); setEisDropTarget(null); }}
                     >
+                      {isOwner && (
+                        <span
+                          className="tk2-qtask__drag-handle"
+                          draggable="true"
+                          onDragStart={e => { setDraggingId(task.id); e.dataTransfer.effectAllowed = "move"; }}
+                          onDragEnd={() => { setDraggingId(null); setEisDropTarget(null); }}
+                          aria-label="Arrastrar tarea"
+                          title="Arrastrar a otro cuadrante"
+                        >⠿</span>
+                      )}
                       <Checkbox done={done} onClick={() => toggleComplete(task)} disabled={!isOwner} />
                       <div className="tk2-qtask__body" onClick={() => isOwner && openEdit(task)} style={{ cursor: isOwner ? "pointer" : "default" }}>
                         <span className={`tk2-qtask__title${done ? " tk2-qtask__title--strike" : ""}`}>{task.title}</span>
@@ -535,7 +542,6 @@ export default function TasksPage({ profile, onNavigate }) {
                       {task.due_date && (
                         <span className="tk2-qtask__time">{fmtDate(task.due_date)}</span>
                       )}
-                      {isOwner && <span className="tk2-qtask__drag-handle" aria-hidden="true">⠿</span>}
                     </div>
                   );
                 })}
