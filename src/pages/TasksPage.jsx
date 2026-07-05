@@ -273,6 +273,19 @@ export default function TasksPage({ profile, onNavigate }) {
     setDraggingId(null);
   }
 
+  const [eisDropTarget, setEisDropTarget] = useState(null);
+
+  async function handleEisDrop(targetPriority) {
+    setEisDropTarget(null);
+    if (!draggingId) return;
+    const task = tasks.find(t => t.id === draggingId);
+    if (!task || task.priority === targetPriority || task.created_by !== profile?.id) { setDraggingId(null); return; }
+    setTasks(prev => prev.map(t => t.id === draggingId ? { ...t, priority: targetPriority } : t));
+    const { error } = await supabase.from("tasks").update({ priority: targetPriority }).eq("id", draggingId);
+    if (error) { setTasks(prev => prev.map(t => t.id === draggingId ? { ...t, priority: task.priority } : t)); showToastMsg("No se pudo mover"); }
+    setDraggingId(null);
+  }
+
   async function handleQuickAdd(e) {
     if (e.key !== "Enter" || !quickAdd.trim()) return;
     const title = quickAdd.trim();
@@ -482,21 +495,35 @@ export default function TasksPage({ profile, onNavigate }) {
       <div className="tk2-eisenhower">
         {EISENHOWER.map(q => {
           const qTasks = allTasks.filter(t => t.priority === q.key);
+          const isTarget = eisDropTarget === q.key && draggingId;
           return (
-            <div key={q.key} className="tk2-quadrant" style={{ "--q-accent": q.accent }}>
+            <div
+              key={q.key}
+              className={`tk2-quadrant${isTarget ? " tk2-quadrant--drop-target" : ""}`}
+              style={{ "--q-accent": q.accent }}
+              onDragOver={e => { e.preventDefault(); setEisDropTarget(q.key); }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setEisDropTarget(null); }}
+              onDrop={() => handleEisDrop(q.key)}
+            >
               <div className="tk2-quadrant__hd">
                 <span className="tk2-quadrant__label" style={{ color: q.accent }}>{q.label}</span>
                 <span className="tk2-quadrant__count">{qTasks.length}</span>
               </div>
               <div className="tk2-quadrant__sub">{q.sub}</div>
               <div className="tk2-quadrant__list">
-                {qTasks.length === 0 && <div className="tk2-quadrant__empty">Sin tareas</div>}
+                {qTasks.length === 0 && <div className="tk2-quadrant__empty">Sin tareas · arrastrá aquí</div>}
                 {qTasks.map(task => {
                   const done    = task.status === "completada";
                   const isOwner = task.created_by === profile?.id;
                   const link    = linkOf(task, accounts, opportunities, tenders, campaigns);
                   return (
-                    <div key={task.id} className={`tk2-qtask${done ? " tk2-qtask--done" : ""}`}>
+                    <div
+                      key={task.id}
+                      className={`tk2-qtask${done ? " tk2-qtask--done" : ""}${draggingId === task.id ? " tk2-qtask--dragging" : ""}`}
+                      draggable={isOwner}
+                      onDragStart={e => { if (isOwner) { setDraggingId(task.id); e.dataTransfer.effectAllowed = "move"; } }}
+                      onDragEnd={() => { setDraggingId(null); setEisDropTarget(null); }}
+                    >
                       <Checkbox done={done} onClick={() => toggleComplete(task)} disabled={!isOwner} />
                       <div className="tk2-qtask__body" onClick={() => isOwner && openEdit(task)} style={{ cursor: isOwner ? "pointer" : "default" }}>
                         <span className={`tk2-qtask__title${done ? " tk2-qtask__title--strike" : ""}`}>{task.title}</span>
@@ -508,6 +535,7 @@ export default function TasksPage({ profile, onNavigate }) {
                       {task.due_date && (
                         <span className="tk2-qtask__time">{fmtDate(task.due_date)}</span>
                       )}
+                      {isOwner && <span className="tk2-qtask__drag-handle" aria-hidden="true">⠿</span>}
                     </div>
                   );
                 })}
