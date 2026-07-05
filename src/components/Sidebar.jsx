@@ -28,7 +28,8 @@ import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
 import useNotificationCount from "../hooks/useNotificationCount";
 import useTaskAlerts from "../hooks/useTaskAlerts";
 import "./Sidebar.css";
-import logoImg from "../assets/logo.jpg";
+import logoImg     from "../assets/logo.jpg";
+import logoDarkImg from "../assets/logo-dark.png";
 
 const MENU_SECTIONS = [
   {
@@ -238,7 +239,8 @@ export default function Sidebar({ profile, onNavigate }) {
           style={{ cursor: "pointer" }}
           aria-label="Ir al inicio"
         >
-          <img src={logoImg} alt="MediCross Productos Médicos" className="sidebar-brand__img" />
+          <img src={logoImg}     alt="MediCross" className="sidebar-brand__img sidebar-brand__img--light" />
+          <img src={logoDarkImg} alt="MediCross" className="sidebar-brand__img sidebar-brand__img--dark" />
           <span className="sidebar-brand__mark">M</span>
         </div>
 

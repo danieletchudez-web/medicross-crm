@@ -1214,9 +1214,30 @@
 .mob-ph__left {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
   flex: 1;
+}
+
+/* Logo in mobile header */
+.mob-ph__logo-wrap {
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+.mob-ph__logo {
+  height: 22px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  max-width: 160px;
+}
+/* CSS-only theme switching */
+.mob-ph__logo--dark                      { display: none; }
+[data-theme="dark"] .mob-ph__logo--light { display: none; }
+[data-theme="dark"] .mob-ph__logo--dark  {
+  display: block;
+  mix-blend-mode: screen; /* black bg → transparent on dark header */
 }
 
 .mob-ph__title {

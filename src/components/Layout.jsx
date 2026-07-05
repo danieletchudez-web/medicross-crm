@@ -5,6 +5,8 @@ import GlobalSearch from "./GlobalSearch";
 import TaskAlertBanner from "./TaskAlertBanner";
 import MobileSearch from "./MobileSearch";
 import useTaskAlerts from "../hooks/useTaskAlerts";
+import logoLight from "../assets/logo.jpg";
+import logoDark  from "../assets/logo-dark.png";
 
 const ROLE_LABELS = {
   super_admin: "Super Admin",
@@ -44,11 +46,14 @@ function MobileHeaderDate() {
 
 // ─── Mobile page header ───────────────────────────────────────────────────────
 
-function MobilePageHeader({ title, initials, onSearchOpen, scrolled }) {
+function MobilePageHeader({ initials, onSearchOpen, scrolled }) {
   return (
     <header className={`mob-ph${scrolled ? " mob-ph--compact" : ""}`}>
       <div className="mob-ph__left">
-        <h1 className="mob-ph__title">{title}</h1>
+        <div className="mob-ph__logo-wrap">
+          <img src={logoLight} alt="MediCross" className="mob-ph__logo mob-ph__logo--light" />
+          <img src={logoDark}  alt="MediCross" className="mob-ph__logo mob-ph__logo--dark" />
+        </div>
         {!scrolled && <MobileHeaderDate />}
       </div>
       <div className="mob-ph__actions">
@@ -106,7 +111,6 @@ export default function Layout({ title, profile, onNavigate, pageKey, children }
         {isMobile ? (
           /* ── Mobile header ── */
           <MobilePageHeader
-            title={title}
             initials={initials}
             onSearchOpen={() => setSearchOpen(true)}
             scrolled={scrolled}
