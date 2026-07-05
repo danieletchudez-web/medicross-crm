@@ -159,8 +159,14 @@ export default function App() {
   const [passwordRecovery, setPasswordRecovery] = useState(() => hasPasswordRecoveryIntent());
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const routeLoadingTimer = useRef(null);
+  const profileRetryTimer = useRef(null);
   // Pages that have been visited at least once (stay mounted forever after)
-  const [mounted,      setMounted]      = useState(() => new Set([localStorage.getItem("crm_current_page") || "managerDashboard"]));
+  const [mounted,      setMounted]      = useState(() => {
+    const saved = localStorage.getItem("crm_current_page") || "managerDashboard";
+    const isMob = window.matchMedia?.("(max-width: 768px)").matches;
+    const initial = (isMob && (saved === "managerDashboard" || saved === "sellerDashboard")) ? "mobileHome" : saved;
+    return new Set([initial]);
+  });
 
   useEffect(() => {
     init();
@@ -175,10 +181,11 @@ export default function App() {
     return () => {
       subscription.unsubscribe();
       if (routeLoadingTimer.current) clearTimeout(routeLoadingTimer.current);
+      if (profileRetryTimer.current) clearTimeout(profileRetryTimer.current);
     };
   }, []);
 
-  useEffect(() => { if (session) loadCrmData(); }, [page, session]);
+  useEffect(() => { if (session) loadCrmData(); }, [session]);
 
   useEffect(() => {
     const media = window.matchMedia?.("(max-width: 768px)");
@@ -229,7 +236,8 @@ export default function App() {
       if (data && !error) {
         setProfile(data);
       } else {
-        setTimeout(async () => {
+        clearTimeout(profileRetryTimer.current);
+        profileRetryTimer.current = setTimeout(async () => {
           const { data: retry } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
           if (retry) { setProfile(retry); return; }
           setProfile(buildPendingProfile(user));

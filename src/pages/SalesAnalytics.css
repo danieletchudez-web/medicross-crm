@@ -771,4 +771,9 @@
   .sa-perf-card__metrics { grid-template-columns: repeat(2, 1fr); }
   .sa-alerts-summary { flex-direction: column; gap: 12px; }
   .sa-alerts-summary__divider { width: 100%; height: 1px; }
+  /* Detail table scrolls horizontally instead of overflowing */
+  .sa-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .sa-table { min-width: 800px; }
+  /* Prevent iOS auto-zoom */
+  .sa-toolbar input, .sa-toolbar select { font-size: 16px !important; }
 }

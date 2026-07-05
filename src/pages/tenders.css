@@ -543,6 +543,23 @@
   .tn-grid-wrap { display: none; }
   .tn-form-grid, .tn-form-grid--3 { grid-template-columns: 1fr; }
   .tn-comp-row { grid-template-columns: 1fr 1fr; }
+  /* Modals as bottom-sheets */
+  .tn-overlay { align-items: flex-end; padding: 0; }
+  .tn-modal {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    max-height: 90vh;
+  }
+  .tn-modal__body { max-height: 60vh; }
+  .tn-modal__footer { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+  /* Toolbar: icon-only on mobile */
+  .tn-toolbar { flex-wrap: wrap; gap: 4px; padding: 3px; }
+  .tn-tbar-btn span { display: none; }
+  .tn-tbar-btn { padding: 8px 10px; min-height: 36px; }
+  /* Prevent iOS auto-zoom */
+  .tn-form-grid input, .tn-form-grid select, .tn-form-grid textarea,
+  .tn-search-bar input { font-size: 16px !important; }
 }
 
 /* ─── WORKBENCH / CARGA RÁPIDA ─────────────────────────────────────── */

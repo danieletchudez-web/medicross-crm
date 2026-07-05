@@ -177,7 +177,10 @@
   .p-tabs {
     padding:0 16px !important;
     overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch !important;
+    scrollbar-width:none !important;
   }
+  .p-tabs::-webkit-scrollbar { display:none !important; }
   .p-tab {
     flex-shrink:0 !important;
     padding:10px 12px !important;
@@ -185,13 +188,15 @@
   .p-pills {
     overflow-x:auto !important;
     flex-wrap:nowrap !important;
+    -webkit-overflow-scrolling:touch !important;
+    scrollbar-width:none !important;
   }
+  .p-pills::-webkit-scrollbar { display:none !important; }
   .p-pill   { flex-shrink:0 !important; }
   .p-search {
     min-width:0 !important;
     flex:1 !important;
   }
-  .p-btn { height:40px !important; }
 
   /* ── Module-specific ── */
   .acc-form-section { padding:12px 0 !important; }
@@ -378,7 +383,7 @@
 .mob-backdrop {
   position:fixed;
   inset:0;
-  z-index:104;
+  z-index:106;
   background:rgba(0,0,0,.42);
   animation:mob-fade-in 180ms ease-out both;
 }
@@ -581,7 +586,7 @@
   display:flex;
   flex-direction:column;
   gap:10px;
-  padding:10px 16px calc(16px + env(safe-area-inset-bottom));
+  padding:10px 16px 16px;
 }
 
 /* Greeting block — always stacked, never inline */
@@ -628,6 +633,7 @@
   font-size:13px;
   color:#6B7280;
 }
+[data-theme="dark"] .mob-home-item__sub { color:rgba(255,255,255,.38); }
 .mob-home-loading {
   display:flex;
   align-items:center;
@@ -663,7 +669,7 @@
   display:flex;
   flex-direction:column;
   gap:12px;
-  padding:14px 16px calc(20px + env(safe-area-inset-bottom));
+  padding:14px 16px 20px;
 }
 
 /* ── Loading skeletons ── */
@@ -845,7 +851,8 @@
   cursor:pointer;
   font-family:inherit;
   -webkit-tap-highlight-color:transparent;
-  padding:0;
+  padding:10px 4px;
+  min-height:44px;
 }
 [data-theme="dark"] .hoy-section__more { color:rgba(255,255,255,.32); }
 
@@ -1119,10 +1126,10 @@
 /* Eye toggle button (top-left overlay on module in edit mode) */
 .mob-mod-eye {
   position:absolute;
-  top:5px;
-  left:5px;
-  width:22px;
-  height:22px;
+  top:2px;
+  left:2px;
+  width:32px;
+  height:32px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1300,8 +1307,8 @@
 }
 
 .mob-ph__icon-btn {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1395,7 +1402,7 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
   color: #111111;
   font-family: inherit;
@@ -1433,7 +1440,10 @@
   font-weight: 500;
   color: #185fa5;
   cursor: pointer;
-  padding: 6px 2px;
+  padding: 14px 8px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
   font-family: inherit;
@@ -1958,3 +1968,12 @@
   }
 
 } /* end @media (max-width: 768px) — Section 17 */
+
+@media (prefers-reduced-motion: reduce) {
+  .mob-module-grid--editing .mob-module-btn,
+  .hoy-skeleton,
+  .mob-dock-hline--mid,
+  .mob-sheet,
+  .mob-backdrop,
+  .hoy-shimmer { animation: none !important; transition: none !important; }
+}

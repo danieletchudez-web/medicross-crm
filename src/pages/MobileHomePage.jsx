@@ -60,41 +60,45 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [visitsRes, tasksRes, oppsRes, quotesRes] = await Promise.all([
-      supabase
-        .from("visits")
-        .select("id, visit_date, visit_time, status, accounts(id, name, address)")
-        .eq("status", "programada")
-        .gte("visit_date", todayStr)
-        .order("visit_date", { ascending: true })
-        .order("visit_time", { ascending: true, nullsFirst: false })
-        .limit(6),
-      supabase
-        .from("tasks")
-        .select("id, title, due_date, priority, status")
-        .in("status", ["pendiente", "en_progreso"])
-        .order("due_date", { ascending: true })
-        .limit(8),
-      supabase
-        .from("opportunities")
-        .select("id, name, amount, probability, stage, accounts(name)")
-        .not("stage", "in", '("Ganado","Perdido")')
-        .gte("probability", 60)
-        .order("probability", { ascending: false })
-        .limit(5),
-      supabase
-        .from("cotizaciones")
-        .select("id", { count: "exact", head: true })
-        .eq("estado", "pendiente")
-        .eq("deleted", false),
-    ]);
-
-    setVisits(visitsRes.data   || []);
-    setTasks(tasksRes.data     || []);
-    setOpps(oppsRes.data       || []);
-    setQuotesCount(quotesRes.count || 0);
-    setLoading(false);
-  }, [todayStr]);
+    try {
+      const [visitsRes, tasksRes, oppsRes, quotesRes] = await Promise.all([
+        supabase
+          .from("visits")
+          .select("id, visit_date, visit_time, status, accounts(id, name, address)")
+          .eq("status", "programada")
+          .gte("visit_date", todayStr)
+          .order("visit_date", { ascending: true })
+          .order("visit_time", { ascending: true, nullsFirst: false })
+          .limit(6),
+        supabase
+          .from("tasks")
+          .select("id, title, due_date, priority, status")
+          .in("status", ["pendiente", "en_progreso"])
+          .order("due_date", { ascending: true })
+          .limit(8),
+        supabase
+          .from("opportunities")
+          .select("id, name, amount, probability, stage, accounts(name)")
+          .not("stage", "in", '("Ganado","Perdido")')
+          .gte("probability", 60)
+          .order("probability", { ascending: false })
+          .limit(5),
+        supabase
+          .from("cotizaciones")
+          .select("id", { count: "exact", head: true })
+          .eq("estado", "pendiente")
+          .eq("deleted", false),
+      ]);
+      setVisits(visitsRes.data   || []);
+      setTasks(tasksRes.data     || []);
+      setOpps(oppsRes.data       || []);
+      setQuotesCount(quotesRes.count || 0);
+    } catch(err) {
+      console.error("[MobileHome] load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [todayStr, pageKey]);
 
   useEffect(() => { load(); }, [load]);
 

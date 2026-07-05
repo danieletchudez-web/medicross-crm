@@ -192,7 +192,7 @@ function RecentVisitsPanel({ visits }) {
   );
 }
 
-export default function ManagerDashboard({ profile, onNavigate }) {
+export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
   const [selectedLine, setSelectedLine]   = useState("Todas");
   const [opportunities, setOpportunities] = useState([]);
   const [visits, setVisits]               = useState([]);
@@ -207,7 +207,7 @@ export default function ManagerDashboard({ profile, onNavigate }) {
   const activityRef    = useRef(null);
   const probabilityRef = useRef(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [pageKey]);
   useEffect(() => { if (!loading) renderCharts(); }, [loading, selectedLine, opportunities, visits, campaigns, products, dashboardMode]);
   useEffect(() => { localStorage.setItem("medicross-dashboard-mode", dashboardMode); }, [dashboardMode]);
 

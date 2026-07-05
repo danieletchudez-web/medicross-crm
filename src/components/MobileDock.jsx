@@ -26,6 +26,7 @@ const DOCK_CONTEXTS = {
   salesAnalytics:   { Icon: BarChart2,    label: "Análisis",    action: "salesAnalytics" },
   biComercial:      { Icon: BarChart3,    label: "BI",          action: "salesAnalytics" },
   notifications:    { Icon: Bell,         label: "Alerta",      action: "notifications" },
+  habits:           { Icon: RefreshCw,    label: "Hábitos",     action: "habits" },
 };
 
 const ALL_MODULES = [
@@ -51,6 +52,9 @@ const PAGE_LABELS = {
   biComercial: "BI Comercial",
   suppliers: "Proveedores", campaigns: "Campañas", cotizador: "Cotizador",
   notifications: "Alertas", settings: "Configuración",
+  managerDashboard: "Dashboard", sellerDashboard: "Mi Panel",
+  accountDetail: "Detalle Cliente", todayActions: "Acciones Hoy",
+  tenders: "Licitaciones", importer: "Importador", preciosHistoricos: "Precios Históricos",
 };
 
 const QUICK_ACTIONS = [
@@ -81,7 +85,11 @@ function loadModuleConfig() {
 }
 
 function saveModuleConfig(config) {
-  localStorage.setItem("mob_module_config", JSON.stringify(config));
+  try {
+    localStorage.setItem("mob_module_config", JSON.stringify(config));
+  } catch (err) {
+    console.warn("[MobileDock] localStorage write failed:", err);
+  }
 }
 
 function loadRecientes() {
@@ -170,7 +178,9 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
   useEffect(() => () => {
     clearTimeout(toastTimer.current);
     clearTimeout(longPressTimer.current);
-  }, []);
+    document.removeEventListener("touchmove", handleDragMove);
+    document.removeEventListener("touchend", handleDragEnd);
+  }, [handleDragMove, handleDragEnd]);
 
   if (!isMobile) return null;
 

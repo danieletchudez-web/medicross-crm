@@ -236,13 +236,13 @@ async function loadLegacyAlerts(profileId) {
   return rows;
 }
 
-export default function NotificationsPage({ profile, onNavigate }) {
+export default function NotificationsPage({ profile, onNavigate, pageKey }) {
   const [alerts,   setAlerts]   = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [filter,   setFilter]   = useState("Todas");
   const [persistent, setPersistent] = useState(true);
 
-  useEffect(() => { load(); }, [profile?.id]);
+  useEffect(() => { load(); }, [profile?.id, pageKey]);
 
   async function load() {
     setLoading(true);
@@ -397,7 +397,7 @@ export default function NotificationsPage({ profile, onNavigate }) {
                     {alert.type}
                   </span>
                   {!alert.read_at && (
-                    <span className={`p-dot--${alert.level === "red" ? "red" : alert.level === "amber" ? "amber" : "blue"}`} aria-label="Sin leer"/>
+                    <span className={`p-dot p-dot--${alert.level === "red" ? "red" : alert.level === "amber" ? "amber" : "blue"}`} aria-label="Sin leer"/>
                   )}
                 </div>
               </button>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -442,18 +442,23 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
   const [attentionOnly,setAttentionOnly]= useState(false);
   const [quickOpen,    setQuickOpen]    = useState(false);
   const [quickForm,    setQuickForm]    = useState({account_id:"",product_id:"",result:""});
+  const handledPageKey = useRef(null);
 
   useEffect(()=>{ loadData(); },[]);
 
   async function loadData() {
-    const [vRes,aRes,pRes] = await Promise.all([
-      supabase.from("visits").select("*, accounts(name), products(name, line)").order("visit_date",{ascending:false}),
-      supabase.from("accounts").select("*").order("name"),
-      supabase.from("products").select("*").order("name"),
-    ]);
-    setVisits(vRes.data||[]);
-    setAccounts(aRes.data||[]);
-    setProducts(pRes.data||[]);
+    try {
+      const [vRes,aRes,pRes] = await Promise.all([
+        supabase.from("visits").select("*, accounts(name), products(name, line)").order("visit_date",{ascending:false}),
+        supabase.from("accounts").select("*").order("name"),
+        supabase.from("products").select("*").order("name"),
+      ]);
+      setVisits(vRes.data||[]);
+      setAccounts(aRes.data||[]);
+      setProducts(pRes.data||[]);
+    } catch(err) {
+      console.error("[Visits] loadData error:", err);
+    }
   }
 
   const toggleMaterialNew  = m => setForm(p=>({...p,materials:p.materials.includes(m)?p.materials.filter(x=>x!==m):[...p.materials,m]}));
@@ -474,6 +479,7 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
 
   async function saveVisit(e) {
     e?.preventDefault();
+    if (!form.account_id) { alert("Seleccioná un cliente antes de guardar."); return; }
     setLoading(true);
     const {data,error} = await supabase.from("visits").insert([buildPayload(form,profile?.id)]).select("id").single();
     if (error) alert("Error: "+error.message);
@@ -574,8 +580,11 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
   }
 
   useEffect(()=>{
-    if (navigationData?.action === "create") openNewVisit({account_id:navigationData.accountId||""});
-    if (navigationData?.action === "quick") {
+    if (!navigationData?.action) return;
+    if (handledPageKey.current === pageKey) return;
+    handledPageKey.current = pageKey;
+    if (navigationData.action === "create") openNewVisit({account_id:navigationData.accountId||""});
+    if (navigationData.action === "quick") {
       setQuickForm({account_id:navigationData.accountId||"",product_id:"",result:""});
       setQuickOpen(true);
     }

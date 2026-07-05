@@ -75,18 +75,22 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
   }, [navigationData]);
 
   async function loadData() {
-    const [oppRes, accRes, prodRes, campRes, configRes] = await Promise.all([
-      supabase.from("opportunities").select("*, accounts(name), products(name, line), campaigns(name)").order("created_at", { ascending: false }),
-      supabase.from("accounts").select("*").order("name"),
-      supabase.from("products").select("*").order("name"),
-      supabase.from("campaigns").select("*").order("name"),
-      supabase.from("crm_settings").select("value").eq("key", "pipeline_stages").maybeSingle(),
-    ]);
-    setOpportunities(oppRes.data || []);
-    setAccounts(accRes.data || []);
-    setProducts(prodRes.data || []);
-    setCampaigns(campRes.data || []);
-    if (Array.isArray(configRes.data?.value) && configRes.data.value.length) setStageConfig(configRes.data.value);
+    try {
+      const [oppRes, accRes, prodRes, campRes, configRes] = await Promise.all([
+        supabase.from("opportunities").select("*, accounts(name), products(name, line), campaigns(name)").order("created_at", { ascending: false }),
+        supabase.from("accounts").select("*").order("name"),
+        supabase.from("products").select("*").order("name"),
+        supabase.from("campaigns").select("*").order("name"),
+        supabase.from("crm_settings").select("value").eq("key", "pipeline_stages").maybeSingle(),
+      ]);
+      setOpportunities(oppRes.data || []);
+      setAccounts(accRes.data || []);
+      setProducts(prodRes.data || []);
+      setCampaigns(campRes.data || []);
+      if (Array.isArray(configRes.data?.value) && configRes.data.value.length) setStageConfig(configRes.data.value);
+    } catch (err) {
+      console.error("[Opportunities] loadData error:", err);
+    }
   }
 
   const metrics = useMemo(() => {
@@ -111,29 +115,35 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
   async function saveOpportunity(e) {
     e.preventDefault();
     setLoading(true);
-    const selectedProduct = products.find((p) => p.id === form.product_id);
-    const payload = {
-      name:            form.name,
-      account_id:      form.account_id || null,
-      product_id:      form.product_id || null,
-      campaign_id:     form.campaign_id || null,
-      product_line:    selectedProduct?.line || null,
-      stage:           form.stage,
-      amount:          Number(form.amount || 0),
-      forecast_amount: Math.round((Number(form.amount || 0) * Number(form.probability || 0)) / 100),
-      probability:     Number(form.probability || 0),
-      expected_close:  form.expected_close || null,
-      next_action:     form.next_action,
-      owner_id:        profile?.id || null,
-      updated_at:      new Date().toISOString(),
-    };
-    const result = form.id
-      ? await supabase.from("opportunities").update(payload).eq("id", form.id)
-      : await supabase.from("opportunities").insert([payload]);
-    if (result.error) { alert("Error: " + result.error.message); setLoading(false); return; }
-    setForm(EMPTY_FORM);
-    setLoading(false);
-    loadData();
+    try {
+      const selectedProduct = products.find((p) => p.id === form.product_id);
+      const payload = {
+        name:            form.name,
+        account_id:      form.account_id || null,
+        product_id:      form.product_id || null,
+        campaign_id:     form.campaign_id || null,
+        product_line:    selectedProduct?.line || null,
+        stage:           form.stage,
+        amount:          Number(form.amount || 0),
+        forecast_amount: Math.round((Number(form.amount || 0) * Number(form.probability || 0)) / 100),
+        probability:     Number(form.probability || 0),
+        expected_close:  form.expected_close || null,
+        next_action:     form.next_action,
+        owner_id:        profile?.id || null,
+        updated_at:      new Date().toISOString(),
+      };
+      const result = form.id
+        ? await supabase.from("opportunities").update(payload).eq("id", form.id)
+        : await supabase.from("opportunities").insert([payload]);
+      if (result.error) { alert("Error: " + result.error.message); return; }
+      setForm(EMPTY_FORM);
+      loadData();
+    } catch (err) {
+      console.error("[Opportunities] saveOpportunity error:", err);
+      alert("Error al guardar la oportunidad.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function quickClose(id, stage) {

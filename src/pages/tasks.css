@@ -916,3 +916,10 @@
   .tk2-quadrant__label { font-size: 10px; }
   .tk2-quadrant { padding: 12px; }
 }
+
+/* ── Touch devices: make drag handle always visible ─────────────────────── */
+@media (hover: none) {
+  .tk2-qtask__drag-handle { opacity: 1; }
+  /* Prevent iOS auto-zoom in quick-add input */
+  .tk2-quickadd__input { font-size: 16px !important; }
+}

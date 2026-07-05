@@ -500,4 +500,16 @@
   .cal-list-item__status { align-self: flex-start; }
   .cal-legend { padding-bottom: 34px; gap: 12px; }
   .cal-legend-item { font-size: 12px; }
+  /* Modals as bottom-sheets */
+  .cal-modal-overlay { align-items: flex-end; padding: 0; }
+  .cal-modal {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    max-height: 90vh;
+  }
+  .cal-modal__body { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cal-modal__footer { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  /* Prevent iOS auto-zoom */
+  .cal-modal input, .cal-modal select, .cal-modal textarea { font-size: 16px !important; }
 }

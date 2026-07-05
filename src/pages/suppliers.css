@@ -871,3 +871,24 @@
   .sp-form-grid { grid-template-columns: 1fr; }
   .sp-mapping-grid { grid-template-columns: 1fr 1fr; }
 }
+
+@media (max-width: 768px) {
+  .sp-layout { display: flex; flex-direction: column; gap: 0; }
+  .sp-list-panel {
+    width: 100%;
+    max-height: 260px;
+    border-radius: 14px 14px 0 0;
+    border-bottom: none;
+  }
+  .sp-detail { width: 100%; }
+  /* Table scroll */
+  .sp-prod-table-wrap { -webkit-overflow-scrolling: touch; }
+  .sp-prod-table { min-width: 640px; }
+  .sp-gst-table-container { -webkit-overflow-scrolling: touch; }
+  .sp-gst-table { min-width: 600px; }
+  /* Drag-drop zone: hide drop instruction, show only file button */
+  .sp-drop-zone__sub { display: none; }
+  .sp-drop-zone { padding: 18px 16px; }
+  /* Prevent iOS auto-zoom */
+  .sp-list-search, .sp-form-grid input, .sp-form-grid select, .sp-form-grid textarea { font-size: 16px !important; }
+}

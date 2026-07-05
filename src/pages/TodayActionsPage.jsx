@@ -56,13 +56,13 @@ export default function TodayActionsPage({ profile, onNavigate }) {
     setLoading(false);
   }
 
-  function shareProduct(product) {
+  function shareProduct(product, accountName) {
     if (!product) {
       alert("Este cliente todavía no tiene producto sugerido.");
       return;
     }
 
-    const text = `Hola, te comparto información sobre ${product.name}.
+    const text = `Hola${accountName ? ` para ${accountName}` : ""}, te comparto información sobre ${product.name}.
 
 ${product.speech || ""}
 

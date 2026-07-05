@@ -859,4 +859,9 @@
     width: 100%;
     min-height: 44px;
   }
+  /* Prevent iOS auto-zoom */
+  .products-toolbar select,
+  .products-form input,
+  .products-form select,
+  .products-form textarea { font-size: 16px !important; }
 }

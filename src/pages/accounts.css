@@ -510,4 +510,7 @@
   .acc-card--form .acc-field--wide { grid-column: span 1; }
   .acc-card--form .acc-contact-fields { grid-template-columns: 1fr; }
   .acc-card--form .acc-submit { width: 100%; min-height: 46px; align-self: stretch; }
+  /* Prevent iOS auto-zoom on input focus */
+  .acc-field input, .acc-field select, .acc-search { font-size: 16px !important; }
+  .acc-remove-contact { width: 44px; height: 44px; min-width: 44px; }
 }

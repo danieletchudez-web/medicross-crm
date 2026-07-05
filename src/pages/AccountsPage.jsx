@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import "./accounts.css";
@@ -322,8 +322,8 @@ export default function AccountsPage({ profile, onNavigate }) {
                 {filtered.length === 0 ? (
                   <tr><td colSpan="8" className="p-empty">No hay clientes cargados.</td></tr>
                 ) : filtered.map((a) => (
-                  <>
-                    <tr key={a.id} className={expanded === a.id ? "acc-row--expanded" : ""}>
+                  <React.Fragment key={a.id}>
+                    <tr className={expanded === a.id ? "acc-row--expanded" : ""}>
                       <td className="acc-td-name">
                         <button className="acc-account-link" onClick={() => onNavigate("accountDetail", { accountId: a.id })}>{a.name}</button>
                         {a.address && <small>{a.address}</small>}
@@ -384,7 +384,7 @@ export default function AccountsPage({ profile, onNavigate }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

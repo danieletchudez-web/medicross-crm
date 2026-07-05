@@ -257,8 +257,15 @@ export default function TasksPage({ profile, onNavigate }) {
   async function toggleComplete(task) {
     const isDone = task.status === "completada";
     const upd = { status: isDone ? "pendiente" : "completada", completed_at: isDone ? null : new Date().toISOString() };
-    const { error } = await supabase.from("tasks").update(upd).eq("id", task.id);
-    if (!error) { await load(); showToastMsg(isDone ? "Marcada como pendiente" : "¡Tarea completada!"); }
+    try {
+      const { error } = await supabase.from("tasks").update(upd).eq("id", task.id);
+      if (error) throw error;
+      await load();
+      showToastMsg(isDone ? "Marcada como pendiente" : "¡Tarea completada!");
+    } catch(err) {
+      console.error("[Tasks] toggleComplete error:", err);
+      showToastMsg("No se pudo actualizar la tarea");
+    }
   }
 
   async function handleDrop(targetStatus) {
@@ -287,13 +294,21 @@ export default function TasksPage({ profile, onNavigate }) {
   }
 
   async function handleQuickAdd(e) {
-    if (e.key !== "Enter" || !quickAdd.trim()) return;
+    if (e.key !== "Enter" || e.isComposing || !quickAdd.trim()) return;
     const title = quickAdd.trim();
     setQuickAdd("");
-    const { error } = await supabase.from("tasks").insert([{
-      title, priority: "media", status: "pendiente", created_by: profile?.id || null,
-    }]);
-    if (!error) { await load(); showToastMsg("Tarea creada"); }
+    try {
+      const { error } = await supabase.from("tasks").insert([{
+        title, priority: "media", status: "pendiente", created_by: profile?.id || null,
+      }]);
+      if (error) throw error;
+      await load();
+      showToastMsg("Tarea creada");
+    } catch(err) {
+      console.error("[Tasks] handleQuickAdd error:", err);
+      showToastMsg("No se pudo crear la tarea");
+      setQuickAdd(title);
+    }
   }
 
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }));

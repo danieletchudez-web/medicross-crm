@@ -7,7 +7,7 @@ import {
   FileText,
   Handshake,
   ReceiptText,
-  Timeline,
+  History,
   Users,
 } from "lucide-react";
 import Layout from "../components/Layout";
@@ -17,7 +17,7 @@ import "./accountDetail.css";
 
 const TABS = [
   ["summary","Resumen",Building2],
-  ["timeline","Línea de tiempo",Timeline],
+  ["timeline","Línea de tiempo",History],
   ["visits","Visitas",Handshake],
   ["opportunities","Oportunidades",BriefcaseBusiness],
   ["tenders","Licitaciones",FileText],
@@ -51,26 +51,31 @@ export default function AccountDetailPage({profile,onNavigate,navigationData}) {
 
   async function loadAccount() {
     setLoading(true);
-    const {data:accountRow,error} = await supabase.from("accounts").select("*, profiles(full_name,email)").eq("id",accountId).maybeSingle();
-    if (error || !accountRow) { setAccount(null); setLoading(false); return; }
-    setAccount(accountRow);
-    const name = String(accountRow.name||"").replace(/[%_,]/g," ").trim();
-    const [visitsRes,oppsRes,tendersRes,linkedQuotesRes,namedQuotesRes,salesRes] = await Promise.all([
-      supabase.from("visits").select("*, products(name,line)").eq("account_id",accountId).order("visit_date",{ascending:false}),
-      supabase.from("opportunities").select("*, products(name,line)").eq("account_id",accountId).order("created_at",{ascending:false}),
-      name ? supabase.from("tenders").select("*").ilike("institution",`%${name}%`).order("created_at",{ascending:false}) : Promise.resolve({data:[]}),
-      supabase.from("cotizaciones").select("*").eq("account_id",accountId).order("created_at",{ascending:false}),
-      name ? supabase.from("cotizaciones").select("*").ilike("institucion",`%${name}%`).order("created_at",{ascending:false}) : Promise.resolve({data:[]}),
-      name ? supabase.from("sales").select("*").ilike("cliente",`%${name}%`).order("fecha",{ascending:false}) : Promise.resolve({data:[]}),
-    ]);
-    setData({
-      visits:visitsRes.data||[],
-      opportunities:oppsRes.data||[],
-      tenders:tendersRes.data||[],
-      quotes:uniqueById([...(linkedQuotesRes.data||[]),...(namedQuotesRes.data||[])]),
-      sales:salesRes.data||[],
-    });
-    setLoading(false);
+    try {
+      const {data:accountRow,error} = await supabase.from("accounts").select("*, profiles(full_name,email)").eq("id",accountId).maybeSingle();
+      if (error || !accountRow) { setAccount(null); return; }
+      setAccount(accountRow);
+      const name = String(accountRow.name||"").replace(/[%_,]/g," ").trim();
+      const [visitsRes,oppsRes,tendersRes,linkedQuotesRes,namedQuotesRes,salesRes] = await Promise.all([
+        supabase.from("visits").select("*, products(name,line)").eq("account_id",accountId).order("visit_date",{ascending:false}),
+        supabase.from("opportunities").select("*, products(name,line)").eq("account_id",accountId).order("created_at",{ascending:false}),
+        name ? supabase.from("tenders").select("*").ilike("institution",`%${name}%`).order("created_at",{ascending:false}) : Promise.resolve({data:[]}),
+        supabase.from("cotizaciones").select("*").eq("account_id",accountId).order("created_at",{ascending:false}),
+        name ? supabase.from("cotizaciones").select("*").ilike("institucion",`%${name}%`).order("created_at",{ascending:false}) : Promise.resolve({data:[]}),
+        name ? supabase.from("sales").select("*").ilike("cliente",`%${name}%`).order("fecha",{ascending:false}) : Promise.resolve({data:[]}),
+      ]);
+      setData({
+        visits:visitsRes.data||[],
+        opportunities:oppsRes.data||[],
+        tenders:tendersRes.data||[],
+        quotes:uniqueById([...(linkedQuotesRes.data||[]),...(namedQuotesRes.data||[])]),
+        sales:salesRes.data||[],
+      });
+    } catch(err) {
+      console.error("[AccountDetail] loadAccount error:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const events = useMemo(()=>{

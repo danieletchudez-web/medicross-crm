@@ -20,7 +20,7 @@ function compactMoney(v) {
   return `$${Math.round(n).toLocaleString("es-AR")}`;
 }
 
-export default function SellerDashboard({ profile, onNavigate }) {
+export default function SellerDashboard({ profile, onNavigate, pageKey }) {
   const [visits, setVisits]               = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [accounts, setAccounts]           = useState([]);
@@ -29,7 +29,7 @@ export default function SellerDashboard({ profile, onNavigate }) {
   const pipelineRef = useRef(null);
   const activityRef = useRef(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [pageKey]);
   useEffect(() => { if (!loading) renderCharts(); }, [loading, visits, opportunities, accounts]);
 
   async function loadData() {
