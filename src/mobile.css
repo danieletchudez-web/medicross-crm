@@ -138,9 +138,27 @@
   .p-body    { padding:14px 16px !important; }
   .p-section { padding:14px 16px !important; }
   .p-toolbar {
-    padding:10px 16px !important;
+    padding:8px 16px !important;
     overflow-x:auto !important;
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    scroll-snap-type:x mandatory !important;
     flex-wrap:nowrap !important;
+    gap:6px !important;
+    scrollbar-width:none !important;
+    -ms-overflow-style:none !important;
+    align-items:center !important;
+  }
+  .p-toolbar::-webkit-scrollbar { display:none !important; }
+  .p-toolbar-sep { display:none !important; }
+  .p-btn {
+    height:36px !important;
+    flex-shrink:0 !important;
+    scroll-snap-align:start !important;
+    white-space:nowrap !important;
+    min-width:max-content !important;
+    font-size:12.5px !important;
+    padding:0 12px !important;
   }
   .p-chart { padding:4px 16px 14px !important; }
   .p-row   { padding:12px 16px !important; }
@@ -1737,3 +1755,206 @@
   line-height: 1.5;
 }
 [data-theme="dark"] .msearch__empty { color: rgba(255,255,255,.28); }
+
+
+/* ============================================================
+   SECTION 17: Mobile Action Bar system
+   Applies to all toolbar patterns across the CRM.
+   Pure CSS — no React changes, no functionality affected.
+   Desktop: untouched (all rules inside @media max-width:768px)
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ── Universal Mobile Action Bar vars ─────────────────────── */
+  :root {
+    --mab-height: 36px;
+    --mab-gap: 6px;
+    --mab-radius: 8px;
+    --mab-font: 12.5px;
+    --mab-px: 12px;
+  }
+
+  /* ── TendersPage: .tn-header + .tn-header__actions + .tn-toolbar ── */
+
+  .tn-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .tn-header__actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    flex-wrap: nowrap !important;
+    gap: var(--mab-gap) !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    grid-template-columns: unset !important;
+    align-items: center !important;
+    padding-bottom: 2px !important;
+  }
+  .tn-header__actions::-webkit-scrollbar { display: none !important; }
+
+  /* Remove grid overrides from tenders.css */
+  .tn-header__actions .tn-btn--primary,
+  .tn-header__actions .tn-btn[style] {
+    grid-column: unset !important;
+    justify-content: flex-start !important;
+    min-height: unset !important;
+  }
+
+  .tn-toolbar {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    flex-wrap: nowrap !important;
+    gap: var(--mab-gap) !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    width: 100% !important;
+    align-items: center !important;
+  }
+  .tn-toolbar::-webkit-scrollbar { display: none !important; }
+
+  .tn-toolbar__group {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
+    gap: var(--mab-gap) !important;
+  }
+  .tn-toolbar__sep { display: none !important; }
+
+  .tn-tbar-btn,
+  .tn-header__actions .tn-btn {
+    height: var(--mab-height) !important;
+    min-width: max-content !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: start !important;
+    white-space: nowrap !important;
+    font-size: var(--mab-font) !important;
+    padding: 0 var(--mab-px) !important;
+  }
+
+  /* ── CotizadorPage: .cot-header + .cot-header-actions ──────── */
+
+  .cot-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .cot-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    padding: 4px !important;
+    border-radius: 12px !important;
+    align-items: center !important;
+  }
+  .cot-header-actions::-webkit-scrollbar { display: none !important; }
+  .cot-toolbar__sep { display: none !important; }
+
+  .cot-btn {
+    height: var(--mab-height) !important;
+    min-width: max-content !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: start !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 0 11px !important;
+  }
+
+  /* ── SuppliersPage: .sp-list-actions + .sp-prod-toolbar ────── */
+
+  .sp-list-actions,
+  .sp-prod-toolbar,
+  .sp-history-toolbar {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    flex-wrap: nowrap !important;
+    gap: var(--mab-gap) !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    align-items: center !important;
+    padding-bottom: 2px !important;
+  }
+  .sp-list-actions::-webkit-scrollbar,
+  .sp-prod-toolbar::-webkit-scrollbar,
+  .sp-history-toolbar::-webkit-scrollbar { display: none !important; }
+
+  .sp-btn,
+  .sp-list-actions > button,
+  .sp-prod-toolbar > button,
+  .sp-history-toolbar > button {
+    height: var(--mab-height) !important;
+    min-width: max-content !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: start !important;
+    white-space: nowrap !important;
+    font-size: var(--mab-font) !important;
+  }
+
+  /* ── CampaignsPage / generic page headers with flex btn rows ── */
+
+  .page-actions-row,
+  .campaign-actions,
+  .camp-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+    gap: var(--mab-gap) !important;
+    scrollbar-width: none !important;
+    align-items: center !important;
+  }
+  .page-actions-row::-webkit-scrollbar,
+  .campaign-actions::-webkit-scrollbar,
+  .camp-actions::-webkit-scrollbar { display: none !important; }
+
+  /* ── tn-attach-toolbar (TendersPage file attachments) ────────── */
+
+  .tn-attach-toolbar {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+    gap: var(--mab-gap) !important;
+    scrollbar-width: none !important;
+  }
+  .tn-attach-toolbar::-webkit-scrollbar { display: none !important; }
+
+  /* ── Dark mode adjustments ───────────────────────────────────── */
+
+  [data-theme="dark"] .cot-header-actions {
+    background: #1C1C1E !important;
+    border-color: rgba(255,255,255,.07) !important;
+  }
+
+} /* end @media (max-width: 768px) — Section 17 */

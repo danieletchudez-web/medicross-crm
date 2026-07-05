@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CalendarPlus, Sparkles, UserPlus, Target, MapPin, Calendar,
   CheckSquare, FileText, Briefcase, Package, Truck, Megaphone, Bell,
-  BarChart2, Users, Settings, User, ChevronRight, LogOut, Moon, Sun,
+  BarChart2, BarChart3, Users, Settings, User, ChevronRight, LogOut, Moon, Sun,
   Plus, X, Eye, EyeOff, RotateCcw,
 } from "lucide-react";
 
@@ -24,6 +24,7 @@ const DOCK_CONTEXTS = {
   suppliers:        { Icon: Truck,        label: "Proveedor",   action: "suppliers" },
   campaigns:        { Icon: Megaphone,    label: "Campaña",     action: "campaigns" },
   salesAnalytics:   { Icon: BarChart2,    label: "Análisis",    action: "salesAnalytics" },
+  biComercial:      { Icon: BarChart3,    label: "BI",          action: "salesAnalytics" },
   notifications:    { Icon: Bell,         label: "Alerta",      action: "notifications" },
 };
 
@@ -36,6 +37,7 @@ const ALL_MODULES = [
   { key: "tasks",          label: "Tareas",        Icon: CheckSquare },
   { key: "products",       label: "Productos",     Icon: Package },
   { key: "salesAnalytics", label: "Análisis",      Icon: BarChart2 },
+  { key: "biComercial",    label: "BI Comercial",  Icon: BarChart3, navigateTo: "salesAnalytics" },
   { key: "suppliers",      label: "Proveedores",   Icon: Truck },
   { key: "campaigns",      label: "Campañas",      Icon: Megaphone },
   { key: "cotizador",      label: "Cotizador",     Icon: FileText },
@@ -45,6 +47,7 @@ const PAGE_LABELS = {
   mobileHome: "HOY", accounts: "Clientes", opportunities: "Oportunidades",
   calendar: "Agenda", visits: "Visitas", tenders: "Licitaciones",
   tasks: "Tareas", products: "Productos", salesAnalytics: "Análisis",
+  biComercial: "BI Comercial",
   suppliers: "Proveedores", campaigns: "Campañas", cotizador: "Cotizador",
   notifications: "Alertas", settings: "Configuración",
 };
@@ -512,7 +515,7 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
           {/* IR A */}
           <div className="mob-sheet-section-label">IR A</div>
           <div className={`mob-module-grid${editMode ? " mob-module-grid--editing" : ""}`}>
-            {allVisible.map(({ key, label, Icon: Ic }, idx) => (
+            {allVisible.map(({ key, label, Icon: Ic, navigateTo }, idx) => (
               <div
                 key={key}
                 className="mob-module-btn-wrap"
@@ -527,7 +530,7 @@ export default function MobileDock({ currentPage, onNavigate, profile, onLogout 
                 <button
                   className={`mob-module-btn${editMode ? " mob-module-btn--editing" : ""}${draggingKey === key ? " mob-module-btn--dragging" : ""}${hoverKey === key && draggingKey && draggingKey !== key ? " mob-module-btn--drop-target" : ""}`}
                   style={editMode ? { "--wiggle-delay": `${(idx % 4) * 55}ms` } : undefined}
-                  onClick={() => { if (!editMode) { setSheetOpen(false); onNavigate(key); } }}
+                  onClick={() => { if (!editMode) { setSheetOpen(false); onNavigate(navigateTo || key); } }}
                   aria-label={label}
                 >
                   <span className="mob-module-btn__icon"><Ic size={22} strokeWidth={1.5} /></span>
