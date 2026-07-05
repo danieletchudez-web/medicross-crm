@@ -198,6 +198,30 @@ export default function App() {
 
   useEffect(() => {
     if (!session || !profile?.approved || profile.is_active === false) return;
+
+    // Rotation: portrait→landscape while on mobileHome → go to desktop module
+    if (!isMobileViewport && page === "mobileHome") {
+      const fallbackPage = getFirstOpenModule(profile, false) || "settings";
+      setPage(fallbackPage);
+      localStorage.setItem("crm_current_page", fallbackPage);
+      setMounted(prev => {
+        if (prev.has(fallbackPage)) return prev;
+        const next = new Set(prev); next.add(fallbackPage); return next;
+      });
+      return;
+    }
+
+    // Rotation: landscape→portrait while on a desktop-only dashboard → go to mobileHome
+    if (isMobileViewport && (page === "managerDashboard" || page === "sellerDashboard")) {
+      setPage("mobileHome");
+      localStorage.setItem("crm_current_page", "mobileHome");
+      setMounted(prev => {
+        if (prev.has("mobileHome")) return prev;
+        const next = new Set(prev); next.add("mobileHome"); return next;
+      });
+      return;
+    }
+
     if (canOpenPageForProfile(profile, page, isMobileViewport)) return;
     const fallbackPage = getFirstOpenModule(profile, isMobileViewport) || "settings";
     setPage(fallbackPage);
