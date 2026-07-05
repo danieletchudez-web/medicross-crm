@@ -39,7 +39,7 @@
   --hb-dot-ring:     rgba(0,0,0,.20);
   --hb-mc-done:      #111111;
   --hb-mc-empty:     rgba(0,0,0,.07);
-  --hb-mc-today:     #3b82f6;
+  --hb-mc-today:     #111111;
   --hb-add-border:   rgba(0,0,0,.10);
   --hb-add-fg:       rgba(0,0,0,.35);
   --hb-sep:          rgba(0,0,0,.06);
@@ -80,7 +80,7 @@
   --hb-dot-ring:     rgba(255,255,255,.25);
   --hb-mc-done:      #ffffff;
   --hb-mc-empty:     rgba(255,255,255,.08);
-  --hb-mc-today:     #3b82f6;
+  --hb-mc-today:     #ffffff;
   --hb-add-border:   rgba(255,255,255,.10);
   --hb-add-fg:       rgba(255,255,255,.28);
   --hb-sep:          rgba(255,255,255,.06);
@@ -273,11 +273,11 @@
 }
 
 /* Column widths */
-.hb-table col.hb-col-name { width: 190px; }
+.hb-table col.hb-col-name { width: 210px; }
 .hb-table col.hb-col-day  { width: 34px; }
 .hb-table col.hb-col-gap  { width: 10px; }
 .hb-table col.hb-col-mes  { width: 108px; }
-.hb-table col.hb-col-cnt  { width: 36px; }
+.hb-table col.hb-col-cnt  { width: 52px; }
 
 /* ── Sticky name column ──────────────────────────────────────────────────── */
 .hb-th-name,
@@ -286,8 +286,8 @@
   left: 0;
   z-index: 3;
   background: var(--hb-sticky-bg);
-  min-width: 190px;
-  max-width: 220px;
+  min-width: 210px;
+  max-width: 240px;
 }
 .hb-th-name { z-index: 4; }
 
@@ -304,7 +304,7 @@
 }
 .hb-th-name.hb-tr-labels-name {
   text-align: left;
-  padding-left: 20px;
+  padding-left: 26px;
   font-size: 10px;
   letter-spacing: .12em;
   color: var(--hb-text3);
@@ -370,7 +370,7 @@
   border-bottom: 1px solid var(--hb-border);
 }
 .hb-td-stats-name {
-  padding: 0 0 10px 20px;
+  padding: 0 0 10px 26px;
   background: var(--hb-sticky-bg) !important;
 }
 
@@ -447,7 +447,7 @@
 .hb-tr-habit:hover td.hb-td-gap  { background: var(--hb-bg); }
 
 .hb-td-name {
-  padding: 10px 10px 10px 20px;
+  padding: 10px 12px 10px 26px;
   background: var(--hb-sticky-bg);
   border-bottom: 1px solid var(--hb-border2);
 }
@@ -565,7 +565,7 @@
 
 /* ── Count column ────────────────────────────────────────────────────────── */
 .hb-td-cnt {
-  padding: 0 8px 0 4px;
+  padding: 0 18px 0 6px;
   text-align: right;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
@@ -941,8 +941,10 @@
   .hb-title  { font-size: 22px; }
   .hb-month-nav { padding: 10px 16px; }
   .hb-th-name,
-  .hb-td-name { min-width: 130px; max-width: 140px; }
-  .hb-table col.hb-col-name { width: 130px; }
+  .hb-td-name { min-width: 140px; max-width: 160px; }
+  .hb-table col.hb-col-name { width: 140px; }
+  .hb-table col.hb-col-cnt  { width: 44px; }
+  .hb-td-cnt { padding: 0 12px 0 4px; }
   .hb-name-text { font-size: 12px; }
   .hb-check { width: 18px; height: 18px; }
   .hb-table col.hb-col-day { width: 28px; }
