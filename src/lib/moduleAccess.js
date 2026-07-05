@@ -45,6 +45,7 @@ const DEFAULT_MODULE_ORDER = [
   "importer",
   "salesAnalytics",
   "tasks",
+  "habits",
   "notifications",
   "settings",
 ];

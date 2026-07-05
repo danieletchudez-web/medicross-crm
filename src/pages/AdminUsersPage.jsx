@@ -24,6 +24,7 @@ const MODULES = [
   { id: "cotizador",        label: "Cotizador"             },
   { id: "preciosHistoricos",label: "Inteligencia de precios"},
   { id: "tasks",            label: "Tareas"                },
+  { id: "habits",           label: "Hábitos"               },
   { id: "notifications",    label: "Centro de Alertas"     },
   { id: "adminUsers",       label: "Administración"        },
 ];

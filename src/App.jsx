@@ -45,6 +45,7 @@ const CotizadorPage         = lazy(() => import("./pages/CotizadorPage"));
 const PreciosHistoricosPage = lazy(() => import("./pages/PreciosHistoricosPage"));
 const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
 const TasksPage             = lazy(() => import("./pages/TasksPage"));
+const HabitsPage            = lazy(() => import("./pages/HabitsPage"));
 const SuppliersPage         = lazy(() => import("./pages/SuppliersPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
 const MobileHomePage        = lazy(() => import("./pages/MobileHomePage"));
@@ -68,6 +69,7 @@ const ALL_PAGES = [
   { id: "preciosHistoricos", Component: PreciosHistoricosPage },
   { id: "notifications",     Component: NotificationsPage },
   { id: "tasks",             Component: TasksPage },
+  { id: "habits",            Component: HabitsPage },
   { id: "suppliers",         Component: SuppliersPage },
   { id: "settings",          Component: SettingsPage },
   { id: "mobileHome",        Component: MobileHomePage },

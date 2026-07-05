@@ -3,7 +3,7 @@ import {
   CalendarPlus, Sparkles, UserPlus, Target, MapPin, Calendar,
   CheckSquare, FileText, Briefcase, Package, Truck, Megaphone, Bell,
   BarChart2, BarChart3, Users, Settings, User, ChevronRight, LogOut, Moon, Sun,
-  Plus, X, Eye, EyeOff, RotateCcw,
+  Plus, X, Eye, EyeOff, RotateCcw, RefreshCw,
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -35,6 +35,7 @@ const ALL_MODULES = [
   { key: "visits",         label: "Visitas",       Icon: MapPin },
   { key: "tenders",        label: "Licitaciones",  Icon: Briefcase },
   { key: "tasks",          label: "Tareas",        Icon: CheckSquare },
+  { key: "habits",         label: "Hábitos",       Icon: RefreshCw },
   { key: "products",       label: "Productos",     Icon: Package },
   { key: "salesAnalytics", label: "Análisis",      Icon: BarChart2 },
   { key: "biComercial",    label: "BI Comercial",  Icon: BarChart3, navigateTo: "salesAnalytics" },
@@ -46,7 +47,7 @@ const ALL_MODULES = [
 const PAGE_LABELS = {
   mobileHome: "HOY", accounts: "Clientes", opportunities: "Oportunidades",
   calendar: "Agenda", visits: "Visitas", tenders: "Licitaciones",
-  tasks: "Tareas", products: "Productos", salesAnalytics: "Análisis",
+  tasks: "Tareas", habits: "Hábitos", products: "Productos", salesAnalytics: "Análisis",
   biComercial: "BI Comercial",
   suppliers: "Proveedores", campaigns: "Campañas", cotizador: "Cotizador",
   notifications: "Alertas", settings: "Configuración",
