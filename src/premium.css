@@ -1950,6 +1950,9 @@
    Philosophy: space instead of borders, information over chrome.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ─── 0. Base font size — same in both modes (matches dark mode 14px) ──── */
+html { font-size: 14px !important; }
+
 /* ─── 1. Design tokens (both modes) ────────────────────────────────────── */
 :root {
   --qui-bg:       #f4f5f7;
@@ -2030,12 +2033,38 @@ body,
 .layout-clock__time { font-size: 12px !important; font-weight: 500 !important; color: var(--qui-t3) !important; letter-spacing: 0.3px !important; }
 .layout-clock__date { font-size: 10px !important; color: var(--qui-t3) !important; }
 
-/* ─── 4. Sidebar — remove section labels, remove scale transforms ───────── */
-.sidebar-section__label,
-.sidebar-nav__group-label { display: none !important; }
+/* ─── 4. Sidebar — consistent look in both modes ────────────────────────── */
 
-/* Group spacing via padding instead of labels */
-.sidebar-section { padding-bottom: 4px !important; }
+/* Section labels: show in BOTH modes, same subtle uppercase style as dark */
+.sidebar-section__label {
+  display: block !important;
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.14em !important;
+  color: rgba(255,255,255,.14) !important;
+  text-transform: uppercase !important;
+  padding: 14px 10px 4px !important;
+  line-height: 1 !important;
+}
+.sidebar-nav__group-label {
+  display: block !important;
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.14em !important;
+  color: rgba(255,255,255,.14) !important;
+  text-transform: uppercase !important;
+}
+.sidebar-nav__group-row { padding: 14px 10px 4px !important; }
+
+/* Nav labels: same size in both modes (matching dark mode) */
+.sidebar-nav__label {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Section spacing */
+.sidebar-section { padding-bottom: 4px !important; margin-bottom: 6px !important; }
 
 /* No scale/bounce on hover — Quiet UI */
 .sidebar-nav__item:hover { transform: none !important; }
