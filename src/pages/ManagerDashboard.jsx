@@ -209,6 +209,12 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
 
   useEffect(() => { loadData(); }, [pageKey]);
   useEffect(() => { if (!loading) renderCharts(); }, [loading, selectedLine, opportunities, visits, campaigns, products, dashboardMode]);
+  useEffect(() => {
+    if (loading) return;
+    const obs = new MutationObserver(() => renderCharts());
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, [loading]);
   useEffect(() => { localStorage.setItem("medicross-dashboard-mode", dashboardMode); }, [dashboardMode]);
 
   async function loadData() {
@@ -424,9 +430,15 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
     });
   }
 
-  function chartOptions({ yMoney = false } = {}) {
+  const PIPELINE_BAR_COLORS = ["#8b9cb3","#3b82f6","#818cf8","#fbbf24","#fb923c","#f87171"];
+  const PROB_BAR_COLORS     = ["#94a3b8","#60a5fa","#fbbf24","#34d399"];
+
+  function chartOptions({ yMoney = false, isDark = false, indexAxis = "x" } = {}) {
+    const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+    const tickColor = isDark ? "#6b7280" : "#94a3b8";
     return {
       responsive: true, maintainAspectRatio: false,
+      animation: { duration: 350, easing: "easeOutQuart" },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -438,9 +450,9 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
         },
       },
       scales: {
-        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" } } },
-        y: { beginAtZero: true, border: { display: false }, grid: { color: "#f1f5f9", lineWidth: 1 },
-             ticks: { color: "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" }, callback: yMoney ? compactMoney : undefined } },
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: tickColor, font: { size: 11, weight: "600", family: "DM Sans" } } },
+        y: { beginAtZero: true, border: { display: false }, grid: { color: gridColor, lineWidth: 1 },
+             ticks: { color: tickColor, font: { size: 11, weight: "600", family: "DM Sans" }, callback: yMoney ? compactMoney : undefined } },
       },
     };
   }
@@ -450,46 +462,44 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
     if (!Chart) return;
     [pipelineRef, activityRef, probabilityRef].forEach((ref) => { if (ref.current?.chartInstance) ref.current.chartInstance.destroy(); });
 
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
     if (pipelineRef.current) {
       pipelineRef.current.chartInstance = new Chart(pipelineRef.current, {
         type: "bar",
-        data: { labels: STAGES, datasets: [{ data: pipelineByStage(), backgroundColor: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.7)", borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] },
-        options: chartOptions({ yMoney: true }),
+        data: { labels: STAGES, datasets: [{ data: pipelineByStage(), backgroundColor: PIPELINE_BAR_COLORS, borderColor: PIPELINE_BAR_COLORS, borderWidth: 0, borderRadius: 6, borderSkipped: false }] },
+        options: chartOptions({ yMoney: true, isDark }),
       });
     }
 
     if (activityRef.current) {
-      const actGrad = activityRef.current.getContext("2d").createLinearGradient(0, 0, 0, 200);
-      actGrad.addColorStop(0, "rgba(16,185,129,0.15)");
-      actGrad.addColorStop(1, "rgba(16,185,129,0.01)");
+      const actCtx  = activityRef.current.getContext("2d");
+      const actGrad = actCtx.createLinearGradient(0, 0, 0, 200);
+      actGrad.addColorStop(0, isDark ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.18)");
+      actGrad.addColorStop(1, "rgba(16,185,129,0.00)");
       activityRef.current.chartInstance = new Chart(activityRef.current, {
         type: "line",
-        data: { labels: ["Lun","Mar","Mié","Jue","Vie"], datasets: [{ data: activityByWeek(), borderColor: "rgba(16,185,129,0.8)", backgroundColor: actGrad, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: "#10b981", pointBorderColor: "#fff", pointBorderWidth: 2 }] },
-        options: chartOptions(),
+        data: { labels: ["Lun","Mar","Mié","Jue","Vie"], datasets: [{ data: activityByWeek(), borderColor: "#10b981", borderWidth: 2.5, backgroundColor: actGrad, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: "#10b981", pointBorderColor: isDark ? "#111" : "#fff", pointBorderWidth: 2.5 }] },
+        options: chartOptions({ isDark }),
       });
     }
 
     if (probabilityRef.current) {
-      const probData   = probabilityData();
-      const probColors = [
-        { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.6)" },
-        { bg: "rgba(59,130,246,0.15)",  border: "rgba(59,130,246,0.6)"  },
-        { bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.7)"  },
-        { bg: "rgba(16,185,129,0.15)",  border: "rgba(16,185,129,0.7)"  },
-      ];
+      const probData = probabilityData();
+      const baseOpts = chartOptions({ yMoney: true, isDark });
       probabilityRef.current.chartInstance = new Chart(probabilityRef.current, {
         type: "bar",
-        data: { labels: probData.map((d) => d.label), datasets: [{ data: probData.map((d) => d.amount), backgroundColor: probColors.map((c) => c.bg), borderColor: probColors.map((c) => c.border), borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] },
+        data: { labels: probData.map((d) => d.label), datasets: [{ data: probData.map((d) => d.amount), backgroundColor: PROB_BAR_COLORS, borderColor: PROB_BAR_COLORS, borderWidth: 0, borderRadius: 6, borderSkipped: false }] },
         options: {
-          ...chartOptions({ yMoney: true }),
+          ...baseOpts,
           indexAxis: "y",
           plugins: {
-            ...chartOptions({ yMoney: true }).plugins,
-            tooltip: { ...chartOptions({ yMoney: true }).plugins.tooltip, callbacks: { label: (ctx) => { const d = probData[ctx.dataIndex]; return ` ${money(ctx.raw)}  ·  ${d.count} opp${d.count !== 1 ? "s" : ""}`; } } },
+            ...baseOpts.plugins,
+            tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (ctx) => { const d = probData[ctx.dataIndex]; return ` ${money(ctx.raw)}  ·  ${d.count} opp${d.count !== 1 ? "s" : ""}`; } } },
           },
           scales: {
-            x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" }, callback: compactMoney } },
-            y: { grid: { display: false }, border: { display: false }, ticks: { color: "#64748b", font: { size: 12, weight: "700", family: "DM Sans" } } },
+            x: { grid: { display: false }, border: { display: false }, ticks: { color: isDark ? "#6b7280" : "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" }, callback: compactMoney } },
+            y: { grid: { display: false }, border: { display: false }, ticks: { color: isDark ? "#9ca3af" : "#64748b", font: { size: 12, weight: "700", family: "DM Sans" } } },
           },
         },
       });

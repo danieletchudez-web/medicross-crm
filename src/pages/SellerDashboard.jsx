@@ -31,6 +31,12 @@ export default function SellerDashboard({ profile, onNavigate, pageKey }) {
 
   useEffect(() => { loadData(); }, [pageKey]);
   useEffect(() => { if (!loading) renderCharts(); }, [loading, visits, opportunities, accounts]);
+  useEffect(() => {
+    if (loading) return;
+    const obs = new MutationObserver(() => renderCharts());
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, [loading]);
 
   async function loadData() {
     setLoading(true);
@@ -130,9 +136,14 @@ export default function SellerDashboard({ profile, onNavigate, pageKey }) {
     return ["Lun","Mar","Mié","Jue","Vie"].map((_, i) => visits.filter((v) => new Date(v.visit_date).getDay() === i + 1).length);
   }
 
-  function chartOptions({ yMoney = false } = {}) {
+  const PIPELINE_BAR_COLORS = ["#8b9cb3","#3b82f6","#818cf8","#fbbf24","#fb923c","#f87171"];
+
+  function chartOptions({ yMoney = false, isDark = false } = {}) {
+    const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+    const tickColor = isDark ? "#6b7280" : "#94a3b8";
     return {
       responsive: true, maintainAspectRatio: false,
+      animation: { duration: 350, easing: "easeOutQuart" },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -144,9 +155,9 @@ export default function SellerDashboard({ profile, onNavigate, pageKey }) {
         },
       },
       scales: {
-        x: { grid: { display: false }, border: { display: false }, ticks: { color: "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" } } },
-        y: { beginAtZero: true, border: { display: false }, grid: { color: "#f1f5f9", lineWidth: 1 },
-             ticks: { color: "#94a3b8", font: { size: 11, weight: "600", family: "DM Sans" }, callback: yMoney ? compactMoney : undefined } },
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: tickColor, font: { size: 11, weight: "600", family: "DM Sans" } } },
+        y: { beginAtZero: true, border: { display: false }, grid: { color: gridColor, lineWidth: 1 },
+             ticks: { color: tickColor, font: { size: 11, weight: "600", family: "DM Sans" }, callback: yMoney ? compactMoney : undefined } },
       },
     };
   }
@@ -156,23 +167,25 @@ export default function SellerDashboard({ profile, onNavigate, pageKey }) {
     if (!Chart) return;
     [pipelineRef, activityRef].forEach((ref) => { if (ref.current?.chartInstance) ref.current.chartInstance.destroy(); });
 
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
     if (pipelineRef.current) {
       pipelineRef.current.chartInstance = new Chart(pipelineRef.current, {
         type: "bar",
-        data: { labels: STAGES, datasets: [{ data: pipelineByStage(), backgroundColor: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.7)", borderWidth: 1.5, borderRadius: 6, borderSkipped: false }] },
-        options: chartOptions({ yMoney: true }),
+        data: { labels: STAGES, datasets: [{ data: pipelineByStage(), backgroundColor: PIPELINE_BAR_COLORS, borderColor: PIPELINE_BAR_COLORS, borderWidth: 0, borderRadius: 6, borderSkipped: false }] },
+        options: chartOptions({ yMoney: true, isDark }),
       });
     }
 
     if (activityRef.current) {
-      const ctx = activityRef.current.getContext("2d");
+      const ctx  = activityRef.current.getContext("2d");
       const grad = ctx.createLinearGradient(0, 0, 0, 220);
-      grad.addColorStop(0, "rgba(16,185,129,0.15)");
-      grad.addColorStop(1, "rgba(16,185,129,0.01)");
+      grad.addColorStop(0, isDark ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.18)");
+      grad.addColorStop(1, "rgba(16,185,129,0.00)");
       activityRef.current.chartInstance = new Chart(activityRef.current, {
         type: "line",
-        data: { labels: ["Lun","Mar","Mié","Jue","Vie"], datasets: [{ data: activityByWeek(), borderColor: "rgba(16,185,129,0.8)", backgroundColor: grad, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: "#10b981", pointBorderColor: "#fff", pointBorderWidth: 2 }] },
-        options: chartOptions(),
+        data: { labels: ["Lun","Mar","Mié","Jue","Vie"], datasets: [{ data: activityByWeek(), borderColor: "#10b981", borderWidth: 2.5, backgroundColor: grad, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: "#10b981", pointBorderColor: isDark ? "#111" : "#fff", pointBorderWidth: 2.5 }] },
+        options: chartOptions({ isDark }),
       });
     }
   }
