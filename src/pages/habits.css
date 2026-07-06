@@ -262,7 +262,7 @@
   scrollbar-width: thin;
   scrollbar-color: var(--hb-border) transparent;
   /* breathing room so sticky name col and last col don't sit at viewport edge */
-  padding-right: 20px;
+  padding-right: 32px;
 }
 .hb-grid-outer::-webkit-scrollbar { height: 4px; }
 .hb-grid-outer::-webkit-scrollbar-thumb { background: var(--hb-border); border-radius: 4px; }
@@ -278,8 +278,8 @@
 .hb-table col.hb-col-name { width: 210px; }
 .hb-table col.hb-col-day  { width: 34px; }
 .hb-table col.hb-col-gap  { width: 10px; }
-.hb-table col.hb-col-mes  { width: 108px; }
-.hb-table col.hb-col-cnt  { width: 68px; }
+.hb-table col.hb-col-mes  { width: 124px; }
+.hb-table col.hb-col-cnt  { width: 88px; }
 
 /* ── Sticky name column ──────────────────────────────────────────────────── */
 .hb-th-name,
@@ -355,13 +355,13 @@
   font-size: 10px;
   font-weight: 600;
   letter-spacing: .04em;
-  text-align: center;
+  text-align: left;
   background: var(--hb-header-bg);
   color: var(--hb-text3);
-  padding: 4px 0 8px;
+  padding: 4px 0 8px 8px;
   vertical-align: bottom;
 }
-.hb-th-dow-inner { display: flex; gap: 2px; justify-content: center; }
+.hb-th-dow-inner { display: flex; gap: 2px; justify-content: flex-start; }
 .hb-th-dow-inner span { width: 13px; text-align: center; font-size: 9.5px; }
 
 /* ── Header row 3: stats (bar charts + counts) ───────────────────────────── */
@@ -379,8 +379,8 @@
 .hb-stats-cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 0 2px 10px;
+  gap: 5px;
+  padding: 0 2px 14px;
 }
 
 .hb-bars {
@@ -449,7 +449,7 @@
 .hb-tr-habit:hover td.hb-td-gap  { background: var(--hb-bg); }
 
 .hb-td-name {
-  padding: 10px 12px 10px 26px;
+  padding: 14px 12px 14px 26px;
   background: var(--hb-sticky-bg);
   border-bottom: 1px solid var(--hb-border2);
 }
@@ -497,7 +497,7 @@
 
 /* ── Checkboxes ──────────────────────────────────────────────────────────── */
 .hb-td-check {
-  padding: 2px;
+  padding: 5px 2px;
   text-align: center;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
@@ -541,7 +541,7 @@
 
 /* ── MES mini-calendar ───────────────────────────────────────────────────── */
 .hb-td-mes {
-  padding: 4px 6px;
+  padding: 6px 6px 6px 8px;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
   border-left: 1px solid var(--hb-sep);
@@ -567,7 +567,7 @@
 
 /* ── Count column ────────────────────────────────────────────────────────── */
 .hb-td-cnt {
-  padding: 0 24px 0 6px;
+  padding: 0 32px 0 8px;
   text-align: right;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
@@ -947,8 +947,8 @@
   .hb-th-name,
   .hb-td-name { min-width: 130px; max-width: 150px; }
   .hb-table col.hb-col-name { width: 130px; }
-  .hb-table col.hb-col-cnt  { width: 56px; }
-  .hb-td-cnt { padding: 0 18px 0 4px; }
+  .hb-table col.hb-col-cnt  { width: 68px; }
+  .hb-td-cnt { padding: 0 20px 0 4px; }
   .hb-th-name.hb-tr-labels-name { padding-left: 16px; }
   .hb-td-name { padding: 10px 8px 10px 16px; }
   .hb-td-stats-name { padding: 0 0 10px 16px; }
