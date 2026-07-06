@@ -47,16 +47,16 @@
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-theme="dark"] .hb-page {
-  --hb-bg:           #000000;
+  --hb-bg:           #111111;
   --hb-surface:      #111111;
   --hb-surface2:     #1a1a1a;
   --hb-border:       rgba(255,255,255,.07);
-  --hb-border2:      rgba(255,255,255,.04);
+  --hb-border2:      rgba(255,255,255,.05);
   --hb-text:         #f4f4f5;
   --hb-text2:        rgba(255,255,255,.45);
   --hb-text3:        rgba(255,255,255,.25);
-  --hb-sticky-bg:    #000000;
-  --hb-header-bg:    #000000;
+  --hb-sticky-bg:    #111111;
+  --hb-header-bg:    #111111;
   --hb-check-empty:  rgba(255,255,255,.15);
   --hb-check-done:   #ffffff;
   --hb-check-tick:   #000000;
@@ -279,7 +279,7 @@
 .hb-table col.hb-col-day  { width: 34px; }
 .hb-table col.hb-col-gap  { width: 10px; }
 .hb-table col.hb-col-mes  { width: 108px; }
-.hb-table col.hb-col-cnt  { width: 52px; }
+.hb-table col.hb-col-cnt  { width: 68px; }
 
 /* ── Sticky name column ──────────────────────────────────────────────────── */
 .hb-th-name,
@@ -567,7 +567,7 @@
 
 /* ── Count column ────────────────────────────────────────────────────────── */
 .hb-td-cnt {
-  padding: 0 18px 0 6px;
+  padding: 0 24px 0 6px;
   text-align: right;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
@@ -947,8 +947,8 @@
   .hb-th-name,
   .hb-td-name { min-width: 130px; max-width: 150px; }
   .hb-table col.hb-col-name { width: 130px; }
-  .hb-table col.hb-col-cnt  { width: 44px; }
-  .hb-td-cnt { padding: 0 10px 0 4px; }
+  .hb-table col.hb-col-cnt  { width: 56px; }
+  .hb-td-cnt { padding: 0 18px 0 4px; }
   .hb-th-name.hb-tr-labels-name { padding-left: 16px; }
   .hb-td-name { padding: 10px 8px 10px 16px; }
   .hb-td-stats-name { padding: 0 0 10px 16px; }
