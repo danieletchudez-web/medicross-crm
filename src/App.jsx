@@ -2,11 +2,12 @@ import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "./lib/moduleAccess";
 
-import LoginPage          from "./pages/LoginPage";
-import CRMAssistant       from "./components/CRMAssistant";
-import DialogSystem       from "./components/DialogSystem";
-import MobileNav          from "./components/MobileNav";
-import MobileDock         from "./components/MobileDock";
+import LoginPage                from "./pages/LoginPage";
+import CRMAssistant             from "./components/CRMAssistant";
+import DialogSystem             from "./components/DialogSystem";
+import MobileNav                from "./components/MobileNav";
+import MobileDock               from "./components/MobileDock";
+import DailyMotivationGate      from "./components/DailyMotivationPopup";
 
 class PageErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
@@ -422,6 +423,7 @@ export default function App() {
       <SafeRender><DialogSystem /></SafeRender>
       <SafeRender><MobileNav currentPage={currentPage} onNavigate={navigate} /></SafeRender>
       <SafeRender><MobileDock currentPage={currentPage} onNavigate={navigate} profile={safeProfile} onLogout={handleLogout} /></SafeRender>
+      <SafeRender><DailyMotivationGate userId={safeProfile.id} /></SafeRender>
     </>
   );
 }
