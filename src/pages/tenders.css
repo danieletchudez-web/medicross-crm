@@ -855,6 +855,83 @@
   color: var(--tn-navy);
 }
 
+/* ─── DARK MODE — variables globales + overrides hardcodeados ───────── */
+[data-theme="dark"] .tn-page {
+  --tn-navy:    #93c5fd;
+  --tn-navy2:   #bfdbfe;
+  --tn-accent:  #60a5fa;
+  --tn-bg:      #0d1117;
+  --tn-surface: #161b22;
+  --tn-border:  rgba(255,255,255,0.07);
+  --tn-border2: rgba(255,255,255,0.12);
+  --tn-text:    #e5edf7;
+  --tn-text2:   #94a3b8;
+  --tn-text3:   #6b7280;
+}
+
+/* Toolbar */
+[data-theme="dark"] .tn-toolbar {
+  background: #161b22;
+  border-color: rgba(255,255,255,0.10);
+  box-shadow: none;
+}
+
+/* Barra de búsqueda */
+[data-theme="dark"] .tn-search-bar {
+  box-shadow: none;
+}
+[data-theme="dark"] .tn-search-bar:focus-within {
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.15);
+  border-color: #60a5fa;
+}
+
+/* Filtros de columna en la grilla */
+[data-theme="dark"] .tn-grid__filter-input {
+  background: #0d1117;
+  border-color: rgba(255,255,255,0.10);
+  color: #e5edf7;
+}
+[data-theme="dark"] .tn-grid__filter-input::placeholder { color: #4b5563; }
+[data-theme="dark"] .tn-grid__filter-input:focus { border-color: #60a5fa; }
+
+/* Modal form inputs */
+[data-theme="dark"] .tn-comp-row input,
+[data-theme="dark"] .tn-field input,
+[data-theme="dark"] .tn-field select,
+[data-theme="dark"] .tn-field textarea {
+  background: #0d1117;
+  border-color: rgba(255,255,255,0.12);
+  color: #e5edf7;
+}
+[data-theme="dark"] .tn-comp-row input:focus,
+[data-theme="dark"] .tn-field input:focus,
+[data-theme="dark"] .tn-field select:focus,
+[data-theme="dark"] .tn-field textarea:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.12);
+}
+
+/* File rows, chips */
+[data-theme="dark"] .tn-file-row {
+  background: #161b22;
+  border-color: rgba(255,255,255,0.08);
+}
+[data-theme="dark"] .tn-readiness__chip {
+  background: #161b22;
+  border-color: rgba(255,255,255,0.12);
+  color: #94a3b8;
+}
+[data-theme="dark"] .tn-source-pill {
+  background: #161b22;
+  border-color: rgba(255,255,255,0.12);
+  color: #94a3b8;
+}
+[data-theme="dark"] .tn-source-pill--active {
+  background: rgba(96,165,250,0.12);
+  color: #93c5fd;
+  border-color: rgba(96,165,250,0.25);
+}
+
 /* ─── DARK MODE PARA NUEVAS PIEZAS ──────────────────────────────────── */
 [data-theme="dark"] .tn-workbench-card,
 [data-theme="dark"] .tn-view-tab,
