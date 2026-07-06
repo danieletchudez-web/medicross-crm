@@ -437,8 +437,8 @@
 
 /* ─── Buttons ────────────────────────────────────────────────────────── */
 .bi-btn { border-radius: 9px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all .15s; border: none; white-space: nowrap; }
-.bi-btn--primary { background: #0f2444; color: #fff; }
-.bi-btn--primary:hover:not(:disabled) { background: #162d50; }
+.bi-btn--primary { background: #2563EB; color: #fff; }
+.bi-btn--primary:hover:not(:disabled) { background: #1d4ed8; }
 .bi-btn--primary:disabled { opacity: .5; cursor: not-allowed; }
 .bi-btn--ghost { background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; }
 .bi-btn--ghost:hover { background: #f1f5f9; }

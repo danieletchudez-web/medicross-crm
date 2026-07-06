@@ -81,8 +81,8 @@
 }
 .tn-btn:hover  { background: #f1f5f9; }
 .tn-btn:active { transform: scale(.98); }
-.tn-btn--primary { background: var(--tn-navy); color: #fff; border-color: var(--tn-navy); }
-.tn-btn--primary:hover { background: var(--tn-navy2); box-shadow: 0 2px 8px rgba(15,36,68,.25); }
+.tn-btn--primary { background: #2563EB; color: #fff; border-color: #2563EB; }
+.tn-btn--primary:hover { background: #1d4ed8; box-shadow: 0 2px 8px rgba(37,99,235,.25); }
 .tn-btn--success { background: #166534; color: #fff; border-color: #166534; }
 .tn-btn--success:hover { background: #14532d; }
 .tn-btn--ghost   { border-color: transparent; background: transparent; color: var(--tn-text2); }
@@ -132,12 +132,12 @@
 .tn-tbar-btn--intel:hover { background: #eff6ff; color: #1e40af; }
 
 .tn-tbar-btn--primary {
-  background: #0f2444; color: #fff;
+  background: #2563EB; color: #fff;
   font-weight: 600; padding: 6px 14px;
 }
 .tn-tbar-btn--primary:hover {
-  background: #1a3a6b;
-  box-shadow: 0 2px 8px rgba(15,36,68,.25);
+  background: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(37,99,235,.25);
 }
 
 /* ─── BOTÓN INTELIGENCIA DE PRECIOS ─────────────────────────────────── */

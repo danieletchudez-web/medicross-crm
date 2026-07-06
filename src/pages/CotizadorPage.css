@@ -71,8 +71,8 @@
 }
 .cot-btn:hover  { background: #f1f5f9; color: #0f172a; }
 .cot-btn:active { opacity: .85; }
-.cot-btn--primary { background: #0f2444; color: #fff; font-weight: 600; padding: 6px 14px; }
-.cot-btn--primary:hover { background: #1a3a6b; box-shadow: 0 2px 8px rgba(15,36,68,.25); color: #fff; }
+.cot-btn--primary { background: #2563EB; color: #fff; font-weight: 600; padding: 6px 14px; }
+.cot-btn--primary:hover { background: #1d4ed8; box-shadow: 0 2px 8px rgba(37,99,235,.25); color: #fff; }
 .cot-btn--primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 .cot-btn--success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 .cot-btn--success:hover { background: #d1fae5; color: #047857; }

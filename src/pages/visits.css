@@ -36,11 +36,11 @@
   transform: translateY(-1px);
 }
 .visits-header-btn--primary {
-  border-color: #185fa5;
-  background: #185fa5;
+  border-color: #2563EB;
+  background: #2563EB;
   color: #fff;
 }
-.visits-header-btn--primary:hover { background: #124d88; }
+.visits-header-btn--primary:hover { background: #1d4ed8; }
 
 .visits-insight {
   display: flex;
@@ -205,9 +205,9 @@
   gap: 6px;
 }
 .visits-tab.active {
-  background: #0f2444;
+  background: #2563EB;
   color: #fff;
-  box-shadow: 0 2px 6px rgba(15,36,68,.2);
+  box-shadow: 0 2px 6px rgba(37,99,235,.2);
 }
 .visits-tab:not(.active):hover { background: #f1f5f9; color: #334155; }
 
@@ -266,7 +266,7 @@
   transition: all .15s;
   white-space: nowrap;
 }
-.visits-filter-tab.active { background: #0f2444; color: #fff; border-color: #0f2444; }
+.visits-filter-tab.active { background: #2563EB; color: #fff; border-color: #2563EB; }
 .visits-filter-tab:not(.active):hover { background: #f1f5f9; color: #334155; }
 
 .visits-history-toolbar {
@@ -380,11 +380,11 @@
   border: none;
 }
 .vf-btn--save {
-  background: #0f2444;
+  background: #2563EB;
   color: #fff;
-  box-shadow: 0 2px 6px rgba(15,36,68,.2);
+  box-shadow: 0 2px 6px rgba(37,99,235,.2);
 }
-.vf-btn--save:hover:not(:disabled) { background: #1a3a6b; }
+.vf-btn--save:hover:not(:disabled) { background: #1d4ed8; }
 .vf-btn--save:disabled { opacity: .5; cursor: not-allowed; }
 .vf-btn--cancel {
   background: #f1f5f9;

@@ -1537,28 +1537,30 @@
 .p-field > input:focus,.p-field > select:focus,.p-field > textarea:focus { border-color:rgba(0,0,0,.25) !important; }
 .p-form-actions { display:flex; align-items:center; gap:8px; margin-top:6px; }
 
-/* ── Buttons ────────────────────────────────────────────────────────────── */
-.p-btn { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:8px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border:none; transition:background 120ms ease-out,color 120ms ease-out; white-space:nowrap; flex-shrink:0; }
+/* ── Buttons — Quiet UI ─────────────────────────────────────────────────── */
+.p-btn { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:10px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border:none; transition:background 180ms ease,color 180ms ease,transform 180ms ease,box-shadow 180ms ease; white-space:nowrap; flex-shrink:0; }
 .p-btn:disabled { opacity:.38; cursor:not-allowed; pointer-events:none; }
-.p-btn--primary { background:#111111; color:#FFFFFF; }
-.p-btn--primary:hover { background:#333333; }
-.p-btn--ghost { background:rgba(0,0,0,.06); color:#6B7280; border:1px solid rgba(0,0,0,.10); }
-.p-btn--ghost:hover { background:rgba(0,0,0,.10); color:#111111; }
-.p-btn--danger { background:rgba(239,68,68,.08); color:#dc2626; border:1px solid rgba(239,68,68,.15); }
-.p-btn--danger:hover { background:rgba(239,68,68,.14); }
+.p-btn--primary { background:#2563EB; color:#FFFFFF; box-shadow:0 1px 3px rgba(37,99,235,.20); }
+.p-btn--primary:hover { background:#3B82F6; box-shadow:0 2px 8px rgba(37,99,235,.28); transform:scale(1.02); }
+.p-btn--ghost { background:#FFFFFF; color:#64748B; border:1px solid #E2E8F0; }
+.p-btn--ghost:hover { background:#F8FAFC; color:#0F172A; border-color:#CBD5E1; }
+.p-btn--secondary { background:#FFFFFF; color:#0F172A; border:1px solid #E2E8F0; }
+.p-btn--secondary:hover { background:#F8FAFC; border-color:#CBD5E1; }
+.p-btn--danger { background:rgba(220,38,38,.06); color:#DC2626; border:1px solid rgba(220,38,38,.15); }
+.p-btn--danger:hover { background:rgba(220,38,38,.10); }
 .p-btn--icon { padding:0; width:34px; justify-content:center; }
 
 /* ── Tabs ───────────────────────────────────────────────────────────────── */
-.p-tabs { display:flex; border-bottom:1px solid rgba(0,0,0,.08); padding:0 20px; }
-.p-tab  { font-size:13px; font-weight:400; color:rgba(0,0,0,.38); padding:11px 14px; border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color 120ms; font-family:inherit; }
-.p-tab.active,.p-tab--active { color:#111111; border-bottom-color:rgba(0,0,0,.4); font-weight:500; }
-.p-tab:hover:not(.active):not(.p-tab--active) { color:rgba(0,0,0,.65); }
+.p-tabs { display:flex; border-bottom:1px solid #E2E8F0; padding:0 20px; }
+.p-tab  { font-size:13px; font-weight:400; color:#94A3B8; padding:11px 14px; border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color 180ms ease; font-family:inherit; }
+.p-tab.active,.p-tab--active { color:#2563EB; border-bottom-color:#2563EB; font-weight:500; }
+.p-tab:hover:not(.active):not(.p-tab--active) { color:#64748B; }
 
 /* ── Pills ──────────────────────────────────────────────────────────────── */
-.p-pills { display:flex; gap:2px; background:rgba(0,0,0,.05); border-radius:8px; padding:3px; }
-.p-pill  { font-size:12px; color:rgba(0,0,0,.4); padding:4px 12px; border-radius:6px; border:none; background:transparent; cursor:pointer; transition:background 120ms,color 120ms; font-family:inherit; white-space:nowrap; }
-.p-pill.active,.p-pill--active { background:rgba(0,0,0,.10); color:#111111; font-weight:500; }
-.p-pill:hover:not(.active):not(.p-pill--active) { color:rgba(0,0,0,.65); background:rgba(0,0,0,.04); }
+.p-pills { display:flex; gap:2px; background:#F1F5F9; border-radius:10px; padding:3px; }
+.p-pill  { font-size:12px; color:#64748B; padding:4px 12px; border-radius:8px; border:none; background:transparent; cursor:pointer; transition:background 180ms ease,color 180ms ease; font-family:inherit; white-space:nowrap; }
+.p-pill.active,.p-pill--active { background:#FFFFFF; color:#0F172A; font-weight:500; box-shadow:0 1px 3px rgba(15,23,42,.08); }
+.p-pill:hover:not(.active):not(.p-pill--active) { color:#0F172A; background:rgba(255,255,255,.6); }
 
 /* ── Search, select ─────────────────────────────────────────────────────── */
 .p-search { display:flex; align-items:center; gap:7px; background:rgba(0,0,0,.05); border:1px solid rgba(0,0,0,.09); border-radius:8px; padding:0 10px; height:34px; min-width:180px; }

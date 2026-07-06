@@ -309,8 +309,8 @@
   white-space: nowrap;
 }
 .sp-btn:hover { background: #f8fafc; }
-.sp-btn--primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
-.sp-btn--primary:hover { background: #1e40af; }
+.sp-btn--primary { background: #2563EB; color: #fff; border-color: #2563EB; }
+.sp-btn--primary:hover { background: #1d4ed8; }
 .sp-btn--primary:disabled { background: #93c5fd; border-color: #93c5fd; cursor: not-allowed; }
 .sp-btn--ghost { background: transparent; color: #64748b; }
 .sp-btn--ghost:hover { background: #f1f5f9; color: #1e293b; }
