@@ -306,7 +306,7 @@
 }
 .hb-th-name.hb-tr-labels-name {
   text-align: left;
-  padding-left: 26px;
+  padding-left: 34px;
   font-size: 10px;
   letter-spacing: .12em;
   color: var(--hb-text3);
@@ -449,7 +449,7 @@
 .hb-tr-habit:hover td.hb-td-gap  { background: var(--hb-bg); }
 
 .hb-td-name {
-  padding: 14px 12px 14px 26px;
+  padding: 14px 12px 14px 34px;
   background: var(--hb-sticky-bg);
   border-bottom: 1px solid var(--hb-border2);
 }
@@ -567,7 +567,7 @@
 
 /* ── Count column ────────────────────────────────────────────────────────── */
 .hb-td-cnt {
-  padding: 0 32px 0 8px;
+  padding: 0 40px 0 8px;
   text-align: right;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
@@ -948,9 +948,9 @@
   .hb-td-name { min-width: 130px; max-width: 150px; }
   .hb-table col.hb-col-name { width: 130px; }
   .hb-table col.hb-col-cnt  { width: 68px; }
-  .hb-td-cnt { padding: 0 20px 0 4px; }
-  .hb-th-name.hb-tr-labels-name { padding-left: 16px; }
-  .hb-td-name { padding: 10px 8px 10px 16px; }
+  .hb-td-cnt { padding: 0 26px 0 4px; }
+  .hb-th-name.hb-tr-labels-name { padding-left: 20px; }
+  .hb-td-name { padding: 10px 8px 10px 20px; }
   .hb-td-stats-name { padding: 0 0 10px 16px; }
   .hb-name-text { font-size: 12px; }
   .hb-check { width: 18px; height: 18px; }
