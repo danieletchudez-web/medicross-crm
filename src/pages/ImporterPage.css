@@ -108,8 +108,8 @@
 /* ─── Hero ───────────────────────────────────────────────────────────── */
 .bi-hero {
   background:
-    radial-gradient(circle at 94% 0%, rgba(59,130,246,.22), transparent 34%),
-    linear-gradient(135deg, #0f2444 0%, #16345f 58%, #185fa5 120%);
+    radial-gradient(circle at 94% 0%, rgba(96,165,250,.14), transparent 34%),
+    linear-gradient(135deg, #0F172A 0%, #152238 58%, #1B3A5C 120%);
   border: 1px solid rgba(191,219,254,.26);
   border-radius: 18px;
   padding: 22px 24px;

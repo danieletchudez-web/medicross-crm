@@ -51,8 +51,8 @@
   overflow: hidden;
   min-height: 132px;
   background:
-    radial-gradient(circle at 92% 8%, rgba(96,165,250,.28), transparent 31%),
-    linear-gradient(135deg, #0d1d38 0%, #123b67 58%, #1d6fb8 120%);
+    radial-gradient(circle at 92% 8%, rgba(96,165,250,.14), transparent 31%),
+    linear-gradient(135deg, #0F172A 0%, #152238 58%, #1B3A5C 120%);
   border: 1px solid rgba(191,219,254,.28);
   box-shadow: 0 20px 48px rgba(15,36,68,.22);
 }
