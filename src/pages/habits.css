@@ -6,7 +6,7 @@
 
 /* ── Light mode defaults ─────────────────────────────────────────────────── */
 .hb-page {
-  --hb-bg:           #f4f5f7;
+  --hb-bg:           #ffffff;
   --hb-surface:      #ffffff;
   --hb-surface2:     #f0f1f4;
   --hb-border:       rgba(0,0,0,.07);
