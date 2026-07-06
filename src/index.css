@@ -3,21 +3,23 @@
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
-  --bg: #f4f7fb;
-  --sidebar: #ffffff;
-  --card: #ffffff;
-  --text: #111827;
-  --muted: #6b7280;
-  --border: #e8ecf2;
-  --primary: #5b7cfa;
-  --primary-soft: #eef3ff;
-  --shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 
-  --surface: #ffffff;
-  --border-light: #f0f4f8;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
+  /* ── Quiet UI palette ─────────────────────────────────── */
+  --bg:           #F8FAFC;
+  --sidebar:      #0F172A;
+  --card:         #FFFFFF;
+  --surface:      #FFFFFF;
+  --text:         #0F172A;
+  --muted:        #64748B;
+  --border:       #E2E8F0;
+  --border-light: #F1F5F9;
+  --primary:      #2563EB;
+  --primary-soft: #DBEAFE;
+  --shadow:       0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.02);
+
+  --text-primary:   #0F172A;
+  --text-secondary: #64748B;
+  --text-tertiary:  #94A3B8;
   --page-enter-duration: 340ms;
   --page-enter-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -42,22 +44,22 @@ body,
   font-family: inherit;
 }
 
-/* ─── Dark mode ──────────────────────────────────────────────────────── */
+/* ─── Dark mode — Quiet UI dark palette ──────────────────────────────── */
 [data-theme="dark"] {
-  --bg:             #111111;
-  --sidebar:        #0a0a0a;
-  --surface:        #181818;
-  --card:           #1c1c1c;
-  --text:           #F4F4F5;
-  --muted:          #A1A1AA;
-  --border:         rgba(255,255,255,0.05);
-  --border-light:   rgba(255,255,255,0.04);
-  --primary:        #58a6ff;
-  --primary-soft:   rgba(88,166,255,0.12);
-  --shadow:         none;
-  --text-primary:   #F4F4F5;
-  --text-secondary: #A1A1AA;
-  --text-tertiary:  #6B7280;
+  --bg:           #0F172A;
+  --sidebar:      #020617;
+  --surface:      #111827;
+  --card:         #111827;
+  --text:         #F8FAFC;
+  --muted:        #94A3B8;
+  --border:       #1E293B;
+  --border-light: #1E293B;
+  --primary:      #2563EB;
+  --primary-soft: rgba(37,99,235,0.15);
+  --shadow:       none;
+  --text-primary:   #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-tertiary:  #64748B;
 }
 
 [data-theme="dark"] body { background: var(--bg); color: var(--text); }
@@ -374,19 +376,14 @@ button, input, select, textarea { font-family: inherit; }
     position: fixed;
     inset: 0 auto 0 0;
     width: 240px;
-    background: linear-gradient(
-      180deg,
-      #ffffff 0 48px,
-      #162d50 48px,
-      #0d1e35 100%
-    );
+    background: #0F172A;
     pointer-events: none;
     z-index: 0;
   }
 
   .app-shell:has(.sidebar--collapsed)::before {
     width: 72px;
-    background: linear-gradient(180deg, #162d50 0%, #0d1e35 100%);
+    background: #0F172A;
   }
 
   .main-content {
@@ -412,15 +409,15 @@ button, input, select, textarea { font-family: inherit; }
 
 /* ─── Page header ────────────────────────────────────────────────────── */
 .page-header {
-  background: #0a0a0a;
-  padding: 0 24px;
-  height: 64px;
+  background: #FFFFFF;
+  padding: 0 28px;
+  height: 60px;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid #E2E8F0;
   box-shadow: none;
   position: relative;
   z-index: 50;
@@ -437,9 +434,9 @@ button, input, select, textarea { font-family: inherit; }
 .page-header h1 {
   margin: 0;
   font-size: 15px;
-  font-weight: 750;
-  letter-spacing: -0.3px;
-  color: #e2e8f0;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #0F172A;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   line-height: 1;
   white-space: nowrap;
@@ -458,8 +455,8 @@ button, input, select, textarea { font-family: inherit; }
 /* Vertical separator */
 .page-header__sep {
   width: 1px;
-  height: 22px;
-  background: rgba(255,255,255,0.07);
+  height: 20px;
+  background: #E2E8F0;
   flex-shrink: 0;
 }
 
@@ -474,16 +471,16 @@ button, input, select, textarea { font-family: inherit; }
   transition: background 0.15s;
 }
 
-.page-header__user:hover { background: rgba(255,255,255,0.04); }
+.page-header__user:hover { background: #F8FAFC; }
 
 .page-header__avatar {
-  width: 29px;
-  height: 29px;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
   background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   color: #fff;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -501,8 +498,8 @@ button, input, select, textarea { font-family: inherit; }
 .page-header__user-name {
   display: block;
   font-size: 12px;
-  font-weight: 650;
-  color: #e2e8f0;
+  font-weight: 600;
+  color: #0F172A;
   white-space: nowrap;
   line-height: 1.2;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
@@ -512,7 +509,7 @@ button, input, select, textarea { font-family: inherit; }
   display: block;
   font-size: 10px;
   font-weight: 500;
-  color: #484f58;
+  color: #94A3B8;
   white-space: nowrap;
   line-height: 1;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
@@ -528,18 +525,18 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .layout-clock__time {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #484f58;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748B;
   font-family: "JetBrains Mono", monospace, monospace;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   line-height: 1;
 }
 
 .layout-clock__date {
   font-size: 10px;
-  font-weight: 500;
-  color: #30363d;
+  font-weight: 400;
+  color: #94A3B8;
   text-transform: capitalize;
   letter-spacing: 0.1px;
   line-height: 1;

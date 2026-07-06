@@ -33,61 +33,70 @@
 /* .main-content and .page-enter: background only, do NOT touch opacity or animation */
 [data-theme="dark"] .main-content { background: #111111 !important; }
 
-/* ─── Page header ─────────────────────────────────────────────────────────── */
+/* ─── Page header dark mode ───────────────────────────────────────────────── */
 [data-theme="dark"] .page-header {
-  background: #111111 !important;
-  border-bottom: 1px solid rgba(255,255,255,.04) !important;
+  background: #0F172A !important;
+  border-bottom: 1px solid #1E293B !important;
+  box-shadow: none !important;
   height: 60px !important;
-  padding: 0 36px !important;
+  padding: 0 28px !important;
 }
 [data-theme="dark"] .page-header__title-block h1 {
-  font-size: 18px !important;
+  font-size: 15px !important;
   font-weight: 600 !important;
-  color: #F4F4F5 !important;
-  letter-spacing: -0.3px !important;
+  color: #F8FAFC !important;
+  letter-spacing: -0.2px !important;
 }
-[data-theme="dark"] .page-header__user-name { font-size: 13px !important; font-weight: 500 !important; color: #F4F4F5 !important; }
-[data-theme="dark"] .page-header__user-role { font-size: 11px !important; font-weight: 400 !important; color: #6B7280 !important; }
+[data-theme="dark"] .page-header__user-name { font-size: 12px !important; font-weight: 600 !important; color: #F8FAFC !important; }
+[data-theme="dark"] .page-header__user-role { font-size: 10px !important; font-weight: 400 !important; color: #64748B !important; }
+[data-theme="dark"] .page-header__sep { background: #1E293B !important; }
 [data-theme="dark"] .page-header__avatar {
-  background: rgba(255,255,255,.08) !important;
-  color: #A1A1AA !important;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+  color: #fff !important;
   border: none !important;
-  font-weight: 600 !important;
-  font-size: 12px !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
 }
-[data-theme="dark"] .page-header__sep { background: rgba(255,255,255,.06) !important; }
-[data-theme="dark"] .layout-clock__time { font-size: 13px !important; font-weight: 500 !important; color: #A1A1AA !important; }
-[data-theme="dark"] .layout-clock__date { font-size: 10px !important; color: #6B7280 !important; }
+[data-theme="dark"] .page-header__user:hover { background: #1E293B !important; }
+[data-theme="dark"] .layout-clock__time { font-size: 12px !important; font-weight: 500 !important; color: #64748B !important; }
+[data-theme="dark"] .layout-clock__date { font-size: 10px !important; color: #475569 !important; }
 
-/* ─── Sidebar ─────────────────────────────────────────────────────────────── */
-/* Sidebar negro en ambos modos */
+/* ─── Sidebar — Quiet UI #0F172A ─────────────────────────────────────────── */
 .sidebar {
-  background: #0d0d0d !important;
-  border-right: 1px solid rgba(255,255,255,.04) !important;
+  background: #0F172A !important;
+  border-right: 1px solid rgba(255,255,255,.06) !important;
   box-shadow: none !important;
 }
-.sidebar-nav__label   { color: rgba(255,255,255,.55) !important; }
-.sidebar-nav__icon    { color: rgba(255,255,255,.3) !important; }
-.sidebar-section__label { color: rgba(255,255,255,.14) !important; }
-.sidebar-brand__name  { color: rgba(255,255,255,.9) !important; }
+.sidebar-nav__label   { color: rgba(255,255,255,.65) !important; font-weight: 400 !important; font-size: 13px !important; letter-spacing: 0 !important; }
+.sidebar-nav__icon    { color: rgba(255,255,255,.85) !important; }
+.sidebar-section__label { color: rgba(255,255,255,.22) !important; font-size: 9.5px !important; font-weight: 600 !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; }
+.sidebar-brand__name  { color: rgba(255,255,255,.92) !important; }
 .sidebar-brand__sub   { color: rgba(255,255,255,.35) !important; }
-.sidebar-nav__item    { color: rgba(255,255,255,.55) !important; }
-.sidebar-nav__item:hover { background: rgba(255,255,255,.055) !important; }
+.sidebar-nav__item    { color: rgba(255,255,255,.65) !important; border-radius: 8px !important; transition: background 180ms ease, transform 180ms ease !important; }
+.sidebar-nav__item:hover { background: #1E293B !important; transform: scale(1.02) !important; }
+.sidebar-nav__item:hover .sidebar-nav__icon  { color: rgba(255,255,255,1) !important; }
+.sidebar-nav__item:hover .sidebar-nav__label { color: rgba(255,255,255,.9) !important; }
 .sidebar-nav__item.active,
-.sidebar-nav__item--active { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.9) !important; }
+.sidebar-nav__item--active {
+  background: #2563EB !important;
+  color: #FFFFFF !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,.35) !important;
+  transform: none !important;
+}
 .sidebar-nav__item.active .sidebar-nav__icon,
-.sidebar-nav__item--active .sidebar-nav__icon { color: rgba(255,255,255,.75) !important; }
+.sidebar-nav__item--active .sidebar-nav__icon { color: rgba(255,255,255,1) !important; }
 .sidebar-nav__item.active .sidebar-nav__label,
-.sidebar-nav__item--active .sidebar-nav__label { color: rgba(255,255,255,.9) !important; }
-.sidebar-section__divider { display: none !important; }
-.sidebar-logout  { color: rgba(255,255,255,.35) !important; }
-.sidebar-logout:hover { background: rgba(255,255,255,.055) !important; }
-.sidebar-brand__mark { background: rgba(255,255,255,.06) !important; color: rgba(255,255,255,.4) !important; border: none !important; }
-.sidebar-edit-btn { background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.07) !important; color: rgba(255,255,255,.3) !important; }
-.sidebar-reset-btn { color: rgba(255,255,255,.3) !important; background: transparent !important; border: none !important; }
+.sidebar-nav__item--active .sidebar-nav__label { color: #FFFFFF !important; font-weight: 500 !important; }
+.sidebar-section__divider { background: rgba(255,255,255,.06) !important; }
+.sidebar-logout  { color: rgba(255,255,255,.45) !important; border-radius: 8px !important; transition: background 180ms ease !important; }
+.sidebar-logout:hover { background: #1E293B !important; }
+.sidebar-brand__mark { background: rgba(37,99,235,.15) !important; color: rgba(255,255,255,.7) !important; border: none !important; }
+.sidebar-edit-btn { background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.35) !important; }
+.sidebar-reset-btn { color: rgba(255,255,255,.35) !important; background: transparent !important; border: none !important; }
 [data-theme="dark"] .sidebar {
-  background: #0d0d0d !important;
-  border-right: 1px solid rgba(255,255,255,.04) !important;
+  background: #020617 !important;
+  border-right: 1px solid rgba(255,255,255,.05) !important;
   box-shadow: none !important;
   width: 210px !important;
 }

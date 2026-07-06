@@ -4,28 +4,29 @@
 ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="dark"] {
-  --bg:             #111111;
-  --surface:        #181818;
-  --card:           #1c1c1c;
-  --text:           #F4F4F5;
-  --text-primary:   #F4F4F5;
-  --text-secondary: #A1A1AA;
-  --text-tertiary:  #6B7280;
-  --muted:          #A1A1AA;
-  --border:         rgba(255,255,255,0.05);
-  --border-light:   rgba(255,255,255,0.04);
-  --primary:        #58a6ff;
-  --primary-soft:   rgba(88,166,255,0.12);
+  --bg:             #0F172A;
+  --sidebar:        #020617;
+  --surface:        #111827;
+  --card:           #111827;
+  --text:           #F8FAFC;
+  --text-primary:   #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-tertiary:  #64748B;
+  --muted:          #94A3B8;
+  --border:         #1E293B;
+  --border-light:   #1E293B;
+  --primary:        #2563EB;
+  --primary-soft:   rgba(37,99,235,0.15);
   --shadow:         none;
 }
 
 [data-theme="dark"] body,
-[data-theme="dark"] #root { background: #111111 !important; color: #F4F4F5 !important; }
-[data-theme="dark"] .app-shell    { background: #111111 !important; }
-[data-theme="dark"] .main-content { background: #111111 !important; }
-[data-theme="dark"] .page-header  { background: #111111 !important; border-color: rgba(255,255,255,0.05) !important; box-shadow: none !important; }
-[data-theme="dark"] .page-header h1 { color: #F4F4F5 !important; font-weight: 600 !important; }
-[data-theme="dark"] .page-header p  { color: #A1A1AA !important; }
+[data-theme="dark"] #root { background: #0F172A !important; color: #F8FAFC !important; }
+[data-theme="dark"] .app-shell    { background: #0F172A !important; }
+[data-theme="dark"] .main-content { background: #0F172A !important; }
+[data-theme="dark"] .page-header  { background: #0F172A !important; border-color: #1E293B !important; box-shadow: none !important; }
+[data-theme="dark"] .page-header h1 { color: #F8FAFC !important; font-weight: 600 !important; }
+[data-theme="dark"] .page-header p  { color: #94A3B8 !important; }
 
 /* ── BI Comercial ─────────────────────────────────────────────────────────── */
 [data-theme="dark"] .bi-shell,
