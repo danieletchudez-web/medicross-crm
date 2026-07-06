@@ -1,7 +1,7 @@
-/* ─── Trigger button ─────────────────────────────────────────────────── */
+/* ─── Trigger button (siempre dark — el header es negro) ────────────── */
 .global-search-trigger {
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
   border-radius: 10px;
   padding: 7px 10px;
   display: inline-flex;
@@ -14,32 +14,32 @@
   transition: border-color 0.15s, background 0.15s, box-shadow 0.18s;
 }
 .global-search-trigger:hover {
-  border-color: #cbd5e1;
-  background: #ffffff;
-  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.07);
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: none;
 }
-.global-search-trigger__icon { color: #94a3b8; flex-shrink: 0; transition: color 0.15s; }
-.global-search-trigger:hover .global-search-trigger__icon { color: #64748b; }
+.global-search-trigger__icon { color: #484f58; flex-shrink: 0; transition: color 0.15s; }
+.global-search-trigger:hover .global-search-trigger__icon { color: #8b949e; }
 .global-search-trigger__text {
   flex: 1;
   min-width: 0;
   text-align: left;
   font-size: 12px;
   font-weight: 500;
-  color: #94a3b8;
+  color: #484f58;
   transition: color 0.15s;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.global-search-trigger:hover .global-search-trigger__text { color: #64748b; }
+.global-search-trigger:hover .global-search-trigger__text { color: #8b949e; }
 .global-search-trigger__kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #b0bbc9;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.04);
+  color: #484f58;
   border-radius: 5px;
   padding: 2px 6px;
   font-size: 10px;
@@ -50,9 +50,6 @@
   flex-shrink: 0;
   letter-spacing: 0.2px;
 }
-
-/* ─── Dark mode trigger ──────────────────────────────────────────────── */
-[data-theme="dark"] .global-search-trigger { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
 [data-theme="dark"] .global-search-trigger:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); box-shadow: none; }
 [data-theme="dark"] .global-search-trigger__text  { color: #484f58; }
 [data-theme="dark"] .global-search-trigger:hover .global-search-trigger__text { color: #8b949e; }
