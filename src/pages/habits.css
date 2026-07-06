@@ -261,8 +261,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--hb-border) transparent;
-  /* breathing room so sticky name col and last col don't sit at viewport edge */
-  padding-right: 32px;
+  padding: 24px 32px 24px 24px;
 }
 .hb-grid-outer::-webkit-scrollbar { height: 4px; }
 .hb-grid-outer::-webkit-scrollbar-thumb { background: var(--hb-border); border-radius: 4px; }
@@ -449,7 +448,7 @@
 .hb-tr-habit:hover td.hb-td-gap  { background: var(--hb-bg); }
 
 .hb-td-name {
-  padding: 14px 12px 14px 34px;
+  padding: 16px 12px 16px 34px;
   background: var(--hb-sticky-bg);
   border-bottom: 1px solid var(--hb-border2);
 }
@@ -541,7 +540,7 @@
 
 /* ── MES mini-calendar ───────────────────────────────────────────────────── */
 .hb-td-mes {
-  padding: 6px 6px 6px 8px;
+  padding: 6px 24px 6px 8px;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
   border-left: 1px solid var(--hb-sep);
@@ -567,8 +566,9 @@
 
 /* ── Count column ────────────────────────────────────────────────────────── */
 .hb-td-cnt {
-  padding: 0 40px 0 8px;
-  text-align: right;
+  padding: 0 16px;
+  text-align: center;
+  vertical-align: middle;
   background: var(--hb-surface);
   border-bottom: 1px solid var(--hb-border2);
   font-size: 12px;
@@ -942,13 +942,12 @@
   .hb-header { padding: 18px 20px 14px; }
   .hb-title  { font-size: 22px; }
   .hb-month-nav { padding: 10px 20px; }
-  /* Left padding on the sticky scroll container so name col has breathing room */
-  .hb-grid-outer { padding-left: 14px; padding-right: 14px; }
+  .hb-grid-outer { padding: 16px 14px 16px 14px; }
   .hb-th-name,
   .hb-td-name { min-width: 130px; max-width: 150px; }
   .hb-table col.hb-col-name { width: 130px; }
   .hb-table col.hb-col-cnt  { width: 68px; }
-  .hb-td-cnt { padding: 0 26px 0 4px; }
+  .hb-td-cnt { padding: 0 12px; }
   .hb-th-name.hb-tr-labels-name { padding-left: 20px; }
   .hb-td-name { padding: 10px 8px 10px 20px; }
   .hb-td-stats-name { padding: 0 0 10px 16px; }
@@ -980,4 +979,14 @@
   .hb-header { padding: 20px 22px 16px; }
   .hb-title  { font-size: 22px; }
   .hb-month-nav { padding: 10px 22px; }
+}
+
+@media (min-width: 1280px) {
+  .hb-grid-outer { padding: 24px 32px 24px 32px; }
+  .hb-td-name    { padding: 20px 12px 20px 34px; }
+  .hb-td-mes     { padding-right: 32px; }
+}
+
+@media (min-width: 1536px) {
+  .hb-grid-outer { padding: 24px 40px 24px 40px; }
 }
