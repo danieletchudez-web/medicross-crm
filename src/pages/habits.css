@@ -47,7 +47,7 @@
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-theme="dark"] .hb-page {
-  --hb-bg:           #1A1A1A;
+  --hb-bg:           #0F0F0F;
   --hb-surface:      #1A1A1A;
   --hb-surface2:     #1A1A1A;
   --hb-border:       #3C3C3C;

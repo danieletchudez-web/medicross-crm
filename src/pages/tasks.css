@@ -37,7 +37,7 @@
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-theme="dark"] .tk2-page {
-  --tk2-bg:          #1A1A1A;
+  --tk2-bg:          #0F0F0F;
   --tk2-surface:     #1A1A1A;
   --tk2-surface2:    #1A1A1A;
   --tk2-border:      #3C3C3C;

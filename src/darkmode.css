@@ -21,9 +21,9 @@
 }
 
 [data-theme="dark"] body,
-[data-theme="dark"] #root { background: #1A1A1A !important; color: #EDEDED !important; }
-[data-theme="dark"] .app-shell    { background: #1A1A1A !important; }
-[data-theme="dark"] .main-content { background: #1A1A1A !important; }
+[data-theme="dark"] #root { background: #0F0F0F !important; color: #EDEDED !important; }
+[data-theme="dark"] .app-shell    { background: #0F0F0F !important; }
+[data-theme="dark"] .main-content { background: #0F0F0F !important; }
 [data-theme="dark"] .page-header  { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .page-header h1 { color: #EDEDED !important; font-weight: 600 !important; }
 [data-theme="dark"] .page-header p  { color: #9D9D9D !important; }
@@ -117,7 +117,7 @@
 [data-theme="dark"] .tn-field textarea { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #EDEDED !important; }
 
 /* ── Cotizador ────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .cot-page     { background: #1A1A1A !important; }
+[data-theme="dark"] .cot-page     { background: #0F0F0F !important; }
 [data-theme="dark"] .cot-header h2 { color: #EDEDED !important; }
 [data-theme="dark"] .cot-kpi      { background: #1A1A1A !important; border-color: #3C3C3C !important; }
 [data-theme="dark"] .cot-kpi__label { color: #7E7E7E !important; }
@@ -202,7 +202,7 @@
 [data-theme="dark"] .au-field select { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #EDEDED !important; }
 
 /* ── Análisis Comercial ───────────────────────────────────────────────────── */
-[data-theme="dark"] .sa-page     { background: #1A1A1A !important; }
+[data-theme="dark"] .sa-page     { background: #0F0F0F !important; }
 [data-theme="dark"] .sa-loading  { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #9D9D9D !important; }
 [data-theme="dark"] .sa-toolbar  { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .sa-toolbar__title { color: #EDEDED !important; }
@@ -248,7 +248,7 @@
 [data-theme="dark"] .sa-footer a { color: #7E7E7E !important; }
 
 /* ── Clientes / Cuentas ───────────────────────────────────────────────────── */
-[data-theme="dark"] .acc-page  { background: #1A1A1A !important; }
+[data-theme="dark"] .acc-page  { background: #0F0F0F !important; }
 [data-theme="dark"] .acc-kpi   { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .acc-kpi__label { color: #7E7E7E !important; }
 [data-theme="dark"] .acc-kpi__value { color: #EDEDED !important; }
@@ -284,7 +284,7 @@
 [data-theme="dark"] .acc-footer a { color: #7E7E7E !important; }
 
 /* ── Oportunidades ────────────────────────────────────────────────────────── */
-[data-theme="dark"] .opp-page  { background: #1A1A1A !important; }
+[data-theme="dark"] .opp-page  { background: #0F0F0F !important; }
 [data-theme="dark"] .opp-kpi   { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .opp-kpi__label { color: #7E7E7E !important; }
 [data-theme="dark"] .opp-kpi__value { color: #EDEDED !important; }
@@ -322,7 +322,7 @@
 [data-theme="dark"] .opp-footer a { color: #7E7E7E !important; }
 
 /* ── Acciones Hoy ─────────────────────────────────────────────────────────── */
-[data-theme="dark"] .ta-page    { background: #1A1A1A !important; }
+[data-theme="dark"] .ta-page    { background: #0F0F0F !important; }
 [data-theme="dark"] .ta-loading { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #9D9D9D !important; box-shadow: none !important; }
 [data-theme="dark"] .ta-header  { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .ta-header__eyebrow { color: #7E7E7E !important; }
@@ -354,7 +354,7 @@
 [data-theme="dark"] .ta-empty { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #7E7E7E !important; }
 
 /* ── Calendario ───────────────────────────────────────────────────────────── */
-[data-theme="dark"] .cal-page   { background: #1A1A1A !important; }
+[data-theme="dark"] .cal-page   { background: #0F0F0F !important; }
 [data-theme="dark"] .cal-kpi    { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .cal-kpi__label { color: #7E7E7E !important; }
 [data-theme="dark"] .cal-kpi__value { color: #EDEDED !important; }
@@ -412,7 +412,7 @@
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #7E7E7E; }
 
 /* ── Productos / Share Kit ────────────────────────────────────────────────── */
-[data-theme="dark"] .products-page { background: #1A1A1A !important; }
+[data-theme="dark"] .products-page { background: #0F0F0F !important; }
 [data-theme="dark"] .product-kpi { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .product-kpi span   { color: #9D9D9D !important; }
 [data-theme="dark"] .product-kpi strong { color: #EDEDED !important; }
@@ -438,7 +438,7 @@
 [data-theme="dark"] .empty-products { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #7E7E7E !important; }
 
 /* ── Campañas (CampaignsPage) ────────────────────────────────────────────── */
-[data-theme="dark"] .campaigns-page { background: #1A1A1A !important; }
+[data-theme="dark"] .campaigns-page { background: #0F0F0F !important; }
 [data-theme="dark"] .campaign-hero,
 [data-theme="dark"] .campaign-form-card,
 [data-theme="dark"] .campaign-list-card { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
@@ -473,7 +473,7 @@
 [data-theme="dark"] .campaign-empty { color: #7E7E7E !important; }
 
 /* ── Administración de Usuarios ──────────────────────────────────────────── */
-[data-theme="dark"] .admin-page { background: #1A1A1A !important; }
+[data-theme="dark"] .admin-page { background: #0F0F0F !important; }
 [data-theme="dark"] .admin-header-card { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .admin-header-card h2 { color: #EDEDED !important; }
 [data-theme="dark"] .admin-header-card p  { color: #9D9D9D !important; }
@@ -1340,7 +1340,7 @@
 [data-theme="dark"] .visits-quick-modal textarea { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #EDEDED !important; }
 
 /* ─── Tasks (tk-) ───────────────────────────────────────────────────────── */
-[data-theme="dark"] .tk-page { background: #1A1A1A !important; color: #EDEDED !important; }
+[data-theme="dark"] .tk-page { background: #0F0F0F !important; color: #EDEDED !important; }
 [data-theme="dark"] .tk-filters { background: #1A1A1A !important; border-color: #3C3C3C !important; }
 [data-theme="dark"] .tk-status-tabs { background: #1A1A1A !important; }
 [data-theme="dark"] .tk-tab { color: #9D9D9D !important; }
@@ -1392,7 +1392,7 @@
 [data-theme="dark"] .tk-view-btn.active { background: rgba(88,166,255,0.12) !important; color: #EDEDED !important; border-color: #185fa5 !important; }
 
 /* ─── Suppliers (sp-) ───────────────────────────────────────────────────── */
-[data-theme="dark"] .sp-page { background: #1A1A1A !important; color: #EDEDED !important; }
+[data-theme="dark"] .sp-page { background: #0F0F0F !important; color: #EDEDED !important; }
 [data-theme="dark"] .sp-stat { background: #1A1A1A !important; border-color: #3C3C3C !important; }
 [data-theme="dark"] .sp-stat__n { color: #EDEDED !important; }
 [data-theme="dark"] .sp-stat__l { color: #9D9D9D !important; }
@@ -1435,7 +1435,7 @@
 [data-theme="dark"] .ph-alert__confirm-text { color: #9D9D9D !important; }
 
 /* ─── ProductLine Dashboard (line-) ────────────────────────────────────── */
-[data-theme="dark"] .line-dashboard { background: #1A1A1A !important; color: #EDEDED !important; }
+[data-theme="dark"] .line-dashboard { background: #0F0F0F !important; color: #EDEDED !important; }
 [data-theme="dark"] .line-loading,
 [data-theme="dark"] .line-hero,
 [data-theme="dark"] .line-kpi,
@@ -1459,7 +1459,7 @@
 [data-theme="dark"] .line-campaign-row { border-color: #3C3C3C !important; }
 
 /* ─── PreciosHistoricos (ph-) ───────────────────────────────────────────── */
-[data-theme="dark"] .ph-page { background: #1A1A1A !important; color: #EDEDED !important; }
+[data-theme="dark"] .ph-page { background: #0F0F0F !important; color: #EDEDED !important; }
 [data-theme="dark"] .ph-exec,
 [data-theme="dark"] .ph-panel { background: #1A1A1A !important; border-color: #3C3C3C !important; color: #EDEDED !important; }
 [data-theme="dark"] .ph-exec__head h3,
@@ -1637,7 +1637,7 @@
 [data-theme="dark"] body,
 [data-theme="dark"] #root,
 [data-theme="dark"] .app-shell,
-[data-theme="dark"] .main-content { background: #1A1A1A !important; }
+[data-theme="dark"] .main-content { background: #0F0F0F !important; }
 
 /* ── Page headers ───────────────────────────────────────────────────────── */
 [data-theme="dark"] .page-header,
@@ -2185,7 +2185,7 @@
 [data-theme="dark"] .dash-banner::before { display: none !important; }
 
 /* ── Sales Analytics — page, toolbar, kpis, charts, table, badges ───────── */
-[data-theme="dark"] .sa-page { background: #1A1A1A !important; }
+[data-theme="dark"] .sa-page { background: #0F0F0F !important; }
 [data-theme="dark"] .sa-loading,
 [data-theme="dark"] .sa-toolbar { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }
 [data-theme="dark"] .sa-toolbar__title { color: #EDEDED !important; }
@@ -2273,7 +2273,7 @@
 [data-theme="dark"] .tk-view-btn:hover { background: #3C3C3C !important; color: #9D9D9D !important; }
 
 /* ── Campaigns — cards, form, status badges, progress ───────────────────── */
-[data-theme="dark"] .campaigns-page { background: #1A1A1A !important; }
+[data-theme="dark"] .campaigns-page { background: #0F0F0F !important; }
 [data-theme="dark"] .campaign-hero,
 [data-theme="dark"] .campaign-form-card,
 [data-theme="dark"] .campaign-list-card { background: #1A1A1A !important; border-color: #3C3C3C !important; box-shadow: none !important; }

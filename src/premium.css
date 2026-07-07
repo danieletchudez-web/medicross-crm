@@ -29,9 +29,9 @@
 [data-theme="dark"] html,
 [data-theme="dark"] body,
 [data-theme="dark"] #root,
-[data-theme="dark"] .app-shell { background: #1A1A1A !important; }
+[data-theme="dark"] .app-shell { background: #0F0F0F !important; }
 /* .main-content and .page-enter: background only, do NOT touch opacity or animation */
-[data-theme="dark"] .main-content { background: #1A1A1A !important; }
+[data-theme="dark"] .main-content { background: #0F0F0F !important; }
 
 /* ─── Page header dark mode ───────────────────────────────────────────────── */
 [data-theme="dark"] .page-header {
@@ -509,7 +509,7 @@
 [data-theme="dark"] .dash-list-row:last-child { border-bottom: none !important; }
 
 /* ─── BI COMERCIAL (ImporterPage) ─────────────────────────────────────────── */
-[data-theme="dark"] .bi-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .bi-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 
 [data-theme="dark"] .bi-header {
   background: #1A1A1A !important;
@@ -604,7 +604,7 @@
 [data-theme="dark"] .bi-badge { background: rgba(255,255,255,.06) !important; color: #7E7E7E !important; border: none !important; font-size: 11px !important; }
 
 /* ─── SALES ANALYTICS ─────────────────────────────────────────────────────── */
-[data-theme="dark"] .sa-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .sa-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 
 [data-theme="dark"] .sa-toolbar {
   background: #1A1A1A !important;
@@ -694,7 +694,7 @@
 [data-theme="dark"] .sa-alert-card { background: #1A1A1A !important; border: none !important; border-radius: 14px !important; }
 
 /* ─── ACCOUNTS ────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .acc-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .acc-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .acc-kpis {
   background: #1A1A1A !important;
   border-radius: 16px !important;
@@ -760,7 +760,7 @@
 [data-theme="dark"] .acc-badge--gray   { background: rgba(255,255,255,.06) !important; color: #9D9D9D !important; }
 
 /* ─── ACCOUNT DETAIL ─────────────────────────────────────────────────────── */
-[data-theme="dark"] .account360-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .account360-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .account360-hero {
   background: #1A1A1A !important;
   border-radius: 16px !important;
@@ -813,7 +813,7 @@
 [data-theme="dark"] .account360-event-meta { background: rgba(255,255,255,.03) !important; border: none !important; border-radius: 8px !important; }
 
 /* ─── OPPORTUNITIES ───────────────────────────────────────────────────────── */
-[data-theme="dark"] .opp-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .opp-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .opp-kpis {
   background: #1A1A1A !important;
   border-radius: 16px !important;
@@ -872,7 +872,7 @@
 [data-theme="dark"] .opp-stage-pill { border-radius: 999px !important; font-size: 11px !important; }
 
 /* ─── VISITS ──────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .visits-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .visits-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .visits-kpi-grid {
   background: #1A1A1A !important;
   border-radius: 16px !important;
@@ -931,7 +931,7 @@
 [data-theme="dark"] .vf-section__label { font-size: 11px !important; font-weight: 600 !important; letter-spacing: 0.10em !important; color: rgba(255,255,255,.25) !important; text-transform: uppercase !important; margin-bottom: 12px !important; display: block !important; }
 
 /* ─── TASKS ───────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .tk-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .tk-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .tk-kpis {
   background: #1A1A1A !important;
   border-radius: 16px !important;
@@ -1020,7 +1020,7 @@
 [data-theme="dark"] .tk-search { background: rgba(255,255,255,.04) !important; border: 1px solid rgba(255,255,255,.07) !important; color: #9D9D9D !important; border-radius: 10px !important; font-size: 13px !important; }
 
 /* ─── CAMPAIGNS ───────────────────────────────────────────────────────────── */
-[data-theme="dark"] .campaigns-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .campaigns-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .campaign-hero,
 [data-theme="dark"] .campaign-form-card,
 [data-theme="dark"] .campaign-list-card {
@@ -1062,7 +1062,7 @@
 [data-theme="dark"] .campaign-section-head h3 { font-size: 14px !important; font-weight: 500 !important; color: #EDEDED !important; }
 
 /* ─── TENDERS ─────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .tn-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .tn-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .tn-header {
   background: #1A1A1A !important;
   border: none !important;
@@ -1138,7 +1138,7 @@
 [data-theme="dark"] .tn-bac-metric strong { color: #EDEDED !important; font-weight: 500 !important; }
 
 /* ─── PRODUCTS ────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .products-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .products-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .products-kpis {
   background: #1A1A1A !important;
   border-radius: 16px !important;
@@ -1182,7 +1182,7 @@
 [data-theme="dark"] .products-toolbar { background: rgba(255,255,255,.025) !important; border: 1px solid rgba(255,255,255,.04) !important; border-radius: 12px !important; padding: 8px 12px !important; }
 
 /* ─── TODAY ACTIONS ───────────────────────────────────────────────────────── */
-[data-theme="dark"] .ta-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .ta-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .ta-kpi-grid {
   background: #1A1A1A !important;
   border-radius: 16px !important;
@@ -1234,7 +1234,7 @@
 [data-theme="dark"] .ta-header-btn--primary { border: none !important; }
 
 /* ─── SUPPLIERS ───────────────────────────────────────────────────────────── */
-[data-theme="dark"] .sp-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .sp-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .sp-header {
   background: #1A1A1A !important;
   border: none !important;
@@ -1259,7 +1259,7 @@
 [data-theme="dark"] .sp-icon-btn--del:hover { background: rgba(239,68,68,.10) !important; color: #f87171 !important; }
 
 /* ─── SETTINGS ────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .settings-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; max-width: 640px !important; }
+[data-theme="dark"] .settings-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; max-width: 640px !important; }
 [data-theme="dark"] .settings-card {
   background: #1A1A1A !important;
   border: none !important;
@@ -1304,7 +1304,7 @@
 [data-theme="dark"] .seller-row:first-child { border-top: none !important; }
 
 /* ─── PRODUCT LINE DASHBOARD ──────────────────────────────────────────────── */
-[data-theme="dark"] .pld-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .pld-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .pld-hero,
 [data-theme="dark"] .pld-panel,
 [data-theme="dark"] .pld-card {
@@ -1321,7 +1321,7 @@
 }
 
 /* ─── CALENDAR ────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .calendar-page { background: #1A1A1A !important; padding: 28px !important; }
+[data-theme="dark"] .calendar-page { background: #0F0F0F !important; padding: 28px !important; }
 [data-theme="dark"] .calendar-header { background: #1A1A1A !important; border: none !important; border-radius: 16px !important; padding: 16px 20px !important; margin-bottom: 16px !important; }
 [data-theme="dark"] .calendar-grid { background: #1A1A1A !important; border: none !important; border-radius: 16px !important; overflow: hidden !important; }
 [data-theme="dark"] .cal-day { background: transparent !important; border-color: rgba(255,255,255,.04) !important; }
@@ -1330,7 +1330,7 @@
 [data-theme="dark"] .cal-event { border-radius: 6px !important; font-size: 11px !important; }
 
 /* ─── ADMIN USERS ─────────────────────────────────────────────────────────── */
-[data-theme="dark"] .admin-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .admin-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .admin-panel,
 [data-theme="dark"] .admin-card {
   background: #1A1A1A !important;
@@ -1347,7 +1347,7 @@
 [data-theme="dark"] .admin-row:first-child { border-top: none !important; }
 
 /* ─── NOTIFICATIONS ───────────────────────────────────────────────────────── */
-[data-theme="dark"] .notifs-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .notifs-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .notifs-panel {
   background: #1A1A1A !important;
   border: none !important;
@@ -1364,7 +1364,7 @@
 [data-theme="dark"] .notif-item--unread { background: rgba(255,255,255,.02) !important; }
 
 /* ─── PRECIOS HISTÓRICOS ──────────────────────────────────────────────────── */
-[data-theme="dark"] .ph-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .ph-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .ph-panel {
   background: #1A1A1A !important;
   border: none !important;
@@ -1373,7 +1373,7 @@
 }
 
 /* ─── COTIZADOR ───────────────────────────────────────────────────────────── */
-[data-theme="dark"] .cotizador-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .cotizador-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .cot-panel,
 [data-theme="dark"] .cot-card {
   background: #1A1A1A !important;
@@ -1383,7 +1383,7 @@
 }
 
 /* ─── CLIENT INSIGHTS ─────────────────────────────────────────────────────── */
-[data-theme="dark"] .ci-page { background: #1A1A1A !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .ci-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .ci-panel,
 [data-theme="dark"] .ci-card {
   background: #1A1A1A !important;

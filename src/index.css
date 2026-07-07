@@ -46,7 +46,7 @@ body,
 
 /* ─── Dark mode — Quiet UI dark palette ──────────────────────────────── */
 [data-theme="dark"] {
-  --bg:           #1A1A1A;
+  --bg:           #0F0F0F;
   --sidebar:      #1A1A1A;
   --surface:      #1A1A1A;
   --card:         #1A1A1A;
