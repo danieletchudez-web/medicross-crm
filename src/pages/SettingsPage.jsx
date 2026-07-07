@@ -25,12 +25,20 @@ function loadSettings() {
   catch { return DEFAULTS; }
 }
 
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export default function SettingsPage({ profile, onNavigate }) {
   const [settings, setSettings] = useState(loadSettings);
   const [operational, setOperational] = useState(OPERATIONAL_DEFAULTS);
   const [operationalStatus, setOperationalStatus] = useState("");
   const [savingOperational, setSavingOperational] = useState(false);
+  const [motivationStatus, setMotivationStatus] = useState("");
+  const [resettingMotivation, setResettingMotivation] = useState(false);
   const canWriteOperational = profile?.role === "super_admin";
+  const canPreviewMotivation = profile?.role === "super_admin" || profile?.role === "manager";
   const rows = useMemo(() => [
     { key: "density", label: "Densidad desktop", type: "select", options: [["comfortable","Cómoda"],["dense","Densa"]] },
     { key: "calendarDefault", label: "Vista calendario", type: "select", options: [["list","Lista"],["month","Mes"]] },
@@ -89,6 +97,32 @@ export default function SettingsPage({ profile, onNavigate }) {
     ], { onConflict: "key" });
     setOperationalStatus(error ? `No se pudo guardar: ${error.message}` : "Parámetros operativos guardados.");
     setSavingOperational(false);
+  }
+
+  async function resetMotivationForToday() {
+    if (!canPreviewMotivation || !profile?.id) return;
+    setResettingMotivation(true);
+    setMotivationStatus("");
+    try {
+      const today = todayISO();
+      // Clear localStorage key
+      localStorage.removeItem(`crm_daily_message_seen:${profile.id}:${today}`);
+      // Clear Supabase record for today
+      const { error } = await supabase
+        .from("user_daily_message_views")
+        .delete()
+        .eq("user_id", profile.id)
+        .eq("view_date", today);
+      if (error) {
+        setMotivationStatus("Listo (sin registro previo en DB). Recargando...");
+      } else {
+        setMotivationStatus("Registro eliminado. Recargando...");
+      }
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      setMotivationStatus("Error inesperado.");
+      setResettingMotivation(false);
+    }
   }
 
   function update(key, value) {
@@ -163,6 +197,32 @@ export default function SettingsPage({ profile, onNavigate }) {
             <p className="p-sub">La primera sección conserva preferencias locales por dispositivo. Los umbrales operativos se comparten mediante Supabase y sólo un Super Admin puede modificarlos.</p>
           </div>
         </div>
+
+        {canPreviewMotivation && (
+          <div className="p-panel">
+            <div className="p-hd">
+              <div className="p-hd-left">
+                <span className="p-title">Mensaje motivacional del día</span>
+                <span className="p-sub">Forzá que el popup aparezca nuevamente al recargar la página.</span>
+              </div>
+              <div className="p-hd-right">
+                <button
+                  type="button"
+                  className="p-btn p-btn--primary"
+                  onClick={resetMotivationForToday}
+                  disabled={resettingMotivation}
+                >
+                  {resettingMotivation ? "Limpiando..." : "Ver mensaje ahora"}
+                </button>
+              </div>
+            </div>
+            {motivationStatus && (
+              <div className="p-body">
+                <p className="p-sub">{motivationStatus}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   );
