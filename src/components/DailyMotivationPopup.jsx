@@ -35,10 +35,10 @@ const overlayVariants = {
 };
 
 const cardVariants = {
-  hidden:  { opacity: 0, scale: 0.94, y: 10 },
+  hidden:  { opacity: 0, scale: 0.95, y: 8 },
   visible: {
     opacity: 1, scale: 1, y: 0,
-    transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.35, ease: "easeOut" },
   },
   exit: (fm) => ({
     opacity: 0,
@@ -51,18 +51,18 @@ const cardVariants = {
 };
 
 const iconVariants = {
-  hidden:  { opacity: 0, y: -8, scale: 0.85 },
+  hidden:  { opacity: 0, scale: 0.82, y: -6 },
   visible: {
-    opacity: 1, y: 0, scale: 1,
-    transition: { duration: 0.42, delay: 0.14, ease: [0.22, 1, 0.36, 1] },
+    opacity: 1, scale: 1, y: 0,
+    transition: { duration: 0.38, delay: 0.10, ease: "easeOut" },
   },
 };
 
 const taglineVariants = {
-  hidden:  { opacity: 0, y: 8 },
+  hidden:  { opacity: 0, y: 6 },
   visible: {
     opacity: 1, y: 0,
-    transition: { duration: 0.36, delay: 0.22, ease: "easeOut" },
+    transition: { duration: 0.30, delay: 0.18, ease: "easeOut" },
   },
 };
 
