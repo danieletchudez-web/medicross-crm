@@ -2561,4 +2561,71 @@ select {
 /* acc-panel / acc-header shadows */
 [class^="acc-"] { box-shadow: none !important; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Global Active / Selected Button System — #2563EB across all modules
+   Applies to tab selectors, filter pills, view toggles, and step indicators.
+   Segment-control style (pill-inside-pill, e.g. sa-period-tab, bi-toggle)
+   are intentionally excluded — they use white-elevated for the active state.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Light mode ─────────────────────────────────────────────────────────── */
+.sa-tab.active,
+.cal-view-tab.active,
+.bi-header__tab.active,
+.adm-tab-btn.active,
+.account360-tab.is-active,
+.opp-tab--active:not(.opp-tab--won):not(.opp-tab--lost),
+.sp-filter-btn.active,
+.sp-mode-btn.active,
+.vf-material-btn.active,
+.tn-view-tab--active,
+.visits-tab.active,
+.visits-filter-tab.active,
+.tn-tbar-btn.active,
+.tk-tab.active,
+.tk-view-btn.active,
+.acc-tab.active,
+.tk-link-pill.active {
+  background:   #2563EB !important;
+  color:        #ffffff !important;
+  border-color: #2563EB !important;
+  box-shadow:   none    !important;
+}
+
+.bi-step.active .bi-step__n {
+  background:   #2563EB !important;
+  border-color: #2563EB !important;
+  color:        #ffffff !important;
+}
+
+/* ── Dark mode — same blue, clearly visible on dark surfaces ────────────── */
+[data-theme="dark"] .sa-tab.active,
+[data-theme="dark"] .cal-view-tab.active,
+[data-theme="dark"] .bi-header__tab.active,
+[data-theme="dark"] .adm-tab-btn.active,
+[data-theme="dark"] .account360-tab.is-active,
+[data-theme="dark"] .opp-tab--active:not(.opp-tab--won):not(.opp-tab--lost),
+[data-theme="dark"] .sp-filter-btn.active,
+[data-theme="dark"] .sp-mode-btn.active,
+[data-theme="dark"] .vf-material-btn.active,
+[data-theme="dark"] .tn-view-tab--active,
+[data-theme="dark"] .visits-tab.active,
+[data-theme="dark"] .visits-filter-tab.active,
+[data-theme="dark"] .tn-tbar-btn.active,
+[data-theme="dark"] .tk-tab.active,
+[data-theme="dark"] .tk-view-btn.active,
+[data-theme="dark"] .acc-tab.active,
+[data-theme="dark"] .tk-link-pill.active {
+  background:   #2563EB !important;
+  color:        #ffffff !important;
+  border-color: #2563EB !important;
+  box-shadow:   none    !important;
+}
+
+[data-theme="dark"] .bi-step.active .bi-step__n {
+  background:   #2563EB !important;
+  border-color: #2563EB !important;
+  color:        #ffffff !important;
+}
+
 /* ─── END QUIET UI 2.0 ──────────────────────────────────────────────────── */
