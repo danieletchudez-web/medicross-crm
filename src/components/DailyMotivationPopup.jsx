@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Leaf, Sparkles } from "lucide-react";
@@ -20,11 +20,18 @@ const TAGLINES = {
   general:      { line1: "Enfocate. Acompañá. Seguí.",     line2: "Los resultados son consecuencia." },
 };
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 // ── Animation variants ───────────────────────────────────────────────────────
 const overlayVariants = {
   hidden:  { opacity: 0 },
   visible: { opacity: 1, transition: { duration: 0.28, ease: "easeOut" } },
-  exit:    { opacity: 0, transition: { duration: 0.22, ease: "easeIn" } },
+  exit: (fm) => ({
+    opacity: 0,
+    transition: fm
+      ? { duration: 0.65, ease: [0.22, 1, 0.36, 1] }
+      : { duration: 0.22, ease: "easeIn" },
+  }),
 };
 
 const cardVariants = {
@@ -33,10 +40,14 @@ const cardVariants = {
     opacity: 1, scale: 1, y: 0,
     transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
   },
-  exit: {
-    opacity: 0, scale: 0.96, y: 6,
-    transition: { duration: 0.22, ease: "easeIn" },
-  },
+  exit: (fm) => ({
+    opacity: 0,
+    scale: fm ? 0.98 : 0.96,
+    y:     fm ? -10  : 6,
+    transition: fm
+      ? { duration: 0.65, ease: [0.22, 1, 0.36, 1] }
+      : { duration: 0.22, ease: "easeIn" },
+  }),
 };
 
 const iconVariants = {
@@ -57,8 +68,12 @@ const taglineVariants = {
 
 // ── Popup inner component ────────────────────────────────────────────────────
 function Popup({ message, onClose, isVisible }) {
-  const tagline = TAGLINES[message.category] ?? TAGLINES.general;
+  const tagline    = TAGLINES[message.category] ?? TAGLINES.general;
   const primaryRef = useRef(null);
+
+  const [phase,     setPhase]     = useState("idle"); // "idle" | "loading"
+  const [focusMode, setFocusMode] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => primaryRef.current?.focus(), 400);
@@ -71,94 +86,139 @@ function Popup({ message, onClose, isVisible }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  async function handleFocusMode() {
+    if (phase !== "idle") return;
+    setFocusMode(true);
+    setPhase("loading");
+    await sleep(500);
+    onClose();
+    await sleep(700);
+    setShowToast(true);
+    await sleep(800);
+    setShowToast(false);
+    setFocusMode(false);
+    setPhase("idle");
+  }
+
   return createPortal(
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          className="dm-overlay"
-          variants={overlayVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mensaje de inicio de jornada"
-          onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-        >
+    <>
+      <AnimatePresence custom={focusMode}>
+        {isVisible && (
           <motion.div
-            className="dm-card dm-card--ready"
-            variants={cardVariants}
+            className={`dm-overlay${phase === "loading" ? " dm-overlay--loading" : ""}`}
+            custom={focusMode}
+            variants={overlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mensaje de inicio de jornada"
+            onClick={e => { if (e.target === e.currentTarget) onClose(); }}
           >
-            {/* Organic wave decorations */}
-            <span className="dm-wave dm-wave--tr"   aria-hidden="true" />
-            <span className="dm-wave dm-wave--tr-2" aria-hidden="true" />
-            <span className="dm-wave dm-wave--bl"   aria-hidden="true" />
-
-            {/* Icon */}
             <motion.div
-              className="dm-icon-wrap"
-              variants={iconVariants}
-              aria-hidden="true"
+              className="dm-card dm-card--ready"
+              custom={focusMode}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
-              <Leaf size={24} strokeWidth={1.5} />
+              {/* Organic wave decorations */}
+              <span className="dm-wave dm-wave--tr"   aria-hidden="true" />
+              <span className="dm-wave dm-wave--tr-2" aria-hidden="true" />
+              <span className="dm-wave dm-wave--bl"   aria-hidden="true" />
+
+              {/* Icon */}
+              <motion.div
+                className="dm-icon-wrap"
+                variants={iconVariants}
+                aria-hidden="true"
+              >
+                <Leaf size={24} strokeWidth={1.5} />
+              </motion.div>
+
+              {/* Title */}
+              <h2 className="dm-title">
+                Un gran día comienza<br />con una gran decisión.
+              </h2>
+
+              {/* Divider */}
+              <div className="dm-divider" aria-hidden="true" />
+
+              {/* Dynamic message from Supabase */}
+              <p className="dm-message">{message.message}</p>
+
+              {/* Secondary tagline card */}
+              <motion.div
+                className="dm-tagline-card"
+                variants={taglineVariants}
+              >
+                <Sparkles
+                  className="dm-tagline-icon"
+                  size={16}
+                  strokeWidth={1.5}
+                />
+                <div className="dm-tagline-text">
+                  <strong>{tagline.line1}</strong>
+                  {tagline.line2}
+                </div>
+              </motion.div>
+
+              {/* Primary CTA */}
+              <motion.button
+                ref={primaryRef}
+                className={`dm-btn-primary${phase === "loading" ? " dm-btn--loading" : ""}`}
+                onClick={handleFocusMode}
+                whileHover={phase === "idle" ? { scale: 1.02, boxShadow: "0 8px 28px rgba(15,23,42,0.28)" } : undefined}
+                whileTap={phase === "idle" ? { scale: 0.98 } : undefined}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                style={phase === "loading" ? { pointerEvents: "none" } : undefined}
+              >
+                {phase === "loading" ? (
+                  <>
+                    <span className="dm-spinner" aria-hidden="true" />
+                    Preparando tu jornada…
+                  </>
+                ) : (
+                  <>
+                    Comenzar el día
+                    <ArrowRight size={16} strokeWidth={2.2} />
+                  </>
+                )}
+              </motion.button>
+
+              {/* Secondary close */}
+              <motion.button
+                className="dm-btn-secondary"
+                onClick={onClose}
+                whileHover={{ color: "#475569" }}
+                transition={{ duration: 0.2 }}
+                style={phase === "loading" ? { opacity: 0, pointerEvents: "none" } : undefined}
+              >
+                Cerrar
+              </motion.button>
             </motion.div>
-
-            {/* Title */}
-            <h2 className="dm-title">
-              Un gran día comienza<br />con una gran decisión.
-            </h2>
-
-            {/* Divider */}
-            <div className="dm-divider" aria-hidden="true" />
-
-            {/* Dynamic message from Supabase */}
-            <p className="dm-message">{message.message}</p>
-
-            {/* Secondary tagline card */}
-            <motion.div
-              className="dm-tagline-card"
-              variants={taglineVariants}
-            >
-              <Sparkles
-                className="dm-tagline-icon"
-                size={16}
-                strokeWidth={1.5}
-              />
-              <div className="dm-tagline-text">
-                <strong>{tagline.line1}</strong>
-                {tagline.line2}
-              </div>
-            </motion.div>
-
-            {/* Primary CTA */}
-            <motion.button
-              ref={primaryRef}
-              className="dm-btn-primary"
-              onClick={onClose}
-              whileHover={{ scale: 1.02, boxShadow: "0 8px 28px rgba(15,23,42,0.28)" }}
-              whileTap={{ scale: 0.985 }}
-              transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            >
-              Comenzar el día
-              <ArrowRight size={16} strokeWidth={2.2} />
-            </motion.button>
-
-            {/* Secondary close */}
-            <motion.button
-              className="dm-btn-secondary"
-              onClick={onClose}
-              whileHover={{ color: "#475569" }}
-              transition={{ duration: 0.2 }}
-            >
-              Cerrar
-            </motion.button>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>,
+        )}
+      </AnimatePresence>
+
+      {/* Focus mode toast */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            className="dm-toast"
+            initial={{ opacity: 0, x: "-50%", y: 10 }}
+            animate={{ opacity: 1, x: "-50%", y: 0 }}
+            exit={{ opacity: 0, x: "-50%", y: -4 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            aria-live="polite"
+          >
+            ✓ Que tengas una gran jornada.
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>,
     document.body
   );
 }

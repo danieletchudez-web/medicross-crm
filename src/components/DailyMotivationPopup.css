@@ -15,6 +15,13 @@
   background: rgba(15, 23, 42, 0.35);
   backdrop-filter: blur(20px) saturate(1.8);
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  transition: backdrop-filter 450ms ease, -webkit-backdrop-filter 450ms ease;
+}
+
+/* Dashboard starts coming to life while button is in loading state */
+.dm-overlay--loading {
+  backdrop-filter: blur(4px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(4px) saturate(1.3) !important;
 }
 
 /* ── Card ────────────────────────────────────────────────────────── */
@@ -173,6 +180,8 @@
 
 /* ── Primary button ──────────────────────────────────────────────── */
 .dm-btn-primary {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   height: 56px;
   border-radius: 16px;
@@ -198,6 +207,78 @@
 
 .dm-btn-primary:focus-visible {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+}
+
+/* Shine sweep — single left-to-right pass on loading state */
+.dm-btn-primary.dm-btn--loading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    108deg,
+    transparent 28%,
+    rgba(255, 255, 255, 0.11) 50%,
+    transparent 72%
+  );
+  animation: dm-shine 600ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes dm-shine {
+  from { transform: translateX(-110%); }
+  to   { transform: translateX(130%); }
+}
+
+/* Spinner */
+.dm-spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  border-top-color: rgba(255, 255, 255, 0.88);
+  border-radius: 50%;
+  animation: dm-spin 700ms linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes dm-spin {
+  to { transform: rotate(360deg); }
+}
+
+[data-theme="dark"] .dm-spinner {
+  border-color: rgba(15, 23, 42, 0.22);
+  border-top-color: rgba(15, 23, 42, 0.78);
+}
+
+/* Toast — appears centered at bottom after popup closes */
+.dm-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  z-index: 9300;
+  background: rgba(15, 23, 42, 0.88);
+  color: rgba(241, 245, 249, 0.92);
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  backdrop-filter: blur(16px) saturate(1.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow:
+    0 4px 20px rgba(15, 23, 42, 0.16),
+    0 1px 6px  rgba(15, 23, 42, 0.10);
+}
+
+[data-theme="dark"] .dm-toast {
+  background: rgba(248, 250, 252, 0.92);
+  color: rgba(15, 23, 42, 0.84);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.24),
+    0 1px 6px  rgba(0, 0, 0, 0.14);
 }
 
 /* ── Secondary button ────────────────────────────────────────────── */
