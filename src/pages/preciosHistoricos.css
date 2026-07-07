@@ -2454,7 +2454,33 @@
   opacity: .6;
 }
 
-[data-theme="dark"] .ph-back-button,
+/* Toolbar container — same pattern as .tn-toolbar */
+[data-theme="dark"] .ph-header-actions {
+  background: #161b22;
+  border-color: rgba(255,255,255,.09);
+  box-shadow: none;
+}
+[data-theme="dark"] .ph-toolbar__sep { background: rgba(255,255,255,.07); }
+
+/* Back button: transparent within toolbar pill */
+[data-theme="dark"] .ph-header-actions .ph-back-button {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+}
+[data-theme="dark"] .ph-header-actions .ph-back-button:hover {
+  background: rgba(255,255,255,.06);
+  color: #e2e8f0;
+}
+
+/* Import BAC: primary action, blue */
+[data-theme="dark"] .ph-import-bac {
+  background: #2563EB;
+  color: #fff;
+  border: none;
+}
+[data-theme="dark"] .ph-import-bac:hover { background: #1d4ed8; box-shadow: none; }
+
 [data-theme="dark"] .ph-bac-modal,
 [data-theme="dark"] .ph-bac-modal__head button,
 [data-theme="dark"] .ph-bac-fields input,

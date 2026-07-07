@@ -165,9 +165,11 @@
 [data-theme="dark"] .cot-table tr:nth-child(even) td { background: #111111 !important; }
 [data-theme="dark"] .cot-table .nb { color: #F4F4F5 !important; }
 [data-theme="dark"] .cot-total-bar { background: #1a1a1a !important; }
-[data-theme="dark"] .cot-btn       { background: #111111 !important; border-color: rgba(255,255,255,0.05) !important; color: #A1A1AA !important; }
-[data-theme="dark"] .cot-btn:hover { background: #262626 !important; }
-[data-theme="dark"] .cot-btn--primary { background: rgba(255,255,255,0.07) !important; color: #F4F4F5 !important; border-color: #2d4a6e !important; }
+[data-theme="dark"] .cot-btn               { background: transparent !important; border: none !important; color: #94a3b8 !important; }
+[data-theme="dark"] .cot-btn:hover         { background: rgba(255,255,255,.06) !important; color: #e2e8f0 !important; }
+[data-theme="dark"] .cot-btn--primary      { background: #2563EB !important; color: #fff !important; }
+[data-theme="dark"] .cot-btn--primary:hover{ background: #1d4ed8 !important; }
+[data-theme="dark"] .cot-btn--danger:hover { background: rgba(220,38,38,.10) !important; color: #f87171 !important; }
 [data-theme="dark"] .cot-btn-add   { border-color: rgba(147,197,253,.3) !important; color: #F4F4F5 !important; background: transparent !important; }
 [data-theme="dark"] .cot-btn-add:hover { background: #232323 !important; }
 [data-theme="dark"] .cot-modal     { background: #1c1c1c !important; border-color: rgba(255,255,255,0.05) !important; }

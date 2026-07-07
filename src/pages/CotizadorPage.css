@@ -493,17 +493,13 @@
 /* ── Dark mode ── */
 [data-theme="dark"] .cot-page { background: #0f1117; }
 [data-theme="dark"] .cot-header-actions {
-  background: #1e2432; border-color: rgba(255,255,255,.09);
-  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  background: #161b22; border-color: rgba(255,255,255,.09);
+  box-shadow: none;
 }
-[data-theme="dark"] .cot-toolbar__sep { background: rgba(255,255,255,.1); }
-[data-theme="dark"] .cot-btn { color: #c8d0e0; }
-[data-theme="dark"] .cot-btn:hover { background: rgba(255,255,255,.07); color: #e8edf5; }
-[data-theme="dark"] .cot-btn--primary { background: #2563EB; color: #fff; }
-[data-theme="dark"] .cot-btn--primary:hover { background: #1d4ed8; }
+[data-theme="dark"] .cot-toolbar__sep { background: rgba(255,255,255,.07); }
+/* cot-btn dark mode lives in darkmode.css (has !important) */
 [data-theme="dark"] .cot-btn--success { background: rgba(5,150,105,.15); color: #34d399; border-color: rgba(52,211,153,.2); }
 [data-theme="dark"] .cot-btn--success:hover { background: rgba(5,150,105,.25); }
-[data-theme="dark"] .cot-btn--danger:hover { background: rgba(185,28,28,.15); color: #f87171; }
 [data-theme="dark"] .cot-btn--sm { background: #1e2432; color: #94a3b8; border-color: rgba(255,255,255,.1); }
 [data-theme="dark"] .cot-btn--sm:hover { background: #252d3e; }
 [data-theme="dark"] .cot-quote-badge--saved { background: rgba(5,150,105,.2); color: #34d399; border-color: rgba(52,211,153,.25); }
