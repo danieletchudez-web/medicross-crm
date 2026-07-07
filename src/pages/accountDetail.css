@@ -283,20 +283,20 @@
 [data-theme="dark"] .account360-tab,
 [data-theme="dark"] .account360-panel,
 [data-theme="dark"] .account360-kpi {
-  border-color: #2a3c54;
-  background: #141f2d;
+  border-color: #3C3C3C;
+  background: #1A1A1A;
 }
 
 [data-theme="dark"] .account360-summary-row,
 [data-theme="dark"] .account360-contact,
 [data-theme="dark"] .account360-record,
 [data-theme="dark"] .account360-event {
-  border-color: #2a3c54;
-  background: #101a27;
-  color: #dbe7f5;
+  border-color: #3C3C3C;
+  background: #1A1A1A;
+  color: #C1C1C1;
 }
 
 [data-theme="dark"] .account360-kpi strong,
 [data-theme="dark"] .account360-panel h3 {
-  color: #eef6ff;
+  color: #EDEDED;
 }

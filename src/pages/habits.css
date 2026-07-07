@@ -47,16 +47,16 @@
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-theme="dark"] .hb-page {
-  --hb-bg:           #111111;
-  --hb-surface:      #111111;
-  --hb-surface2:     #111111;
-  --hb-border:       rgba(255,255,255,.07);
-  --hb-border2:      rgba(255,255,255,.05);
-  --hb-text:         #f4f4f5;
+  --hb-bg:           #1A1A1A;
+  --hb-surface:      #1A1A1A;
+  --hb-surface2:     #1A1A1A;
+  --hb-border:       #3C3C3C;
+  --hb-border2:      #3C3C3C;
+  --hb-text:         #EDEDED;
   --hb-text2:        rgba(255,255,255,.45);
-  --hb-text3:        rgba(255,255,255,.25);
-  --hb-sticky-bg:    #111111;
-  --hb-header-bg:    #111111;
+  --hb-text3:        #7E7E7E;
+  --hb-sticky-bg:    #1A1A1A;
+  --hb-header-bg:    #1A1A1A;
   --hb-check-empty:  rgba(255,255,255,.15);
   --hb-check-done:   #ffffff;
   --hb-check-tick:   #000000;
@@ -71,7 +71,7 @@
   --hb-sem-inactive: rgba(255,255,255,.30);
   --hb-pill-bg:      rgba(255,255,255,.06);
   --hb-pill-active:  rgba(255,255,255,.12);
-  --hb-modal-bg:     #141414;
+  --hb-modal-bg:     #1A1A1A;
   --hb-modal-overlay:rgba(0,0,0,.72);
   --hb-input-bg:     rgba(255,255,255,.06);
   --hb-input-border: rgba(255,255,255,.10);
@@ -108,7 +108,7 @@
 }
 .hb-toast--success { background: #111111; color: #ffffff; }
 .hb-toast--error   { background: #dc2626; color: #ffffff; }
-[data-theme="dark"] .hb-toast--success { background: #f4f4f5; color: #111111; }
+[data-theme="dark"] .hb-toast--success { background: #EDEDED; color: #1A1A1A; }
 
 /* ── DB error banner ─────────────────────────────────────────────────────── */
 .hb-dberror {
@@ -198,7 +198,7 @@
   transition: opacity 120ms;
 }
 .hb-btn-primary:hover { opacity: .82; }
-[data-theme="dark"] .hb-btn-primary { background: #f4f4f5; color: #000000; }
+[data-theme="dark"] .hb-btn-primary { background: #EDEDED; color: #1A1A1A; }
 [data-theme="dark"] .hb-btn-primary:hover { background: #ffffff; opacity: 1; }
 
 .hb-icon-btn {
@@ -824,7 +824,7 @@
 }
 .hb-toggle input:checked + .hb-toggle__track { background: var(--hb-toggle-on); }
 .hb-toggle input:checked + .hb-toggle__track::after { transform: translateX(16px); }
-[data-theme="dark"] .hb-toggle input:checked + .hb-toggle__track::after { background: #000000; }
+[data-theme="dark"] .hb-toggle input:checked + .hb-toggle__track::after { background: #1A1A1A; }
 
 /* Type selector */
 .hb-type-grid {
@@ -919,7 +919,7 @@
 .hb-modal-btn--primary { background: #111111; color: #ffffff; }
 .hb-modal-btn--primary:disabled { opacity: .35; cursor: not-allowed; }
 .hb-modal-btn--primary:not(:disabled):hover { opacity: .82; }
-[data-theme="dark"] .hb-modal-btn--primary { background: #f4f4f5; color: #000; }
+[data-theme="dark"] .hb-modal-btn--primary { background: #EDEDED; color: #1A1A1A; }
 [data-theme="dark"] .hb-modal-btn--primary:not(:disabled):hover { background: #fff; opacity: 1; }
 .hb-modal-btn--ghost { background: var(--hb-pill-bg); color: var(--hb-text2); border: 1px solid var(--hb-border); }
 .hb-modal-btn--ghost:hover { background: var(--hb-pill-active); color: var(--hb-text); }
@@ -994,11 +994,11 @@
 }
 
 /* ── Dark mode: override generic table rules from darkmode.css ──────────────
-   darkmode.css sets background:#1c1c1c !important on [data-theme="dark"] table,th,td
+   darkmode.css sets background on [data-theme="dark"] table,th,td
    We must beat it with !important on more-specific selectors.              */
-[data-theme="dark"] .hb-table             { background: #111111 !important; color: var(--hb-text) !important; }
-[data-theme="dark"] .hb-table th          { background: #111111 !important; color: var(--hb-text3) !important; border-color: var(--hb-border2) !important; }
-[data-theme="dark"] .hb-table td          { background: #111111 !important; color: var(--hb-text) !important;  border-color: var(--hb-border2) !important; }
-[data-theme="dark"] .hb-table tbody tr:hover td { background: #111111 !important; }
-[data-theme="dark"] .hb-td-name           { background: #111111 !important; }
-[data-theme="dark"] .hb-th-name           { background: #111111 !important; }
+[data-theme="dark"] .hb-table             { background: #1A1A1A !important; color: var(--hb-text) !important; }
+[data-theme="dark"] .hb-table th          { background: #1A1A1A !important; color: var(--hb-text3) !important; border-color: var(--hb-border2) !important; }
+[data-theme="dark"] .hb-table td          { background: #1A1A1A !important; color: var(--hb-text) !important;  border-color: var(--hb-border2) !important; }
+[data-theme="dark"] .hb-table tbody tr:hover td { background: #1A1A1A !important; }
+[data-theme="dark"] .hb-td-name           { background: #1A1A1A !important; }
+[data-theme="dark"] .hb-th-name           { background: #1A1A1A !important; }

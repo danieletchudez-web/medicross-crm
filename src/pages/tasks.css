@@ -37,33 +37,33 @@
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-theme="dark"] .tk2-page {
-  --tk2-bg:          #0a0a0a;
-  --tk2-surface:     #111111;
+  --tk2-bg:          #1A1A1A;
+  --tk2-surface:     #1A1A1A;
   --tk2-surface2:    #1A1A1A;
-  --tk2-border:      rgba(255,255,255,.06);
+  --tk2-border:      #3C3C3C;
   --tk2-border2:     rgba(255,255,255,.04);
-  --tk2-text:        #F4F4F5;
+  --tk2-text:        #EDEDED;
   --tk2-text2:       rgba(255,255,255,.50);
   --tk2-text3:       rgba(255,255,255,.28);
-  --tk2-tab-active:  #F4F4F5;
-  --tk2-tag-bg:      rgba(255,255,255,.07);
+  --tk2-tab-active:  #EDEDED;
+  --tk2-tag-bg:      #3C3C3C;
   --tk2-tag-fg:      rgba(255,255,255,.45);
-  --tk2-tag-link-bg: rgba(255,255,255,.06);
+  --tk2-tag-link-bg: #3C3C3C;
   --tk2-tag-link-fg: rgba(255,255,255,.40);
   --tk2-check-border:rgba(255,255,255,.22);
-  --tk2-row-hover:   #181818;
-  --tk2-input-bg:    rgba(255,255,255,.05);
-  --tk2-input-focus: rgba(255,255,255,.08);
-  --tk2-input-border:rgba(255,255,255,.08);
-  --tk2-pill-bg:     rgba(255,255,255,.06);
+  --tk2-row-hover:   #242424;
+  --tk2-input-bg:    #3C3C3C;
+  --tk2-input-focus: #3C3C3C;
+  --tk2-input-border:#3C3C3C;
+  --tk2-pill-bg:     #3C3C3C;
   --tk2-pill-active: rgba(255,255,255,.14);
   --tk2-modal-bg:    #1A1A1A;
   --tk2-modal-overlay: rgba(0,0,0,.70);
-  --tk2-quickadd-bg: #1C1C1E;
-  --tk2-quickadd-border: rgba(255,255,255,.10);
+  --tk2-quickadd-bg: #1A1A1A;
+  --tk2-quickadd-border: #3C3C3C;
   --tk2-handle-fg:   rgba(255,255,255,.20);
   --tk2-empty-fg:    rgba(255,255,255,.28);
-  --tk2-header-bg:   #0a0a0a;
+  --tk2-header-bg:   #1A1A1A;
 }
 
 /* ── Page shell ──────────────────────────────────────────────────────────── */
@@ -195,7 +195,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .tk2-btn-new:hover { opacity: .85; }
-[data-theme="dark"] .tk2-btn-new { background: #F4F4F5; color: #111111; }
+[data-theme="dark"] .tk2-btn-new { background: #EDEDED; color: #1A1A1A; }
 [data-theme="dark"] .tk2-btn-new:hover { background: #ffffff; opacity: 1; }
 
 /* ── Filter panel ─────────────────────────────────────────────────────────── */
@@ -832,7 +832,7 @@
 .tk2-modal-btn--primary { background: #111111; color: #ffffff; }
 .tk2-modal-btn--primary:hover { opacity: .85; }
 .tk2-modal-btn--primary:disabled { opacity: .38; cursor: not-allowed; }
-[data-theme="dark"] .tk2-modal-btn--primary { background: #F4F4F5; color: #111111; }
+[data-theme="dark"] .tk2-modal-btn--primary { background: #EDEDED; color: #1A1A1A; }
 [data-theme="dark"] .tk2-modal-btn--primary:hover { background: #ffffff; opacity: 1; }
 
 .tk2-modal-btn--ghost { background: var(--tk2-pill-bg); color: var(--tk2-text2); border: 1px solid var(--tk2-border); }

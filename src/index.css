@@ -46,33 +46,33 @@ body,
 
 /* ─── Dark mode — Quiet UI dark palette ──────────────────────────────── */
 [data-theme="dark"] {
-  --bg:           #0F172A;
-  --sidebar:      #020617;
-  --surface:      #111827;
-  --card:         #111827;
-  --text:         #F8FAFC;
-  --muted:        #94A3B8;
-  --border:       #1E293B;
-  --border-light: #1E293B;
+  --bg:           #1A1A1A;
+  --sidebar:      #1A1A1A;
+  --surface:      #1A1A1A;
+  --card:         #1A1A1A;
+  --text:         #EDEDED;
+  --muted:        #9D9D9D;
+  --border:       #3C3C3C;
+  --border-light: #3C3C3C;
   --primary:      #2563EB;
   --primary-soft: rgba(37,99,235,0.15);
   --shadow:       none;
-  --text-primary:   #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-tertiary:  #64748B;
+  --text-primary:   #EDEDED;
+  --text-secondary: #9D9D9D;
+  --text-tertiary:  #7E7E7E;
 }
 
 [data-theme="dark"] body { background: var(--bg); color: var(--text); }
 [data-theme="dark"] .page-header { background: var(--card); border-color: var(--border); box-shadow: 0 1px 0 rgba(255,255,255,0.03); }
-[data-theme="dark"] .page-header h1 { color: #e2e8f0; }
+[data-theme="dark"] .page-header h1 { color: #EDEDED; }
 [data-theme="dark"] .page-header p  { color: var(--muted); }
-[data-theme="dark"] .page-header__sep { background: rgba(255,255,255,0.07); }
+[data-theme="dark"] .page-header__sep { background: #3C3C3C; }
 [data-theme="dark"] .page-header__user:hover { background: rgba(255,255,255,0.04); }
 [data-theme="dark"] .page-header__avatar { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
-[data-theme="dark"] .page-header__user-name { color: #e2e8f0; }
-[data-theme="dark"] .page-header__user-role { color: #484f58; }
-[data-theme="dark"] .layout-clock__time { color: #484f58; }
-[data-theme="dark"] .layout-clock__date { color: #30363d; }
+[data-theme="dark"] .page-header__user-name { color: #EDEDED; }
+[data-theme="dark"] .page-header__user-role { color: #7E7E7E; }
+[data-theme="dark"] .layout-clock__time { color: #7E7E7E; }
+[data-theme="dark"] .layout-clock__date { color: #7E7E7E; }
 [data-theme="dark"] .main-content { background: var(--bg); }
 
 [data-theme="dark"] .unified-dashboard,
@@ -159,8 +159,8 @@ body,
 [data-theme="dark"] .visits-action-btn,
 [data-theme="dark"] .visits-material-btn,
 [data-theme="dark"] .visits-badge {
-  background: #21262d;
-  border-color: #30363d;
+  background: #242424;
+  border-color: #3C3C3C;
   color: var(--text-secondary);
 }
 

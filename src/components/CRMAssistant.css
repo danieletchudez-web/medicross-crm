@@ -80,8 +80,8 @@
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
 }
 [data-theme="dark"] .crm-ai-panel {
-  background: #1C1C1E;
-  border-color: rgba(255,255,255,.07);
+  background: #1A1A1A;
+  border-color: #3C3C3C;
   box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.3);
 }
 
@@ -226,7 +226,7 @@
   border-bottom-left-radius: 4px;
 }
 [data-theme="dark"] .crm-ai-msg--assistant .crm-ai-msg__bubble {
-  background: rgba(255,255,255,.06);
+  background: #3C3C3C;
   color: rgba(255,255,255,.82);
 }
 .crm-ai-msg--user .crm-ai-msg__bubble {
@@ -295,8 +295,8 @@
 }
 .crm-ai-suggestion:hover { background: rgba(0,0,0,.08); }
 [data-theme="dark"] .crm-ai-suggestion {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.07);
+  background: #3C3C3C;
+  border-color: #3C3C3C;
   color: rgba(255,255,255,.72);
 }
 [data-theme="dark"] .crm-ai-suggestion:hover { background: rgba(255,255,255,.1); }
@@ -310,7 +310,7 @@
   flex-shrink: 0;
   align-items: flex-end;
 }
-[data-theme="dark"] .crm-ai-input-wrap { border-top-color: rgba(255,255,255,.06); }
+[data-theme="dark"] .crm-ai-input-wrap { border-top-color: #3C3C3C; }
 
 .crm-ai-input {
   flex: 1;
@@ -330,7 +330,7 @@
 .crm-ai-input:disabled { opacity: 0.5; }
 .crm-ai-input::placeholder { color: rgba(0,0,0,.3); }
 [data-theme="dark"] .crm-ai-input {
-  border-color: rgba(255,255,255,.1);
+  border-color: #3C3C3C;
   background: rgba(255,255,255,.04);
   color: rgba(255,255,255,.82);
 }

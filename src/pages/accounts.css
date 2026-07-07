@@ -338,7 +338,7 @@
 .acc-account-link:hover { color: #1769aa; text-decoration: underline; }
 .acc-td-name small  { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; }
 
-[data-theme="dark"] .acc-account-link { color: #F4F4F5 !important; }
+[data-theme="dark"] .acc-account-link { color: #EDEDED !important; }
 [data-theme="dark"] .acc-account-link:hover { color: #ffffff !important; text-decoration: underline; }
 
 .acc-td-contact {
