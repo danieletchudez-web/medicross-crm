@@ -992,3 +992,13 @@
 @media (min-width: 1536px) {
   .hb-grid-outer { margin: 20px 40px 40px; }
 }
+
+/* ── Dark mode: override generic table rules from darkmode.css ──────────────
+   darkmode.css sets background:#1c1c1c !important on [data-theme="dark"] table,th,td
+   We must beat it with !important on more-specific selectors.              */
+[data-theme="dark"] .hb-table             { background: #111111 !important; color: var(--hb-text) !important; }
+[data-theme="dark"] .hb-table th          { background: #111111 !important; color: var(--hb-text3) !important; border-color: var(--hb-border2) !important; }
+[data-theme="dark"] .hb-table td          { background: #111111 !important; color: var(--hb-text) !important;  border-color: var(--hb-border2) !important; }
+[data-theme="dark"] .hb-table tbody tr:hover td { background: #111111 !important; }
+[data-theme="dark"] .hb-td-name           { background: #111111 !important; }
+[data-theme="dark"] .hb-th-name           { background: #111111 !important; }
