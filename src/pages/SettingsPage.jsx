@@ -105,19 +105,20 @@ export default function SettingsPage({ profile, onNavigate }) {
     setMotivationStatus("");
     try {
       const today = todayISO();
-      // Clear localStorage key
+      // 1. Clear localStorage key
       localStorage.removeItem(`crm_daily_message_seen:${profile.id}:${today}`);
-      // Clear Supabase record for today
+      // 2. Delete Supabase record for today
       const { error } = await supabase
         .from("user_daily_message_views")
         .delete()
         .eq("user_id", profile.id)
         .eq("view_date", today);
       if (error) {
-        setMotivationStatus("Listo (sin registro previo en DB). Recargando...");
-      } else {
-        setMotivationStatus("Registro eliminado. Recargando...");
+        setMotivationStatus(`⚠️ No se pudo limpiar la DB: ${error.message} — Aplicá el SQL de la política DELETE primero.`);
+        setResettingMotivation(false);
+        return;
       }
+      setMotivationStatus("✓ Listo. Recargando...");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       setMotivationStatus("Error inesperado.");
