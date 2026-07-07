@@ -89,8 +89,8 @@ const emptyR = () => ({
 });
 
 const VENDEDORES    = ["Monica Somosa","Daniel Etchudez","Soledad Cantero","Otros"];
-const ESTADOS       = ["borrador","enviada","evaluacion","aceptada","rechazada","vencida","seguimiento","negociacion","ganada","perdida","facturada","cobrada"];
-const ESTADO_LABELS = { borrador:"Borrador", enviada:"Enviada", evaluacion:"En evaluación", aceptada:"Aceptada", rechazada:"Rechazada", vencida:"Vencida", seguimiento:"Seguimiento", negociacion:"Negociación", ganada:"Ganada", perdida:"Perdida", facturada:"Facturada", cobrada:"Cobrada" };
+const ESTADOS       = ["borrador","generado","enviada","evaluacion","aceptada","rechazada","vencida","seguimiento","negociacion","ganada","perdida","facturada","cobrada"];
+const ESTADO_LABELS = { borrador:"Borrador", generado:"Generado", enviada:"Enviada", evaluacion:"En evaluación", aceptada:"Aceptada", rechazada:"Rechazada", vencida:"Vencida", seguimiento:"Seguimiento", negociacion:"Negociación", ganada:"Ganada", perdida:"Perdida", facturada:"Facturada", cobrada:"Cobrada" };
 
 function uniqueNames(names) {
   const seen = new Set();
@@ -922,12 +922,20 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url),10000);
 
+    const currentDocId = docId;
+    if (currentDocId) {
+      await supabase.from("cotizaciones")
+        .update({ estado: "generado", updated_at: new Date().toISOString(), updated_by: profile?.email||"" })
+        .eq("id", currentDocId);
+      setHistItems(prev => prev.map(c => c.id === currentDocId ? { ...c, estado: "generado" } : c));
+    }
+
     try {
       const file=new File([fin],fn,{type:"application/pdf"});
       const {error:upErr}=await supabase.storage.from("cotizaciones-pdf").upload(`pdfs/${fn}`,file,{upsert:true});
       if(upErr) showToast("PDF descargado (error al subir: "+upErr.message+")","err");
-      else showToast("PDF descargado y guardado en la nube ✓");
-    } catch(e) { showToast("PDF descargado pero no subido: "+e.message,"err"); }
+      else showToast("PDF generado y guardado ✓");
+    } catch(e) { showToast("PDF generado pero no subido: "+e.message,"err"); }
   }
 
   return (
