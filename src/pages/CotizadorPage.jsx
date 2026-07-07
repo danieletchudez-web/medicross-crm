@@ -114,7 +114,7 @@ function canQuoteUser(user) {
 /* ─── Combobox institución (reutiliza public/instituciones.json) ──── */
 const PLAZOS_VENTA = ["Anticipado","Contado","Contado a 7 días","Echeq 15 días","Echeq a 30 días","Echeq a 60 días","Echeq a 90 días","Según Pliego"];
 const MANTENIMIENTOS = ["15 días","30 días","60 días","90 días"];
-const FORMAS_COBRO = ["Echeq","Transferencia","Cheque Físico"];
+const FORMAS_COBRO = ["Echeq","Transferencia","Cheque Físico","Según pliego"];
 
 let _instCacheCot = null;
 async function loadInstCot() {
