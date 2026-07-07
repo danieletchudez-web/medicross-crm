@@ -12,6 +12,10 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function getTodaySeenKey(userId, today = todayISO()) {
+  return `crm_daily_message_seen:${userId}:${today}`;
+}
+
 export function useDailyMotivation(userId) {
   const [showPopup, setShowPopup]   = useState(false);
   const [message,   setMessage]     = useState(null);
@@ -27,20 +31,35 @@ export function useDailyMotivation(userId) {
       setLoading(true);
       try {
         const today = todayISO();
+        const seenKey = getTodaySeenKey(userId, today);
+
+        if (typeof window !== "undefined" && localStorage.getItem(seenKey)) {
+          if (!cancelled) {
+            setShowPopup(false);
+            setMessage(null);
+          }
+          return;
+        }
 
         // 1. Already viewed today?
-        const { data: existing, error: viewErr } = await supabase
+        let existing = null;
+        const { data: existingData, error: viewErr } = await supabase
           .from("user_daily_message_views")
           .select("id")
           .eq("user_id", userId)
           .eq("view_date", today)
           .maybeSingle();
 
-        if (viewErr) { log("view check error:", viewErr.message); return; }
+        if (viewErr) {
+          log("view check warning:", viewErr.message);
+        } else if (existingData) {
+          existing = existingData;
+        }
+
         if (existing) return;
 
         // 2. Scheduled message for today?
-        const { data: scheduled } = await supabase
+        const { data: scheduled, error: scheduledErr } = await supabase
           .from("daily_motivational_messages")
           .select("id, message, subtitle, category")
           .eq("is_active", true)
@@ -50,17 +69,34 @@ export function useDailyMotivation(userId) {
 
         let picked = scheduled ?? null;
 
+        if (scheduledErr) {
+          log("scheduled message warning:", scheduledErr.message);
+        }
+
         // 3. Random from unscheduled pool
         if (!picked) {
-          const { data: pool } = await supabase
+          const { data: pool, error: poolErr } = await supabase
             .from("daily_motivational_messages")
             .select("id, message, subtitle, category")
             .eq("is_active", true)
             .is("scheduled_date", null);
 
+          if (poolErr) {
+            log("pool message warning:", poolErr.message);
+          }
+
           if (pool && pool.length > 0) {
             picked = pool[Math.floor(Math.random() * pool.length)];
           }
+        }
+
+        if (!picked) {
+          picked = {
+            id: "fallback",
+            message: "Hoy es un buen día para dar un paso más.",
+            subtitle: "Seguimos adelante con calma y foco.",
+            category: "general",
+          };
         }
 
         if (!cancelled && picked) {
@@ -86,6 +122,9 @@ export function useDailyMotivation(userId) {
 
     try {
       const today = todayISO();
+      const seenKey = getTodaySeenKey(userId, today);
+      if (typeof window !== "undefined") localStorage.setItem(seenKey, "1");
+
       const { error } = await supabase
         .from("user_daily_message_views")
         .insert({ user_id: userId, message_id: message.id, view_date: today });
