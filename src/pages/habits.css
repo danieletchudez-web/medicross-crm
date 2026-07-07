@@ -49,7 +49,7 @@
 [data-theme="dark"] .hb-page {
   --hb-bg:           #111111;
   --hb-surface:      #111111;
-  --hb-surface2:     #1a1a1a;
+  --hb-surface2:     #111111;
   --hb-border:       rgba(255,255,255,.07);
   --hb-border2:      rgba(255,255,255,.05);
   --hb-text:         #f4f4f5;
