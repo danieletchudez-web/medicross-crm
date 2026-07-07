@@ -468,6 +468,7 @@
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: 0 0 0 1.5px var(--hb-dot-ring);
+  margin-left: 3px;
 }
 
 .hb-name-text {
