@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   MapPin, CheckSquare, Target, Sparkles, Navigation,
-  ChevronRight, Clock, RefreshCw, Zap, FileText,
+  ChevronRight, ChevronDown, Clock, RefreshCw, FileText,
+  TrendingUp, Calendar, Plus,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
@@ -9,7 +10,7 @@ import { supabase } from "../lib/supabaseClient";
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function fmtDate(d) {
-  if (!d) return "—";
+  if (!d) return null;
   const dt    = new Date(d + "T00:00:00");
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const diff  = Math.round((dt - today) / 86_400_000);
@@ -19,7 +20,22 @@ function fmtDate(d) {
   return dt.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 }
 
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const dt    = new Date(dateStr + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.round((dt - today) / 86_400_000);
+}
+
 function fmtTime(t) { return t ? t.slice(0, 5) : null; }
+
+function fmtMoney(n) {
+  if (!n || n === 0) return "$0";
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)         return `$${(n / 1_000).toFixed(0)}k`;
+  return `$${n}`;
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -32,7 +48,7 @@ function mapsURL(addr, name) {
   return `https://maps.google.com/?q=${encodeURIComponent(addr || name || "")}`;
 }
 
-// ─── Loading skeleton ────────────────────────────────────────────────────────
+// ─── Skeleton ────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
@@ -49,11 +65,14 @@ function Skeleton() {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function MobileHomePage({ profile, onNavigate, pageKey }) {
-  const [loading,     setLoading]     = useState(true);
-  const [visits,      setVisits]      = useState([]);
-  const [tasks,       setTasks]       = useState([]);
-  const [opps,        setOpps]        = useState([]);
-  const [quotesCount, setQuotesCount] = useState(0);
+  const [loading,      setLoading]      = useState(true);
+  const [visits,       setVisits]       = useState([]);
+  const [tasks,        setTasks]        = useState([]);
+  const [opps,         setOpps]         = useState([]);
+  const [quotesCount,  setQuotesCount]  = useState(0);
+  const [licitaciones, setLicitaciones] = useState([]);
+  const [pipeline,     setPipeline]     = useState({ total: 0, forecast: 0, count: 0 });
+  const [collapseOpen, setCollapseOpen] = useState(false);
 
   const firstName = (profile?.full_name || profile?.email || "").split(" ")[0] || "Vendedor";
   const todayStr  = new Date().toISOString().split("T")[0];
@@ -61,7 +80,11 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [visitsRes, tasksRes, oppsRes, quotesRes] = await Promise.all([
+      const twoWeeksLater = new Date();
+      twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
+      const twoWeeksStr = twoWeeksLater.toISOString().split("T")[0];
+
+      const [visitsRes, tasksRes, oppsRes, quotesRes, licitRes, pipelineRes] = await Promise.all([
         supabase
           .from("visits")
           .select("id, visit_date, visit_time, status, accounts(id, name, address)")
@@ -74,8 +97,8 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
           .from("tasks")
           .select("id, title, due_date, priority, status")
           .in("status", ["pendiente", "en_progreso"])
-          .order("due_date", { ascending: true })
-          .limit(8),
+          .order("due_date", { ascending: true, nullsFirst: true })
+          .limit(10),
         supabase
           .from("opportunities")
           .select("id, name, amount, probability, stage, accounts(name)")
@@ -88,12 +111,31 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
           .select("id", { count: "exact", head: true })
           .eq("estado", "pendiente")
           .eq("deleted", false),
+        supabase
+          .from("tenders")
+          .select("id, institution, process_name, process_number, end_date, operational_status, priority")
+          .gte("end_date", todayStr)
+          .lte("end_date", twoWeeksStr)
+          .not("resultado", "in", '("ganada","perdida")')
+          .order("end_date", { ascending: true })
+          .limit(6),
+        supabase
+          .from("opportunities")
+          .select("amount, forecast_amount")
+          .not("stage", "in", '("Ganado","Perdido")'),
       ]);
-      setVisits(visitsRes.data   || []);
-      setTasks(tasksRes.data     || []);
-      setOpps(oppsRes.data       || []);
+
+      setVisits(visitsRes.data || []);
+      setTasks(tasksRes.data || []);
+      setOpps(oppsRes.data || []);
       setQuotesCount(quotesRes.count || 0);
-    } catch(err) {
+      setLicitaciones(licitRes.data || []);
+
+      const pipeData = pipelineRes.data || [];
+      const total    = pipeData.reduce((s, o) => s + Number(o.amount || 0), 0);
+      const forecast = pipeData.reduce((s, o) => s + Number(o.forecast_amount || 0), 0);
+      setPipeline({ total, forecast, count: pipeData.length });
+    } catch (err) {
       console.error("[MobileHome] load error:", err);
     } finally {
       setLoading(false);
@@ -103,11 +145,16 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
   useEffect(() => { load(); }, [load]);
 
   // ── Derived ─────────────────────────────────────────────────────────────
-  const todayVisits  = visits.filter(v => v.visit_date === todayStr);
-  const nextVisit    = visits[0] || null;
-  const pendingTasks = tasks.slice(0, 4);
-  const hotOpps      = opps.filter(o => Number(o.probability) >= 70).slice(0, 3);
-  const isQuiet      = todayVisits.length === 0 && tasks.length === 0 && hotOpps.length === 0 && quotesCount === 0;
+  const todayVisits   = visits.filter(v => v.visit_date === todayStr);
+  const futureVisits  = visits.filter(v => v.visit_date > todayStr).slice(0, 2);
+  const todayTasks    = tasks.filter(t => !t.due_date || t.due_date <= todayStr);
+  const futureTasks   = tasks.filter(t => t.due_date && t.due_date > todayStr).slice(0, 3);
+  const hotOpps       = opps.filter(o => Number(o.probability) >= 70).slice(0, 3);
+
+  const chipVisits    = visits.filter(v => v.visit_date === todayStr).length;
+  const chipTasks     = tasks.length;
+  const chipHot       = opps.filter(o => Number(o.probability) >= 70).length;
+  const isQuiet       = chipVisits === 0 && chipTasks === 0 && chipHot === 0 && quotesCount === 0;
 
   if (loading) {
     return (
@@ -130,22 +177,22 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
         <div className="hoy-tenés-wrap">
           <p className="hoy-eyebrow">HOY TENÉS</p>
           <div className="hoy-chips">
-            {todayVisits.length > 0 && (
+            {chipVisits > 0 && (
               <button className="hoy-chip hoy-chip--visit" onClick={() => onNavigate("visits")}>
                 <MapPin size={12} strokeWidth={1.5} />
-                {todayVisits.length} {todayVisits.length === 1 ? "visita" : "visitas"}
+                {chipVisits} {chipVisits === 1 ? "visita" : "visitas"}
               </button>
             )}
-            {tasks.length > 0 && (
+            {chipTasks > 0 && (
               <button className="hoy-chip hoy-chip--task" onClick={() => onNavigate("tasks")}>
                 <CheckSquare size={12} strokeWidth={1.5} />
-                {tasks.length} {tasks.length === 1 ? "tarea" : "tareas"}
+                {chipTasks} {chipTasks === 1 ? "tarea" : "tareas"}
               </button>
             )}
-            {hotOpps.length > 0 && (
+            {chipHot > 0 && (
               <button className="hoy-chip hoy-chip--hot" onClick={() => onNavigate("opportunities")}>
                 <Target size={12} strokeWidth={1.5} />
-                {hotOpps.length} {hotOpps.length === 1 ? "caliente" : "calientes"}
+                {chipHot} {chipHot === 1 ? "caliente" : "calientes"}
               </button>
             )}
             {quotesCount > 0 && (
@@ -160,99 +207,123 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
           </div>
         </div>
 
-        {/* ── PRÓXIMA VISITA ─────────────────────────────────────────── */}
-        {nextVisit && (
-          <div className="hoy-card">
-            <p className="hoy-card__eyebrow">
-              <MapPin size={11} strokeWidth={2} />
-              {nextVisit.visit_date === todayStr ? "VISITA HOY" : "PRÓXIMA VISITA"}
+        {/* ── AGENDA HOY ────────────────────────────────────────────── */}
+        <div className="hoy-section">
+          <div className="hoy-section__head">
+            <p className="hoy-eyebrow">
+              <MapPin size={10} strokeWidth={2.5} style={{ display:"inline", marginRight:4, verticalAlign:"middle" }} />
+              AGENDA HOY
             </p>
-            <p className="hoy-card__title">{nextVisit.accounts?.name || "Visita programada"}</p>
-            {fmtTime(nextVisit.visit_time) ? (
-              <p className="hoy-card__time">
-                <Clock size={12} strokeWidth={2} />
-                {fmtTime(nextVisit.visit_time)}
-                {nextVisit.visit_date !== todayStr && ` · ${fmtDate(nextVisit.visit_date)}`}
-              </p>
-            ) : nextVisit.visit_date !== todayStr ? (
-              <p className="hoy-card__time">
-                <Clock size={12} strokeWidth={2} />
-                {fmtDate(nextVisit.visit_date)}
-              </p>
-            ) : null}
-            {nextVisit.accounts?.address && (
-              <p className="hoy-card__address">{nextVisit.accounts.address}</p>
-            )}
-            <div className="hoy-card__actions">
-              {nextVisit.accounts?.address || nextVisit.accounts?.name ? (
-                <a
-                  className="hoy-action-btn hoy-action-btn--ghost"
-                  href={mapsURL(nextVisit.accounts?.address, nextVisit.accounts?.name)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Navigation size={13} strokeWidth={2} />
-                  Cómo llegar
-                </a>
-              ) : null}
-              <button
-                className="hoy-action-btn hoy-action-btn--primary"
-                onClick={() => onNavigate("visits")}
-              >
-                <MapPin size={13} strokeWidth={2} />
-                Ver visitas
+            <button className="hoy-section__more" onClick={() => onNavigate("visits")}>
+              Ver agenda <ChevronRight size={12} strokeWidth={2} />
+            </button>
+          </div>
+
+          {todayVisits.length === 0 ? (
+            <div className="hoy-empty-state">
+              <p className="hoy-empty-state__text">Sin visitas programadas para hoy</p>
+              <button className="hoy-empty-state__cta" onClick={() => onNavigate("visits")}>
+                <Plus size={12} strokeWidth={2} /> Programar visita
               </button>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="hoy-agenda-list">
+              {todayVisits.map(v => (
+                <div key={v.id} className="hoy-agenda-item">
+                  <div className="hoy-agenda-item__time">
+                    {fmtTime(v.visit_time)
+                      ? <><Clock size={11} strokeWidth={2} />{fmtTime(v.visit_time)}</>
+                      : <span className="hoy-agenda-item__notime">Sin hora</span>
+                    }
+                  </div>
+                  <div className="hoy-agenda-item__info">
+                    <span className="hoy-agenda-item__name">{v.accounts?.name || "Visita"}</span>
+                    {v.accounts?.address && (
+                      <span className="hoy-agenda-item__addr">{v.accounts.address}</span>
+                    )}
+                  </div>
+                  {(v.accounts?.address || v.accounts?.name) && (
+                    <a
+                      className="hoy-agenda-item__map"
+                      href={mapsURL(v.accounts?.address, v.accounts?.name)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <Navigation size={13} strokeWidth={1.8} />
+                    </a>
+                  )}
+                </div>
+              ))}
+              {futureVisits.length > 0 && (
+                <div className="hoy-agenda-upcoming">
+                  {futureVisits.map(v => (
+                    <button key={v.id} className="hoy-list-item" onClick={() => onNavigate("visits")}>
+                      <span className="hoy-list-item__dot hoy-dot--baja" />
+                      <span className="hoy-list-item__label">{v.accounts?.name || "Visita"}</span>
+                      <span className="hoy-list-item__date">{fmtDate(v.visit_date)}</span>
+                      <ChevronRight size={13} strokeWidth={1.5} className="hoy-list-item__chevron" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-        {/* ── PRÓXIMA TAREA (if no visits today) ────────────────────── */}
-        {!nextVisit && pendingTasks.length > 0 && (
-          <div className="hoy-card">
-            <p className="hoy-card__eyebrow">
-              <CheckSquare size={11} strokeWidth={2} />
-              PRÓXIMA TAREA
+        {/* ── TAREAS HOY ────────────────────────────────────────────── */}
+        <div className="hoy-section">
+          <div className="hoy-section__head">
+            <p className="hoy-eyebrow">
+              <CheckSquare size={10} strokeWidth={2.5} style={{ display:"inline", marginRight:4, verticalAlign:"middle" }} />
+              TAREAS PENDIENTES
             </p>
-            <p className="hoy-card__title">{pendingTasks[0].title}</p>
-            {pendingTasks[0].due_date && (
-              <p className="hoy-card__time">
-                <Clock size={12} strokeWidth={2} />
-                Vence {fmtDate(pendingTasks[0].due_date)}
-              </p>
-            )}
-            <div className="hoy-card__actions">
-              <button
-                className="hoy-action-btn hoy-action-btn--primary"
-                onClick={() => onNavigate("tasks")}
-              >
-                <CheckSquare size={13} strokeWidth={2} />
-                Ver tareas
-              </button>
-            </div>
+            <button className="hoy-section__more" onClick={() => onNavigate("tasks")}>
+              Ver todas <ChevronRight size={12} strokeWidth={2} />
+            </button>
           </div>
-        )}
 
-        {/* ── PENDIENTES ─────────────────────────────────────────────── */}
-        {pendingTasks.length > 0 && (
-          <div className="hoy-section">
-            <div className="hoy-section__head">
-              <p className="hoy-eyebrow">PENDIENTES</p>
-              <button className="hoy-section__more" onClick={() => onNavigate("tasks")}>
-                Ver todas <ChevronRight size={12} strokeWidth={2} />
+          {tasks.length === 0 ? (
+            <div className="hoy-empty-state">
+              <p className="hoy-empty-state__text">Sin tareas pendientes</p>
+              <button className="hoy-empty-state__cta" onClick={() => onNavigate("tasks")}>
+                <Plus size={12} strokeWidth={2} /> Nueva tarea
               </button>
             </div>
+          ) : (
             <div className="hoy-list">
-              {pendingTasks.map(t => (
+              {todayTasks.slice(0, 3).map(t => (
                 <button key={t.id} className="hoy-list-item" onClick={() => onNavigate("tasks")}>
-                  <span className={`hoy-list-item__dot hoy-dot--${t.priority || "media"}`} />
+                  <span className={`hoy-list-item__dot hoy-dot--${t.priority === "alta" ? "alta" : t.due_date && t.due_date < todayStr ? "alta" : "media"}`} />
+                  <span className="hoy-list-item__label">{t.title}</span>
+                  <span className="hoy-list-item__date">
+                    {t.due_date && t.due_date < todayStr
+                      ? <span className="hoy-task-overdue">{fmtDate(t.due_date)}</span>
+                      : "Hoy"
+                    }
+                  </span>
+                  <ChevronRight size={13} strokeWidth={1.5} className="hoy-list-item__chevron" />
+                </button>
+              ))}
+              {futureTasks.map(t => (
+                <button key={t.id} className="hoy-list-item" onClick={() => onNavigate("tasks")}>
+                  <span className={`hoy-list-item__dot hoy-dot--${t.priority || "baja"}`} />
                   <span className="hoy-list-item__label">{t.title}</span>
                   <span className="hoy-list-item__date">{fmtDate(t.due_date)}</span>
                   <ChevronRight size={13} strokeWidth={1.5} className="hoy-list-item__chevron" />
                 </button>
               ))}
+              {tasks.length > todayTasks.slice(0,3).length + futureTasks.length && (
+                <button className="hoy-list-item hoy-list-item--more" onClick={() => onNavigate("tasks")}>
+                  <span className="hoy-list-item__label" style={{ color:"#64748b" }}>
+                    +{tasks.length - todayTasks.slice(0,3).length - futureTasks.length} más
+                  </span>
+                  <ChevronRight size={13} strokeWidth={1.5} className="hoy-list-item__chevron" />
+                </button>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* ── OPORTUNIDADES ──────────────────────────────────────────── */}
         {hotOpps.length > 0 && (
@@ -275,6 +346,78 @@ export default function MobileHomePage({ profile, onNavigate, pageKey }) {
             </div>
           </div>
         )}
+
+        {/* ── PIPELINE + LICITACIONES (collapsible) ─────────────────── */}
+        <div className="hoy-collapse">
+          <button className="hoy-collapse__trigger" onClick={() => setCollapseOpen(o => !o)}>
+            <div className="hoy-collapse__label">
+              <TrendingUp size={11} strokeWidth={2} />
+              <span>PIPELINE Y LICITACIONES</span>
+            </div>
+            <div className="hoy-collapse__meta">
+              <span className="hoy-collapse__preview">{fmtMoney(pipeline.total)}</span>
+              <ChevronDown
+                size={14}
+                strokeWidth={2}
+                className={`hoy-collapse__chevron${collapseOpen ? " hoy-collapse__chevron--open" : ""}`}
+              />
+            </div>
+          </button>
+
+          {collapseOpen && (
+            <div className="hoy-collapse__body">
+              {/* Pipeline summary */}
+              <div className="hoy-pipeline-summary">
+                <div className="hoy-pipeline-row">
+                  <span>Pipeline activo</span>
+                  <strong>{fmtMoney(pipeline.total)}</strong>
+                </div>
+                <div className="hoy-pipeline-row hoy-pipeline-row--sub">
+                  <span>{pipeline.count} oportunidades abiertas</span>
+                  <span>Forecast {fmtMoney(pipeline.forecast)}</span>
+                </div>
+              </div>
+
+              {/* Licitaciones */}
+              {licitaciones.length > 0 ? (
+                <>
+                  <div className="hoy-collapse__section-label">
+                    <Calendar size={9} strokeWidth={2.5} />
+                    PRÓXIMAS (14 días)
+                  </div>
+                  {licitaciones.map(l => {
+                    const days = daysUntil(l.end_date);
+                    const urgent = days !== null && days <= 2;
+                    return (
+                      <button
+                        key={l.id}
+                        className="hoy-licit-item"
+                        onClick={() => onNavigate("tenders")}
+                      >
+                        <div className="hoy-licit-item__main">
+                          <span className="hoy-licit-item__name">
+                            {l.institution || l.process_name || "Licitación"}
+                          </span>
+                          {l.process_number && (
+                            <span className="hoy-licit-item__num">#{l.process_number}</span>
+                          )}
+                        </div>
+                        <span className={`hoy-licit-item__days${urgent ? " hoy-licit-item__days--urgent" : ""}`}>
+                          {days === 0 ? "Hoy" : days === 1 ? "Mañana" : `${days}d`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <button className="hoy-collapse__more" onClick={() => onNavigate("tenders")}>
+                    Ver todas las licitaciones <ChevronRight size={11} strokeWidth={2} />
+                  </button>
+                </>
+              ) : (
+                <p className="hoy-collapse__empty">Sin licitaciones en los próximos 14 días.</p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ── MEDIX ──────────────────────────────────────────────────── */}
         <button

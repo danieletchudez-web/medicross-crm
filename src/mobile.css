@@ -984,6 +984,277 @@
 }
 [data-theme="dark"] .hoy-refresh-btn { color:rgba(255,255,255,.28); }
 
+/* ── Empty state ─────────────────────────────────────────────────── */
+.hoy-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(0,0,0,.025);
+  border-radius: 12px;
+  margin: 0 0 2px;
+}
+[data-theme="dark"] .hoy-empty-state { background: rgba(255,255,255,.04); }
+.hoy-empty-state__text {
+  font-size: 13px;
+  color: rgba(0,0,0,.35);
+  font-weight: 450;
+  line-height: 1.3;
+}
+[data-theme="dark"] .hoy-empty-state__text { color: rgba(255,255,255,.25); }
+.hoy-empty-state__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: rgba(0,0,0,.06);
+  color: rgba(0,0,0,.5);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 6px 11px;
+  border-radius: 99px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+[data-theme="dark"] .hoy-empty-state__cta { background: rgba(255,255,255,.08); color: rgba(255,255,255,.38); }
+.hoy-empty-state__cta:active { opacity: .75; transform: scale(.97); }
+
+/* ── Agenda HOY ──────────────────────────────────────────────────── */
+.hoy-agenda-list { display: flex; flex-direction: column; }
+.hoy-agenda-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 4px 11px 0;
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+.hoy-agenda-item:first-child { border-top: none; }
+[data-theme="dark"] .hoy-agenda-item { border-top-color: rgba(255,255,255,.05); }
+.hoy-agenda-item__time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563EB;
+  min-width: 52px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+[data-theme="dark"] .hoy-agenda-item__time { color: #93c5fd; }
+.hoy-agenda-item__notime { font-size: 11px; color: rgba(0,0,0,.28); font-weight: 450; }
+[data-theme="dark"] .hoy-agenda-item__notime { color: rgba(255,255,255,.22); }
+.hoy-agenda-item__info { flex: 1; min-width: 0; }
+.hoy-agenda-item__name {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="dark"] .hoy-agenda-item__name { color: #F4F4F5; }
+.hoy-agenda-item__addr {
+  display: block;
+  font-size: 11.5px;
+  color: rgba(0,0,0,.38);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+[data-theme="dark"] .hoy-agenda-item__addr { color: rgba(255,255,255,.28); }
+.hoy-agenda-item__map {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(37,99,235,.08);
+  color: #2563EB;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+[data-theme="dark"] .hoy-agenda-item__map { background: rgba(59,130,246,.12); color: #93c5fd; }
+.hoy-agenda-upcoming { border-top: 1px solid rgba(0,0,0,.05); margin-top: 4px; }
+[data-theme="dark"] .hoy-agenda-upcoming { border-top-color: rgba(255,255,255,.04); }
+
+/* ── Overdue task badge ──────────────────────────────────────────── */
+.hoy-task-overdue { color: #ef4444; font-weight: 600; }
+[data-theme="dark"] .hoy-task-overdue { color: #fca5a5; }
+
+/* ── Collapsible block ───────────────────────────────────────────── */
+.hoy-collapse {
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.07);
+  background: rgba(0,0,0,.02);
+  overflow: hidden;
+}
+[data-theme="dark"] .hoy-collapse { border-color: rgba(255,255,255,.06); background: rgba(255,255,255,.03); }
+.hoy-collapse__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.hoy-collapse__trigger:active { opacity: .8; }
+.hoy-collapse__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(0,0,0,.38);
+}
+[data-theme="dark"] .hoy-collapse__label { color: rgba(255,255,255,.28); }
+.hoy-collapse__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.hoy-collapse__preview {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+[data-theme="dark"] .hoy-collapse__preview { color: #F4F4F5; }
+.hoy-collapse__chevron {
+  color: rgba(0,0,0,.28);
+  transition: transform 220ms ease;
+}
+[data-theme="dark"] .hoy-collapse__chevron { color: rgba(255,255,255,.22); }
+.hoy-collapse__chevron--open { transform: rotate(180deg); }
+.hoy-collapse__body {
+  padding: 0 16px 14px;
+  border-top: 1px solid rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+[data-theme="dark"] .hoy-collapse__body { border-top-color: rgba(255,255,255,.05); }
+
+/* ── Pipeline summary ────────────────────────────────────────────── */
+.hoy-pipeline-summary {
+  padding: 12px 0 10px;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  margin-bottom: 8px;
+}
+[data-theme="dark"] .hoy-pipeline-summary { border-bottom-color: rgba(255,255,255,.05); }
+.hoy-pipeline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hoy-pipeline-row span { font-size: 12.5px; color: rgba(0,0,0,.44); }
+.hoy-pipeline-row strong { font-size: 16px; font-weight: 700; color: #111; font-variant-numeric: tabular-nums; }
+[data-theme="dark"] .hoy-pipeline-row span { color: rgba(255,255,255,.32); }
+[data-theme="dark"] .hoy-pipeline-row strong { color: #F4F4F5; }
+.hoy-pipeline-row--sub { margin-top: 4px; }
+.hoy-pipeline-row--sub span { font-size: 11.5px; color: rgba(0,0,0,.32); }
+[data-theme="dark"] .hoy-pipeline-row--sub span { color: rgba(255,255,255,.22); }
+
+/* ── Licitaciones in collapse ────────────────────────────────────── */
+.hoy-collapse__section-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(0,0,0,.28);
+  padding: 6px 0 4px;
+}
+[data-theme="dark"] .hoy-collapse__section-label { color: rgba(255,255,255,.22); }
+.hoy-licit-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-top: 1px solid rgba(0,0,0,.05);
+}
+[data-theme="dark"] .hoy-licit-item { border-top-color: rgba(255,255,255,.04); }
+.hoy-licit-item:first-of-type { border-top: none; }
+.hoy-licit-item:active { opacity: .75; }
+.hoy-licit-item__main { flex: 1; min-width: 0; }
+.hoy-licit-item__name {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="dark"] .hoy-licit-item__name { color: #F4F4F5; }
+.hoy-licit-item__num {
+  display: block;
+  font-size: 11px;
+  color: rgba(0,0,0,.32);
+  margin-top: 1px;
+}
+[data-theme="dark"] .hoy-licit-item__num { color: rgba(255,255,255,.22); }
+.hoy-licit-item__days {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(0,0,0,.38);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+.hoy-licit-item__days--urgent { color: #ef4444; }
+[data-theme="dark"] .hoy-licit-item__days { color: rgba(255,255,255,.28); }
+[data-theme="dark"] .hoy-licit-item__days--urgent { color: #fca5a5; }
+.hoy-collapse__more {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0,0,0,.32);
+  padding: 10px 0 2px;
+  cursor: pointer;
+  justify-content: center;
+}
+[data-theme="dark"] .hoy-collapse__more { color: rgba(255,255,255,.22); }
+.hoy-collapse__empty {
+  font-size: 12.5px;
+  color: rgba(0,0,0,.28);
+  padding: 12px 0 4px;
+  text-align: center;
+  margin: 0;
+}
+[data-theme="dark"] .hoy-collapse__empty { color: rgba(255,255,255,.20); }
+
 
 /* ── Module grid star/favorito button ────────────────────────────── */
 .mob-module-btn-wrap {
