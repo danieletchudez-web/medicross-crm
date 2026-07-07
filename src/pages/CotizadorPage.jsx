@@ -196,6 +196,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   const [plazoVenta,  setPlazoVenta]  = useState("");
   const [mantOferta,  setMantOferta]  = useState("");
   const [formaCobro,  setFormaCobro]  = useState("");
+  const [condicionesAttempted, setCondicionesAttempted] = useState(false);
   const [renglones,   setRenglones]   = useState([emptyR()]);
   const [docId,       setDocId]       = useState(null);
   const [quoteNum,    setQuoteNum]    = useState(null);
@@ -415,6 +416,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       row.catalog_product_id,
     ].some((value) => String(value || "").trim()))
   );
+
+  const hasCondicionesCompletas = Boolean(plazoVenta.trim() && mantOferta.trim() && formaCobro.trim());
+
+  const missingCondiciones = [
+    !plazoVenta.trim() && "Plazo de venta",
+    !mantOferta.trim() && "Mantenimiento oferta",
+    !formaCobro.trim() && "Forma de cobro",
+  ].filter(Boolean);
 
   const updateR = (id, key, val) => setRenglones(prev => prev.map(r => r.id === id ? {
     ...r,
@@ -707,6 +716,11 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
   /* ── Export PDF ── */
   async function exportPDF() {
+    if (!hasCondicionesCompletas) {
+      setCondicionesAttempted(true);
+      showToast(`Completá antes de exportar: ${missingCondiciones.join(", ")}`, "err");
+      return;
+    }
     const hasData = renglones.some(r => parseN(r.costo) > 0);
     if (!hasData) { showToast("Ingresá el costo en al menos un renglón","err"); return; }
     const exportQuoteNum = await ensureSavedForExport();
@@ -959,9 +973,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>Nueva</span>
             </button>
-            <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>
+            <button
+              className={`cot-btn cot-btn--ghost${!hasCondicionesCompletas ? " cot-btn--pdf-blocked" : ""}`}
+              onClick={exportPDF}
+              title={!hasCondicionesCompletas ? `Falta completar: ${missingCondiciones.join(", ")}` : "Exportar PDF"}
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span>PDF</span>
+              {!hasCondicionesCompletas && <span className="cot-btn-badge-warn" aria-hidden="true">!</span>}
             </button>
             <div className="cot-toolbar__sep"/>
             <button className="cot-btn cot-btn--primary" onClick={guardar} disabled={saving || !hasMeaningfulQuoteData} title={!hasMeaningfulQuoteData ? "Completá al menos un dato antes de guardar" : "Guardar cotización"}>
@@ -994,19 +1013,19 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             <div className="cot-field cot-col-span-2"><label>Institución / Hospital</label>
               <CotInstCombobox value={institucion} onChange={setInstitucion}/>
             </div>
-            <div className="cot-field"><label>Plazo de venta</label>
+            <div className={`cot-field${condicionesAttempted && !plazoVenta.trim() ? " cot-field--required-error" : ""}`}><label>Plazo de venta</label>
               <select value={plazoVenta} onChange={e=>setPlazoVenta(e.target.value)}>
                 <option value="">— Seleccioná —</option>
                 {PLAZOS_VENTA.map(p=><option key={p} value={p}>{p}</option>)}
               </select>
             </div>
-            <div className="cot-field"><label>Mantenimiento oferta</label>
+            <div className={`cot-field${condicionesAttempted && !mantOferta.trim() ? " cot-field--required-error" : ""}`}><label>Mantenimiento oferta</label>
               <select value={mantOferta} onChange={e=>setMantOferta(e.target.value)}>
                 <option value="">— Seleccioná —</option>
                 {MANTENIMIENTOS.map(m=><option key={m} value={m}>{m}</option>)}
               </select>
             </div>
-            <div className="cot-field"><label>Forma de cobro</label>
+            <div className={`cot-field${condicionesAttempted && !formaCobro.trim() ? " cot-field--required-error" : ""}`}><label>Forma de cobro</label>
               <select value={formaCobro} onChange={e=>setFormaCobro(e.target.value)}>
                 <option value="">— Seleccioná —</option>
                 {FORMAS_COBRO.map(f=><option key={f} value={f}>{f}</option>)}
@@ -1247,7 +1266,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
         <div className="cot-actions-bottom">
           <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>+ Nueva cotización</button>
-          <button className="cot-btn cot-btn--ghost" onClick={exportPDF}>⬇ Exportar PDF</button>
+          <button
+            className={`cot-btn cot-btn--ghost${!hasCondicionesCompletas ? " cot-btn--pdf-blocked" : ""}`}
+            onClick={exportPDF}
+            title={!hasCondicionesCompletas ? `Falta completar: ${missingCondiciones.join(", ")}` : "Exportar PDF"}
+          >
+            ⬇ Exportar PDF
+            {!hasCondicionesCompletas && <span className="cot-btn-badge-warn" aria-hidden="true">!</span>}
+          </button>
           <button className="cot-btn cot-btn--primary" onClick={guardar} disabled={saving || !hasMeaningfulQuoteData} title={!hasMeaningfulQuoteData ? "Completá al menos un dato antes de guardar" : "Guardar cotización"}>
             {saving?"Guardando…":"💾 Guardar cotización"}
           </button>

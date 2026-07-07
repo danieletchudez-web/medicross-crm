@@ -549,3 +549,36 @@
 [data-theme="dark"] .cot-catalog-menu__header { background: #141824; color: #94a3b8; }
 [data-theme="dark"] .cot-catalog-menu button { background: #1e2432; color: #c8d0e0; border-color: rgba(255,255,255,.05); }
 [data-theme="dark"] .cot-catalog-menu button:hover { background: rgba(59,130,246,.1); color: #93c5fd; }
+
+/* ── Required-field validation ── */
+.cot-btn--pdf-blocked {
+  position: relative;
+  opacity: 0.7;
+  border: 1px solid #f59e0b !important;
+  color: #b45309 !important;
+}
+[data-theme="dark"] .cot-btn--pdf-blocked {
+  border: 1px solid #d97706 !important;
+  color: #fbbf24 !important;
+}
+.cot-btn-badge-warn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #f59e0b; color: #fff;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  margin-left: 5px; vertical-align: middle;
+}
+.cot-field--required-error label {
+  color: #dc2626 !important;
+}
+.cot-field--required-error select {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220,38,38,.15) !important;
+}
+[data-theme="dark"] .cot-field--required-error label {
+  color: #f87171 !important;
+}
+[data-theme="dark"] .cot-field--required-error select {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239,68,68,.2) !important;
+}
