@@ -179,7 +179,7 @@ export default function CampaignsPage({ profile, onNavigate }) {
 
   return (
     <Layout title="Campañas Comerciales" profile={profile} onNavigate={onNavigate}>
-      <div className="p-page p-page--2col">
+      <div className="p-page p-page--2col cmp-wrap">
 
         {/* LEFT — Campaign list panel */}
         <div className="p-panel p-panel--grow">
@@ -227,7 +227,7 @@ export default function CampaignsPage({ profile, onNavigate }) {
               <div className="p-empty">No hay campañas cargadas todavía.</div>
             ) : (
               enrichedCampaigns.map((campaign) => (
-                <div className="p-row" key={campaign.id}>
+                <div className="p-row cmp-row" key={campaign.id}>
                   <div className="p-row__main">
                     <div className="p-row__name">{campaign.name}</div>
                     <div className="p-row__sub">
@@ -235,8 +235,8 @@ export default function CampaignsPage({ profile, onNavigate }) {
                       {campaign.start_date && ` · ${campaign.start_date}`}
                       {campaign.end_date && ` — ${campaign.end_date}`}
                     </div>
-                    <div style={{ marginTop: 6 }}>
-                      <div className="p-progress" style={{ width: 180 }}>
+                    <div className="cmp-progress-block">
+                      <div className="p-progress cmp-progress">
                         <div
                           className={
                             campaign.coverage >= 80
@@ -248,24 +248,27 @@ export default function CampaignsPage({ profile, onNavigate }) {
                           style={{ width: `${Math.min(100, campaign.coverage)}%` }}
                         />
                       </div>
-                      <span className="p-row__sub" style={{ marginTop: 2, display: "block" }}>
-                        {campaign.coverage}% · Forecast: {money(campaign.forecast)} · Pipeline: {money(campaign.pipeline)} · {campaign.openOpps} opps
-                      </span>
+                      <div className="cmp-stats-row">
+                        <span>{campaign.coverage}%</span>
+                        <span>Forecast: {money(campaign.forecast)}</span>
+                        <span>Pipeline: {money(campaign.pipeline)}</span>
+                        <span>{campaign.openOpps} opp{campaign.openOpps !== 1 ? "s" : ""}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-row__meta">
+                  <div className="p-row__meta cmp-row__meta">
                     <span
                       className={
                         campaign.status === "activa"
-                          ? "p-badge--green"
+                          ? "p-badge p-badge--green"
                           : campaign.status === "finalizada"
-                          ? "p-badge--red"
-                          : "p-badge--gray"
+                          ? "p-badge p-badge--red"
+                          : "p-badge p-badge--gray"
                       }
                     >
                       {campaign.status}
                     </span>
-                    <div className="p-row__actions" style={{ marginTop: 6 }}>
+                    <div className="p-row__actions cmp-row__actions">
                       <button className="p-btn p-btn--ghost" onClick={() => editCampaign(campaign)}>
                         Editar
                       </button>
