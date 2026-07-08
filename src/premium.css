@@ -509,7 +509,10 @@
 [data-theme="dark"] .dash-list-row:last-child { border-bottom: none !important; }
 
 /* ─── BI COMERCIAL (ImporterPage) ─────────────────────────────────────────── */
-[data-theme="dark"] .bi-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .bi-page    { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .bi-shell,
+[data-theme="dark"] .bi-main,
+[data-theme="dark"] .bi-content { background: #0F0F0F !important; }
 
 [data-theme="dark"] .bi-header {
   background: #1A1A1A !important;
