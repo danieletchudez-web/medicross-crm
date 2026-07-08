@@ -1324,7 +1324,8 @@
 }
 
 /* ─── CALENDAR ────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .calendar-page { background: #0F0F0F !important; padding: 28px !important; }
+[data-theme="dark"] .calendar-page,
+[data-theme="dark"] .cal-page      { background: #0F0F0F !important; padding: 28px !important; }
 [data-theme="dark"] .calendar-header { background: #1A1A1A !important; border: none !important; border-radius: 16px !important; padding: 16px 20px !important; margin-bottom: 16px !important; }
 [data-theme="dark"] .calendar-grid { background: #1A1A1A !important; border: none !important; border-radius: 16px !important; overflow: hidden !important; }
 [data-theme="dark"] .cal-day { background: transparent !important; border-color: rgba(255,255,255,.04) !important; }
@@ -1376,7 +1377,8 @@
 }
 
 /* ─── COTIZADOR ───────────────────────────────────────────────────────────── */
-[data-theme="dark"] .cotizador-page { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
+[data-theme="dark"] .cotizador-page,
+[data-theme="dark"] .cot-page      { background: #0F0F0F !important; padding: 28px !important; gap: 20px !important; }
 [data-theme="dark"] .cot-panel,
 [data-theme="dark"] .cot-card {
   background: #1A1A1A !important;
