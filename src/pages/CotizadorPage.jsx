@@ -1002,8 +1002,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
         <div className="cot-card">
           <h3 className="cot-section-title">⚙️ Parámetros globales</h3>
-          <div className="cot-grid-4">
-            <div className="cot-field"><label>Vendedor</label>
+          <div className="cot-params-grid">
+            <div className="cot-field cot-f-2"><label>Vendedor</label>
               <select value={vendedor} onChange={e=>setVendedor(e.target.value)}>
                 <option value="">— Seleccionar —</option>
                 {vendedores.map(v=><option key={v} value={v}>{v}</option>)}
@@ -1012,13 +1012,13 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             <div className="cot-field"><label>Tipo de cambio USD → ARS</label>
               <input type="number" value={tc} onChange={e=>setTc(e.target.value)} placeholder="1425"/>
             </div>
-            <div className="cot-field"><label>N° Licitación</label>
+            <div className="cot-field cot-f-2"><label>N° Licitación</label>
               <input value={nroLicit} onChange={e=>setNroLicit(e.target.value)} placeholder="Ej: 001/2026"/>
             </div>
             <div className="cot-field"><label>Fecha apertura</label>
               <input type="date" value={fechaApert} onChange={e=>setFechaApert(e.target.value)}/>
             </div>
-            <div className="cot-field cot-col-span-2"><label>Institución / Hospital</label>
+            <div className="cot-field cot-f-3"><label>Institución / Hospital</label>
               <CotInstCombobox value={institucion} onChange={setInstitucion}/>
             </div>
             <div className={`cot-field${condicionesAttempted && !plazoVenta.trim() ? " cot-field--required-error" : ""}`}><label>Plazo de venta</label>
@@ -1060,13 +1060,15 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
               </div>
               <div className="cot-renglon__body">
                 <div className="cot-renglon__left">
-                  <div className="cot-grid-3">
+                  <div className="cot-renglon-ids">
                     <div className="cot-field"><label>Empresa / Proveedor</label>
                       <input value={r.empresa} onChange={e=>updateR(r.id,"empresa",e.target.value)} placeholder="Proveedor"/></div>
                     <div className="cot-field"><label>Renglón N°</label>
                       <input type="number" value={r.renglon} onChange={e=>updateR(r.id,"renglon",e.target.value)} placeholder="N°"/></div>
                     <div className="cot-field"><label>Sub ítem</label>
                       <input type="number" value={r.subitem} onChange={e=>updateR(r.id,"subitem",e.target.value)} placeholder="N°"/></div>
+                    <div className="cot-field cot-field--qty"><label>Cantidad</label>
+                      <input type="number" value={r.cant} min={1} onChange={e=>updateR(r.id,"cant",e.target.value)}/></div>
                   </div>
                   <div className="cot-grid-2" style={{marginTop:10}}>
                     <div className="cot-field"><label>Código</label>
@@ -1147,7 +1149,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                     );
                   })()}
                   <div className="cot-divider"/>
-                  <div className="cot-grid-3">
+                  <div className="cot-costs-row">
                     <div className="cot-field"><label>Moneda</label>
                       <select value={r.moneda} onChange={e=>updateR(r.id,"moneda",e.target.value)}>
                         <option value="USD">USD</option><option value="ARS">ARS</option>
@@ -1158,8 +1160,6 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                       </select></div>
                     <div className="cot-field"><label>Multiplicador ×</label>
                       <input value={r.markup} onChange={e=>updateR(r.id,"markup",e.target.value)} placeholder="2"/></div>
-                  </div>
-                  <div className="cot-grid-2" style={{marginTop:10}}>
                     <div className="cot-field"><label>Costo unitario</label>
                       <input value={r.costo} onChange={e=>updateR(r.id,"costo",e.target.value)} placeholder="0,00"/></div>
                     <div className="cot-field"><label>TC propio (vacío = global)</label>
@@ -1189,14 +1189,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   )}
                 </div>
                 <div className="cot-renglon__right">
-                  <div className="cot-field" style={{maxWidth:140}}>
-                    <label>Cantidad</label>
-                    <input type="number" value={r.cant} min={1} onChange={e=>updateR(r.id,"cant",e.target.value)}
-                      style={{textAlign:"center",fontWeight:700,fontSize:20}}/>
-                  </div>
                   {calc ? (
                     <>
-                      <div className="cot-divider"/>
                       <div className="cot-mk-row">
                         <div className="cot-mk-card">
                           <span>Markup % <small style={{opacity:.6}}>(base costo)</small></span>

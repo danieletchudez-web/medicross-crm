@@ -104,8 +104,32 @@
 .cot-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .cot-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
 .cot-col-span-2 { grid-column: span 2; }
-@media(max-width:900px){ .cot-grid-4{grid-template-columns:1fr 1fr;} }
-@media(max-width:600px){ .cot-grid-2,.cot-grid-3,.cot-grid-4{grid-template-columns:1fr;} }
+/* Params smart grid — 6 virtual columns */
+.cot-params-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px 12px; }
+.cot-f-2 { grid-column: span 2; }
+.cot-f-3 { grid-column: span 3; }
+/* Renglón: IDs + cantidad en una sola fila */
+.cot-renglon-ids { display: grid; grid-template-columns: 2fr 70px 70px 88px; gap: 10px; }
+/* Renglón: fila de costos compacta */
+.cot-costs-row { display: grid; grid-template-columns: 78px 78px 104px 1fr 1fr; gap: 10px; margin-top: 10px; }
+/* Cantidad — jerarquía visual */
+.cot-field--qty input { text-align: center; font-weight: 700; font-size: 20px; }
+[data-theme="dark"] .cot-field--qty input { color: #EDEDED; }
+@media(max-width:900px){
+  .cot-grid-4 { grid-template-columns: 1fr 1fr; }
+  .cot-params-grid { grid-template-columns: repeat(3, 1fr); }
+  .cot-renglon-ids { grid-template-columns: 2fr 70px 70px 80px; }
+  .cot-costs-row { grid-template-columns: 78px 78px 104px 1fr; }
+}
+@media(max-width:600px){
+  .cot-grid-2,.cot-grid-3,.cot-grid-4 { grid-template-columns: 1fr; }
+  .cot-params-grid { grid-template-columns: 1fr 1fr; }
+  .cot-f-2 { grid-column: span 1; }
+  .cot-f-3 { grid-column: span 2; }
+  .cot-renglon-ids { grid-template-columns: 1fr 1fr; }
+  .cot-renglon-ids > :first-child { grid-column: span 2; }
+  .cot-costs-row { grid-template-columns: 1fr 1fr; }
+}
 
 /* ── Fields ── */
 .cot-field { display: flex; flex-direction: column; gap: 5px; }
