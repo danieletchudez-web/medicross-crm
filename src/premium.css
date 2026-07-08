@@ -1620,7 +1620,7 @@
   gap: 14px;
   padding: 22px 24px;
   min-height: 100%;
-  background: #1A1A1A !important;
+  background: #0F0F0F !important;
   box-sizing: border-box;
 }
 [data-theme="dark"] .p-page--2col {
@@ -1641,7 +1641,7 @@
   background: #1A1A1A !important;
   border-radius: 14px !important;
   overflow: hidden;
-  border: none !important;
+  border: 1px solid #2A2A2A !important;
   box-shadow: none !important;
   display: flex;
   flex-direction: column;
@@ -1693,7 +1693,7 @@
 [data-theme="dark"] .p-body + .p-body { border-top: 1px solid rgba(255,255,255,.04); }
 
 /* ── Section inside panel ───────────────────────────────────────────────── */
-[data-theme="dark"] .p-section { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.04); }
+[data-theme="dark"] .p-section { padding: 16px 20px; border-top: 1px solid #2A2A2A; }
 [data-theme="dark"] .p-section__label {
   display: block;
   font-size: 9.5px;
