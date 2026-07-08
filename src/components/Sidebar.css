@@ -69,10 +69,8 @@
   margin: 10px 14px !important;
 }
 
-/* Quick actions — gris, no azul */
+/* Quick actions — propiedades siempre activas (color, tipografía) */
 [data-theme="dark"] .sidebar-quick button {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid #3C3C3C;
   color: #9D9D9D;
   border-radius: 10px;
   font-weight: 500;
@@ -80,40 +78,31 @@
   box-shadow: none;
 }
 [data-theme="dark"] .sidebar-quick button::after { opacity: 0; }
-[data-theme="dark"] .sidebar-quick button:hover {
-  background: rgba(255,255,255,0.06);
-  border-color: #3C3C3C;
-  color: #C1C1C1;
-  box-shadow: none;
-  transform: none;
+
+/* Caja visible SOLO en expandido o hover-expand — nunca en rail colapsado */
+[data-theme="dark"] .sidebar:not(.sidebar--collapsed) .sidebar-quick button,
+[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid #3C3C3C;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
 }
-/* Colapsado: transparentes igual que los nav items, sin caja ni animación */
+[data-theme="dark"] .sidebar:not(.sidebar--collapsed) .sidebar-quick button:hover,
+[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button:hover {
+  background: rgba(59,130,246,.18);
+  border-color: rgba(96,165,250,.42);
+  color: #dbeafe;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+/* Rail colapsado sin hover: completamente transparente, igual que nav items */
 [data-theme="dark"] .sidebar--collapsed:not(:hover) .sidebar-quick button {
   background: transparent;
   border: none;
   box-shadow: none;
   animation: none;
-}
-[data-theme="dark"] .sidebar--collapsed .sidebar-quick button:hover {
-  background: rgba(59,130,246,.18);
-  border-color: rgba(96,165,250,.42);
-  color: #dbeafe;
-  transform: translateY(-2px) scale(1.04);
-}
-/* Hover-expand: restaurar estilos alineados a los nav items */
-[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button {
-  background: rgba(255,255,255,0.04);
-  border-color: #3C3C3C;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 800;
-  animation: none;
-}
-[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button:hover {
-  background: rgba(59,130,246,.18);
-  border-color: rgba(96,165,250,.42);
-  color: #dbeafe;
-  transform: translateY(-1px);
 }
 
 /* Nav items — cápsula gris, sin escala */
