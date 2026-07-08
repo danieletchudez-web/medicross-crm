@@ -71,21 +71,33 @@
 
 /* Quick actions — gris, no azul */
 [data-theme="dark"] .sidebar-quick button {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid #3C3C3C !important;
-  color: #9D9D9D !important;
-  border-radius: 10px !important;
-  font-weight: 500 !important;
-  font-size: 11.5px !important;
-  box-shadow: none !important;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid #3C3C3C;
+  color: #9D9D9D;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 11.5px;
+  box-shadow: none;
 }
-[data-theme="dark"] .sidebar-quick button::after { opacity: 0 !important; }
+[data-theme="dark"] .sidebar-quick button::after { opacity: 0; }
 [data-theme="dark"] .sidebar-quick button:hover {
-  background: rgba(255,255,255,0.06) !important;
-  border-color: #3C3C3C !important;
-  color: #C1C1C1 !important;
-  box-shadow: none !important;
-  transform: none !important;
+  background: rgba(255,255,255,0.06);
+  border-color: #3C3C3C;
+  color: #C1C1C1;
+  box-shadow: none;
+  transform: none;
+}
+/* En hover-expand: restaurar estilos alineados a los nav items */
+[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button {
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button:hover {
+  background: rgba(59,130,246,.18);
+  border-color: rgba(96,165,250,.42);
+  color: #dbeafe;
+  transform: translateY(-1px);
 }
 
 /* Nav items — cápsula gris, sin escala */
@@ -924,12 +936,9 @@
   to   { opacity: 1; transform: translateY(-50%) translateX(0); }
 }
 
-/* Ocultar tooltip al expandir con hover — el label ya está apareciendo */
-.sidebar--collapsed:hover .sidebar-tooltip {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.08s ease;
-}
+/* Tooltip: se oculta via React state (sbHovered) en Sidebar.jsx
+   porque el div.sidebar-tooltip es sibling del aside, no descendiente,
+   y el selector CSS :hover descendiente no matchea en ese caso. */
 
 @media (max-width: 768px) {
   .sidebar-tooltip { display: none; }
@@ -1633,7 +1642,7 @@
   /* Quick actions: restore expanded layout and stop breathe animation */
   .sidebar--collapsed:hover .sidebar-quick {
     width: 100%;
-    margin: 0 8px 10px;
+    margin: 0 0 10px;   /* sin margen extra — la nav ya tiene padding 12px */
     gap: 6px;
     justify-items: stretch;
   }
@@ -1641,7 +1650,7 @@
   .sidebar--collapsed:hover .sidebar-quick button {
     width: auto;
     height: auto;
-    padding: 7px 9px;
+    padding: 8px 10px;  /* idéntico al nav item para alineación visual */
     justify-content: flex-start;
     text-align: left;
     border-radius: 8px;

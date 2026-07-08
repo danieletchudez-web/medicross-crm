@@ -130,7 +130,8 @@ export default function Sidebar({ profile, onNavigate }) {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
   });
-  const [tooltip, setTooltip] = useState(null);
+  const [tooltip,   setTooltip]   = useState(null);
+  const [sbHovered, setSbHovered] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
   const dragIdx = useRef(null);
@@ -231,7 +232,11 @@ export default function Sidebar({ profile, onNavigate }) {
 
   return (
     <>
-      <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
+      <aside
+        className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}
+        onMouseEnter={() => { if (collapsed) setSbHovered(true); }}
+        onMouseLeave={() => setSbHovered(false)}
+      >
 
         <button
           type="button"
@@ -423,8 +428,11 @@ export default function Sidebar({ profile, onNavigate }) {
         </div>
       </aside>
 
-      {/* Tooltip flotante — position:fixed escapa cualquier overflow:hidden */}
-      {tooltip && collapsed && (
+      {/* Tooltip flotante — position:fixed escapa cualquier overflow:hidden.
+          Se oculta cuando el sidebar CSS-expande en hover (sbHovered),
+          porque el label ya es visible y el div es sibling del aside (no descendiente),
+          así que la regla CSS .sidebar--collapsed:hover .sidebar-tooltip no matchea. */}
+      {tooltip && collapsed && !sbHovered && (
         <div
           className="sidebar-tooltip"
           style={{ top: tooltip.y, left: 80 }}
