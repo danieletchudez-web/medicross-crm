@@ -163,7 +163,7 @@
   will-change: width;
   transition: width var(--sb-dur) var(--sb-ease),
               min-width var(--sb-dur) var(--sb-ease),
-              box-shadow .4s ease;
+              box-shadow var(--sb-dur) var(--sb-ease);
 }
 
 @supports (height: 100dvh) {
@@ -427,8 +427,7 @@
   max-width: 180px;
   opacity: 1;
   transition: opacity .2s ease .22s,
-              max-width var(--sb-dur) var(--sb-ease) 0s,
-              padding .2s ease .22s;
+              max-width var(--sb-dur) var(--sb-ease) 0s;
 }
 
 /* ─── Quick actions ──────────────────────────────────────────────────── */
@@ -986,20 +985,24 @@
   .sidebar--collapsed .sidebar-nav__label,
   .sidebar--collapsed .sidebar-theme-toggle__label,
   .sidebar--collapsed .sidebar-logout__label,
-  .sidebar--collapsed .sidebar-quick button em,
-  .sidebar--collapsed .sidebar-section__label {
+  .sidebar--collapsed .sidebar-quick button em {
     opacity: 0;
     max-width: 0;
     transform: translateX(-8px);
     pointer-events: none;
     transition: opacity .12s ease 0s,
                 max-width var(--sb-dur-out) var(--sb-ease) 0s,
-                transform .12s ease 0s,
-                padding .12s ease 0s;
+                transform .12s ease 0s;
   }
 
+  /* Títulos de sección: igual que los labels pero sin tocar el padding
+     para que la altura de la fila (y la posición de los botones) no cambie */
   .sidebar--collapsed .sidebar-section__label {
-    padding: 0;
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+    transition: opacity .12s ease 0s,
+                max-width var(--sb-dur-out) var(--sb-ease) 0s;
   }
 
   .sidebar--collapsed .sidebar-nav__badge {
@@ -1552,20 +1555,23 @@
   .sidebar--collapsed:hover .sidebar-nav__label,
   .sidebar--collapsed:hover .sidebar-theme-toggle__label,
   .sidebar--collapsed:hover .sidebar-logout__label,
-  .sidebar--collapsed:hover .sidebar-quick button em,
-  .sidebar--collapsed:hover .sidebar-section__label {
+  .sidebar--collapsed:hover .sidebar-quick button em {
     opacity: 1;
     max-width: 180px;
     transform: translateX(0);
     pointer-events: auto;
     transition: opacity 0.2s ease 0.28s,
                 max-width 0.5s ease 0s,
-                transform 0.2s ease 0.28s,
-                padding 0.2s ease 0.28s;
+                transform 0.2s ease 0.28s;
   }
 
+  /* Títulos de sección: se revelan con el mismo timing pero sin animar padding */
   .sidebar--collapsed:hover .sidebar-section__label {
-    padding: 4px 10px 3px;
+    opacity: 1;
+    max-width: 180px;
+    pointer-events: auto;
+    transition: opacity 0.2s ease 0.28s,
+                max-width 0.5s ease 0s;
   }
 
   /* Restore elements hidden via display:none in collapsed rail */
