@@ -93,9 +93,12 @@ export default function HabitsPage({ profile, onNavigate }) {
   const [showModal,    setShowModal]   = useState(false);
   const [editingHabit, setEditingHabit]= useState(null);
   const [form,         setForm]        = useState(emptyForm);
-  const [toggling,     setToggling]    = useState(() => new Set());
-  const titleRef  = useRef(null);
-  const toastTimer = useRef(null);
+  const [toggling,        setToggling]       = useState(() => new Set());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [pickerYear,      setPickerYear]      = useState(() => new Date().getFullYear());
+  const titleRef      = useRef(null);
+  const toastTimer    = useRef(null);
+  const pickerRef     = useRef(null);
 
   const { year, month } = viewMonth;
   const totalDays  = useMemo(() => daysInMonth(year, month), [year, month]);
@@ -142,6 +145,27 @@ export default function HabitsPage({ profile, onNavigate }) {
     if (!userId || !hasAccess) { setLoading(false); return; }
     loadData();
   }, [userId, year, month, hasAccess]);
+
+  useEffect(() => {
+    if (!showMonthPicker) return;
+    function onClickOutside(e) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setShowMonthPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [showMonthPicker]);
+
+  function openMonthPicker() {
+    setPickerYear(year);
+    setShowMonthPicker(p => !p);
+  }
+
+  function selectMonth(m) {
+    setViewMonth({ year: pickerYear, month: m });
+    setShowMonthPicker(false);
+  }
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -391,11 +415,45 @@ export default function HabitsPage({ profile, onNavigate }) {
             <p className="hb-subtitle">Tus hábitos y tu constancia del mes.</p>
           </div>
           <div className="hb-header__right">
-            <button className="hb-icon-btn" title="Filtros" aria-label="Filtros">
-              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 6h18M7 12h10M11 18h2" />
-              </svg>
-            </button>
+            <div className="hb-picker-wrap" ref={pickerRef}>
+              <button
+                className={`hb-icon-btn${showMonthPicker ? " hb-icon-btn--active" : ""}`}
+                title="Ir a mes" aria-label="Seleccionar mes"
+                onClick={openMonthPicker}
+              >
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 6h18M7 12h10M11 18h2" />
+                </svg>
+              </button>
+              {showMonthPicker && (
+                <div className="hb-month-picker">
+                  <div className="hb-mp-header">
+                    {new Date(pickerYear, month, 1).toLocaleString("es-AR", { month: "long" }).toUpperCase()} DE {pickerYear}
+                  </div>
+                  <div className="hb-mp-year-row">
+                    <button className="hb-mp-nav" onClick={() => setPickerYear(y => y - 1)}>‹</button>
+                    <span className="hb-mp-year">{pickerYear}</span>
+                    <button className="hb-mp-nav" onClick={() => setPickerYear(y => y + 1)}>›</button>
+                  </div>
+                  <div className="hb-mp-grid">
+                    {["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"].map((name, m) => {
+                      const isCurrent  = pickerYear === year && m === month;
+                      const isFutureMo = pickerYear > new Date().getFullYear() ||
+                        (pickerYear === new Date().getFullYear() && m > new Date().getMonth());
+                      return (
+                        <button
+                          key={m}
+                          className={`hb-mp-month${isCurrent ? " hb-mp-month--active" : ""}${isFutureMo ? " hb-mp-month--future" : ""}`}
+                          onClick={() => selectMonth(m)}
+                        >
+                          {name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             <button className="hb-btn-primary" onClick={openAdd}>
               + Añadir hábito
             </button>

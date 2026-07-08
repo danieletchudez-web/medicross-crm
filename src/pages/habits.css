@@ -216,6 +216,95 @@
   flex-shrink: 0;
 }
 .hb-icon-btn:hover { background: var(--hb-pill-active); color: var(--hb-text); }
+.hb-icon-btn--active { background: var(--hb-pill-active); color: var(--hb-text); }
+
+/* ── Month picker popup ──────────────────────────────────────────────────── */
+.hb-picker-wrap { position: relative; }
+
+.hb-month-picker {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  width: 232px;
+  background: #1e2025;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.45);
+}
+[data-theme="light"] .hb-month-picker {
+  background: #1e2025;
+  border-color: rgba(255,255,255,.10);
+}
+
+.hb-mp-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.6);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.hb-mp-year-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.hb-mp-year {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.hb-mp-nav {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.08);
+  border: none;
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 120ms;
+}
+.hb-mp-nav:hover { background: rgba(255,255,255,.15); color: #fff; }
+
+.hb-mp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.hb-mp-month {
+  padding: 9px 4px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.75);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: background 120ms, color 120ms;
+  font-family: inherit;
+}
+.hb-mp-month:hover { background: rgba(255,255,255,.10); color: #fff; }
+.hb-mp-month--active {
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+}
+.hb-mp-month--active:hover { background: #f1f5f9; color: #0f172a; }
+.hb-mp-month--future { color: rgba(255,255,255,.28); }
+.hb-mp-month--future:hover { background: transparent; color: rgba(255,255,255,.28); cursor: default; }
 
 /* ── Month navigation ────────────────────────────────────────────────────── */
 .hb-month-nav {
