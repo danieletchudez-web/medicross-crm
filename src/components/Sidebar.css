@@ -88,9 +88,10 @@
   transform: none;
 }
 /* Colapsado: transparentes igual que los nav items, sin caja ni animación */
-[data-theme="dark"] .sidebar--collapsed .sidebar-quick button {
+[data-theme="dark"] .sidebar--collapsed:not(:hover) .sidebar-quick button {
   background: transparent;
-  border-color: transparent;
+  border: none;
+  box-shadow: none;
   animation: none;
 }
 [data-theme="dark"] .sidebar--collapsed .sidebar-quick button:hover {
@@ -1104,9 +1105,13 @@
     justify-content: center;
     text-align: center;
     border-radius: 13px;
-    background: transparent;
-    border-color: transparent;
     animation: none;
+  }
+  /* Invisible solo cuando NO está en hover-expand */
+  .sidebar--collapsed:not(:hover) .sidebar-quick button {
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 
   .sidebar--collapsed .sidebar-quick button:hover {
