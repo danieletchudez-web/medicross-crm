@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
+import CotizadorIntel, { useQuoteHint } from "./CotizadorIntel";
 import "./CotizadorPage.css";
 
 const fARS   = (n) => "$ "   + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -185,6 +186,23 @@ function CotInstCombobox({ value, onChange }) {
   );
 }
 
+/* Hint contextual por renglón: usa datos de cotizaciones propias ya cargados */
+function CotHistHint({ cotHistory, descr }) {
+  const hint = useQuoteHint(cotHistory, descr);
+  if (!hint) return null;
+  return (
+    <div className="cot-hist-hint">
+      <span>📊</span>
+      <span>
+        Cotizado internamente <strong>{hint.count}</strong> {hint.count === 1 ? "vez" : "veces"}
+        {" · "}Último: <strong>{fARS(hint.lastPrice)}</strong>
+        {" · "}Prom: <strong>{fARS(hint.avgPrice)}</strong>
+        {hint.avgGM > 0 && <>{" · "}GM prom: <strong>{fPct(hint.avgGM)}</strong></>}
+      </span>
+    </div>
+  );
+}
+
 export default function CotizadorPage({ profile, onNavigate, initialData, pageKey }) {
   const [vendedor,    setVendedor]    = useState(initialData?.vendedor    || "");
   const [vendedores,  setVendedores]  = useState(VENDEDORES);
@@ -215,6 +233,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   const [expirationDays, setExpirationDays] = useState(30);
   const [priceIntel,    setPriceIntel]    = useState({});
   const priceTimers = useRef({});
+  const [cotHistory,    setCotHistory]    = useState(null);
+  const cotHistLoadingRef = useRef(false);
 
   useEffect(() => {
     loadVendedores();
@@ -283,6 +303,28 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       .maybeSingle();
     const configured = Number(data?.value?.days);
     if (configured > 0) setExpirationDays(configured);
+  }
+
+  /* ── Historial cotizaciones (hint contextual) ── */
+  async function loadCotHistory() {
+    if (cotHistLoadingRef.current || cotHistory !== null) return;
+    cotHistLoadingRef.current = true;
+    const { data } = await supabase
+      .from("cotizaciones")
+      .select("tc, renglones, fecha_apert, created_at, estado, institucion")
+      .eq("deleted", false)
+      .limit(300);
+    const flat = [];
+    for (const cot of (data || [])) {
+      const tcG = parseN(cot.tc) || 1425;
+      for (const r of (cot.renglones || [])) {
+        if (!r.descr) continue;
+        const c = calcR(r, tcG);
+        if (!c) continue;
+        flat.push({ descr: r.descr, pvARSc: c.pvARSc, mkPct: c.mkPct, gm: c.gm, fecha: cot.fecha_apert || cot.created_at?.slice(0, 10) });
+      }
+    }
+    setCotHistory(flat);
   }
 
   /* ── Price Intelligence ── */
@@ -1000,6 +1042,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
         <DashboardComercial pageKey={pageKey} />
 
+        <CotizadorIntel
+          onOpenQuote={(id) => { loadCotizacion(id); window.scrollTo(0, 0); }}
+        />
+
         <div className="cot-card">
           <h3 className="cot-section-title">⚙️ Parámetros globales</h3>
           <div className="cot-params-grid">
@@ -1078,7 +1124,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   </div>
                   <div className="cot-field" style={{marginTop:10}}><label>Descripción del producto</label>
                     <div className="cot-catalog-field">
-                      <textarea rows={3} value={r.descr} onFocus={()=>setCatalogOpenId(r.id)} onChange={e=>{updateR(r.id,"descr",e.target.value);setCatalogOpenId(r.id);debouncedFetchPriceIntel(r.id,e.target.value);}} placeholder="Descripción completa del producto"/>
+                      <textarea rows={3} value={r.descr} onFocus={()=>{setCatalogOpenId(r.id);loadCotHistory();}} onChange={e=>{updateR(r.id,"descr",e.target.value);setCatalogOpenId(r.id);debouncedFetchPriceIntel(r.id,e.target.value);}} placeholder="Descripción completa del producto"/>
                       {showSuggestions && (
                         <div className="cot-catalog-menu">
                           {catalogSuggestions.length > 0 && (
@@ -1148,6 +1194,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                       </div>
                     );
                   })()}
+                  <CotHistHint cotHistory={cotHistory} descr={r.descr} />
                   <div className="cot-divider"/>
                   <div className="cot-costs-row">
                     <div className="cot-field"><label>Moneda</label>
