@@ -921,6 +921,13 @@
   to   { opacity: 1; transform: translateY(-50%) translateX(0); }
 }
 
+/* Ocultar tooltip al expandir con hover — el label ya está apareciendo */
+.sidebar--collapsed:hover .sidebar-tooltip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.08s ease;
+}
+
 @media (max-width: 768px) {
   .sidebar-tooltip { display: none; }
 }
@@ -1476,7 +1483,7 @@
     transition: width var(--sb-dur) var(--sb-ease),
                 min-width var(--sb-dur) var(--sb-ease),
                 margin-right var(--sb-dur) var(--sb-ease),
-                box-shadow 0.4s ease;
+                box-shadow var(--sb-dur) var(--sb-ease);
   }
 
   /* On hover: expand to 224px and compensate with negative margin so the flex layout
