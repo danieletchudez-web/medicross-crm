@@ -355,39 +355,6 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
       .sort((a, b) => b.score - a.score);
   }, [filteredOpps]);
 
-  const decision = useMemo(() => {
-    if (metrics.pipeline === 0) return { tone:"danger",  icon:"⚠", title:"Generar pipeline",     text:"No hay pipeline abierto. Crear oportunidades desde visitas y prospectos." };
-    if (metrics.noAction > 0)  return { tone:"warning", icon:"◎", title:"Seguimiento pendiente", text:`${metrics.noAction} oportunidades no tienen próxima acción definida.` };
-    if (metrics.hotDeals > 0)  return { tone:"success", icon:"↑", title:"Priorizar cierre",      text:`${metrics.hotDeals} oportunidades calientes. Enfocar cierre comercial esta semana.` };
-    return                             { tone:"neutral", icon:"●", title:"Operación estable",     text:"Pipeline activo. Mantener ritmo de visitas, seguimiento y forecast." };
-  }, [metrics]);
-
-  const todayDecisions = useMemo(() => {
-    const rows = [];
-    rows.push({
-      tone: metrics.coverage < 50 ? "danger" : metrics.coverage < 80 ? "warning" : "success",
-      title: `Cobertura ${metrics.coverage}%`,
-      text: metrics.coverage < 50 ? "Aumentar pipeline o ajustar campañas para cubrir objetivo." : "Mantener seguimiento de forecast contra objetivo.",
-    });
-    if (metrics.noAction > 0) rows.push({
-      tone: "warning",
-      title: `${metrics.noAction} sin próxima acción`,
-      text: "Definir dueño, fecha y siguiente paso antes de cerrar el día.",
-    });
-    const top = projectTemperature[0];
-    if (top) rows.push({
-      tone: top.score >= 75 ? "success" : "warning",
-      title: top.name,
-      text: `${top.client} · ${top.stage} · score ${top.score}`,
-    });
-    if (metrics.hotDeals > 0) rows.push({
-      tone: "success",
-      title: `${metrics.hotDeals} hot deals`,
-      text: "Priorizar cierre comercial y confirmar fecha de decisión.",
-    });
-    return rows.slice(0, 3);
-  }, [metrics, projectTemperature]);
-
   const campaignRows = useMemo(() => {
     return filteredCampaigns.map((c) => {
       const forecast = filteredOpps
@@ -665,43 +632,6 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
           </div>
         </div>
 
-        {/* DECISIONS PANEL */}
-        <div className="p-panel">
-          <div className="p-hd">
-            <div className="p-hd-left">
-              <span className="p-title">Decisiones de hoy</span>
-              <span className="p-sub">{decision.text}</span>
-            </div>
-            <div className="p-hd-right">
-              <button
-                className="p-btn p-btn--primary"
-                onClick={() => onNavigate(metrics.noAction > 0 ? "opportunities" : "visits")}
-              >
-                Ejecutar acción
-              </button>
-            </div>
-          </div>
-          <div className="p-list">
-            {todayDecisions.map((item, index) => (
-              <div key={`${item.title}-${index}`} className="p-row">
-                <span className="p-row__rank">{String(index + 1).padStart(2, "0")}</span>
-                <div className="p-row__main">
-                  <span className="p-row__name">{item.title}</span>
-                  <span className="p-row__sub">{item.text}</span>
-                </div>
-                <div className="p-row__meta">
-                  <span className={
-                    item.tone === "success" ? "p-badge--green" :
-                    item.tone === "warning" ? "p-badge--amber" :
-                    item.tone === "danger"  ? "p-badge--red"   : "p-badge--gray"
-                  }>
-                    {item.tone === "success" ? "Prioridad alta" : item.tone === "warning" ? "Atención" : item.tone === "danger" ? "Urgente" : "Info"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* CHARTS ROW */}
         {showDetailedPanels ? (

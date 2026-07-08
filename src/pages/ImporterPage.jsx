@@ -538,31 +538,6 @@ export default function ImporterPage({ profile, onNavigate }) {
     return list;
   }, [kpis]);
 
-  const biDecisions = useMemo(() => {
-    const rows = [];
-    rows.push({
-      tone: kpis.fcastPct !== null && kpis.fcastPct < 70 ? "danger" : kpis.fcastPct !== null && kpis.fcastPct < 95 ? "warning" : "success",
-      title: kpis.fcastPct !== null ? `Forecast ${kpis.fcastPct}%` : "Forecast pendiente",
-      text: kpis.fcastPct !== null ? `${kpis.periodLabel} contra forecast: ${compact(kpis.fcast)}.` : "Cargá forecast mensual para medir cobertura.",
-    });
-    if (kpis.pendienteCount > 0) rows.push({
-      tone: "danger",
-      title: `${kpis.pendienteCount} pendientes de cobro`,
-      text: `${compact(kpis.pendienteCobro)} pendientes. Priorizar seguimiento administrativo.`,
-    });
-    if (kpis.mejorUnit) rows.push({
-      tone: "success",
-      title: kpis.mejorUnit[0],
-      text: `Unidad líder con ${compact(kpis.mejorUnit[1])} facturados.`,
-    });
-    if (kpis.momChange !== null) rows.push({
-      tone: kpis.momChange >= 0 ? "success" : "warning",
-      title: `${kpis.momChange >= 0 ? "+" : ""}${kpis.momChange.toFixed(1).replace(".", ",")}% mensual`,
-      text: "Variación contra el mes anterior.",
-    });
-    return rows.slice(0, 3);
-  }, [kpis]);
-
   function renderCharts() {
     const Chart = window.Chart; if (!Chart) return;
     [lineRef, ticketRef, donutRef].forEach(r => { if (r.current?.chartInstance) r.current.chartInstance.destroy(); });
@@ -790,23 +765,6 @@ export default function ImporterPage({ profile, onNavigate }) {
                   </div>
 
                   <div className="bi-unified-panel">
-                    <section className="bi-decisions">
-                      <div className="bi-decisions__head">
-                        <span>Decisiones de BI</span>
-                        <strong>Lectura ejecutiva</strong>
-                      </div>
-                      {biDecisions.map((item, index) => (
-                        <article key={`${item.title}-${index}`} className={`bi-decision bi-decision--${item.tone}`}>
-                          <span>{String(index + 1).padStart(2, "0")}</span>
-                          <div>
-                            <strong>{item.title}</strong>
-                            <p>{item.text}</p>
-                          </div>
-                        </article>
-                      ))}
-                    </section>
-
-                    <div className="bi-unified-divider" aria-hidden="true" />
 
                     <section className="bi-support-grid" aria-label="Indicadores complementarios">
                       <article className="bi-support-card">
