@@ -246,25 +246,25 @@ function VisitForm({f,setF,isEdit,onSubmit,onCancel,accounts,products,loading,on
 
       <div className="vf-section">
         <span className="vf-section__label">Fecha, tipo y estado</span>
-        <div className="vf-grid">
-          <div className="vf-field"><label>Fecha visita</label>
+        <div className="vf-grid vf-grid--6">
+          <div className="vf-field vf-field--sm"><label>Fecha visita</label>
             <input type="date" value={f.visit_date} onChange={e=>setF({...f,visit_date:e.target.value})}/></div>
-          <div className="vf-field"><label>Hora</label>
+          <div className="vf-field vf-field--xs"><label>Hora</label>
             <input type="time" value={f.visit_time} onChange={e=>setF({...f,visit_time:e.target.value})}/></div>
-          <div className="vf-field"><label>Tipo</label>
+          <div className="vf-field vf-field--xs"><label>Tipo</label>
             <select value={f.visit_type} onChange={e=>setF({...f,visit_type:e.target.value})}>
               {VISIT_TYPES.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
-          <div className="vf-field"><label>Estado</label>
+          <div className="vf-field vf-field--sm"><label>Estado</label>
             <select value={f.status} onChange={e=>setF({...f,status:e.target.value})}>
               {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</select></div>
-          <div className="vf-field"><label>Prioridad</label>
+          <div className="vf-field vf-field--xs"><label>Prioridad</label>
             <select value={f.priority} onChange={e=>setF({...f,priority:e.target.value})}>
               {PRIORITY_OPTIONS.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
-          <div className="vf-field"><label>Etapa pipeline</label>
+          <div className="vf-field vf-field--sm"><label>Etapa pipeline</label>
             <select value={f.pipeline_stage} onChange={e=>setF({...f,pipeline_stage:e.target.value})}>
               <option value="">Seleccionar</option>
               {PIPELINE_STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
-          <div className="vf-field"><label>Potencial ARS</label>
+          <div className="vf-field vf-field--md"><label>Potencial ARS</label>
             <input type="number" value={f.commercial_potential} onChange={e=>setF({...f,commercial_potential:e.target.value})} placeholder="0"/></div>
         </div>
       </div>
