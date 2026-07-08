@@ -19,6 +19,7 @@ export function getEffectiveModules(profile, isMobile = false) {
 export function canOpenModule(profile, moduleId, isMobile = false) {
   if (profile?.role === "super_admin") return true;
   if (moduleId === "adminUsers") return false;
+  if (moduleId === "farapulseDetail") return canOpenModule(profile, "farapulse", isMobile);
 
   if (moduleId === "preciosHistoricos") {
     const modules = getEffectiveModules(profile, isMobile);
@@ -42,6 +43,7 @@ const DEFAULT_MODULE_ORDER = [
   "campaigns",
   "tenders",
   "cotizador",
+  "farapulse",
   "importer",
   "salesAnalytics",
   "tasks",

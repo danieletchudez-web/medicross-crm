@@ -60,6 +60,8 @@ const HabitsPage            = lazy(() => import("./pages/HabitsPage"));
 const SuppliersPage         = lazy(() => import("./pages/SuppliersPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
 const MobileHomePage        = lazy(() => import("./pages/MobileHomePage"));
+const FarapulsePage         = lazy(() => import("./pages/FarapulsePage"));
+const FarapulseDetailPage   = lazy(() => import("./pages/FarapulseDetailPage"));
 
 const ALL_PAGES = [
   { id: "managerDashboard",  Component: ManagerDashboard },
@@ -84,6 +86,8 @@ const ALL_PAGES = [
   { id: "suppliers",         Component: SuppliersPage },
   { id: "settings",          Component: SettingsPage },
   { id: "mobileHome",        Component: MobileHomePage },
+  { id: "farapulse",         Component: FarapulsePage },
+  { id: "farapulseDetail",   Component: FarapulseDetailPage },
 ];
 
 const FALLBACK_PROFILE = {
@@ -401,6 +405,8 @@ export default function App() {
           : id === "visits"
             ? { navigationData: navigateData }
             : id === "accountDetail" || id === "opportunities"
+              ? { navigationData: navigateData }
+            : id === "farapulseDetail"
               ? { navigationData: navigateData }
             : {};
         return (
