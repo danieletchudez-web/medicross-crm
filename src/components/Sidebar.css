@@ -26,9 +26,9 @@
   --sb-knob:         rgba(255,255,255,0.9);
   --sb-brand-height: 48px;
 
-  --sb-ease:    cubic-bezier(0.22, 1, 0.36, 1);
-  --sb-dur:     0.46s;
-  --sb-dur-out: 0.36s;
+  --sb-ease:    cubic-bezier(0.4, 0, 0.2, 1);
+  --sb-dur:     0.25s;
+  --sb-dur-out: 0.2s;
 }
 
 /* ─── Modo oscuro — Sidebar estilo Rimu ──────────────────────────────────
@@ -544,12 +544,12 @@
 }
 
 .sidebar-nav__item {
-  transition: background 0.15s, transform 0.22s var(--sb-ease);
+  transition: background 0.15s;
 }
-.sidebar-nav__item:hover                     { background: var(--sb-nav-hover); transform: scale(1.06); }
-.sidebar-nav__item:hover .sidebar-nav__icon  { color: #93c5fd; transform: scale(1.22); }
-.sidebar-nav__item:hover .sidebar-nav__label { color: #f1f5f9; }
-.sidebar-nav__item:active                    { background: rgba(59,130,246,0.15); transform: scale(0.96); }
+.sidebar-nav__item:hover                     { background: var(--sb-nav-hover); }
+.sidebar-nav__item:hover .sidebar-nav__icon  { color: #93c5fd; transform: scale(1.18); }
+.sidebar-nav__item:hover .sidebar-nav__label { color: #f1f5f9; transform: scale(1.05); }
+.sidebar-nav__item:active                    { background: rgba(59,130,246,0.15); }
 
 /* Marcador chevron en hover — mismo tono que el texto, muy sutil */
 .sidebar-nav__item::after {
@@ -607,11 +607,14 @@
   text-overflow: ellipsis;
   max-width: 180px;
   opacity: 1;
+  visibility: visible;
   transform: translateX(0);
+  transform-origin: left center;
   transition: color 0.15s,
-              opacity .2s ease .22s,
+              opacity 150ms ease,
               max-width var(--sb-dur) var(--sb-ease) 0s,
-              transform .2s ease .22s;
+              transform 150ms ease-in-out,
+              visibility 0s linear 0s;
 }
 
 .sidebar-nav__badge {
@@ -995,11 +998,14 @@
   .sidebar--collapsed .sidebar-quick button em {
     opacity: 0;
     max-width: 0;
-    transform: translateX(-8px);
+    visibility: hidden;
+    transform: translateX(-6px);
     pointer-events: none;
-    transition: opacity .12s ease 0s,
+    /* visibility se aplica DESPUÉS de que opacity llegue a 0 */
+    transition: opacity 100ms ease 0s,
                 max-width var(--sb-dur-out) var(--sb-ease) 0s,
-                transform .12s ease 0s;
+                transform 100ms ease 0s,
+                visibility 0s linear 100ms;
   }
 
   /* Títulos de sección: igual que los labels pero sin tocar el padding
@@ -1558,27 +1564,30 @@
     transition: stroke-width 0.12s ease;
   }
 
-  /* Reveal labels: max-width grows with the sidebar, opacity fades in with a slight delay */
+  /* Reveal labels: visibility inmediata, opacity con pequeño delay sincronizado al ancho */
   .sidebar--collapsed:hover .sidebar-nav__label,
   .sidebar--collapsed:hover .sidebar-theme-toggle__label,
   .sidebar--collapsed:hover .sidebar-logout__label,
   .sidebar--collapsed:hover .sidebar-quick button em {
     opacity: 1;
     max-width: 180px;
+    visibility: visible;
     transform: translateX(0);
     pointer-events: auto;
-    transition: opacity 0.2s ease 0.28s,
-                max-width 0.5s ease 0s,
-                transform 0.2s ease 0.28s;
+    /* visibility: instant → opacity fades in 150ms after 100ms delay */
+    transition: opacity 150ms ease 100ms,
+                max-width var(--sb-dur) var(--sb-ease) 0s,
+                transform 150ms ease 100ms,
+                visibility 0s linear 0s;
   }
 
-  /* Títulos de sección: se revelan con el mismo timing pero sin animar padding */
+  /* Títulos de sección: mismo timing, sin tocar padding */
   .sidebar--collapsed:hover .sidebar-section__label {
     opacity: 1;
     max-width: 180px;
     pointer-events: auto;
-    transition: opacity 0.2s ease 0.28s,
-                max-width 0.5s ease 0s;
+    transition: opacity 150ms ease 100ms,
+                max-width var(--sb-dur) var(--sb-ease) 0s;
   }
 
   /* Restore elements hidden via display:none in collapsed rail */
