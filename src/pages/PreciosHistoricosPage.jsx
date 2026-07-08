@@ -1775,7 +1775,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         fontFamily:"DM Sans, system-ui, sans-serif",minHeight:"100vh",fontSize:"13.5px"}}>
 
         {/* HEADER */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+        <div className="ph-page-header" style={{display:"flex",alignItems:"center",justifyContent:"space-between",
           flexWrap:"wrap",gap:12,paddingBottom:14,borderBottom:"1px solid rgba(15,36,68,.09)"}}>
           <div>
             <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#0f2444",letterSpacing:"-.5px",
@@ -1809,7 +1809,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
         </div>
 
         {/* BUSCADOR */}
-        <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
+        <div className="ph-search-box" style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
           padding:"20px 22px",boxShadow:"0 2px 8px rgba(15,23,42,.06)"}}>
           <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"flex-end"}}>
 
@@ -2113,7 +2113,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
         {/* LOADING */}
         {loading && (
-          <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
+          <div className="ph-state-panel" style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
             padding:"48px",textAlign:"center"}}>
             <div style={{fontSize:28,marginBottom:10}}>⏳</div>
             <div style={{fontSize:13,color:"#94a3b8"}}>Buscando en el historial de licitaciones…</div>
@@ -2122,7 +2122,7 @@ export default function PreciosHistoricosPage({ profile, onNavigate }) {
 
         {/* SIN RESULTADOS */}
         {searched && !loading && rows.length === 0 && (
-          <div style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
+          <div className="ph-state-panel" style={{background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",
             padding:"48px",textAlign:"center",boxShadow:"0 1px 3px rgba(15,23,42,.04)"}}>
             <div style={{fontSize:32,marginBottom:10}}>🔍</div>
             <div style={{fontWeight:600,fontSize:15,color:"#334155",marginBottom:4}}>Sin resultados</div>
