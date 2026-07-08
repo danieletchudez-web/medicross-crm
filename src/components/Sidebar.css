@@ -422,6 +422,13 @@
   letter-spacing: 0.9px;
   color: rgba(255,255,255,0.16);
   padding: 4px 10px 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 180px;
+  opacity: 1;
+  transition: opacity .2s ease .22s,
+              max-width var(--sb-dur) var(--sb-ease) 0s,
+              padding .2s ease .22s;
 }
 
 /* ─── Quick actions ──────────────────────────────────────────────────── */
@@ -966,7 +973,6 @@
   .sidebar--collapsed .sidebar-user__info,
   .sidebar--collapsed .sidebar-user__role,
   .sidebar--collapsed .sidebar-nav__group-row,
-  .sidebar--collapsed .sidebar-section__label,
   .sidebar--collapsed .sidebar-section__divider,
   .sidebar--collapsed .sidebar-edit-hint,
   .sidebar--collapsed .sidebar-reset-btn,
@@ -980,14 +986,20 @@
   .sidebar--collapsed .sidebar-nav__label,
   .sidebar--collapsed .sidebar-theme-toggle__label,
   .sidebar--collapsed .sidebar-logout__label,
-  .sidebar--collapsed .sidebar-quick button em {
+  .sidebar--collapsed .sidebar-quick button em,
+  .sidebar--collapsed .sidebar-section__label {
     opacity: 0;
     max-width: 0;
     transform: translateX(-8px);
     pointer-events: none;
     transition: opacity .12s ease 0s,
                 max-width var(--sb-dur-out) var(--sb-ease) 0s,
-                transform .12s ease 0s;
+                transform .12s ease 0s,
+                padding .12s ease 0s;
+  }
+
+  .sidebar--collapsed .sidebar-section__label {
+    padding: 0;
   }
 
   .sidebar--collapsed .sidebar-nav__badge {
@@ -1540,14 +1552,20 @@
   .sidebar--collapsed:hover .sidebar-nav__label,
   .sidebar--collapsed:hover .sidebar-theme-toggle__label,
   .sidebar--collapsed:hover .sidebar-logout__label,
-  .sidebar--collapsed:hover .sidebar-quick button em {
+  .sidebar--collapsed:hover .sidebar-quick button em,
+  .sidebar--collapsed:hover .sidebar-section__label {
     opacity: 1;
     max-width: 180px;
     transform: translateX(0);
     pointer-events: auto;
     transition: opacity 0.2s ease 0.28s,
                 max-width 0.5s ease 0s,
-                transform 0.2s ease 0.28s;
+                transform 0.2s ease 0.28s,
+                padding 0.2s ease 0.28s;
+  }
+
+  .sidebar--collapsed:hover .sidebar-section__label {
+    padding: 4px 10px 3px;
   }
 
   /* Restore elements hidden via display:none in collapsed rail */
@@ -1560,7 +1578,6 @@
     display: inline-flex;
   }
 
-  .sidebar--collapsed:hover .sidebar-section__label,
   .sidebar--collapsed:hover .sidebar-section__divider,
   .sidebar--collapsed:hover .sidebar-theme-toggle__switch {
     display: block;
