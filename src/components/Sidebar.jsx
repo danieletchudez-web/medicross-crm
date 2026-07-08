@@ -21,10 +21,8 @@ import { Moon, Sun,
   RefreshCw,
   Settings,
   ShieldCheck,
-  Stethoscope,
   Target,
   Truck,
-  Zap,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
@@ -58,12 +56,6 @@ const MENU_SECTIONS = [
     items: [
       { id: "cotizador", label: "Cotizador",    icon: Calculator },
       { id: "tenders",   label: "Licitaciones", icon: FileText },
-    ],
-  },
-  {
-    label: "FARAPULSE",
-    items: [
-      { id: "farapulse", label: "Procedimientos", icon: Zap },
     ],
   },
   {
