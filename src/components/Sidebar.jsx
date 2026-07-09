@@ -122,11 +122,13 @@ export default function Sidebar({ profile, onNavigate }) {
     try { return JSON.parse(localStorage.getItem("sidebar_favorites") || "[]"); }
     catch { return []; }
   });
-  const [tooltip,   setTooltip]   = useState(null);
-  const [sbHovered, setSbHovered] = useState(false);
+  const [tooltip,    setTooltip]    = useState(null);
+  const [sbHovered,  setSbHovered]  = useState(false);
+  const [sbExpanded, setSbExpanded] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
   const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
-  const dragIdx = useRef(null);
+  const dragIdx    = useRef(null);
+  const hoverTimer = useRef(null);
   const notificationCount = useNotificationCount(profile?.id);
   const { count: taskAlertCount } = useTaskAlerts(profile?.id);
 
@@ -161,7 +163,7 @@ export default function Sidebar({ profile, onNavigate }) {
   useEffect(() => {
     function onSync(e) {
       setCollapsed(e.detail.collapsed);
-      if (e.detail.collapsed) { setEditing(false); setTooltip(null); }
+      if (e.detail.collapsed) { setEditing(false); setTooltip(null); clearTimeout(hoverTimer.current); setSbExpanded(false); }
     }
     window.addEventListener("sidebar:collapsed", onSync);
     return () => window.removeEventListener("sidebar:collapsed", onSync);
@@ -198,7 +200,7 @@ export default function Sidebar({ profile, onNavigate }) {
     localStorage.setItem("sidebar_collapsed", String(next));
     window.dispatchEvent(new CustomEvent("sidebar:collapsed", { detail: { collapsed: next } }));
     setTooltip(null);
-    if (next) setEditing(false);
+    if (next) { setEditing(false); clearTimeout(hoverTimer.current); setSbExpanded(false); }
   }
 
   function onDragStart(id) { dragIdx.current = id; }
@@ -225,9 +227,19 @@ export default function Sidebar({ profile, onNavigate }) {
   return (
     <>
       <aside
-        className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}
-        onMouseEnter={() => { if (collapsed) setSbHovered(true); }}
-        onMouseLeave={() => setSbHovered(false)}
+        className={`sidebar ${collapsed ? "sidebar--collapsed" : ""} ${collapsed && sbExpanded ? "sidebar--expanded" : ""}`}
+        onMouseEnter={() => {
+          if (collapsed) {
+            setSbHovered(true);
+            clearTimeout(hoverTimer.current);
+            hoverTimer.current = setTimeout(() => setSbExpanded(true), 120);
+          }
+        }}
+        onMouseLeave={() => {
+          setSbHovered(false);
+          clearTimeout(hoverTimer.current);
+          setSbExpanded(false);
+        }}
       >
 
         <button

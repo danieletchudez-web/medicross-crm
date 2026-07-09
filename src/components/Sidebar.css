@@ -81,7 +81,7 @@
 
 /* Caja visible SOLO en expandido o hover-expand — nunca en rail colapsado */
 [data-theme="dark"] .sidebar:not(.sidebar--collapsed) .sidebar-quick button,
-[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button {
+[data-theme="dark"] .sidebar--collapsed.sidebar--expanded .sidebar-quick button {
   background: rgba(255,255,255,0.04);
   border: 1px solid #3C3C3C;
   border-radius: 8px;
@@ -89,7 +89,7 @@
   font-weight: 800;
 }
 [data-theme="dark"] .sidebar:not(.sidebar--collapsed) .sidebar-quick button:hover,
-[data-theme="dark"] .sidebar--collapsed:hover .sidebar-quick button:hover {
+[data-theme="dark"] .sidebar--collapsed.sidebar--expanded .sidebar-quick button:hover {
   background: rgba(59,130,246,.18);
   border-color: rgba(96,165,250,.42);
   color: #dbeafe;
@@ -1501,46 +1501,47 @@
                 box-shadow 0.2s var(--sb-ease);
   }
 
-  /* Expand (entry): transition declared here applies ON ENTRY; 120ms delay = hover-intent.
-     Mouse must dwell ≥120ms before expansion starts. Exit uses .sidebar--collapsed transition
-     (above) with 0ms delay, so collapse is immediate. */
-  .sidebar--collapsed:hover {
+  /* Expand: sidebar--expanded class is added by JS hover-intent timer (120ms after mouse enters).
+     All changes — width, layout alignment, text — trigger from this single class simultaneously,
+     preventing the desync that happens when CSS :hover fires non-transitionable properties
+     (align-items, padding) instantly while width is still waiting on transition-delay. */
+  .sidebar--collapsed.sidebar--expanded {
     width: 224px;
     min-width: 224px;
     margin-right: -152px; /* 72px − 224px: sidebar overlays without pushing content */
     box-shadow: 6px 0 28px rgba(0, 0, 0, 0.30);
-    transition: width 0.22s var(--sb-ease) 0.12s,
-                min-width 0.22s var(--sb-ease) 0.12s,
-                margin-right 0.22s var(--sb-ease) 0.12s,
-                box-shadow 0.22s var(--sb-ease) 0.12s;
+    transition: width 0.22s var(--sb-ease),
+                min-width 0.22s var(--sb-ease),
+                margin-right 0.22s var(--sb-ease),
+                box-shadow 0.22s var(--sb-ease);
   }
 
   /* Body: switch from center-aligned rail to left-aligned panel */
-  .sidebar--collapsed:hover .sidebar-body {
+  .sidebar--collapsed.sidebar--expanded .sidebar-body {
     align-items: flex-start;
   }
 
   /* Nav: restore expanded padding and alignment */
-  .sidebar--collapsed:hover .sidebar-nav {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav {
     width: 100%;
     padding: 12px 12px 8px;
     align-items: flex-start;
     gap: 1px;
   }
 
-  .sidebar--collapsed:hover .sidebar-section {
+  .sidebar--collapsed.sidebar--expanded .sidebar-section {
     width: 100%;
     align-items: flex-start;
     gap: 1px;
   }
 
-  .sidebar--collapsed:hover .sidebar-nav__item-wrap {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item-wrap {
     width: 100%;
     justify-content: flex-start;
   }
 
   /* Nav items: from centered square to full-width row */
-  .sidebar--collapsed:hover .sidebar-nav__item {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item {
     width: 100%;
     height: auto;
     padding: 8px 10px;
@@ -1551,76 +1552,75 @@
   }
 
   /* Neutralize the icon zoom/scale from the collapsed rail hover */
-  .sidebar--collapsed:hover .sidebar-nav__item:hover {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item:hover {
     transform: none;
     background: var(--sb-nav-hover);
   }
 
-  .sidebar--collapsed:hover .sidebar-nav__item:active {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item:active {
     transform: none;
   }
 
-  .sidebar--collapsed:hover .sidebar-nav__item:hover .sidebar-nav__icon {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item:hover .sidebar-nav__icon {
     transform: none;
   }
 
   /* Icons: restore normal size + 0.12s ease transitions for color and stroke-width */
-  .sidebar--collapsed:hover .sidebar-nav__icon {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__icon {
     width: 18px;
     height: 18px;
     transition: color 0.12s ease;
   }
 
-  .sidebar--collapsed:hover .sidebar-nav__icon svg {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__icon svg {
     width: 17px;
     height: 17px;
     stroke-width: 2.15;
     transition: stroke-width 0.12s ease;
   }
 
-  /* Reveal labels: visibility inmediata, opacity con pequeño delay sincronizado al ancho */
-  .sidebar--collapsed:hover .sidebar-nav__label,
-  .sidebar--collapsed:hover .sidebar-theme-toggle__label,
-  .sidebar--collapsed:hover .sidebar-logout__label,
-  .sidebar--collapsed:hover .sidebar-quick button em {
+  /* Reveal labels: JS already waited 120ms (hover intent) before adding sidebar--expanded.
+     Nav labels: start at 20ms (sidebar ~9% expanded), done at 180ms (sidebar ~82% expanded).
+     Section labels: start at 80ms (sidebar ~36% — wide enough to avoid truncation), done at 200ms. */
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__label,
+  .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle__label,
+  .sidebar--collapsed.sidebar--expanded .sidebar-logout__label,
+  .sidebar--collapsed.sidebar--expanded .sidebar-quick button em {
     opacity: 1;
     max-width: 180px;
     visibility: visible;
     transform: translateX(0);
     pointer-events: auto;
-    /* max-width: instant (overflow:hidden on sidebar-body handles clipping during expand).
-       opacity + transform start 140ms in (20ms after sidebar begins at 120ms), end at 320ms
-       (20ms before sidebar completes at 340ms) — intentional choreography, no visual snap. */
-    transition: opacity 180ms ease 140ms,
-                transform 180ms ease 140ms,
+    transition: opacity 160ms ease 20ms,
+                transform 160ms ease 20ms,
                 visibility 0s linear 0s;
   }
 
-  /* Títulos de sección: mismo timing, sin tocar padding */
-  .sidebar--collapsed:hover .sidebar-section__label {
+  /* Títulos de sección: aparecen más tarde, cuando el sidebar es suficientemente ancho */
+  .sidebar--collapsed.sidebar--expanded .sidebar-section__label {
     opacity: 1;
     max-width: 180px;
     pointer-events: auto;
-    transition: opacity 180ms ease 140ms;
+    transition: opacity 120ms ease 80ms;
   }
 
   /* Restore elements hidden via display:none in collapsed rail */
-  .sidebar--collapsed:hover .sidebar-user__info,
-  .sidebar--collapsed:hover .sidebar-nav__group-row {
+  .sidebar--collapsed.sidebar--expanded .sidebar-user__info,
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__group-row {
     display: flex;
   }
 
-  .sidebar--collapsed:hover .sidebar-user__role {
+  .sidebar--collapsed.sidebar--expanded .sidebar-user__role {
     display: inline-flex;
   }
 
-  .sidebar--collapsed:hover .sidebar-section__divider,
-  .sidebar--collapsed:hover .sidebar-theme-toggle__switch {
+  .sidebar--collapsed.sidebar--expanded .sidebar-section__divider,
+  .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle__switch {
     display: block;
   }
 
   /* User card: restore expanded layout */
-  .sidebar--collapsed:hover .sidebar-user {
+  .sidebar--collapsed.sidebar--expanded .sidebar-user {
     width: auto;
     margin: 14px 12px 4px;
     padding: 12px 14px;
@@ -1628,13 +1628,13 @@
     border-radius: 12px;
   }
 
-  .sidebar--collapsed:hover .sidebar-user__row {
+  .sidebar--collapsed.sidebar--expanded .sidebar-user__row {
     justify-content: flex-start;
     gap: 10px;
   }
 
   /* Badge: restore in-flow position */
-  .sidebar--collapsed:hover .sidebar-nav__badge {
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__badge {
     position: relative;
     top: auto;
     right: auto;
@@ -1645,14 +1645,14 @@
   }
 
   /* Quick actions: restore expanded layout and stop breathe animation */
-  .sidebar--collapsed:hover .sidebar-quick {
+  .sidebar--collapsed.sidebar--expanded .sidebar-quick {
     width: 100%;
     margin: 0 0 10px;   /* sin margen extra — la nav ya tiene padding 12px */
     gap: 6px;
     justify-items: stretch;
   }
 
-  .sidebar--collapsed:hover .sidebar-quick button {
+  .sidebar--collapsed.sidebar--expanded .sidebar-quick button {
     width: auto;
     height: auto;
     padding: 8px 10px;  /* idéntico al nav item para alineación visual */
@@ -1662,29 +1662,29 @@
     animation: none;
   }
 
-  .sidebar--collapsed:hover .sidebar-quick button:hover {
+  .sidebar--collapsed.sidebar--expanded .sidebar-quick button:hover {
     transform: translateY(-1px);
   }
 
-  .sidebar--collapsed:hover .sidebar-quick button span {
+  .sidebar--collapsed.sidebar--expanded .sidebar-quick button span {
     width: 16px;
     height: 16px;
   }
 
-  .sidebar--collapsed:hover .sidebar-quick button svg {
+  .sidebar--collapsed.sidebar--expanded .sidebar-quick button svg {
     width: 15px;
     height: 15px;
   }
 
   /* Footer: restore full-width column */
-  .sidebar--collapsed:hover .sidebar-footer {
+  .sidebar--collapsed.sidebar--expanded .sidebar-footer {
     width: 100%;
     padding: 8px 12px max(18px, env(safe-area-inset-bottom));
     align-items: stretch;
   }
 
   /* Theme toggle: restore full-width row, neutralize scale */
-  .sidebar--collapsed:hover .sidebar-theme-toggle {
+  .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle {
     width: 100%;
     height: auto;
     padding: 8px 10px;
@@ -1695,24 +1695,24 @@
     transition: background 0.15s;
   }
 
-  .sidebar--collapsed:hover .sidebar-theme-toggle:hover {
+  .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle:hover {
     transform: none;
   }
 
-  .sidebar--collapsed:hover .sidebar-theme-toggle__icon {
+  .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle__icon {
     width: 18px;
     height: 18px;
     transition: color 0.12s ease;
   }
 
-  .sidebar--collapsed:hover .sidebar-theme-toggle__icon svg {
+  .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle__icon svg {
     width: 16px;
     height: 16px;
     transition: stroke-width 0.12s ease;
   }
 
   /* Logout: restore full-width row, neutralize scale */
-  .sidebar--collapsed:hover .sidebar-logout {
+  .sidebar--collapsed.sidebar--expanded .sidebar-logout {
     width: 100%;
     height: auto;
     padding: 8px 10px;
@@ -1722,17 +1722,17 @@
     transition: background 0.15s, color 0.15s;
   }
 
-  .sidebar--collapsed:hover .sidebar-logout:hover {
+  .sidebar--collapsed.sidebar--expanded .sidebar-logout:hover {
     transform: none;
   }
 
-  .sidebar--collapsed:hover .sidebar-logout__icon {
+  .sidebar--collapsed.sidebar--expanded .sidebar-logout__icon {
     width: 18px;
     height: 18px;
     transition: color 0.12s ease;
   }
 
-  .sidebar--collapsed:hover .sidebar-logout__icon svg {
+  .sidebar--collapsed.sidebar--expanded .sidebar-logout__icon svg {
     width: 16px;
     height: 16px;
     transition: stroke-width 0.12s ease;
