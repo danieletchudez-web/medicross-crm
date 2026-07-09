@@ -700,7 +700,7 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
 function PrimaryKpi({ label, value, sub, accent = "blue", tooltip, progress = 0, meta }) {
   const safeProgress = Math.max(0, Math.min(100, Number(progress || 0)));
   return (
-    <article className={`dash-primary-kpi dash-primary-kpi--${accent}`}>
+    <article className={`dash-primary-kpi module-hover-effect dash-primary-kpi--${accent}`}>
       <div className="dash-primary-kpi__header">
         <span className="dash-primary-kpi__label">{label}</span>
         {tooltip && <Tooltip text={tooltip}/>}
@@ -719,7 +719,7 @@ function PrimaryKpi({ label, value, sub, accent = "blue", tooltip, progress = 0,
 
 function Kpi({ label, value, accent, tooltip }) {
   return (
-    <article className={`dash-kpi ${accent ? `dash-kpi--${accent}` : ""}`}>
+    <article className={`dash-kpi module-hover-effect${accent ? ` dash-kpi--${accent}` : ""}`}>
       <div className="dash-kpi__header">
         <span className="dash-kpi__label">{label}</span>
         {tooltip && <Tooltip text={tooltip}/>}
@@ -731,7 +731,7 @@ function Kpi({ label, value, accent, tooltip }) {
 
 function Panel({ title, subtitle, metric, children }) {
   return (
-    <article className="dash-panel">
+    <article className="dash-panel module-hover-effect">
       <header className="dash-panel__header">
         <div>
           <h3 className="dash-panel__title">{title}</h3>

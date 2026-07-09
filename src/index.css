@@ -742,3 +742,25 @@ button, input, select, textarea { font-family: inherit; }
   background: linear-gradient(90deg, #1c2128 25%, #252b33 50%, #1c2128 75%);
   background-size: 200% 100%;
 }
+
+/* ─── Module hover effect (reusable) ────────────────────────────────── */
+.module-hover-effect {
+  transition: transform 180ms ease-in-out, box-shadow 180ms ease-in-out;
+  will-change: transform;
+}
+.module-hover-effect:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+[data-theme="dark"] .module-hover-effect:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+@media (max-width: 768px) {
+  .module-hover-effect:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .module-hover-effect:active {
+    transform: scale(0.98);
+  }
+}
