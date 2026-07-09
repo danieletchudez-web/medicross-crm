@@ -93,8 +93,8 @@
   background: rgba(59,130,246,.18);
   border-color: rgba(96,165,250,.42);
   color: #dbeafe;
-  box-shadow: none;
-  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px) scale(1.02);
 }
 
 /* Rail colapsado sin hover: completamente transparente, igual que nav items */
@@ -106,14 +106,14 @@
   transform: translateX(-4px);
 }
 
-/* Nav items — cápsula gris, sin escala */
+/* Nav items — cápsula gris, deslizamiento sutil */
 [data-theme="dark"] .sidebar-nav__item {
   border-radius: 10px !important;
-  transition: background 150ms ease-out !important;
+  transition: background 150ms ease-out, transform 180ms ease-in-out !important;
 }
 [data-theme="dark"] .sidebar-nav__item:hover {
   background: #3C3C3C !important;
-  transform: none !important;
+  transform: translateX(3px) !important;
 }
 [data-theme="dark"] .sidebar-nav__item:hover .sidebar-nav__icon {
   color: #C1C1C1 !important;
@@ -494,7 +494,7 @@
   background: rgba(59,130,246,.18);
   border-color: rgba(96,165,250,.42);
   box-shadow: 0 10px 24px rgba(37,99,235,.14);
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.02);
 }
 
 .sidebar-quick button:hover::after {
@@ -562,9 +562,9 @@
 }
 
 .sidebar-nav__item {
-  transition: background 0.15s;
+  transition: background 0.15s, transform 180ms ease-in-out;
 }
-.sidebar-nav__item:hover                     { background: var(--sb-nav-hover); }
+.sidebar-nav__item:hover                     { background: var(--sb-nav-hover); transform: translateX(3px); }
 .sidebar-nav__item:hover .sidebar-nav__icon  { color: #93c5fd; transform: scale(1.18); }
 .sidebar-nav__item:hover .sidebar-nav__label { color: #f1f5f9; transform: scale(1.05); }
 .sidebar-nav__item:active                    { background: rgba(59,130,246,0.15); }
