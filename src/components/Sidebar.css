@@ -444,8 +444,7 @@
   overflow: hidden;
   max-width: 180px;
   opacity: 1;
-  transition: opacity .2s ease .22s,
-              max-width var(--sb-dur) var(--sb-ease) 0s;
+  transition: opacity .2s ease .22s;
 }
 
 /* ─── Quick actions ──────────────────────────────────────────────────── */
@@ -524,7 +523,6 @@
   opacity: 1;
   transform: translateX(0);
   transition: opacity .2s ease .22s,
-              max-width var(--sb-dur) var(--sb-ease) 0s,
               transform .2s ease .22s;
 }
 
@@ -630,7 +628,6 @@
   transform-origin: left center;
   transition: color 0.15s,
               opacity 150ms ease,
-              max-width var(--sb-dur) var(--sb-ease) 0s,
               transform 150ms ease-in-out,
               visibility 0s linear 0s;
 }
@@ -670,7 +667,7 @@
   font-weight: 700;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   letter-spacing: 0.2px;
 }
 
@@ -729,7 +726,7 @@
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .sidebar-reset-btn:hover {
@@ -795,7 +792,6 @@
   opacity: 1;
   transform: translateX(0);
   transition: opacity .2s ease .22s,
-              max-width var(--sb-dur) var(--sb-ease) 0s,
               transform .2s ease .22s;
 }
 
@@ -877,7 +873,6 @@
   opacity: 1;
   transform: translateX(0);
   transition: opacity .2s ease .22s,
-              max-width var(--sb-dur) var(--sb-ease) 0s,
               transform .2s ease .22s;
 }
 
@@ -1018,7 +1013,6 @@
     pointer-events: none;
     /* visibility se aplica DESPUÉS de que opacity llegue a 0 */
     transition: opacity 100ms ease 0s,
-                max-width var(--sb-dur-out) var(--sb-ease) 0s,
                 transform 100ms ease 0s,
                 visibility 0s linear 100ms;
   }
@@ -1029,8 +1023,7 @@
     opacity: 0;
     max-width: 0;
     pointer-events: none;
-    transition: opacity .12s ease 0s,
-                max-width var(--sb-dur-out) var(--sb-ease) 0s;
+    transition: opacity .12s ease 0s;
   }
 
   .sidebar--collapsed .sidebar-nav__badge {
@@ -1327,7 +1320,7 @@
     height: 2px;
     background: #0f2444;
     border-radius: 2px;
-    transition: all 0.2s;
+    transition: transform 0.2s, opacity 0.2s;
   }
 
   .sidebar-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -1499,22 +1492,27 @@
 /* ─── Hover-expand (desktop, collapsed rail only) ────────────────────── */
 @media (min-width: 769px) {
 
-  /* Add margin-right to the collapsed transition so the overlay expands/collapses smoothly */
+  /* Collapse (exit): no delay → sidebar folds immediately when mouse leaves */
   .sidebar--collapsed {
     margin-right: 0;
-    transition: width var(--sb-dur) var(--sb-ease),
-                min-width var(--sb-dur) var(--sb-ease),
-                margin-right var(--sb-dur) var(--sb-ease),
-                box-shadow var(--sb-dur) var(--sb-ease);
+    transition: width 0.2s var(--sb-ease),
+                min-width 0.2s var(--sb-ease),
+                margin-right 0.2s var(--sb-ease),
+                box-shadow 0.2s var(--sb-ease);
   }
 
-  /* On hover: expand to 224px and compensate with negative margin so the flex layout
-     still treats the sidebar as 72px wide — main content never moves */
+  /* Expand (entry): transition declared here applies ON ENTRY; 120ms delay = hover-intent.
+     Mouse must dwell ≥120ms before expansion starts. Exit uses .sidebar--collapsed transition
+     (above) with 0ms delay, so collapse is immediate. */
   .sidebar--collapsed:hover {
     width: 224px;
     min-width: 224px;
     margin-right: -152px; /* 72px − 224px: sidebar overlays without pushing content */
     box-shadow: 6px 0 28px rgba(0, 0, 0, 0.30);
+    transition: width 0.22s var(--sb-ease) 0.12s,
+                min-width 0.22s var(--sb-ease) 0.12s,
+                margin-right 0.22s var(--sb-ease) 0.12s,
+                box-shadow 0.22s var(--sb-ease) 0.12s;
   }
 
   /* Body: switch from center-aligned rail to left-aligned panel */
@@ -1590,10 +1588,11 @@
     visibility: visible;
     transform: translateX(0);
     pointer-events: auto;
-    /* visibility: instant → opacity fades in 150ms after 100ms delay */
-    transition: opacity 150ms ease 100ms,
-                max-width var(--sb-dur) var(--sb-ease) 0s,
-                transform 150ms ease 100ms,
+    /* max-width: instant (overflow:hidden on sidebar-body handles clipping during expand).
+       opacity + transform start 140ms in (20ms after sidebar begins at 120ms), end at 320ms
+       (20ms before sidebar completes at 340ms) — intentional choreography, no visual snap. */
+    transition: opacity 180ms ease 140ms,
+                transform 180ms ease 140ms,
                 visibility 0s linear 0s;
   }
 
@@ -1602,8 +1601,7 @@
     opacity: 1;
     max-width: 180px;
     pointer-events: auto;
-    transition: opacity 150ms ease 100ms,
-                max-width var(--sb-dur) var(--sb-ease) 0s;
+    transition: opacity 180ms ease 140ms;
   }
 
   /* Restore elements hidden via display:none in collapsed rail */
