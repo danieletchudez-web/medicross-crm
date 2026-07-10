@@ -247,6 +247,14 @@
   font-weight: 500;
 }
 
+/* outlier warning bajo el valor del KPI */
+.ci-kpi__warn {
+  font-size: 9.5px !important;
+  color: #d97706 !important;
+  font-weight: 600 !important;
+  margin-top: 1px;
+}
+
 .ci-kpi__client {
   font-size: 11px !important;
   font-weight: 700 !important;
@@ -263,11 +271,39 @@
 .ci-trend--dn { color: #dc2626 !important; }
 
 /* ── tabla ──────────────────────────────────────────────────────────── */
+
+/* outer: posicion relativa para el fade de scroll derecho */
+.ci-table-outer {
+  position: relative;
+  border-radius: 10px;
+}
+
+/* fade de gradiente fijo en el borde derecho */
+.ci-table-outer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  background: linear-gradient(to right, transparent, rgba(15, 36, 68, .09));
+  border-radius: 0 10px 10px 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
 .ci-table-wrap {
   overflow-x: auto;
   border-radius: 10px;
   border: 1px solid rgba(15, 36, 68, .08);
+  /* scrollbar visible y estilizado */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 36, 68, .22) transparent;
 }
+
+.ci-table-wrap::-webkit-scrollbar        { height: 5px; }
+.ci-table-wrap::-webkit-scrollbar-track  { background: transparent; }
+.ci-table-wrap::-webkit-scrollbar-thumb  { background: rgba(15, 36, 68, .2); border-radius: 3px; }
 
 .ci-table {
   width: 100%;
@@ -277,6 +313,36 @@
 
 .ci-table thead tr {
   background: #f1f5f9;
+}
+
+/* sticky primera columna */
+.ci-th-sticky,
+.ci-td-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #f1f5f9; /* thead bg */
+}
+
+.ci-td-sticky {
+  background: #fff;
+}
+
+.ci-tr:nth-child(even) .ci-td-sticky        { background: #fafafa; }
+.ci-tr:hover           .ci-td-sticky        { background: #f8fafc; }
+.ci-tr:nth-child(even):hover .ci-td-sticky  { background: #f1f5f9; }
+
+/* sombra sutil a la derecha de la columna sticky */
+.ci-th-sticky::after,
+.ci-td-sticky::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(to right, rgba(15, 36, 68, .06), transparent);
+  pointer-events: none;
 }
 
 .ci-th-sort {
@@ -693,6 +759,21 @@
   color: #6ee7b7;
 }
 [data-theme="dark"] .cot-hist-hint strong { color: #a7f3d0; }
+
+/* sticky column dark mode */
+[data-theme="dark"] .ci-th-sticky                          { background: #222222; }
+[data-theme="dark"] .ci-td-sticky                          { background: #1A1A1A; }
+[data-theme="dark"] .ci-tr:nth-child(even) .ci-td-sticky  { background: #1E1E1E; }
+[data-theme="dark"] .ci-tr:hover           .ci-td-sticky  { background: #222222; }
+[data-theme="dark"] .ci-tr:nth-child(even):hover .ci-td-sticky { background: #242424; }
+
+/* outlier warning dark mode */
+[data-theme="dark"] .ci-kpi__warn { color: #fbbf24 !important; }
+
+/* scroll right-fade dark mode */
+[data-theme="dark"] .ci-table-outer::after {
+  background: linear-gradient(to right, transparent, rgba(0, 0, 0, .35));
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    MOBILE  ≤ 768px

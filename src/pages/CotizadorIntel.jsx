@@ -9,6 +9,15 @@ const fPct     = (n) => Number(n || 0).toFixed(1) + "%";
 const fmtDate  = (v) => { if (!v) return "—"; const [y, m, d] = String(v).slice(0, 10).split("-"); return `${d}/${m}/${y?.slice(2)}`; };
 const norm     = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const avg      = (arr) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+const median   = (arr) => {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+/* Rangos plausibles — valores fuera se excluyen del promedio/mediana */
+const GM_RANGE = [-50, 95];   // % gross margin
+const MK_RANGE = [-50, 900];  // % markup
 
 const ESTADO_LABELS = {
   borrador: "Borrador", generado: "Generado", enviada: "Enviada",
@@ -291,15 +300,24 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
     const clientAvgs = Object.entries(byClient).map(([c, ps]) => [c, avg(ps)]);
     const cheapest  = clientAvgs.sort((a, b) => a[1] - b[1])[0]?.[0] || "";
     const mostExp   = clientAvgs.sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+    /* Outlier filtering for GM and Markup */
+    const gmClean    = valid.filter(i => i.gm    >= GM_RANGE[0] && i.gm    <= GM_RANGE[1]);
+    const mkClean    = valid.filter(i => i.mkPct >= MK_RANGE[0] && i.mkPct <= MK_RANGE[1]);
+    const gmOutliers = valid.length - gmClean.length;
+    const mkOutliers = valid.length - mkClean.length;
     return {
-      count:     valid.length,
-      lastPrice: byDate[0]?.pvARSc || 0,
-      lastDate:  byDate[0]?.fecha  || "",
-      minPrice:  Math.min(...prices),
-      maxPrice:  Math.max(...prices),
-      avgPrice:  avg(prices),
-      avgMarkup: avg(valid.map(i => i.mkPct)),
-      avgGM:     avg(valid.map(i => i.gm)),
+      count:      valid.length,
+      lastPrice:  byDate[0]?.pvARSc || 0,
+      lastDate:   byDate[0]?.fecha  || "",
+      minPrice:   Math.min(...prices),
+      maxPrice:   Math.max(...prices),
+      avgPrice:   avg(prices),
+      avgMarkup:  avg(mkClean.map(i => i.mkPct)),
+      medMarkup:  median(mkClean.map(i => i.mkPct)),
+      mkOutliers,
+      avgGM:      avg(gmClean.map(i => i.gm)),
+      medGM:      median(gmClean.map(i => i.gm)),
+      gmOutliers,
       trend,
       cheapest,
       mostExp,
@@ -502,10 +520,22 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                   <div className="ci-kpi">
                     <span>Markup promedio</span>
                     <strong>{fPct(kpis.avgMarkup)}</strong>
+                    <small>Mediana: {fPct(kpis.medMarkup)}</small>
+                    {kpis.mkOutliers > 0 && (
+                      <small className="ci-kpi__warn">
+                        ⚠ {kpis.mkOutliers} outlier{kpis.mkOutliers > 1 ? "s" : ""} excluido{kpis.mkOutliers > 1 ? "s" : ""}
+                      </small>
+                    )}
                   </div>
                   <div className="ci-kpi">
                     <span>Gross Margin prom.</span>
                     <strong>{fPct(kpis.avgGM)}</strong>
+                    <small>Mediana: {fPct(kpis.medGM)}</small>
+                    {kpis.gmOutliers > 0 && (
+                      <small className="ci-kpi__warn">
+                        ⚠ {kpis.gmOutliers} outlier{kpis.gmOutliers > 1 ? "s" : ""} excluido{kpis.gmOutliers > 1 ? "s" : ""}
+                      </small>
+                    )}
                   </div>
                   <div className="ci-kpi">
                     <span>Tendencia precio</span>
@@ -545,6 +575,7 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                 </p>
               ) : grouped ? (
                 /* B. Tabla agrupada por producto */
+                <div className="ci-table-outer">
                 <div className="ci-table-wrap">
                   <table className="ci-table">
                     <thead>
@@ -600,16 +631,18 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                     </tbody>
                   </table>
                 </div>
+                </div>
               ) : (
                 /* Individual table */
-                <div className="ci-table-wrap">
+                <div className="ci-table-outer">
+                  <div className="ci-table-wrap">
                   <table className="ci-table">
                     <thead>
                       <tr>
                         {TABLE_COLS.map(({ key, label }) => (
                           <th
                             key={key}
-                            className="ci-th-sort"
+                            className={`ci-th-sort${key === "fecha" ? " ci-th-sticky" : ""}`}
                             onClick={() => handleSort(key)}
                           >
                             {label}
@@ -623,7 +656,7 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                     <tbody>
                       {filtered.slice(0, 200).map((item, i) => (
                         <tr key={i} className="ci-tr">
-                          <td>{fmtDate(item.fecha)}</td>
+                          <td className="ci-td-sticky">{fmtDate(item.fecha)}</td>
                           <td className="ci-td-num">#{item.quoteNum}</td>
                           <td className="ci-td-clip" title={item.institucion}>
                             <Highlight text={item.institucion || "—"} tokens={searchTokens} />
@@ -675,6 +708,7 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                       Mostrando 200 de {filtered.length} resultados — afiná la búsqueda para ver más.
                     </p>
                   )}
+                  </div>
                 </div>
               )}
             </>
