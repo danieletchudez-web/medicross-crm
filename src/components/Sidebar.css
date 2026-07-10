@@ -1083,17 +1083,19 @@
     width: 100%;
     margin: 0 0 6px;
     gap: 7px;
-    justify-items: center;
+    justify-items: stretch;  /* mismo que expanded — justify-items no es animable */
   }
 
   .sidebar--collapsed .sidebar-quick button {
     width: 46px;
     height: 42px;
-    padding: 0;
-    justify-content: center;
-    text-align: center;
+    padding: 0 0 0 10px;       /* padding-left=10px coincide con expanded → cero jump horizontal */
+    justify-content: flex-start; /* no cambia al expandir → no hay salto de frame */
+    text-align: left;
     border-radius: 13px;
     animation: none;
+    transform: translateX(4px); /* 10px + 4px = 14px ≈ centro del botón de 46px */
+    transition: transform var(--sb-dur-out) var(--sb-ease);
   }
   /* Invisible solo cuando NO está en hover-expand */
   .sidebar--collapsed:not(:hover) .sidebar-quick button {
@@ -1106,11 +1108,11 @@
     background: rgba(59,130,246,.18);
     border-color: rgba(147,197,253,.5);
     box-shadow: 0 12px 28px rgba(37,99,235,.22);
-    transform: translateY(-1px) scale(1.04);
+    transform: translateX(4px) translateY(-1px) scale(1.04); /* conservar el offset de centrado */
   }
 
   .sidebar--collapsed .sidebar-quick button:active {
-    transform: scale(0.96);
+    transform: translateX(4px) scale(0.96); /* conservar el offset de centrado */
   }
 
   .sidebar--collapsed .sidebar-quick button span {
@@ -1665,11 +1667,12 @@
   .sidebar--collapsed.sidebar--expanded .sidebar-quick button {
     width: auto;
     height: auto;
-    padding: 8px 10px;  /* idéntico al nav item para alineación visual */
-    justify-content: flex-start;
+    padding: 8px 10px;  /* padding-left=10px idéntico al colapsado → cero jump horizontal */
     text-align: left;
     border-radius: 8px;
     animation: none;
+    transform: translateX(0);  /* anima desde los 4px del colapsado → movimiento suave */
+    transition: transform var(--sb-dur-out) var(--sb-ease);
   }
 
   .sidebar--collapsed.sidebar--expanded .sidebar-quick button:hover {
