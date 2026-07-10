@@ -515,13 +515,13 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                     }>{kpis.trend}</strong>
                   </div>
                   {kpis.cheapest && (
-                    <div className="ci-kpi">
+                    <div className="ci-kpi ci-kpi--sm">
                       <span>Cotizado más barato en</span>
                       <strong className="ci-kpi__client">{kpis.cheapest}</strong>
                     </div>
                   )}
                   {kpis.mostExp && kpis.mostExp !== kpis.cheapest && (
-                    <div className="ci-kpi">
+                    <div className="ci-kpi ci-kpi--sm">
                       <span>Cotizado más caro en</span>
                       <strong className="ci-kpi__client">{kpis.mostExp}</strong>
                     </div>

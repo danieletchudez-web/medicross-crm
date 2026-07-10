@@ -254,6 +254,13 @@
 .ci-kpi--accent { border-color: rgba(24, 95, 165, .2); }
 .ci-kpi--accent strong { color: #185fa5; }
 
+/* tarjetas de nombre de cliente — no crecen cuando wrappean */
+.ci-kpi--sm {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 180px;
+}
+
 .ci-trend--up { color: #16a34a !important; }
 .ci-trend--dn { color: #dc2626 !important; }
 
