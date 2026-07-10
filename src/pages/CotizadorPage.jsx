@@ -92,6 +92,21 @@ const emptyR = () => ({
 const VENDEDORES    = ["Monica Somosa","Daniel Etchudez","Soledad Cantero","Otros"];
 const ESTADOS       = ["borrador","generado","enviada","evaluacion","aceptada","rechazada","vencida","seguimiento","negociacion","ganada","perdida","facturada","cobrada"];
 const ESTADO_LABELS = { borrador:"Borrador", generado:"Generado", enviada:"Enviada", evaluacion:"En evaluación", aceptada:"Aceptada", rechazada:"Rechazada", vencida:"Vencida", seguimiento:"Seguimiento", negociacion:"Negociación", ganada:"Ganada", perdida:"Perdida", facturada:"Facturada", cobrada:"Cobrada" };
+const ESTADO_COLORS = {
+  borrador:    { bg:"#f3f4f6", color:"#374151" },
+  generado:    { bg:"#d1fae5", color:"#065f46" },
+  enviada:     { bg:"#dbeafe", color:"#185fa5" },
+  evaluacion:  { bg:"#e0e7ff", color:"#4338ca" },
+  aceptada:    { bg:"#d1fae5", color:"#047857" },
+  rechazada:   { bg:"#fee2e2", color:"#b91c1c" },
+  vencida:     { bg:"#ffedd5", color:"#c2410c" },
+  seguimiento: { bg:"#fef3c7", color:"#b45309" },
+  negociacion: { bg:"#ede9fe", color:"#7c3aed" },
+  ganada:      { bg:"#d4edda", color:"#166534" },
+  perdida:     { bg:"#fde8e8", color:"#7f1d1d" },
+  facturada:   { bg:"#cffafe", color:"#0e7490" },
+  cobrada:     { bg:"#d4edda", color:"#064e3b" },
+};
 
 function uniqueNames(names) {
   const seen = new Set();
@@ -1394,7 +1409,20 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   <div className="cot-hist-item__meta">
                     <span className="cot-hist-num">#{c.quote_num_formatted||"???"}</span>
                     {c.vendedor&&<span className="cot-hist-vend">{c.vendedor.split(" ")[0]}</span>}
-                    <span className={`cot-estado cot-estado--${c.estado||"borrador"}`}>{ESTADO_LABELS[c.estado||"borrador"]}</span>
+                    <select
+                      className="cot-estado-inline"
+                      value={c.estado||"borrador"}
+                      style={(() => {
+                        const s = ESTADO_COLORS[c.estado||"borrador"] || ESTADO_COLORS.borrador;
+                        return { background: s.bg, color: s.color };
+                      })()}
+                      onChange={e => { e.stopPropagation(); cambiarEstado(c.id, e.target.value); }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {ESTADOS.map(s => (
+                        <option key={s} value={s}>{ESTADO_LABELS[s]}</option>
+                      ))}
+                    </select>
                     <span className="cot-hist-total">{c.total_general?fARS(c.total_general):"—"}</span>
                   </div>
                   {(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).length > 0 && (

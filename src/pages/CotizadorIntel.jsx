@@ -329,6 +329,45 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
     [items]
   );
 
+  /* P2 — cotizaciones únicas (dedup por quoteId) para analytics de pipeline */
+  const cotizacionesUniq = useMemo(() => {
+    if (!items) return [];
+    const map = {};
+    items.forEach(i => { if (!map[i.quoteId]) map[i.quoteId] = i; });
+    return Object.values(map);
+  }, [items]);
+
+  const FUNNEL_STATES = ["borrador","generado","enviada","evaluacion","negociacion","aceptada","rechazada","vencida"];
+
+  const pipeline = useMemo(() => {
+    if (!cotizacionesUniq.length) return null;
+    const counts = {};
+    FUNNEL_STATES.forEach(s => { counts[s] = 0; });
+    cotizacionesUniq.forEach(c => {
+      if (counts[c.estado] !== undefined) counts[c.estado]++;
+    });
+    const total      = cotizacionesUniq.length;
+    const aceptadas  = counts.aceptada  || 0;
+    const terminales = aceptadas + (counts.rechazada || 0) + (counts.vencida || 0);
+    const tasaAcept  = terminales > 0 ? Math.round(aceptadas / terminales * 100) : null;
+    const maxCount   = Math.max(1, ...FUNNEL_STATES.map(s => counts[s]));
+    return { counts, total, tasaAcept, maxCount };
+  }, [cotizacionesUniq]);
+
+  /* Mantenimientos: cotizaciones aceptadas con más de 12 meses de antigüedad */
+  const cutoffDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().slice(0, 10);
+  }, []);
+
+  const maintenance = useMemo(() => {
+    if (!cotizacionesUniq.length) return [];
+    return cotizacionesUniq
+      .filter(c => c.estado === "aceptada" && c.fecha && c.fecha < cutoffDate)
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  }, [cotizacionesUniq, cutoffDate]);
+
   /* G. CSV export */
   function exportCSV() {
     const headers = ["Fecha","N°Cot","Cliente","Descripción","Cant","Costo ARS","PV c/IVA","Markup %","GM %","Moneda","Vendedor","Estado"];
@@ -563,6 +602,68 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                       <Sparkline items={filtered} />
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* ── P2: pipeline de cotizaciones ── */}
+              {pipeline && (
+                <div className="ci-pipeline">
+                  <div className="ci-pipeline__header">
+                    <span className="ci-pipeline__title">Pipeline de cotizaciones</span>
+                    {pipeline.tasaAcept !== null && (
+                      <span className="ci-pipeline__rate">
+                        Tasa de aceptación: <strong>{pipeline.tasaAcept}%</strong>
+                      </span>
+                    )}
+                    <span className="ci-pipeline__total">{pipeline.total} cots.</span>
+                  </div>
+                  <div className="ci-funnel">
+                    {FUNNEL_STATES.map(estado => {
+                      const count = pipeline.counts[estado];
+                      if (!count && estado === "borrador") return null;
+                      const pct = Math.round(count / pipeline.maxCount * 100);
+                      return (
+                        <div key={estado} className="ci-funnel__row">
+                          <span className="ci-funnel__label">{ESTADO_LABELS[estado]}</span>
+                          <div className="ci-funnel__bar-wrap">
+                            <div
+                              className={`ci-funnel__bar ci-funnel__bar--${estado}`}
+                              style={{ width: `${Math.max(pct, count > 0 ? 3 : 0)}%` }}
+                            />
+                          </div>
+                          <span className="ci-funnel__count">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── P2: alertas de mantenimiento ── */}
+              {maintenance.length > 0 && (
+                <div className="ci-maint">
+                  <div className="ci-maint__header">
+                    ⚙ Mantenimientos sugeridos
+                    <span className="ci-maint__badge">{maintenance.length}</span>
+                  </div>
+                  <div className="ci-maint__list">
+                    {maintenance.slice(0, 6).map(c => (
+                      <div key={c.quoteId} className="ci-maint__item">
+                        <span className="ci-maint__inst">{c.institucion || "—"}</span>
+                        <span className="ci-maint__date">{fmtDate(c.fecha)}</span>
+                        <button
+                          type="button"
+                          className="ci-maint__btn"
+                          onClick={() => onOpenQuote(c.quoteId)}
+                        >
+                          Ver →
+                        </button>
+                      </div>
+                    ))}
+                    {maintenance.length > 6 && (
+                      <p className="ci-maint__more">+{maintenance.length - 6} más con potencial de mantenimiento</p>
+                    )}
+                  </div>
                 </div>
               )}
 
