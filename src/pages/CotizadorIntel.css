@@ -380,6 +380,143 @@
   border-color: #185fa5;
 }
 
+/* ── E. Highlight ───────────────────────────────────────────────────── */
+.ci-hl {
+  background: rgba(24, 95, 165, .16);
+  color: #0f2444;
+  border-radius: 2px;
+  padding: 0 1px;
+  font-style: normal;
+}
+
+/* ── B. Vista toggle Individual / Agrupado ──────────────────────────── */
+.ci-view-toggle {
+  display: flex;
+  border: 1.5px solid rgba(15, 36, 68, .12);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ci-vt-btn {
+  height: 38px;
+  padding: 0 13px;
+  border: none;
+  background: #f8fafc;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+}
+
+.ci-vt-btn + .ci-vt-btn {
+  border-left: 1px solid rgba(15, 36, 68, .1);
+}
+
+.ci-vt-btn--active {
+  background: #185fa5;
+  color: #fff;
+}
+
+.ci-vt-btn:not(.ci-vt-btn--active):hover { background: #f1f5f9; }
+
+/* ── G. CSV button ──────────────────────────────────────────────────── */
+.ci-csv-btn {
+  height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid rgba(15, 36, 68, .12);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+}
+
+.ci-csv-btn:hover:not(:disabled) { background: #e2e8f0; border-color: rgba(15, 36, 68, .2); }
+.ci-csv-btn:disabled { opacity: .4; cursor: default; }
+
+/* ── A. Usar en renglón button ──────────────────────────────────────── */
+.ci-use-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(22, 163, 74, .3);
+  background: rgba(22, 163, 74, .07);
+  color: #166534;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .13s, border-color .13s;
+}
+
+.ci-use-btn:hover {
+  background: rgba(22, 163, 74, .15);
+  border-color: rgba(22, 163, 74, .5);
+}
+
+/* ── C. Sparkline KPI card ──────────────────────────────────────────── */
+.ci-kpi--spark {
+  min-width: 200px;
+  flex: 1.5;
+}
+
+/* ── F. Price filter ────────────────────────────────────────────────── */
+.ci-filter--price {
+  width: 130px;
+  -moz-appearance: textfield;
+}
+
+.ci-filter--price::-webkit-outer-spin-button,
+.ci-filter--price::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── Grouped table helpers ──────────────────────────────────────────── */
+.ci-th-c { text-align: center !important; }
+.ci-th-r { text-align: right  !important; }
+
+.ci-td-c {
+  text-align: center;
+  color: #475569;
+}
+
+.ci-td-sub {
+  display: block;
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 400;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.ci-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(24, 95, 165, .1);
+  color: #185fa5;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 /* ── misceláneos ────────────────────────────────────────────────────── */
 .ci-empty {
   text-align: center;
@@ -516,6 +653,32 @@
 
 [data-theme="dark"] .ci-empty       { color: #5A5A5A; }
 [data-theme="dark"] .ci-limit-note  { color: #5A5A5A; border-top-color: #2A2A2A; }
+
+/* ── Dark: new elements ─────────────────────────────────────────────── */
+[data-theme="dark"] .ci-hl { background: rgba(77, 124, 188, .25); color: #EDEDED; }
+
+[data-theme="dark"] .ci-view-toggle { border-color: #3C3C3C; }
+[data-theme="dark"] .ci-vt-btn { background: #242424; color: #7A7A7A; }
+[data-theme="dark"] .ci-vt-btn + .ci-vt-btn { border-left-color: #3C3C3C; }
+[data-theme="dark"] .ci-vt-btn--active { background: #185fa5; color: #fff; }
+[data-theme="dark"] .ci-vt-btn:not(.ci-vt-btn--active):hover { background: #2A2A2A; }
+
+[data-theme="dark"] .ci-csv-btn {
+  border-color: #3C3C3C;
+  background: #242424;
+  color: #9D9D9D;
+}
+[data-theme="dark"] .ci-csv-btn:hover:not(:disabled) { background: #2A2A2A; border-color: #4A4A4A; }
+
+[data-theme="dark"] .ci-use-btn {
+  background: rgba(22, 163, 74, .1);
+  border-color: rgba(22, 163, 74, .25);
+  color: #4ade80;
+}
+[data-theme="dark"] .ci-use-btn:hover { background: rgba(22, 163, 74, .18); border-color: rgba(22, 163, 74, .45); }
+
+[data-theme="dark"] .ci-td-sub { color: #5A5A5A; }
+[data-theme="dark"] .ci-count-badge { background: rgba(77, 124, 188, .18); color: #93c5fd; }
 
 [data-theme="dark"] .cot-hist-hint {
   background: rgba(16, 185, 129, .08);

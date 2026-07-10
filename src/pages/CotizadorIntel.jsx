@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import "./CotizadorIntel.css";
 
-/* ── helpers (mirrors CotizadorPage) ───────────────────────────────── */
+/* ── helpers ────────────────────────────────────────────────────────── */
 const parseN   = (s) => parseFloat(String(s || "").replace(",", ".")) || 0;
 const fARS     = (n) => "$ " + Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fPct     = (n) => Number(n || 0).toFixed(1) + "%";
@@ -17,7 +17,7 @@ const ESTADO_LABELS = {
   ganada: "Ganada", perdida: "Perdida", facturada: "Facturada", cobrada: "Cobrada",
 };
 
-/* ── calcR identico al de CotizadorPage ───────────────────────────── */
+/* ── calcFlat (mirrors CotizadorPage) ──────────────────────────────── */
 function calcFlat(r, tcG) {
   const tc   = parseN(r.tcInd) > 0 ? parseN(r.tcInd) : tcG;
   const iva  = parseN(r.iva) / 100;
@@ -36,7 +36,7 @@ function calcFlat(r, tcG) {
   return { cARS, pvARSs, pvARSc, mkPct, gm, subtotal: pvARSc * (parseInt(r.cant) || 1), tc };
 }
 
-/* ── expande cotizaciones → ítems planos ───────────────────────────── */
+/* ── expand cotizaciones → flat items ──────────────────────────────── */
 function expandCotizaciones(rows) {
   const flat = [];
   for (const cot of rows) {
@@ -45,8 +45,8 @@ function expandCotizaciones(rows) {
     for (const r of (cot.renglones || [])) {
       const calc = calcFlat(r, tcG);
       flat.push({
-        quoteId:    cot.id,
-        quoteNum:   cot.quote_num_formatted || String(cot.quote_number || "?"),
+        quoteId:     cot.id,
+        quoteNum:    cot.quote_num_formatted || String(cot.quote_number || "?"),
         fecha,
         institucion: cot.institucion || "",
         vendedor:    cot.vendedor || "",
@@ -65,13 +65,87 @@ function expandCotizaciones(rows) {
   return flat.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
 }
 
-/* ── sort helper ────────────────────────────────────────────────────── */
+/* ── sort ───────────────────────────────────────────────────────────── */
 function sortItems(arr, key, dir) {
   return [...arr].sort((a, b) => {
     const av = a[key] ?? "", bv = b[key] ?? "";
     if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
     return String(av).localeCompare(String(bv)) * dir;
   });
+}
+
+/* D. Token-based search ─────────────────────────────────────────────── */
+function tokenMatch(item, tokens) {
+  if (!tokens.length) return true;
+  return tokens.every(tok =>
+    [item.descr, item.codigo, item.marca, item.empresa, item.institucion, item.vendedor, item.quoteNum, item.estado]
+      .some(f => norm(f).includes(tok))
+  );
+}
+
+/* E. Highlight matching tokens ──────────────────────────────────────── */
+function Highlight({ text, tokens }) {
+  if (!tokens?.length || !text) return <>{text || ""}</>;
+  const lw = norm(text);
+  const ranges = [];
+  for (const tok of tokens) {
+    let idx = 0;
+    while (idx < lw.length) {
+      const found = lw.indexOf(tok, idx);
+      if (found < 0) break;
+      ranges.push([found, found + tok.length]);
+      idx = found + tok.length;
+    }
+  }
+  if (!ranges.length) return <>{text}</>;
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [[...ranges[0]]];
+  for (let i = 1; i < ranges.length; i++) {
+    const last = merged[merged.length - 1];
+    if (ranges[i][0] <= last[1]) last[1] = Math.max(last[1], ranges[i][1]);
+    else merged.push([...ranges[i]]);
+  }
+  const parts = [];
+  let pos = 0;
+  for (const [start, end] of merged) {
+    if (pos < start) parts.push(text.slice(pos, start));
+    parts.push(<mark key={start} className="ci-hl">{text.slice(start, end)}</mark>);
+    pos = end;
+  }
+  if (pos < text.length) parts.push(text.slice(pos));
+  return <>{parts}</>;
+}
+
+/* C. Sparkline SVG ──────────────────────────────────────────────────── */
+function Sparkline({ items }) {
+  const pts = [...items]
+    .filter(i => i.pvARSc > 0 && i.fecha)
+    .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  if (pts.length < 2) return null;
+  const W = 180, H = 52;
+  const prices = pts.map(p => p.pvARSc);
+  const minP = Math.min(...prices), maxP = Math.max(...prices);
+  const range = maxP - minP || 1;
+  const toX = (i) => (i / (pts.length - 1)) * (W - 12) + 6;
+  const toY = (v) => H - 8 - ((v - minP) / range) * (H - 18);
+  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${toX(i).toFixed(1)} ${toY(p.pvARSc).toFixed(1)}`).join(" ");
+  const fillPath = `${linePath} L ${toX(pts.length - 1).toFixed(1)} ${H} L ${toX(0).toFixed(1)} ${H} Z`;
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible", display: "block" }}>
+      <defs>
+        <linearGradient id="ci-sg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#185fa5" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#185fa5" stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+      <path d={fillPath} fill="url(#ci-sg)" />
+      <path d={linePath} fill="none" stroke="#185fa5" strokeWidth="2" strokeLinejoin="round" />
+      {pts.map((p, i) => (
+        <circle key={i} cx={toX(i)} cy={toY(p.pvARSc)} r={i === pts.length - 1 ? 4 : 2.5}
+          fill="#185fa5" stroke={i === pts.length - 1 ? "#fff" : "none"} strokeWidth="1.5" />
+      ))}
+    </svg>
+  );
 }
 
 /* ── SearchIcon ─────────────────────────────────────────────────────── */
@@ -83,19 +157,24 @@ function SearchIcon() {
   );
 }
 
-/* ── componente principal ───────────────────────────────────────────── */
-export default function CotizadorIntel({ onOpenQuote }) {
-  const [open,      setOpen]      = useState(false);
-  const [loading,   setLoading]   = useState(false);
-  const [items,     setItems]     = useState(null);   // null = never loaded
-  const [search,    setSearch]    = useState("");
-  const [fDesde,    setFDesde]    = useState("");
-  const [fHasta,    setFHasta]    = useState("");
-  const [fVendedor, setFVendedor] = useState("");
-  const [fEstado,   setFEstado]   = useState("");
-  const [fMoneda,   setFMoneda]   = useState("");
-  const [sortKey,   setSortKey]   = useState("fecha");
-  const [sortDir,   setSortDir]   = useState(-1);
+/* ══════════════════════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL
+══════════════════════════════════════════════════════════════════════ */
+export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
+  const [open,       setOpen]       = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [items,      setItems]      = useState(null);
+  const [search,     setSearch]     = useState("");
+  const [fDesde,     setFDesde]     = useState("");
+  const [fHasta,     setFHasta]     = useState("");
+  const [fVendedor,  setFVendedor]  = useState("");
+  const [fEstado,    setFEstado]    = useState("");
+  const [fMoneda,    setFMoneda]    = useState("");
+  const [fPrecioMin, setFPrecioMin] = useState("");  /* F */
+  const [fPrecioMax, setFPrecioMax] = useState("");  /* F */
+  const [sortKey,    setSortKey]    = useState("fecha");
+  const [sortDir,    setSortDir]    = useState(-1);
+  const [grouped,    setGrouped]    = useState(false); /* B */
   const loadingRef = useRef(false);
 
   async function loadData() {
@@ -133,39 +212,76 @@ export default function CotizadorIntel({ onOpenQuote }) {
   function clearFilters() {
     setSearch(""); setFDesde(""); setFHasta("");
     setFVendedor(""); setFEstado(""); setFMoneda("");
+    setFPrecioMin(""); setFPrecioMax("");
   }
 
-  /* ── filtered + sorted items ──────────────────────────────────────── */
+  /* D. Token-based search tokens */
+  const searchTokens = useMemo(() => {
+    const q = norm(search.trim());
+    return q ? q.split(/\s+/).filter(t => t.length > 0) : [];
+  }, [search]);
+
+  /* filtered + sorted */
   const filtered = useMemo(() => {
     if (!items) return [];
     let res = items;
-    if (search.trim()) {
-      const q = norm(search.trim());
-      res = res.filter(i =>
-        [i.descr, i.codigo, i.marca, i.empresa, i.institucion, i.vendedor, i.quoteNum, i.estado]
-          .some(f => norm(f).includes(q))
-      );
-    }
-    if (fDesde) res = res.filter(i => i.fecha >= fDesde);
-    if (fHasta) res = res.filter(i => i.fecha <= fHasta);
+    if (searchTokens.length) res = res.filter(i => tokenMatch(i, searchTokens));
+    if (fDesde)    res = res.filter(i => i.fecha >= fDesde);
+    if (fHasta)    res = res.filter(i => i.fecha <= fHasta);
     if (fVendedor) res = res.filter(i => i.vendedor === fVendedor);
     if (fEstado)   res = res.filter(i => i.estado   === fEstado);
     if (fMoneda)   res = res.filter(i => i.moneda   === fMoneda);
+    /* F. Price range */
+    const pMin = fPrecioMin ? parseFloat(String(fPrecioMin).replace(/\./g, "").replace(",", ".")) : 0;
+    const pMax = fPrecioMax ? parseFloat(String(fPrecioMax).replace(/\./g, "").replace(",", ".")) : 0;
+    if (pMin > 0) res = res.filter(i => i.pvARSc >= pMin);
+    if (pMax > 0) res = res.filter(i => i.pvARSc <= pMax);
     return sortItems(res, sortKey, sortDir);
-  }, [items, search, fDesde, fHasta, fVendedor, fEstado, fMoneda, sortKey, sortDir]);
+  }, [items, searchTokens, fDesde, fHasta, fVendedor, fEstado, fMoneda, fPrecioMin, fPrecioMax, sortKey, sortDir]);
 
-  /* ── KPIs ─────────────────────────────────────────────────────────── */
+  /* B. Grouped data */
+  const groupedData = useMemo(() => {
+    const map = {};
+    filtered.forEach(item => {
+      const key = norm(item.descr || item.codigo || "?");
+      if (!map[key]) map[key] = {
+        key,
+        descr:   item.descr || item.codigo || "—",
+        empresa: item.empresa,
+        items:   [],
+      };
+      map[key].items.push(item);
+    });
+    return Object.values(map).map(g => {
+      const withPrice = g.items.filter(i => i.pvARSc > 0);
+      const prices    = withPrice.map(i => i.pvARSc);
+      const byDate    = [...g.items].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+      return {
+        ...g,
+        count:     g.items.length,
+        lastItem:  byDate[0],
+        lastPrice: byDate.find(i => i.pvARSc > 0)?.pvARSc || 0,
+        minPrice:  prices.length ? Math.min(...prices) : 0,
+        maxPrice:  prices.length ? Math.max(...prices) : 0,
+        avgPrice:  prices.length ? avg(prices) : 0,
+        avgMk:     avg(withPrice.map(i => i.mkPct)),
+        clients:   [...new Set(g.items.map(i => i.institucion).filter(Boolean))],
+      };
+    }).sort((a, b) => b.count - a.count);
+  }, [filtered]);
+
+  /* KPIs */
   const kpis = useMemo(() => {
     const valid = filtered.filter(i => i.pvARSc > 0);
     if (!valid.length) return null;
-    const prices   = valid.map(i => i.pvARSc);
-    const byDate   = [...valid].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
-    const p3       = avg(byDate.slice(0, 3).map(i => i.pvARSc));
-    const p3prev   = avg(byDate.slice(3, 6).map(i => i.pvARSc));
-    const trend    = !p3prev || byDate.length < 4 ? "—"
-                   : p3 > p3prev * 1.05 ? "↑ Subiendo"
-                   : p3 < p3prev * 0.95 ? "↓ Bajando"
-                   : "→ Estable";
+    const prices  = valid.map(i => i.pvARSc);
+    const byDate  = [...valid].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+    const p3      = avg(byDate.slice(0, 3).map(i => i.pvARSc));
+    const p3prev  = avg(byDate.slice(3, 6).map(i => i.pvARSc));
+    const trend   = !p3prev || byDate.length < 4 ? "—"
+                  : p3 > p3prev * 1.05 ? "↑ Subiendo"
+                  : p3 < p3prev * 0.95 ? "↓ Bajando"
+                  : "→ Estable";
     const byClient = {};
     valid.forEach(i => {
       if (!i.institucion) return;
@@ -176,14 +292,14 @@ export default function CotizadorIntel({ onOpenQuote }) {
     const cheapest  = clientAvgs.sort((a, b) => a[1] - b[1])[0]?.[0] || "";
     const mostExp   = clientAvgs.sort((a, b) => b[1] - a[1])[0]?.[0] || "";
     return {
-      count:      valid.length,
-      lastPrice:  byDate[0]?.pvARSc || 0,
-      lastDate:   byDate[0]?.fecha  || "",
-      minPrice:   Math.min(...prices),
-      maxPrice:   Math.max(...prices),
-      avgPrice:   avg(prices),
-      avgMarkup:  avg(valid.map(i => i.mkPct)),
-      avgGM:      avg(valid.map(i => i.gm)),
+      count:     valid.length,
+      lastPrice: byDate[0]?.pvARSc || 0,
+      lastDate:  byDate[0]?.fecha  || "",
+      minPrice:  Math.min(...prices),
+      maxPrice:  Math.max(...prices),
+      avgPrice:  avg(prices),
+      avgMarkup: avg(valid.map(i => i.mkPct)),
+      avgGM:     avg(valid.map(i => i.gm)),
       trend,
       cheapest,
       mostExp,
@@ -195,20 +311,46 @@ export default function CotizadorIntel({ onOpenQuote }) {
     [items]
   );
 
-  const hasFilters = search || fDesde || fHasta || fVendedor || fEstado || fMoneda;
+  /* G. CSV export */
+  function exportCSV() {
+    const headers = ["Fecha","N°Cot","Cliente","Descripción","Cant","Costo ARS","PV c/IVA","Markup %","GM %","Moneda","Vendedor","Estado"];
+    const rows = filtered.slice(0, 2000).map(i => [
+      fmtDate(i.fecha), "#" + i.quoteNum, i.institucion || "",
+      i.descr || i.codigo || "", i.cant,
+      i.cARS > 0 ? i.cARS.toFixed(2) : "",
+      i.pvARSc > 0 ? i.pvARSc.toFixed(2) : "",
+      i.mkPct > 0 ? i.mkPct.toFixed(1) : "",
+      i.gm > 0 ? i.gm.toFixed(1) : "",
+      i.moneda, i.vendedor || "", i.estado || "",
+    ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = `inteligencia_comercial_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  const hasFilters = search || fDesde || fHasta || fVendedor || fEstado || fMoneda || fPrecioMin || fPrecioMax;
+  const showSparkline = searchTokens.length > 0 && filtered.filter(i => i.pvARSc > 0 && i.fecha).length >= 2;
+
   const TABLE_COLS = [
-    { key: "fecha",      label: "Fecha"     },
-    { key: "quoteNum",   label: "#Cot."     },
-    { key: "institucion",label: "Cliente"   },
-    { key: "descr",      label: "Descripción" },
-    { key: "cant",       label: "Cant."     },
-    { key: "cARS",       label: "Costo ARS" },
-    { key: "pvARSc",     label: "PV c/IVA"  },
-    { key: "mkPct",      label: "Markup %"  },
-    { key: "gm",         label: "GM %"      },
-    { key: "moneda",     label: "Mon."      },
-    { key: "vendedor",   label: "Vendedor"  },
-    { key: "estado",     label: "Estado"    },
+    { key: "fecha",       label: "Fecha"       },
+    { key: "quoteNum",    label: "#Cot."        },
+    { key: "institucion", label: "Cliente"      },
+    { key: "descr",       label: "Descripción"  },
+    { key: "cant",        label: "Cant."        },
+    { key: "cARS",        label: "Costo ARS"    },
+    { key: "pvARSc",      label: "PV c/IVA"     },
+    { key: "mkPct",       label: "Markup %"     },
+    { key: "gm",          label: "GM %"         },
+    { key: "moneda",      label: "Mon."         },
+    { key: "vendedor",    label: "Vendedor"     },
+    { key: "estado",      label: "Estado"       },
   ];
 
   return (
@@ -242,7 +384,7 @@ export default function CotizadorIntel({ onOpenQuote }) {
 
           {items !== null && (
             <>
-              {/* ── buscador ── */}
+              {/* ── buscador + controles ── */}
               <div className="ci-search-row">
                 <div className="ci-search-wrap">
                   <span className="ci-search-ico"><SearchIcon /></span>
@@ -257,6 +399,29 @@ export default function CotizadorIntel({ onOpenQuote }) {
                     <button className="ci-search-clear" type="button" onClick={() => setSearch("")}>×</button>
                   )}
                 </div>
+                {/* B. Vista toggle Individual/Agrupado */}
+                <div className="ci-view-toggle">
+                  <button
+                    type="button"
+                    className={`ci-vt-btn${!grouped ? " ci-vt-btn--active" : ""}`}
+                    onClick={() => setGrouped(false)}
+                  >Individual</button>
+                  <button
+                    type="button"
+                    className={`ci-vt-btn${grouped ? " ci-vt-btn--active" : ""}`}
+                    onClick={() => setGrouped(true)}
+                  >Agrupado</button>
+                </div>
+                {/* G. CSV */}
+                <button
+                  className="ci-csv-btn"
+                  type="button"
+                  onClick={exportCSV}
+                  disabled={!filtered.length}
+                  title="Exportar resultados como CSV"
+                >
+                  ⬇ CSV
+                </button>
                 <button
                   className="ci-refresh-btn"
                   type="button"
@@ -285,6 +450,23 @@ export default function CotizadorIntel({ onOpenQuote }) {
                   <option value="USD">USD</option>
                   <option value="ARS">ARS</option>
                 </select>
+                {/* F. Price range */}
+                <input
+                  type="number"
+                  className="ci-filter ci-filter--price"
+                  value={fPrecioMin}
+                  onChange={e => setFPrecioMin(e.target.value)}
+                  placeholder="Precio mín ARS"
+                  min="0"
+                />
+                <input
+                  type="number"
+                  className="ci-filter ci-filter--price"
+                  value={fPrecioMax}
+                  onChange={e => setFPrecioMax(e.target.value)}
+                  placeholder="Precio máx ARS"
+                  min="0"
+                />
                 {hasFilters && (
                   <button className="ci-filter-clear" type="button" onClick={clearFilters}>✕ Limpiar</button>
                 )}
@@ -344,6 +526,13 @@ export default function CotizadorIntel({ onOpenQuote }) {
                       <strong className="ci-kpi__client">{kpis.mostExp}</strong>
                     </div>
                   )}
+                  {/* C. Sparkline en KPI row */}
+                  {showSparkline && (
+                    <div className="ci-kpi ci-kpi--spark">
+                      <span>Evolución de precio</span>
+                      <Sparkline items={filtered} />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -354,7 +543,65 @@ export default function CotizadorIntel({ onOpenQuote }) {
                     ? "Sin resultados con los filtros actuales. Intentá ampliar la búsqueda."
                     : "No hay ítems en las cotizaciones guardadas."}
                 </p>
+              ) : grouped ? (
+                /* B. Tabla agrupada por producto */
+                <div className="ci-table-wrap">
+                  <table className="ci-table">
+                    <thead>
+                      <tr>
+                        <th className="ci-th-sort">Descripción</th>
+                        <th className="ci-th-sort ci-th-c">Cots.</th>
+                        <th className="ci-th-sort ci-th-c">Clientes</th>
+                        <th className="ci-th-sort ci-th-r">Último precio</th>
+                        <th className="ci-th-sort ci-th-r">Mínimo</th>
+                        <th className="ci-th-sort ci-th-r">Promedio</th>
+                        <th className="ci-th-sort ci-th-r">Máximo</th>
+                        <th className="ci-th-sort ci-th-r">Markup prom.</th>
+                        {onUseInRenglon && <th className="ci-th-action">Usar</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupedData.map((g) => (
+                        <tr key={g.key} className="ci-tr">
+                          <td className="ci-td-clip ci-td-descr" title={g.descr}>
+                            <Highlight text={g.descr} tokens={searchTokens} />
+                            {g.empresa && <span className="ci-td-sub">{g.empresa}</span>}
+                          </td>
+                          <td className="ci-td-c">
+                            <span className="ci-count-badge">{g.count}</span>
+                          </td>
+                          <td className="ci-td-c" style={{ fontSize: 11 }}>
+                            {g.clients.length > 0
+                              ? <span title={g.clients.join(", ")}>{g.clients.length}</span>
+                              : "—"}
+                          </td>
+                          <td className="ci-td-r ci-td-price">
+                            {g.lastPrice > 0 ? fARS(g.lastPrice) : "—"}
+                            {g.lastItem?.fecha && <span className="ci-td-sub">{fmtDate(g.lastItem.fecha)}</span>}
+                          </td>
+                          <td className="ci-td-r">{g.minPrice > 0 ? fARS(g.minPrice) : "—"}</td>
+                          <td className="ci-td-r">{g.avgPrice > 0 ? fARS(g.avgPrice) : "—"}</td>
+                          <td className="ci-td-r">{g.maxPrice > 0 ? fARS(g.maxPrice) : "—"}</td>
+                          <td className="ci-td-r">{g.avgMk > 0 ? fPct(g.avgMk) : "—"}</td>
+                          {onUseInRenglon && (
+                            <td className="ci-td-action">
+                              <button
+                                type="button"
+                                className="ci-use-btn"
+                                onClick={() => onUseInRenglon(g.lastItem)}
+                                title={`Usar "${g.descr}" en el renglón activo`}
+                              >
+                                + Usar
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
+                /* Individual table */
                 <div className="ci-table-wrap">
                   <table className="ci-table">
                     <thead>
@@ -370,6 +617,7 @@ export default function CotizadorIntel({ onOpenQuote }) {
                           </th>
                         ))}
                         <th className="ci-th-action">Abrir</th>
+                        {onUseInRenglon && <th className="ci-th-action">Usar</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -378,10 +626,10 @@ export default function CotizadorIntel({ onOpenQuote }) {
                           <td>{fmtDate(item.fecha)}</td>
                           <td className="ci-td-num">#{item.quoteNum}</td>
                           <td className="ci-td-clip" title={item.institucion}>
-                            {item.institucion || "—"}
+                            <Highlight text={item.institucion || "—"} tokens={searchTokens} />
                           </td>
                           <td className="ci-td-clip ci-td-descr" title={item.descr}>
-                            {item.descr || item.codigo || "—"}
+                            <Highlight text={item.descr || item.codigo || "—"} tokens={searchTokens} />
                           </td>
                           <td className="ci-td-r">{item.cant}</td>
                           <td className="ci-td-r">{item.cARS > 0 ? fARS(item.cARS) : "—"}</td>
@@ -405,6 +653,19 @@ export default function CotizadorIntel({ onOpenQuote }) {
                               →
                             </button>
                           </td>
+                          {/* A. Usar en renglón */}
+                          {onUseInRenglon && (
+                            <td className="ci-td-action">
+                              <button
+                                type="button"
+                                className="ci-use-btn"
+                                onClick={() => onUseInRenglon(item)}
+                                title="Copiar descripción al renglón activo"
+                              >
+                                + Usar
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -424,9 +685,7 @@ export default function CotizadorIntel({ onOpenQuote }) {
   );
 }
 
-/* ── hook liviano para hint contextual por renglón ──────────────────── *
- * Se llama desde CotizadorPage para mostrar info de precios históricos
- * internos al tipear la descripción de un renglón.                      */
+/* ── hook liviano para hint contextual por renglón ──────────────────── */
 export function useQuoteHint(cotHistory, descr) {
   return useMemo(() => {
     if (!cotHistory || !descr || descr.length < 5) return null;
@@ -442,7 +701,7 @@ export function useQuoteHint(cotHistory, descr) {
     const prices = withPrice.map(m => m.pvARSc);
     const byDate  = [...withPrice].sort((a, b) => String(b.fecha || "").localeCompare(String(a.fecha || "")));
     return {
-      count:    matches.length,
+      count:     matches.length,
       lastPrice: byDate[0]?.pvARSc || 0,
       avgPrice:  avg(prices),
       avgGM:     avg(withPrice.map(m => m.gm)),

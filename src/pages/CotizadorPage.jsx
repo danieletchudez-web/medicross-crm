@@ -233,7 +233,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   const [expirationDays, setExpirationDays] = useState(30);
   const [priceIntel,    setPriceIntel]    = useState({});
   const priceTimers = useRef({});
-  const [cotHistory,    setCotHistory]    = useState(null);
+  const [cotHistory,      setCotHistory]      = useState(null);
+  const [activeRenglonId, setActiveRenglonId] = useState(null);
   const cotHistLoadingRef = useRef(false);
 
   useEffect(() => {
@@ -325,6 +326,27 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       }
     }
     setCotHistory(flat);
+  }
+
+  /* ── A. Usar desde Inteligencia Comercial ── */
+  function handleUseFromIntel(item) {
+    const targetId = activeRenglonId || renglones[renglones.length - 1]?.id;
+    if (!targetId) return;
+    setRenglones(prev => prev.map(r => {
+      if (r.id !== targetId) return r;
+      return {
+        ...r,
+        descr:   item.descr  || r.descr,
+        empresa: item.empresa || r.empresa,
+        codigo:  item.codigo  || r.codigo,
+        marca:   item.marca   || r.marca,
+      };
+    }));
+    const rIdx = renglones.findIndex(r => r.id === targetId);
+    showToast(`Descripción copiada al Renglón ${rIdx + 1} ✓`);
+    setTimeout(() => {
+      document.querySelectorAll(".cot-renglon")[rIdx]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 80);
   }
 
   /* ── Price Intelligence ── */
@@ -1044,6 +1066,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
         <CotizadorIntel
           onOpenQuote={(id) => { loadCotizacion(id); window.scrollTo(0, 0); }}
+          onUseInRenglon={handleUseFromIntel}
         />
 
         <div className="cot-card">
@@ -1099,7 +1122,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             catalogSuggestions.length > 0 || marketSuggestions.length > 0 || intel?.loading
           );
           return (
-            <div key={r.id} className="cot-renglon">
+            <div key={r.id} className="cot-renglon" onFocus={() => setActiveRenglonId(r.id)}>
               <div className="cot-renglon__header">
                 <span className="cot-renglon__num">Renglón {idx+1}</span>
                 <button className="cot-btn-del" onClick={()=>removeR(r.id)} title="Eliminar renglón">×</button>
