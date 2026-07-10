@@ -209,7 +209,7 @@
 
 .ci-kpi {
   flex: 1;
-  min-width: 120px;
+  min-width: 150px;
   background: #f8fafc;
   border: 1px solid rgba(15, 36, 68, .08);
   border-radius: 10px;
@@ -228,13 +228,13 @@
 }
 
 .ci-kpi strong {
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 800;
   color: #0f2444;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .ci-kpi small {
