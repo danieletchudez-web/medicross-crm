@@ -6,6 +6,15 @@ import "./CotizadorIntel.css";
 const parseN   = (s) => parseFloat(String(s || "").replace(",", ".")) || 0;
 const fARS     = (n) => "$ " + Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fPct     = (n) => Number(n || 0).toFixed(1) + "%";
+/* Formato compacto para KPIs — evita desbordamiento en tarjetas angostas */
+function fARSk(n) {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1e9) return sign + "$ " + (abs / 1e9).toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " MM";
+  if (abs >= 1e6) return sign + "$ " + (abs / 1e6).toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " M";
+  if (abs >= 1e3) return sign + "$ " + (abs / 1e3).toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " K";
+  return sign + "$ " + abs.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
 const fmtDate  = (v) => { if (!v) return "—"; const [y, m, d] = String(v).slice(0, 10).split("-"); return `${d}/${m}/${y?.slice(2)}`; };
 const norm     = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const avg      = (arr) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
@@ -484,20 +493,20 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                   </div>
                   <div className="ci-kpi ci-kpi--accent">
                     <span>Último precio</span>
-                    <strong>{fARS(kpis.lastPrice)}</strong>
+                    <strong title={fARS(kpis.lastPrice)}>{fARSk(kpis.lastPrice)}</strong>
                     <small>{fmtDate(kpis.lastDate)}</small>
                   </div>
                   <div className="ci-kpi">
                     <span>Precio mínimo</span>
-                    <strong>{fARS(kpis.minPrice)}</strong>
+                    <strong title={fARS(kpis.minPrice)}>{fARSk(kpis.minPrice)}</strong>
                   </div>
                   <div className="ci-kpi">
                     <span>Precio máximo</span>
-                    <strong>{fARS(kpis.maxPrice)}</strong>
+                    <strong title={fARS(kpis.maxPrice)}>{fARSk(kpis.maxPrice)}</strong>
                   </div>
                   <div className="ci-kpi">
                     <span>Precio promedio</span>
-                    <strong>{fARS(kpis.avgPrice)}</strong>
+                    <strong title={fARS(kpis.avgPrice)}>{fARSk(kpis.avgPrice)}</strong>
                   </div>
                   <div className="ci-kpi">
                     <span>Markup promedio</span>
@@ -575,13 +584,13 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                               ? <span title={g.clients.join(", ")}>{g.clients.length}</span>
                               : "—"}
                           </td>
-                          <td className="ci-td-r ci-td-price">
-                            {g.lastPrice > 0 ? fARS(g.lastPrice) : "—"}
+                          <td className="ci-td-r ci-td-price" title={g.lastPrice > 0 ? fARS(g.lastPrice) : ""}>
+                            {g.lastPrice > 0 ? fARSk(g.lastPrice) : "—"}
                             {g.lastItem?.fecha && <span className="ci-td-sub">{fmtDate(g.lastItem.fecha)}</span>}
                           </td>
-                          <td className="ci-td-r">{g.minPrice > 0 ? fARS(g.minPrice) : "—"}</td>
-                          <td className="ci-td-r">{g.avgPrice > 0 ? fARS(g.avgPrice) : "—"}</td>
-                          <td className="ci-td-r">{g.maxPrice > 0 ? fARS(g.maxPrice) : "—"}</td>
+                          <td className="ci-td-r" title={g.minPrice > 0 ? fARS(g.minPrice) : ""}>{g.minPrice > 0 ? fARSk(g.minPrice) : "—"}</td>
+                          <td className="ci-td-r" title={g.avgPrice > 0 ? fARS(g.avgPrice) : ""}>{g.avgPrice > 0 ? fARSk(g.avgPrice) : "—"}</td>
+                          <td className="ci-td-r" title={g.maxPrice > 0 ? fARS(g.maxPrice) : ""}>{g.maxPrice > 0 ? fARSk(g.maxPrice) : "—"}</td>
                           <td className="ci-td-r">{g.avgMk > 0 ? fPct(g.avgMk) : "—"}</td>
                           {onUseInRenglon && (
                             <td className="ci-td-action">

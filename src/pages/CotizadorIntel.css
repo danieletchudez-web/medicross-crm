@@ -228,10 +228,13 @@
 }
 
 .ci-kpi strong {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   color: #0f2444;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ci-kpi small {
