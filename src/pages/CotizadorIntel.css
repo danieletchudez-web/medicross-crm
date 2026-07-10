@@ -202,18 +202,22 @@
 /* ── KPIs ───────────────────────────────────────────────────────────── */
 .ci-kpis {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 6px;
   margin-bottom: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;          /* Firefox */
 }
+.ci-kpis::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 .ci-kpi {
-  flex: 1;
-  min-width: 150px;
+  flex: 1 1 0;
+  min-width: 110px;
   background: #f8fafc;
   border: 1px solid rgba(15, 36, 68, .08);
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -254,12 +258,6 @@
 .ci-kpi--accent { border-color: rgba(24, 95, 165, .2); }
 .ci-kpi--accent strong { color: #185fa5; }
 
-/* tarjetas de nombre de cliente — no crecen cuando wrappean */
-.ci-kpi--sm {
-  flex: 0 0 auto;
-  min-width: 0;
-  max-width: 180px;
-}
 
 .ci-trend--up { color: #16a34a !important; }
 .ci-trend--dn { color: #dc2626 !important; }
@@ -479,8 +477,7 @@
 
 /* ── C. Sparkline KPI card ──────────────────────────────────────────── */
 .ci-kpi--spark {
-  min-width: 200px;
-  flex: 1.5;
+  min-width: 140px;
 }
 
 /* ── F. Price filter ────────────────────────────────────────────────── */
