@@ -776,6 +776,20 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   P2/P3 — WIDGETS ROW (pipeline + ranking en fila)
+   ═══════════════════════════════════════════════════════════════════ */
+.ci-widgets-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ci-widget {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-bottom: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    P2 — PIPELINE FUNNEL
    ═══════════════════════════════════════════════════════════════════ */
 .ci-pipeline {
@@ -954,6 +968,40 @@
 [data-theme="dark"] .ci-maint__more   { color: #fb923c; }
 
 /* ═══════════════════════════════════════════════════════════════════
+   P3 — RANKING DE VENDEDORES
+   ═══════════════════════════════════════════════════════════════════ */
+.ci-ranking {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 36, 68, .07);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+/* fila del ranking: label | barra | count | total */
+.ci-ranking__row {
+  grid-template-columns: 80px 1fr 26px auto !important;
+}
+
+.ci-ranking__bar { background: #4d7cbc; }
+
+.ci-ranking__total {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 4px;
+}
+
+/* dark mode ranking */
+[data-theme="dark"] .ci-ranking {
+  background: #1E1E1E;
+  border-color: rgba(255, 255, 255, .06);
+}
+[data-theme="dark"] .ci-ranking__bar   { background: #4d7cbc; }
+[data-theme="dark"] .ci-ranking__total { color: #7A7A7A; }
+
+/* ═══════════════════════════════════════════════════════════════════
    MOBILE  ≤ 768px
    ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
@@ -969,4 +1017,7 @@
   /* tabla → scroll horizontal compacto */
   .ci-table { font-size: 11.5px; }
   .ci-th-sort, .ci-table td { padding: 7px 8px; }
+
+  /* widgets row apilado en mobile */
+  .ci-widgets-row { flex-direction: column; }
 }

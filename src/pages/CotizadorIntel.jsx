@@ -368,6 +368,23 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
       .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
   }, [cotizacionesUniq, cutoffDate]);
 
+  /* P3 — Ranking de vendedores: agrega por items (todos, sin filtrar) */
+  const vendorRanking = useMemo(() => {
+    if (!items || !items.length) return [];
+    const map = {};
+    items.forEach(i => {
+      const v = i.vendedor || "Sin asignar";
+      if (!map[v]) map[v] = { vendedor: v, quoteIds: new Set(), total: 0 };
+      map[v].quoteIds.add(i.quoteId);
+      map[v].total += i.subtotal || 0;
+    });
+    const ranked = Object.values(map)
+      .map(v => ({ vendedor: v.vendedor, count: v.quoteIds.size, total: v.total }))
+      .sort((a, b) => b.count - a.count);
+    const maxCount = ranked.length ? ranked[0].count : 1;
+    return ranked.map(v => ({ ...v, pct: Math.round(v.count / maxCount * 100) }));
+  }, [items]);
+
   /* G. CSV export */
   function exportCSV() {
     const headers = ["Fecha","N°Cot","Cliente","Descripción","Cant","Costo ARS","PV c/IVA","Markup %","GM %","Moneda","Vendedor","Estado"];
@@ -605,37 +622,67 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                 </div>
               )}
 
-              {/* ── P2: pipeline de cotizaciones ── */}
-              {pipeline && (
-                <div className="ci-pipeline">
-                  <div className="ci-pipeline__header">
-                    <span className="ci-pipeline__title">Pipeline de cotizaciones</span>
-                    {pipeline.tasaAcept !== null && (
-                      <span className="ci-pipeline__rate">
-                        Tasa de aceptación: <strong>{pipeline.tasaAcept}%</strong>
-                      </span>
-                    )}
-                    <span className="ci-pipeline__total">{pipeline.total} cots.</span>
-                  </div>
-                  <div className="ci-funnel">
-                    {FUNNEL_STATES.map(estado => {
-                      const count = pipeline.counts[estado];
-                      if (!count && estado === "borrador") return null;
-                      const pct = Math.round(count / pipeline.maxCount * 100);
-                      return (
-                        <div key={estado} className="ci-funnel__row">
-                          <span className="ci-funnel__label">{ESTADO_LABELS[estado]}</span>
-                          <div className="ci-funnel__bar-wrap">
-                            <div
-                              className={`ci-funnel__bar ci-funnel__bar--${estado}`}
-                              style={{ width: `${Math.max(pct, count > 0 ? 3 : 0)}%` }}
-                            />
+              {/* ── P2/P3: pipeline + ranking vendedores (fila de dos widgets) ── */}
+              {(pipeline || vendorRanking.length > 0) && (
+                <div className="ci-widgets-row">
+
+                  {pipeline && (
+                    <div className="ci-pipeline ci-widget">
+                      <div className="ci-pipeline__header">
+                        <span className="ci-pipeline__title">Pipeline de cotizaciones</span>
+                        {pipeline.tasaAcept !== null && (
+                          <span className="ci-pipeline__rate">
+                            Tasa: <strong>{pipeline.tasaAcept}%</strong>
+                          </span>
+                        )}
+                        <span className="ci-pipeline__total">{pipeline.total} cots.</span>
+                      </div>
+                      <div className="ci-funnel">
+                        {FUNNEL_STATES.map(estado => {
+                          const count = pipeline.counts[estado];
+                          if (!count && estado === "borrador") return null;
+                          const pct = Math.round(count / pipeline.maxCount * 100);
+                          return (
+                            <div key={estado} className="ci-funnel__row">
+                              <span className="ci-funnel__label">{ESTADO_LABELS[estado]}</span>
+                              <div className="ci-funnel__bar-wrap">
+                                <div
+                                  className={`ci-funnel__bar ci-funnel__bar--${estado}`}
+                                  style={{ width: `${Math.max(pct, count > 0 ? 3 : 0)}%` }}
+                                />
+                              </div>
+                              <span className="ci-funnel__count">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {vendorRanking.length > 0 && (
+                    <div className="ci-ranking ci-widget">
+                      <div className="ci-pipeline__header">
+                        <span className="ci-pipeline__title">Ranking de vendedores</span>
+                        <span className="ci-pipeline__total">{vendorRanking.length} vendedores</span>
+                      </div>
+                      <div className="ci-funnel">
+                        {vendorRanking.map(v => (
+                          <div key={v.vendedor} className="ci-funnel__row ci-ranking__row">
+                            <span className="ci-funnel__label">{v.vendedor.split(" ")[0]}</span>
+                            <div className="ci-funnel__bar-wrap">
+                              <div
+                                className="ci-funnel__bar ci-ranking__bar"
+                                style={{ width: `${Math.max(v.pct, 3)}%` }}
+                              />
+                            </div>
+                            <span className="ci-funnel__count">{v.count}</span>
+                            <span className="ci-ranking__total">{fARS(v.total)}</span>
                           </div>
-                          <span className="ci-funnel__count">{count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               )}
 
