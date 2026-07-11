@@ -433,25 +433,28 @@
 }
 
 /* ── abrir botón ────────────────────────────────────────────────────── */
+/* ── Botón Ver/Editar — acción secundaria (outline sutil) ── */
 .ci-open-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1.5px solid rgba(15, 36, 68, .14);
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 36, 68, .18);
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .13s, color .13s, border-color .13s;
+}
+.ci-open-btn:hover {
   background: #f1f5f9;
   color: #185fa5;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s, border-color .15s;
-}
-
-.ci-open-btn:hover {
-  background: #dbeafe;
-  border-color: #185fa5;
+  border-color: rgba(24, 95, 165, .3);
 }
 
 /* ── E. Highlight ───────────────────────────────────────────────────── */
@@ -518,27 +521,32 @@
 .ci-csv-btn:disabled { opacity: .4; cursor: default; }
 
 /* ── A. Usar en renglón button ──────────────────────────────────────── */
+/* ── Botón Usar producto — acción primaria (sólido verde) ── */
 .ci-use-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 26px;
-  padding: 0 9px;
+  padding: 0 10px;
   border-radius: 6px;
-  border: 1.5px solid rgba(22, 163, 74, .3);
-  background: rgba(22, 163, 74, .07);
-  color: #166534;
+  border: none;
+  background: #16a34a;
+  color: #fff;
   font-family: inherit;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: background .13s, border-color .13s;
+  transition: background .13s, box-shadow .13s;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, .3);
 }
-
 .ci-use-btn:hover {
-  background: rgba(22, 163, 74, .15);
-  border-color: rgba(22, 163, 74, .5);
+  background: #15803d;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, .4);
+}
+.ci-use-btn:active {
+  background: #166534;
+  box-shadow: none;
 }
 
 /* ── C. Sparkline KPI card ──────────────────────────────────────────── */
@@ -623,6 +631,84 @@
 }
 
 .cot-hist-hint strong { color: #064e3b; font-weight: 800; }
+
+.cot-hist-hint__sugg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(16, 185, 129, .15);
+}
+.cot-hist-hint__sugg-label {
+  font-size: 10.5px;
+  color: #065f46;
+  white-space: nowrap;
+}
+.cot-hist-hint__sugg-btn {
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid rgba(16, 185, 129, .3);
+  background: rgba(16, 185, 129, .08);
+  color: #065f46;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .13s;
+}
+.cot-hist-hint__sugg-btn:hover { background: rgba(16, 185, 129, .18); }
+.cot-hist-hint__sugg-btn:active { background: rgba(16, 185, 129, .28); }
+
+/* ── Indicadores de antigüedad de precio ── */
+.ci-age-dot {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 7px;
+  vertical-align: middle;
+  line-height: 1;
+  cursor: default;
+}
+.ci-age-dot--warn  { color: #d97706; }
+.ci-age-dot--alert { color: #dc2626; }
+
+/* ── Tendencia de costo por producto+proveedor ── */
+.ci-cost-trend {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
+  cursor: default;
+}
+.ci-cost-trend--up   { color: #dc2626; }   /* sube = alerta, mayor costo */
+.ci-cost-trend--down { color: #16a34a; }   /* baja = bueno, menor costo */
+
+/* ── Alerta de cambio de costo respecto al registro más reciente ── */
+.ci-cost-chg {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  color: #d97706;
+  cursor: default;
+  vertical-align: middle;
+}
+
+/* ── Tasa de conversión histórica por ítem ── */
+.ci-conv {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.ci-conv--good { background: rgba(22, 163, 74, .1);  color: #15803d; }
+.ci-conv--mid  { background: rgba(217, 119, 6, .1);  color: #b45309; }
+.ci-conv--low  { background: rgba(220, 38, 38, .1);  color: #b91c1c; }
 
 /* ═══════════════════════════════════════════════════════════════════
    DARK MODE
@@ -718,11 +804,11 @@
 [data-theme="dark"] .ci-estado--seguimiento { background: rgba(234, 179, 8, .12); color: #fbbf24; }
 
 [data-theme="dark"] .ci-open-btn {
-  background: #242424;
+  background: transparent;
   border-color: #3C3C3C;
-  color: #93c5fd;
+  color: #7A8A9A;
 }
-[data-theme="dark"] .ci-open-btn:hover { background: rgba(37, 99, 235, .2); border-color: #4d7cbc; }
+[data-theme="dark"] .ci-open-btn:hover { background: #242424; color: #93c5fd; border-color: #4d7cbc; }
 
 [data-theme="dark"] .ci-empty       { color: #5A5A5A; }
 [data-theme="dark"] .ci-limit-note  { color: #5A5A5A; border-top-color: #2A2A2A; }
@@ -744,11 +830,29 @@
 [data-theme="dark"] .ci-csv-btn:hover:not(:disabled) { background: #2A2A2A; border-color: #4A4A4A; }
 
 [data-theme="dark"] .ci-use-btn {
-  background: rgba(22, 163, 74, .1);
-  border-color: rgba(22, 163, 74, .25);
-  color: #4ade80;
+  background: #15803d;
+  border: none;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, .25);
 }
-[data-theme="dark"] .ci-use-btn:hover { background: rgba(22, 163, 74, .18); border-color: rgba(22, 163, 74, .45); }
+[data-theme="dark"] .ci-use-btn:hover  { background: #166534; box-shadow: 0 2px 6px rgba(22, 163, 74, .35); }
+[data-theme="dark"] .ci-use-btn:active { background: #14532d; box-shadow: none; }
+
+/* Dark: age dots */
+[data-theme="dark"] .ci-age-dot--warn  { color: #fbbf24; }
+[data-theme="dark"] .ci-age-dot--alert { color: #f87171; }
+
+/* Dark: cost trend arrows */
+[data-theme="dark"] .ci-cost-trend--up   { color: #f87171; }
+[data-theme="dark"] .ci-cost-trend--down { color: #4ade80; }
+
+/* Dark: cost change stale warning */
+[data-theme="dark"] .ci-cost-chg { color: #fbbf24; }
+
+/* Dark: conversion rate badge */
+[data-theme="dark"] .ci-conv--good { background: rgba(22, 163, 74, .15);  color: #4ade80; }
+[data-theme="dark"] .ci-conv--mid  { background: rgba(217, 119, 6, .15);  color: #fbbf24; }
+[data-theme="dark"] .ci-conv--low  { background: rgba(220, 38, 38, .15);  color: #f87171; }
 
 [data-theme="dark"] .ci-td-sub { color: #5A5A5A; }
 [data-theme="dark"] .ci-count-badge { background: rgba(77, 124, 188, .18); color: #93c5fd; }
@@ -759,6 +863,15 @@
   color: #6ee7b7;
 }
 [data-theme="dark"] .cot-hist-hint strong { color: #a7f3d0; }
+[data-theme="dark"] .cot-hist-hint__sugg { border-top-color: rgba(16, 185, 129, .12); }
+[data-theme="dark"] .cot-hist-hint__sugg-label { color: #6ee7b7; }
+[data-theme="dark"] .cot-hist-hint__sugg-btn {
+  border-color: rgba(16, 185, 129, .22);
+  background: rgba(16, 185, 129, .07);
+  color: #6ee7b7;
+}
+[data-theme="dark"] .cot-hist-hint__sugg-btn:hover  { background: rgba(16, 185, 129, .14); }
+[data-theme="dark"] .cot-hist-hint__sugg-btn:active { background: rgba(16, 185, 129, .22); }
 
 /* sticky column dark mode */
 [data-theme="dark"] .ci-th-sticky                          { background: #222222; }

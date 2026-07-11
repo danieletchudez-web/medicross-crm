@@ -19,6 +19,27 @@ const median   = (arr) => {
 const GM_RANGE = [-50, 95];   // % gross margin
 const MK_RANGE = [-50, 900];  // % markup
 
+/* Estados de cotización agrupados */
+const WON_STATES  = new Set(["aceptada", "ganada", "facturada", "cobrada"]);
+const LOST_STATES = new Set(["rechazada", "vencida", "perdida"]);
+
+/* días transcurridos desde una fecha ISO */
+function daysSince(fecha) {
+  if (!fecha) return 999;
+  return Math.max(0, Math.floor((Date.now() - new Date(fecha).getTime()) / 86400000));
+}
+
+/* clave de costo: identifica (producto, proveedor, moneda) para comparar costos entre cotizaciones */
+function getCostKey(item) {
+  const prod = item.codigo ? `c:${norm(item.codigo)}` : `d:${norm(item.descr).slice(0, 50)}`;
+  return `${prod}__${norm(item.empresa || "")}__${(item.moneda || "USD")}`;
+}
+
+/* clave de conversión: solo producto, sin proveedor */
+function getConvKey(item) {
+  return item.codigo ? `c:${norm(item.codigo)}` : `d:${norm(item.descr).slice(0, 50)}`;
+}
+
 const ESTADO_LABELS = {
   borrador: "Borrador", generado: "Generado", enviada: "Enviada",
   evaluacion: "En evaluación", aceptada: "Aceptada", rechazada: "Rechazada",
@@ -367,6 +388,52 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
       .filter(c => c.estado === "aceptada" && c.fecha && c.fecha < cutoffDate)
       .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
   }, [cotizacionesUniq, cutoffDate]);
+
+  /* Historial de costos por (producto + proveedor + moneda) — comparación en moneda original */
+  const costHistory = useMemo(() => {
+    if (!items) return {};
+    const map = {};
+    items.forEach(i => {
+      if (i.costo <= 0 || !i.empresa) return;
+      const key = getCostKey(i);
+      if (!map[key]) map[key] = { empresa: i.empresa, moneda: i.moneda, entries: [] };
+      map[key].entries.push({ fecha: i.fecha, costo: i.costo });
+    });
+    Object.values(map).forEach(h => {
+      h.entries.sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+      const costs = h.entries.map(e => e.costo).filter(c => c > 0);
+      h.latestCosto  = costs.length ? costs[costs.length - 1] : 0;
+      h.latestFecha  = h.entries.length ? h.entries[h.entries.length - 1].fecha : "";
+      if (costs.length >= 2) {
+        const last = costs[costs.length - 1];
+        const prev = costs[costs.length - 2];
+        const pct  = prev > 0 ? ((last - prev) / prev) * 100 : 0;
+        h.trendPct  = pct;
+        h.trend     = Math.abs(pct) < 3 ? "stable" : pct > 0 ? "up" : "down";
+      } else {
+        h.trend = "unknown"; h.trendPct = 0;
+      }
+    });
+    return map;
+  }, [items]);
+
+  /* Tasa de conversión a nivel de ítem individual por producto */
+  const convRates = useMemo(() => {
+    if (!items) return {};
+    const map = {};
+    items.forEach(i => {
+      const key = getConvKey(i);
+      if (!map[key]) map[key] = { won: 0, lost: 0 };
+      if (WON_STATES.has(i.estado))  map[key].won++;
+      else if (LOST_STATES.has(i.estado)) map[key].lost++;
+    });
+    const result = {};
+    Object.entries(map).forEach(([k, v]) => {
+      const total = v.won + v.lost;
+      result[k] = total >= 3 ? Math.round((v.won / total) * 100) : null;
+    });
+    return result;
+  }, [items]);
 
   /* P3 — Ranking de vendedores: agrega por items (todos, sin filtrar) */
   const vendorRanking = useMemo(() => {
@@ -768,9 +835,9 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                                 type="button"
                                 className="ci-use-btn"
                                 onClick={() => onUseInRenglon(g.lastItem)}
-                                title={`Usar "${g.descr}" en el renglón activo`}
+                                title={`Copiar "${g.descr}" al renglón activo de la cotización actual`}
                               >
-                                + Usar
+                                Usar producto
                               </button>
                             </td>
                           )}
@@ -797,23 +864,55 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                             {sortKey === key ? (sortDir > 0 ? " ↑" : " ↓") : ""}
                           </th>
                         ))}
-                        <th className="ci-th-action">Abrir</th>
-                        {onUseInRenglon && <th className="ci-th-action">Usar</th>}
+                        <th className="ci-th-action">Ver/Editar</th>
+                        {onUseInRenglon && <th className="ci-th-action">Usar producto</th>}
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.slice(0, 200).map((item, i) => (
+                      {filtered.slice(0, 200).map((item, i) => {
+                        /* ── indicadores por fila ── */
+                        const age     = daysSince(item.fecha);
+                        const ch      = costHistory[getCostKey(item)];
+                        const diffPct = ch && ch.latestCosto > 0 && item.costo > 0
+                          ? (item.costo - ch.latestCosto) / ch.latestCosto * 100
+                          : null;
+                        const costIsStale = diffPct !== null && Math.abs(diffPct) > 5;
+                        const conv    = convRates[getConvKey(item)];
+                        return (
                         <tr key={i} className="ci-tr">
-                          <td className="ci-td-sticky">{fmtDate(item.fecha)}</td>
+                          {/* Fecha + indicador de antigüedad de precio */}
+                          <td className="ci-td-sticky">
+                            {fmtDate(item.fecha)}
+                            {age > 60
+                              ? <span className="ci-age-dot ci-age-dot--alert" title={`Precio de hace ${age} días — posiblemente desactualizado por inflación o tipo de cambio`}>●</span>
+                              : age > 30
+                              ? <span className="ci-age-dot ci-age-dot--warn"  title={`Precio de hace ${age} días`}>●</span>
+                              : null}
+                          </td>
                           <td className="ci-td-num">#{item.quoteNum}</td>
                           <td className="ci-td-clip" title={item.institucion}>
                             <Highlight text={item.institucion || "—"} tokens={searchTokens} />
                           </td>
+                          {/* Descripción + tasa de conversión histórica del producto */}
                           <td className="ci-td-clip ci-td-descr" title={item.descr}>
                             <Highlight text={item.descr || item.codigo || "—"} tokens={searchTokens} />
+                            {conv !== null && conv !== undefined && (
+                              <span
+                                className={`ci-conv${conv >= 50 ? " ci-conv--good" : conv >= 25 ? " ci-conv--mid" : " ci-conv--low"}`}
+                                title={`Conversión histórica de este producto: ${conv}% de los ítems cotizados terminaron en Ganada/Facturada/Cobrada`}
+                              >{conv}%</span>
+                            )}
                           </td>
                           <td className="ci-td-r">{item.cant}</td>
-                          <td className="ci-td-r">{item.cARS > 0 ? fARS(item.cARS) : "—"}</td>
+                          {/* Costo ARS + tendencia de costo + alerta de cambio de costo */}
+                          <td className="ci-td-r">
+                            {item.cARS > 0 ? fARS(item.cARS) : "—"}
+                            {ch?.trend === "up"   && <span className="ci-cost-trend ci-cost-trend--up"   title={`Costo de ${item.empresa || "este proveedor"} subió ${ch.trendPct.toFixed(1)}% respecto al registro anterior (en ${item.moneda})`}>↑</span>}
+                            {ch?.trend === "down" && <span className="ci-cost-trend ci-cost-trend--down" title={`Costo de ${item.empresa || "este proveedor"} bajó ${Math.abs(ch.trendPct).toFixed(1)}% respecto al registro anterior (en ${item.moneda})`}>↓</span>}
+                            {costIsStale && (
+                              <span className="ci-cost-chg" title={`Este costo (${item.moneda} ${item.costo}) difiere ${diffPct > 0 ? "+" : ""}${diffPct.toFixed(1)}% del costo más reciente de ${item.empresa || "este proveedor"} — verificar antes de usar`}>⚠</span>
+                            )}
+                          </td>
                           <td className="ci-td-r ci-td-price">{item.pvARSc > 0 ? fARS(item.pvARSc) : "—"}</td>
                           <td className="ci-td-r">{item.mkPct > 0 ? fPct(item.mkPct) : "—"}</td>
                           <td className="ci-td-r">{item.gm > 0 ? fPct(item.gm) : "—"}</td>
@@ -824,31 +923,33 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                               {ESTADO_LABELS[item.estado] || item.estado}
                             </span>
                           </td>
+                          {/* Ver/Editar — acción secundaria */}
                           <td className="ci-td-action">
                             <button
                               type="button"
                               className="ci-open-btn"
                               onClick={() => onOpenQuote(item.quoteId)}
-                              title={`Abrir cotización #${item.quoteNum}`}
+                              title="Ver y editar la cotización completa donde aparece este ítem"
                             >
-                              →
+                              Ver/Editar
                             </button>
                           </td>
-                          {/* A. Usar en renglón */}
+                          {/* Usar producto — acción primaria */}
                           {onUseInRenglon && (
                             <td className="ci-td-action">
                               <button
                                 type="button"
                                 className="ci-use-btn"
                                 onClick={() => onUseInRenglon(item)}
-                                title="Copiar descripción al renglón activo"
+                                title="Copiar este producto (descripción, código, proveedor) al renglón activo de la cotización actual"
                               >
-                                + Usar
+                                Usar producto
                               </button>
                             </td>
                           )}
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                   {filtered.length > 200 && (
@@ -880,13 +981,25 @@ export function useQuoteHint(cotHistory, descr) {
     });
     const withPrice = matches.filter(m => m.pvARSc > 0);
     if (!withPrice.length) return null;
-    const prices = withPrice.map(m => m.pvARSc);
+    const prices  = withPrice.map(m => m.pvARSc);
     const byDate  = [...withPrice].sort((a, b) => String(b.fecha || "").localeCompare(String(a.fecha || "")));
+    /* percentiles de markup (en %, filtrados de outliers) para sugerencias */
+    const markups  = withPrice.map(m => m.mkPct).filter(m => m > 0 && m < 900);
+    const sortedMk = [...markups].sort((a, b) => a - b);
+    const sortedPv = [...prices].sort((a, b) => a - b);
+    const pAt = (arr, p) => arr.length ? arr[Math.max(0, Math.min(arr.length - 1, Math.floor((arr.length - 1) * p)))] : null;
     return {
-      count:     matches.length,
-      lastPrice: byDate[0]?.pvARSc || 0,
-      avgPrice:  avg(prices),
-      avgGM:     avg(withPrice.map(m => m.gm)),
+      count:      matches.length,
+      lastPrice:  byDate[0]?.pvARSc || 0,
+      avgPrice:   avg(prices),
+      avgGM:      avg(withPrice.map(m => m.gm).filter(g => g > -50 && g < 95)),
+      /* sugerencias: markup% convertible a multiplicador = 1 + mkPct/100 */
+      p25Markup:  pAt(sortedMk, 0.25),
+      medMarkup:  pAt(sortedMk, 0.50),
+      p75Markup:  pAt(sortedMk, 0.75),
+      p25Price:   pAt(sortedPv, 0.25),
+      medPrice:   pAt(sortedPv, 0.50),
+      p75Price:   pAt(sortedPv, 0.75),
     };
   }, [cotHistory, descr]);
 }

@@ -202,9 +202,14 @@ function CotInstCombobox({ value, onChange }) {
 }
 
 /* Hint contextual por renglón: usa datos de cotizaciones propias ya cargados */
-function CotHistHint({ cotHistory, descr }) {
+function CotHistHint({ cotHistory, descr, onApply }) {
   const hint = useQuoteHint(cotHistory, descr);
   if (!hint) return null;
+  const options = [
+    { label: "Conservador", mkPct: hint.p25Markup, price: hint.p25Price },
+    { label: "Promedio",    mkPct: hint.medMarkup,  price: hint.medPrice  },
+    { label: "Agresivo",    mkPct: hint.p75Markup,  price: hint.p75Price  },
+  ].filter(o => o.mkPct != null && o.mkPct > 0);
   return (
     <div className="cot-hist-hint">
       <span>📊</span>
@@ -214,6 +219,18 @@ function CotHistHint({ cotHistory, descr }) {
         {" · "}Prom: <strong>{fARS(hint.avgPrice)}</strong>
         {hint.avgGM > 0 && <>{" · "}GM prom: <strong>{fPct(hint.avgGM)}</strong></>}
       </span>
+      {onApply && options.length > 0 && (
+        <div className="cot-hist-hint__sugg">
+          <span className="cot-hist-hint__sugg-label">Aplicar:</span>
+          {options.map(o => (
+            <button key={o.label} type="button" className="cot-hist-hint__sugg-btn"
+                    onClick={() => onApply(1 + o.mkPct / 100)}
+                    title={`${o.label}: markup ×${(1 + o.mkPct / 100).toFixed(2)} — precio ref. ${fARS(o.price)}`}>
+              {o.label} ×{(1 + o.mkPct / 100).toFixed(2)}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -362,6 +379,16 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     setTimeout(() => {
       document.querySelectorAll(".cot-renglon")[rIdx]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 80);
+  }
+
+  /* ── Aplicar sugerencia de markup desde CotHistHint ── */
+  function handleApplySuggestion(markupMult) {
+    const targetId = activeRenglonId || renglones[renglones.length - 1]?.id;
+    if (!targetId) return;
+    setRenglones(prev => prev.map(r =>
+      r.id !== targetId ? r : { ...r, markup: String(markupMult.toFixed(3)), modoManual: "auto" }
+    ));
+    showToast(`Markup aplicado: ×${markupMult.toFixed(2)}`);
   }
 
   /* ── Price Intelligence ── */
@@ -1232,7 +1259,12 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                       </div>
                     );
                   })()}
-                  <CotHistHint cotHistory={cotHistory} descr={r.descr} />
+                  <CotHistHint cotHistory={cotHistory} descr={r.descr}
+                    onApply={markupMult => {
+                      setActiveRenglonId(r.id);
+                      handleApplySuggestion(markupMult);
+                    }}
+                  />
                   <div className="cot-divider"/>
                   <div className="cot-costs-row">
                     <div className="cot-field"><label>Moneda</label>
