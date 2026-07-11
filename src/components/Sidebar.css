@@ -27,8 +27,10 @@
   --sb-brand-height: 48px;
 
   --sb-ease:    cubic-bezier(0.4, 0, 0.2, 1);
+  --sb-ease-sf: cubic-bezier(0.65, 0, 0.35, 1); /* Salesforce-like ease */
   --sb-dur:     0.25s;
   --sb-dur-out: 0.2s;
+  --sb-dur-sf:  0.32s; /* unified expand/collapse duration */
 }
 
 /* ─── Modo oscuro — Sidebar estilo Rimu ──────────────────────────────────
@@ -179,9 +181,9 @@
   background: #0F172A;
   border-right: 1px solid rgba(255,255,255,0.06);
   will-change: width;
-  transition: width var(--sb-dur) var(--sb-ease),
-              min-width var(--sb-dur) var(--sb-ease),
-              box-shadow var(--sb-dur) var(--sb-ease);
+  transition: width     var(--sb-dur-sf) var(--sb-ease-sf),
+              min-width var(--sb-dur-sf) var(--sb-ease-sf),
+              box-shadow var(--sb-dur-sf) var(--sb-ease-sf);
 }
 
 @supports (height: 100dvh) {
@@ -444,7 +446,8 @@
   overflow: hidden;
   max-width: 180px;
   opacity: 1;
-  transition: opacity .2s ease .22s;
+  transition: opacity var(--sb-dur-sf) var(--sb-ease-sf) 0.08s,
+              width   var(--sb-dur-sf) var(--sb-ease-sf) 0.08s;
 }
 
 /* ─── Quick actions ──────────────────────────────────────────────────── */
@@ -626,9 +629,10 @@
   visibility: visible;
   transform: translateX(0);
   transform-origin: left center;
-  transition: color 0.15s,
-              opacity 150ms ease,
-              transform 150ms ease-in-out,
+  transition: color      var(--sb-dur-sf) var(--sb-ease-sf),
+              opacity    var(--sb-dur-sf) var(--sb-ease-sf) 0.08s,
+              width      var(--sb-dur-sf) var(--sb-ease-sf) 0.08s,
+              transform  var(--sb-dur-sf) var(--sb-ease-sf) 0.08s,
               visibility 0s linear 0s;
 }
 
@@ -667,7 +671,9 @@
   font-weight: 700;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background   var(--sb-dur-sf) var(--sb-ease-sf),
+              color        var(--sb-dur-sf) var(--sb-ease-sf),
+              border-color var(--sb-dur-sf) var(--sb-ease-sf);
   letter-spacing: 0.2px;
 }
 
@@ -1017,9 +1023,10 @@
     transform: translateX(-6px);
     pointer-events: none;
     /* visibility se aplica DESPUÉS de que opacity llegue a 0 */
-    transition: opacity 100ms ease 0s,
-                transform 100ms ease 0s,
-                visibility 0s linear 100ms;
+    transition: opacity    var(--sb-dur-sf) var(--sb-ease-sf) 0s,
+                width      var(--sb-dur-sf) var(--sb-ease-sf) 0s,
+                transform  var(--sb-dur-sf) var(--sb-ease-sf) 0s,
+                visibility 0s linear var(--sb-dur-sf);
   }
 
   /* Títulos de sección: igual que los labels pero sin tocar el padding
@@ -1028,7 +1035,8 @@
     opacity: 0;
     max-width: 0;
     pointer-events: none;
-    transition: opacity .12s ease 0s;
+    transition: opacity var(--sb-dur-sf) var(--sb-ease-sf) 0s,
+                width   var(--sb-dur-sf) var(--sb-ease-sf) 0s;
   }
 
   .sidebar--collapsed .sidebar-nav__badge {
@@ -1502,10 +1510,10 @@
   /* Collapse (exit): no delay → sidebar folds immediately when mouse leaves */
   .sidebar--collapsed {
     margin-right: 0;
-    transition: width 0.2s var(--sb-ease),
-                min-width 0.2s var(--sb-ease),
-                margin-right 0.2s var(--sb-ease),
-                box-shadow 0.2s var(--sb-ease);
+    transition: width        var(--sb-dur-sf) var(--sb-ease-sf),
+                min-width    var(--sb-dur-sf) var(--sb-ease-sf),
+                margin-right var(--sb-dur-sf) var(--sb-ease-sf),
+                box-shadow   var(--sb-dur-sf) var(--sb-ease-sf);
   }
 
   /* Expand: sidebar--expanded class is added by JS hover-intent timer (120ms after mouse enters).
@@ -1517,10 +1525,10 @@
     min-width: 224px;
     margin-right: -152px; /* 72px − 224px: sidebar overlays without pushing content */
     box-shadow: 6px 0 28px rgba(0, 0, 0, 0.30);
-    transition: width var(--sb-dur-out) var(--sb-ease),
-                min-width var(--sb-dur-out) var(--sb-ease),
-                margin-right var(--sb-dur-out) var(--sb-ease),
-                box-shadow var(--sb-dur-out) var(--sb-ease);
+    transition: width        var(--sb-dur-sf) var(--sb-ease-sf),
+                min-width    var(--sb-dur-sf) var(--sb-ease-sf),
+                margin-right var(--sb-dur-sf) var(--sb-ease-sf),
+                box-shadow   var(--sb-dur-sf) var(--sb-ease-sf);
   }
 
   /* Body: switch from center-aligned rail to left-aligned panel */
@@ -1587,8 +1595,8 @@
   }
 
   /* Reveal labels: JS already waited 120ms (hover intent) before adding sidebar--expanded.
-     Nav labels: start at 20ms (sidebar ~9% expanded), done at 180ms (sidebar ~82% expanded).
-     Section labels: start at 80ms (sidebar ~36% — wide enough to avoid truncation), done at 200ms. */
+     Delay 0.08s ensures the panel has gained enough width before text starts fading in,
+     preventing the crushed/clipped text that appears when opacity starts from 0px width. */
   .sidebar--collapsed.sidebar--expanded .sidebar-nav__label,
   .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle__label,
   .sidebar--collapsed.sidebar--expanded .sidebar-logout__label,
@@ -1598,17 +1606,19 @@
     visibility: visible;
     transform: translateX(0);
     pointer-events: auto;
-    transition: opacity 0.14s var(--sb-ease) 0.06s,
-                transform 0.14s var(--sb-ease) 0.06s,
+    transition: opacity    var(--sb-dur-sf) var(--sb-ease-sf) 0.08s,
+                width      var(--sb-dur-sf) var(--sb-ease-sf) 0.08s,
+                transform  var(--sb-dur-sf) var(--sb-ease-sf) 0.08s,
                 visibility 0s linear 0s;
   }
 
-  /* Títulos de sección: aparecen más tarde, cuando el sidebar es suficientemente ancho */
+  /* Títulos de sección: aparecen un poco más tarde que los nav labels */
   .sidebar--collapsed.sidebar--expanded .sidebar-section__label {
     opacity: 1;
     max-width: 180px;
     pointer-events: auto;
-    transition: opacity 0.1s var(--sb-ease) 0.1s;
+    transition: opacity var(--sb-dur-sf) var(--sb-ease-sf) 0.1s,
+                width   var(--sb-dur-sf) var(--sb-ease-sf) 0.1s;
   }
 
   /* Restore elements hidden via display:none in collapsed rail */
