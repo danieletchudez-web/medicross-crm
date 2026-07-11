@@ -9,8 +9,9 @@
   margin: 0 0 18px;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(15, 36, 68, .1);
+  border: 1px solid rgba(15, 36, 68, .13);
   background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 36, 68, .06);
 }
 
 /* ── botón toggle ───────────────────────────────────────────────────── */
@@ -21,22 +22,23 @@
   gap: 10px;
   padding: 14px 18px;
   border: none;
-  background: #f8fafc;
+  background: #eef2f7;
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
   color: #0f2444;
   text-align: left;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid rgba(15, 36, 68, .08);
+  box-shadow: inset 3px 0 0 rgba(99, 102, 241, .55);
   transition: background .15s;
 }
 
-.ci-toggle:hover { background: #f1f5f9; }
+.ci-toggle:hover { background: #e4eaf3; }
 
 .ci-toggle__ico   { font-size: 15px; flex-shrink: 0; }
 .ci-toggle__label { flex: 1; }
-.ci-toggle__chev  { font-size: 10px; opacity: .5; flex-shrink: 0; }
+.ci-toggle__chev  { font-size: 12px; opacity: .65; flex-shrink: 0; }
 .ci-toggle__badge {
   background: #e0e7ff;
   color: #3730a3;
@@ -715,16 +717,18 @@
    ═══════════════════════════════════════════════════════════════════ */
 [data-theme="dark"] .ci-wrap {
   background: #1A1A1A;
-  border-color: #2A2A2A;
+  border-color: #303030;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
 }
 
 [data-theme="dark"] .ci-toggle {
-  background: #1F1F1F;
+  background: #222831;
   color: #EDEDED;
-  border-bottom-color: transparent;
+  border-bottom-color: #2A2A2A;
+  box-shadow: inset 3px 0 0 rgba(129, 140, 248, .6);
 }
 
-[data-theme="dark"] .ci-toggle:hover { background: #242424; }
+[data-theme="dark"] .ci-toggle:hover { background: #263040; }
 [data-theme="dark"] .ci-toggle__badge { background: rgba(99, 102, 241, .2); color: #a5b4fc; }
 
 [data-theme="dark"] .ci-panel { border-top-color: #2A2A2A; }
