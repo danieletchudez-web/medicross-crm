@@ -1536,18 +1536,20 @@
     align-items: flex-start;
   }
 
-  /* Nav: restore expanded padding and alignment */
+  /* Nav: misma geometría vertical que el estado colapsado → cero corrimiento acumulado.
+     Solo cambia align-items (center→flex-start) para anclar labels a la izquierda.
+     padding-top=10px y gap=8px igualan al estado colapsado. */
   .sidebar--collapsed.sidebar--expanded .sidebar-nav {
     width: 100%;
-    padding: 12px 12px 8px;
+    padding: 10px 12px 8px;   /* top:10px = mismo que colapsado (era 12px) */
     align-items: flex-start;
-    gap: 1px;
+    gap: 8px;                  /* mismo que colapsado (era 1px) */
   }
 
   .sidebar--collapsed.sidebar--expanded .sidebar-section {
     width: 100%;
     align-items: flex-start;
-    gap: 1px;
+    gap: 7px;                  /* mismo que colapsado (era 1px) */
   }
 
   .sidebar--collapsed.sidebar--expanded .sidebar-nav__item-wrap {
@@ -1555,11 +1557,12 @@
     justify-content: flex-start;
   }
 
-  /* Nav items: from centered square to full-width row */
+  /* Nav items: conservar height=42px del colapsado → el ítem bajo el cursor no se mueve.
+     Solo cambia justify-content y width para mostrar el label. */
   .sidebar--collapsed.sidebar--expanded .sidebar-nav__item {
     width: 100%;
-    height: auto;
-    padding: 8px 10px;
+    height: 42px;           /* mismo que colapsado (era auto/≈34px) */
+    padding: 0 10px;        /* sin padding vertical — height explícito centra el contenido */
     justify-content: flex-start;
     gap: 10px;
     border-radius: 9px;
@@ -1626,17 +1629,21 @@
     display: flex;
   }
 
-  /* Group row (MÓDULOS label + Editar button): fade in with total 0.2s — delay 0.06s + duration 0.14s */
+  /* Group row (MÓDULOS): mantenido oculto igual que en colapsado para que no sume
+     altura (~15px) que desplace los ítems de nav hacia abajo. */
   .sidebar--collapsed.sidebar--expanded .sidebar-nav__group-row {
-    display: flex;
-    animation: sb-fadein 0.14s var(--sb-ease) 0.06s backwards;
+    display: none;           /* era: display:flex — causaba +15px de corrimiento */
   }
 
   .sidebar--collapsed.sidebar--expanded .sidebar-user__role {
     display: inline-flex;
   }
 
-  .sidebar--collapsed.sidebar--expanded .sidebar-section__divider,
+  /* Section dividers: mantenidos ocultos igual que en colapsado (cada uno suma 13px).
+     Solo se muestra el switch del theme-toggle que no afecta posición de nav items. */
+  .sidebar--collapsed.sidebar--expanded .sidebar-section__divider {
+    display: none;           /* era: display:block — causaba +13px/sección de corrimiento */
+  }
   .sidebar--collapsed.sidebar--expanded .sidebar-theme-toggle__switch {
     display: block;
   }
@@ -1666,22 +1673,24 @@
     font-size: 9px;
   }
 
-  /* Quick actions: restore expanded layout and stop breathe animation */
+  /* Quick actions: conservar altura de 42px igual que en colapsado.
+     Los botones de acción rápida están ANTES de todos los nav items, por lo que
+     cada px de diferencia en su altura desplaza acumulativamente TODOS los items. */
   .sidebar--collapsed.sidebar--expanded .sidebar-quick {
     width: 100%;
-    margin: 0 0 10px;   /* sin margen extra — la nav ya tiene padding 12px */
-    gap: 6px;
+    margin: 0 0 6px;    /* mismo que colapsado (era 10px — sumaba 4px extra) */
+    gap: 7px;           /* mismo que colapsado (era 6px) */
     justify-items: stretch;
   }
 
   .sidebar--collapsed.sidebar--expanded .sidebar-quick button {
     width: auto;
-    height: auto;
-    padding: 8px 10px;  /* padding-left=10px idéntico al colapsado → cero jump horizontal */
+    height: 42px;       /* mismo que colapsado (era auto/≈32px — 10px×3 botones = 30px) */
+    padding: 0 10px;    /* sin padding vertical — height explícito centra el contenido */
     text-align: left;
-    border-radius: 8px;
+    border-radius: 13px;
     animation: none;
-    transform: translateX(0);  /* anima desde los 4px del colapsado → movimiento suave */
+    transform: translateX(0);
     transition: transform var(--sb-dur-out) var(--sb-ease);
   }
 
