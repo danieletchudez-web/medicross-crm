@@ -452,10 +452,10 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
     return ranked.map(v => ({ ...v, pct: Math.round(v.count / maxCount * 100) }));
   }, [items]);
 
-  /* G. CSV export */
+  /* G. Exports */
   function exportCSV() {
     const headers = ["Fecha","N°Cot","Cliente","Descripción","Cant","Costo ARS","PV c/IVA","Markup %","GM %","Moneda","Vendedor","Estado"];
-    const rows = filtered.slice(0, 2000).map(i => [
+    const rows = filtered.slice(0, 5000).map(i => [
       fmtDate(i.fecha), "#" + i.quoteNum, i.institucion || "",
       i.descr || i.codigo || "", i.cant,
       i.cARS > 0 ? i.cARS.toFixed(2) : "",
@@ -474,6 +474,199 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
     a.download = `inteligencia_comercial_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  async function exportXLSX() {
+    const XLSX = await import("xlsx");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const data = filtered.slice(0, 5000);
+
+    // ── Hoja 1: Detalle completo ──────────────────────────────────────
+    const detHeaders = [
+      "Fecha","N° Cotización","Cliente / Institución","Descripción","Marca",
+      "Empresa / Proveedor","Código","Cantidad","Moneda","Costo Original",
+      "Costo ARS","PV s/IVA ARS","PV c/IVA ARS","Markup %","GM %",
+      "Subtotal ARS","Vendedor","Estado","TC USD→ARS",
+    ];
+    const detRows = data.map(i => [
+      i.fecha ? new Date(i.fecha + "T00:00:00") : "",
+      i.quoteNum || "",
+      i.institucion || "",
+      i.descr || i.codigo || "",
+      i.marca || "",
+      i.empresa || "",
+      i.codigo || "",
+      i.cant || 1,
+      i.moneda || "",
+      i.costo > 0 ? i.costo : "",
+      i.cARS > 0 ? +i.cARS.toFixed(2) : "",
+      i.pvARSs > 0 ? +i.pvARSs.toFixed(2) : "",
+      i.pvARSc > 0 ? +i.pvARSc.toFixed(2) : "",
+      i.mkPct != null ? +i.mkPct.toFixed(2) : "",
+      i.gm != null ? +i.gm.toFixed(2) : "",
+      i.pvARSc > 0 ? +(i.pvARSc * (i.cant || 1)).toFixed(2) : "",
+      i.vendedor || "",
+      i.estado || "",
+      i.tc > 0 ? i.tc : "",
+    ]);
+    const wsDet = XLSX.utils.aoa_to_sheet([detHeaders, ...detRows]);
+    // date format for column A
+    const dateStyle = { numFmt: "dd/mm/yyyy" };
+    for (let r = 1; r <= detRows.length; r++) {
+      const cell = wsDet[XLSX.utils.encode_cell({ r, c: 0 })];
+      if (cell && cell.t === "d") cell.z = "dd/mm/yyyy";
+    }
+    wsDet["!cols"] = [
+      { wch: 11 }, { wch: 13 }, { wch: 36 }, { wch: 40 }, { wch: 20 },
+      { wch: 24 }, { wch: 14 }, { wch: 9 }, { wch: 7 }, { wch: 14 },
+      { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 8 },
+      { wch: 16 }, { wch: 20 }, { wch: 12 }, { wch: 12 },
+    ];
+    wsDet["!freeze"] = { xSplit: 0, ySplit: 1 };
+
+    // ── Hoja 2: Resumen por Vendedor ──────────────────────────────────
+    const vendMap = {};
+    for (const i of data) {
+      const v = i.vendedor || "(Sin asignar)";
+      if (!vendMap[v]) vendMap[v] = { items: 0, cots: new Set(), totalARS: 0, mks: [], gms: [] };
+      vendMap[v].items++;
+      vendMap[v].cots.add(i.quoteNum);
+      if (i.pvARSc > 0) {
+        vendMap[v].totalARS += i.pvARSc * (i.cant || 1);
+        vendMap[v].mks.push(i.mkPct);
+        vendMap[v].gms.push(i.gm);
+      }
+    }
+    const vendHeaders = ["Vendedor","N° Ítems","N° Cotizaciones","Total Vendido ARS","Markup Prom %","GM Prom %"];
+    const vendRows = Object.entries(vendMap)
+      .sort(([, a], [, b]) => b.totalARS - a.totalARS)
+      .map(([v, d]) => [
+        v, d.items, d.cots.size,
+        +d.totalARS.toFixed(2),
+        d.mks.length ? +(d.mks.reduce((s, x) => s + x, 0) / d.mks.length).toFixed(2) : "",
+        d.gms.length ? +(d.gms.reduce((s, x) => s + x, 0) / d.gms.length).toFixed(2) : "",
+      ]);
+    const wsVend = XLSX.utils.aoa_to_sheet([vendHeaders, ...vendRows]);
+    wsVend["!cols"] = [{ wch: 22 },{ wch: 12 },{ wch: 16 },{ wch: 18 },{ wch: 14 },{ wch: 10 }];
+    wsVend["!freeze"] = { xSplit: 0, ySplit: 1 };
+
+    // ── Hoja 3: Resumen por Cliente ───────────────────────────────────
+    const cliMap = {};
+    for (const i of data) {
+      const c = i.institucion || "(Sin cliente)";
+      if (!cliMap[c]) cliMap[c] = { items: 0, cots: new Set(), totalARS: 0 };
+      cliMap[c].items++;
+      cliMap[c].cots.add(i.quoteNum);
+      if (i.pvARSc > 0) cliMap[c].totalARS += i.pvARSc * (i.cant || 1);
+    }
+    const cliHeaders = ["Cliente / Institución","N° Ítems","N° Cotizaciones","Total Facturado ARS"];
+    const cliRows = Object.entries(cliMap)
+      .sort(([, a], [, b]) => b.totalARS - a.totalARS)
+      .map(([c, d]) => [c, d.items, d.cots.size, +d.totalARS.toFixed(2)]);
+    const wsCli = XLSX.utils.aoa_to_sheet([cliHeaders, ...cliRows]);
+    wsCli["!cols"] = [{ wch: 44 },{ wch: 12 },{ wch: 16 },{ wch: 20 }];
+    wsCli["!freeze"] = { xSplit: 0, ySplit: 1 };
+
+    // ── Armar workbook ────────────────────────────────────────────────
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsDet,  "Detalle");
+    XLSX.utils.book_append_sheet(wb, wsVend, "Por Vendedor");
+    XLSX.utils.book_append_sheet(wb, wsCli,  "Por Cliente");
+    XLSX.writeFile(wb, `inteligencia_comercial_${dateStr}.xlsx`);
+  }
+
+  function exportPrint() {
+    const data = filtered.slice(0, 5000);
+    const dateStr = new Date().toLocaleDateString("es-AR", { day:"2-digit", month:"long", year:"numeric" });
+    const totalARS = data.reduce((s, i) => s + (i.pvARSc > 0 ? i.pvARSc * (i.cant || 1) : 0), 0);
+    const avgMk = (() => { const v = data.filter(i => i.mkPct > 0); return v.length ? v.reduce((s,i)=>s+i.mkPct,0)/v.length : 0; })();
+    const avgGM = (() => { const v = data.filter(i => i.gm > 0);   return v.length ? v.reduce((s,i)=>s+i.gm,0)/v.length   : 0; })();
+    const fmtN = n => Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const activeFilters = [
+      search && `Búsqueda: "${search}"`,
+      fVendedor && `Vendedor: ${fVendedor}`,
+      fEstado && `Estado: ${fEstado}`,
+      fMoneda && `Moneda: ${fMoneda}`,
+      fDesde && `Desde: ${fmtDate(fDesde)}`,
+      fHasta && `Hasta: ${fmtDate(fHasta)}`,
+    ].filter(Boolean).join(" · ");
+
+    const rows = data.map((i, idx) => `
+      <tr class="${idx % 2 === 0 ? "even" : "odd"}">
+        <td>${fmtDate(i.fecha)}</td>
+        <td>#${i.quoteNum}</td>
+        <td>${i.institucion || "—"}</td>
+        <td class="td-desc">${i.descr || i.codigo || "—"}</td>
+        <td>${i.marca || "—"}</td>
+        <td class="r">${i.cant || 1}</td>
+        <td class="r">${i.moneda}</td>
+        <td class="r">${i.cARS > 0 ? "$ " + fmtN(i.cARS) : "—"}</td>
+        <td class="r">${i.pvARSc > 0 ? "$ " + fmtN(i.pvARSc) : "—"}</td>
+        <td class="r">${i.mkPct > 0 ? i.mkPct.toFixed(1) + "%" : "—"}</td>
+        <td class="r">${i.gm > 0 ? i.gm.toFixed(1) + "%" : "—"}</td>
+        <td class="r">${i.pvARSc > 0 ? "$ " + fmtN(i.pvARSc * (i.cant||1)) : "—"}</td>
+        <td>${i.vendedor || "—"}</td>
+        <td class="estado estado-${i.estado}">${i.estado || "—"}</td>
+      </tr>`).join("");
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Inteligencia Comercial — ${dateStr}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #111; background: #fff; padding: 16px; }
+  h1 { font-size: 14pt; margin-bottom: 2px; }
+  .subtitle { color: #555; font-size: 9pt; margin-bottom: 8px; }
+  .kpis { display: flex; gap: 24px; margin-bottom: 10px; padding: 8px 12px; background: #f4f6fb; border-radius: 6px; }
+  .kpi { display: flex; flex-direction: column; }
+  .kpi span { font-size: 7.5pt; color: #666; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi strong { font-size: 11pt; font-weight: 700; }
+  .filters { font-size: 8pt; color: #555; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  thead th { background: #1e3a5f; color: #fff; padding: 5px 6px; text-align: left; white-space: nowrap; font-size: 7.5pt; }
+  th.r, td.r { text-align: right; }
+  td { padding: 4px 6px; border-bottom: 1px solid #e8ecf0; vertical-align: top; }
+  tr.even td { background: #f9fafb; }
+  .td-desc { max-width: 200px; word-break: break-word; }
+  .estado { font-size: 7pt; font-weight: 600; padding: 1px 5px; border-radius: 10px; white-space: nowrap; }
+  .estado-generado { background: #d1fae5; color: #065f46; }
+  .estado-borrador { background: #f3f4f6; color: #374151; }
+  .estado-enviada  { background: #dbeafe; color: #1d4ed8; }
+  .estado-aceptada { background: #d1fae5; color: #047857; }
+  .estado-ganada   { background: #d4edda; color: #166534; }
+  .estado-vencida  { background: #ffedd5; color: #c2410c; }
+  tfoot td { font-weight: 700; background: #eef2f7; padding: 5px 6px; border-top: 2px solid #1e3a5f; }
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+<h1>Inteligencia Comercial de Cotizaciones</h1>
+<p class="subtitle">Storing Insumos Médicos · Exportado el ${dateStr} · ${data.length} ítems</p>
+${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : ""}
+<div class="kpis">
+  <div class="kpi"><span>Total ARS</span><strong>$ ${fmtN(totalARS)}</strong></div>
+  <div class="kpi"><span>Ítems</span><strong>${data.length}</strong></div>
+  <div class="kpi"><span>Markup prom.</span><strong>${avgMk.toFixed(1)}%</strong></div>
+  <div class="kpi"><span>GM prom.</span><strong>${avgGM.toFixed(1)}%</strong></div>
+</div>
+<table>
+  <thead><tr>
+    <th>Fecha</th><th>#Cot</th><th>Cliente</th><th>Descripción</th><th>Marca</th>
+    <th class="r">Cant</th><th class="r">Mon.</th><th class="r">Costo ARS</th>
+    <th class="r">PV c/IVA</th><th class="r">Markup%</th><th class="r">GM%</th>
+    <th class="r">Subtotal</th><th>Vendedor</th><th>Estado</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot><tr>
+    <td colspan="11" style="text-align:right">Total general:</td>
+    <td class="r">$ ${fmtN(totalARS)}</td><td colspan="2"></td>
+  </tr></tfoot>
+</table>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Habilitá las ventanas emergentes para exportar a PDF."); return; }
+    win.document.write(html);
+    win.document.close();
   }
 
   const hasFilters = search || fDesde || fHasta || fVendedor || fEstado || fMoneda || fPrecioMin || fPrecioMax;
@@ -553,13 +746,32 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
                     onClick={() => setGrouped(true)}
                   >Agrupado</button>
                 </div>
-                {/* G. CSV */}
+                {/* G. Exports */}
+                <button
+                  className="ci-csv-btn"
+                  type="button"
+                  onClick={exportXLSX}
+                  disabled={!filtered.length}
+                  title="Exportar a Excel (.xlsx) con 3 hojas: Detalle, Por Vendedor, Por Cliente"
+                >
+                  ⬇ XLS
+                </button>
+                <button
+                  className="ci-csv-btn"
+                  type="button"
+                  onClick={exportPrint}
+                  disabled={!filtered.length}
+                  title="Exportar a PDF (ventana de impresión)"
+                >
+                  ⬇ PDF
+                </button>
                 <button
                   className="ci-csv-btn"
                   type="button"
                   onClick={exportCSV}
                   disabled={!filtered.length}
                   title="Exportar resultados como CSV"
+                  style={{ fontSize: ".78rem", opacity: .75 }}
                 >
                   ⬇ CSV
                 </button>
