@@ -1138,3 +1138,50 @@
   /* widgets row apilado en mobile */
   .ci-widgets-row { flex-direction: column; }
 }
+
+
+/* ── Multi-select checkboxes ──────────────────────────────────────────── */
+.ci-th-chk, .ci-td-chk {
+  width: 36px; min-width: 36px; padding: 0 8px !important;
+  text-align: center; vertical-align: middle;
+}
+.ci-chk {
+  width: 15px; height: 15px; cursor: pointer;
+  accent-color: #6366f1;
+}
+.ci-tr--sel td { background: rgba(99,102,241,.07) !important; }
+[data-theme="dark"] .ci-tr--sel td { background: rgba(129,140,248,.12) !important; }
+
+/* ── Floating selection action bar ───────────────────────────────────── */
+.ci-sel-bar {
+  position: sticky; bottom: 16px; left: 0; right: 0;
+  margin: 10px 12px 4px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  background: #1e3a5f;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  z-index: 50;
+}
+[data-theme="dark"] .ci-sel-bar { background: #1e2d45; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+.ci-sel-bar__count {
+  font-size: .85rem; font-weight: 600; white-space: nowrap;
+}
+.ci-sel-bar__actions {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.ci-sel-bar__btn {
+  padding: 6px 14px; border-radius: 6px; border: none;
+  font-size: .8rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.ci-sel-bar__btn--xls { background: #16a34a; color: #fff; }
+.ci-sel-bar__btn--xls:hover { background: #15803d; }
+.ci-sel-bar__btn--pdf { background: #2563eb; color: #fff; }
+.ci-sel-bar__btn--pdf:hover { background: #1d4ed8; }
+.ci-sel-bar__btn--del { background: #dc2626; color: #fff; }
+.ci-sel-bar__btn--del:hover { background: #b91c1c; }
+.ci-sel-bar__btn--del:disabled { background: #ef4444; opacity: .6; cursor: not-allowed; }
+.ci-sel-bar__btn--clr { background: rgba(255,255,255,.15); color: #fff; }
+.ci-sel-bar__btn--clr:hover { background: rgba(255,255,255,.25); }

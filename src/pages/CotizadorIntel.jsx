@@ -205,6 +205,8 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
   const [sortKey,    setSortKey]    = useState("fecha");
   const [sortDir,    setSortDir]    = useState(-1);
   const [grouped,    setGrouped]    = useState(false); /* B */
+  const [selected,   setSelected]   = useState(new Set()); /* multi-select */
+  const [deleting,   setDeleting]   = useState(false);
   const loadingRef = useRef(false);
 
   async function loadData() {
@@ -237,6 +239,61 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
   function handleSort(key) {
     if (sortKey === key) setSortDir(d => d * -1);
     else { setSortKey(key); setSortDir(-1); }
+  }
+
+  /* ── Multi-select ── */
+  const visibleIds = useMemo(
+    () => [...new Set(filtered.slice(0, 200).map(i => i.quoteId))],
+    [filtered]
+  );
+  const allSelected   = visibleIds.length > 0 && visibleIds.every(id => selected.has(id));
+  const someSelected  = visibleIds.some(id => selected.has(id));
+  const selectedCount = selected.size;
+
+  function toggleRow(quoteId) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(quoteId) ? next.delete(quoteId) : next.add(quoteId);
+      return next;
+    });
+  }
+  function toggleAll() {
+    if (allSelected) {
+      setSelected(prev => { const n = new Set(prev); visibleIds.forEach(id => n.delete(id)); return n; });
+    } else {
+      setSelected(prev => { const n = new Set(prev); visibleIds.forEach(id => n.add(id)); return n; });
+    }
+  }
+  function clearSelection() { setSelected(new Set()); }
+
+  async function deleteSelected() {
+    const ids = [...selected];
+    const quoteNums = [...new Set(
+      filtered.filter(i => ids.includes(i.quoteId)).map(i => "#" + i.quoteNum)
+    )].join(", ");
+    if (!confirm(`¿Eliminar ${ids.length} cotización${ids.length > 1 ? "es" : ""} (${quoteNums})?\nEsta acción moverá las cotizaciones a la papelera.`)) return;
+    setDeleting(true);
+    try {
+      await Promise.all(ids.map(id =>
+        supabase.from("cotizaciones").update({ deleted: true, deleted_at: new Date().toISOString() }).eq("id", id)
+      ));
+      setItems(prev => prev ? prev.filter(i => !ids.includes(i.quoteId)) : prev);
+      clearSelection();
+    } catch (e) {
+      alert("Error al eliminar: " + e.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function exportSelectedXLSX() {
+    const data = filtered.filter(i => selected.has(i.quoteId));
+    // reuse same logic but scoped to selection
+    exportXLSXFromData(data);
+  }
+  function exportSelectedPrint() {
+    const data = filtered.filter(i => selected.has(i.quoteId));
+    exportPrintFromData(data);
   }
 
   function clearFilters() {
@@ -476,10 +533,9 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
-  async function exportXLSX() {
+  async function exportXLSXFromData(data) {
     const XLSX = await import("xlsx");
     const dateStr = new Date().toISOString().slice(0, 10);
-    const data = filtered.slice(0, 5000);
 
     // ── Hoja 1: Detalle completo ──────────────────────────────────────
     const detHeaders = [
@@ -575,8 +631,7 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
     XLSX.writeFile(wb, `inteligencia_comercial_${dateStr}.xlsx`);
   }
 
-  function exportPrint() {
-    const data = filtered.slice(0, 5000);
+  function exportPrintFromData(data) {
     const dateStr = new Date().toLocaleDateString("es-AR", { day:"2-digit", month:"long", year:"numeric" });
     const totalARS = data.reduce((s, i) => s + (i.pvARSc > 0 ? i.pvARSc * (i.cant || 1) : 0), 0);
     const avgMk = (() => { const v = data.filter(i => i.mkPct > 0); return v.length ? v.reduce((s,i)=>s+i.mkPct,0)/v.length : 0; })();
@@ -750,7 +805,7 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                 <button
                   className="ci-csv-btn"
                   type="button"
-                  onClick={exportXLSX}
+                  onClick={() => exportXLSXFromData(filtered.slice(0, 5000))}
                   disabled={!filtered.length}
                   title="Exportar a Excel (.xlsx) con 3 hojas: Detalle, Por Vendedor, Por Cliente"
                 >
@@ -759,7 +814,7 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                 <button
                   className="ci-csv-btn"
                   type="button"
-                  onClick={exportPrint}
+                  onClick={() => exportPrintFromData(filtered.slice(0, 5000))}
                   disabled={!filtered.length}
                   title="Exportar a PDF (ventana de impresión)"
                 >
@@ -1066,6 +1121,16 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                   <table className="ci-table">
                     <thead>
                       <tr>
+                        <th className="ci-th-chk">
+                          <input
+                            type="checkbox"
+                            className="ci-chk"
+                            checked={allSelected}
+                            ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                            onChange={toggleAll}
+                            title="Seleccionar todos"
+                          />
+                        </th>
                         {TABLE_COLS.map(({ key, label }) => (
                           <th
                             key={key}
@@ -1091,7 +1156,15 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                         const costIsStale = diffPct !== null && Math.abs(diffPct) > 5;
                         const conv    = convRates[getConvKey(item)];
                         return (
-                        <tr key={i} className="ci-tr">
+                        <tr key={i} className={`ci-tr${selected.has(item.quoteId) ? " ci-tr--sel" : ""}`}>
+                          <td className="ci-td-chk">
+                            <input
+                              type="checkbox"
+                              className="ci-chk"
+                              checked={selected.has(item.quoteId)}
+                              onChange={() => toggleRow(item.quoteId)}
+                            />
+                          </td>
                           {/* Fecha + indicador de antigüedad de precio */}
                           <td className="ci-td-sticky">
                             {fmtDate(item.fecha)}
@@ -1174,6 +1247,41 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Floating selection bar (outside open block so survives panel collapse) ── */}
+      {selectedCount > 0 && (
+        <div className="ci-sel-bar">
+          <span className="ci-sel-bar__count">
+            {selectedCount} cotización{selectedCount > 1 ? "es" : ""} seleccionada{selectedCount > 1 ? "s" : ""}
+          </span>
+          <div className="ci-sel-bar__actions">
+            <button
+              type="button"
+              className="ci-sel-bar__btn ci-sel-bar__btn--xls"
+              onClick={exportSelectedXLSX}
+              title="Exportar selección a Excel"
+            >⬇ XLS</button>
+            <button
+              type="button"
+              className="ci-sel-bar__btn ci-sel-bar__btn--pdf"
+              onClick={exportSelectedPrint}
+              title="Exportar selección a PDF"
+            >⬇ PDF</button>
+            <button
+              type="button"
+              className="ci-sel-bar__btn ci-sel-bar__btn--del"
+              onClick={deleteSelected}
+              disabled={deleting}
+              title="Mover a papelera"
+            >{deleting ? "Eliminando…" : "🗑 Eliminar"}</button>
+            <button
+              type="button"
+              className="ci-sel-bar__btn ci-sel-bar__btn--clr"
+              onClick={clearSelection}
+            >✕ Deseleccionar</button>
+          </div>
         </div>
       )}
     </div>
