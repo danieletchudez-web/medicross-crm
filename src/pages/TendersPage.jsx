@@ -441,7 +441,6 @@ function fileIcon(name) {
 const COLS = [
   { key:"_check",               label:"☑",              w:36,  fixed:true },
   { key:"_alert",               label:"⚡",              w:52,  fixed:true },
-  { key:"jurisdiction",         label:"Jurisdicción",    w:110 },
   { key:"institution",          label:"Hospital / Inst.", w:200 },
   { key:"process_number",       label:"N° Proceso",      w:130 },
   { key:"process_name",         label:"Nombre proceso",  w:220 },
