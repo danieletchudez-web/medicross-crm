@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CalendarPlus,
@@ -8,15 +8,29 @@ import {
   PackageOpen,
   RefreshCw,
   Search,
-  SlidersHorizontal,
   TrendingUp,
   X,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { EmptyState, MetricKpi, ModuleHeader } from "../components/CRMUI";
 import { supabase } from "../lib/supabaseClient";
+import { canOpenModule } from "../lib/moduleAccess";
 import { buildTodayActions } from "../services/decisionEngine";
 import "./todayActions.css";
+
+// ── Habits helpers (same logic as HabitsPage, no shared dep needed) ───────────
+function freqToDays(freq) {
+  if (!freq || freq === "daily")  return [0,1,2,3,4,5,6];
+  if (freq === "weekdays")        return [0,1,2,3,4];
+  if (freq === "weekend")         return [5,6];
+  try { const p = JSON.parse(freq); if (Array.isArray(p)) return p.filter(n => n >= 0 && n <= 6); } catch {}
+  return [0,1,2,3,4,5,6];
+}
+function todayDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function todayDow() { return (new Date().getDay() + 6) % 7; } // 0=Lun…6=Dom
 
 function moneyARS(value) {
   return new Intl.NumberFormat("es-AR", {
@@ -27,13 +41,53 @@ function moneyARS(value) {
 }
 
 export default function TodayActionsPage({ profile, onNavigate }) {
-  const [actions, setActions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const userId = profile?.id;
+  const hasHabits = profile?.role === "super_admin" || canOpenModule(profile, "habits");
+
+  const [actions,        setActions]        = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [search,         setSearch]         = useState("");
   const [priorityFilter, setPriorityFilter] = useState("todas");
-  const [focusFilter, setFocusFilter] = useState("todos");
+  const [focusFilter,    setFocusFilter]    = useState("todos");
+
+  // ── Habits widget state ──────────────────────────────────────────────────
+  const [allHabits,       setAllHabits]       = useState([]);
+  const [todayDone,       setTodayDone]       = useState(new Set());
+  const [togglingSet,     setTogglingSet]     = useState(new Set());
+  const [habitsReady,     setHabitsReady]     = useState(false);
+  const notifFiredRef = useRef(false);
 
   useEffect(() => { loadActions(); }, []);
+  useEffect(() => { if (hasHabits && userId) loadTodayHabits(); }, [userId, hasHabits]);
+
+  async function loadTodayHabits() {
+    const today = todayDateStr();
+    const [hRes, cRes] = await Promise.all([
+      supabase.from("habits").select("id,title,color,frequency,time_enabled,habit_time,type").eq("user_id", userId),
+      supabase.from("habit_completions").select("habit_id").eq("completed_date", today).eq("user_id", userId),
+    ]);
+    setAllHabits(hRes.data || []);
+    setTodayDone(new Set((cRes.data || []).map(c => c.habit_id)));
+    setHabitsReady(true);
+  }
+
+  async function toggleTodayHabit(habit) {
+    if (togglingSet.has(habit.id)) return;
+    const today   = todayDateStr();
+    const wasDone = todayDone.has(habit.id);
+    setTogglingSet(prev => new Set([...prev, habit.id]));
+    setTodayDone(prev => { const n = new Set(prev); wasDone ? n.delete(habit.id) : n.add(habit.id); return n; });
+    try {
+      if (wasDone) {
+        await supabase.from("habit_completions").delete().eq("habit_id", habit.id).eq("user_id", userId).eq("completed_date", today);
+      } else {
+        await supabase.from("habit_completions").insert({ habit_id: habit.id, user_id: userId, completed_date: today });
+      }
+    } catch {
+      setTodayDone(prev => { const n = new Set(prev); wasDone ? n.add(habit.id) : n.delete(habit.id); return n; });
+    }
+    setTogglingSet(prev => { const n = new Set(prev); n.delete(habit.id); return n; });
+  }
 
   async function loadActions() {
     setLoading(true);
@@ -74,6 +128,45 @@ Quedo atento para coordinar una presentación.`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
+
+  // ── Today's scheduled habits ────────────────────────────────────────────
+  const todayHabits = useMemo(() => {
+    const dow = todayDow();
+    return allHabits.filter(h => h.type === "habit" && freqToDays(h.frequency).includes(dow));
+  }, [allHabits]);
+
+  const doneTodayCount = useMemo(
+    () => todayHabits.filter(h => todayDone.has(h.id)).length,
+    [todayHabits, todayDone]
+  );
+
+  // Browser notification — once per day
+  useEffect(() => {
+    if (!habitsReady || todayHabits.length === 0 || notifFiredRef.current) return;
+    if (!("Notification" in window)) return;
+    const key = `hb-notif-${todayDateStr()}`;
+    if (localStorage.getItem(key)) return;
+    notifFiredRef.current = true;
+
+    function fire() {
+      const pending = todayHabits.filter(h => !todayDone.has(h.id));
+      if (!pending.length) return;
+      new Notification("Hábitos pendientes hoy 📋", {
+        body: pending.length === 1
+          ? `Recordá completar: ${pending[0].title}`
+          : `Tenés ${pending.length} hábitos por completar hoy`,
+        icon: "/favicon.ico",
+        tag: "habitos-hoy",
+      });
+      localStorage.setItem(key, "1");
+    }
+
+    if (Notification.permission === "granted") {
+      fire();
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(perm => { if (perm === "granted") fire(); });
+    }
+  }, [habitsReady, todayHabits]);
 
   const high = actions.filter((a) => a.priority === "Alta").length;
   const cold = actions.filter((a) => a.daysWithoutContact > 30).length;
@@ -177,6 +270,54 @@ Quedo atento para coordinar una presentación.`;
             </div>
           </div>
         </div>
+
+        {/* ── Hábitos de hoy ── */}
+        {habitsReady && todayHabits.length > 0 && (
+          <div className="ta-habits-card">
+            <div className="ta-habits-hd">
+              <span className="ta-habits-title">
+                <span className="ta-habits-ico">🎯</span>
+                Hábitos de hoy
+              </span>
+              <div className="ta-habits-meta">
+                {doneTodayCount === todayHabits.length ? (
+                  <span className="ta-habits-all-done">✓ ¡Todos completados!</span>
+                ) : (
+                  <span className="ta-habits-count">{doneTodayCount} / {todayHabits.length}</span>
+                )}
+                <button type="button" className="ta-habits-nav" onClick={() => onNavigate("habits")}>
+                  Ver todos →
+                </button>
+              </div>
+            </div>
+
+            <div className="ta-habits-progress-bar">
+              <div className="ta-habits-progress-fill"
+                   style={{ width: `${Math.round(doneTodayCount / todayHabits.length * 100)}%` }} />
+            </div>
+
+            <div className="ta-habits-list">
+              {todayHabits.map(h => {
+                const done = todayDone.has(h.id);
+                const busy = togglingSet.has(h.id);
+                return (
+                  <button key={h.id} type="button" disabled={busy}
+                          className={`ta-habit-row${done ? " ta-habit-row--done" : ""}`}
+                          onClick={() => toggleTodayHabit(h)}>
+                    <span className="ta-habit-dot" style={{ background: h.color || "#22c55e" }} />
+                    <span className="ta-habit-name">{h.title}</span>
+                    {h.time_enabled && h.habit_time && (
+                      <span className="ta-habit-time">{h.habit_time.slice(0, 5)}</span>
+                    )}
+                    <span className={`ta-habit-check${done ? " ta-habit-check--done" : ""}`}>
+                      {done ? "✓" : "○"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Worklist Panel */}
         <div className="p-panel">
