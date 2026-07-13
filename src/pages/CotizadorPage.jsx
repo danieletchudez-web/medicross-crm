@@ -806,7 +806,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         await linkTenderToQuote(newRow.id);
         if (!silent) showToast(`Cotización #${qFormatted} guardada ✓`);
         setSaving(false);
-        return { ok: true, quoteNum: qFormatted };
+        return { ok: true, quoteNum: qFormatted, docId: newRow.id };
       }
     } catch(e) {
       showToast("Error al guardar: " + e.message, "err");
@@ -821,10 +821,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
   async function ensureSavedForExport() {
     const validQuoteNum = formatQuoteNumber(quoteNum);
-    if (validQuoteNum) return validQuoteNum;
+    if (validQuoteNum) return { quoteNum: validQuoteNum, savedDocId: docId };
     const result = await saveCotizacion({ silent: true });
     if (!result.ok) return null;
-    return result.quoteNum;
+    return { quoteNum: result.quoteNum, savedDocId: result.docId };
   }
 
   async function abrirHistorial() {
@@ -955,8 +955,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     }
     const hasData = renglones.some(r => parseN(r.costo) > 0);
     if (!hasData) { showToast("Ingresá el costo en al menos un renglón","err"); return; }
-    const exportQuoteNum = await ensureSavedForExport();
-    if (!exportQuoteNum) return;
+    const exportResult = await ensureSavedForExport();
+    if (!exportResult) return;
+    const { quoteNum: exportQuoteNum, savedDocId } = exportResult;
     const tcN   = parseN(tc);
     const fecha = new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"long",year:"numeric"});
     const esc   = (t) => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[\\]/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)").replace(/[^\x20-\x7E]/g,"").substring(0,110);
@@ -1154,12 +1155,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url),10000);
 
-    const currentDocId = docId;
+    const currentDocId = savedDocId;
     if (currentDocId) {
-      await supabase.from("cotizaciones")
+      const { error: estErr } = await supabase.from("cotizaciones")
         .update({ estado: "generado", updated_at: new Date().toISOString(), updated_by: profile?.email||"" })
         .eq("id", currentDocId);
-      setHistItems(prev => prev.map(c => c.id === currentDocId ? { ...c, estado: "generado" } : c));
+      if (!estErr) {
+        setHistItems(prev => prev.map(c => c.id === currentDocId ? { ...c, estado: "generado" } : c));
+      }
     }
 
     try {
