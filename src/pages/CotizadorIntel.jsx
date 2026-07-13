@@ -241,7 +241,37 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
     else { setSortKey(key); setSortDir(-1); }
   }
 
-  /* ── Multi-select ── */
+  function clearFilters() {
+    setSearch(""); setFDesde(""); setFHasta("");
+    setFVendedor(""); setFEstado(""); setFMoneda("");
+    setFPrecioMin(""); setFPrecioMax("");
+  }
+
+  /* D. Token-based search tokens */
+  const searchTokens = useMemo(() => {
+    const q = norm(search.trim());
+    return q ? q.split(/\s+/).filter(t => t.length > 0) : [];
+  }, [search]);
+
+  /* filtered + sorted */
+  const filtered = useMemo(() => {
+    if (!items) return [];
+    let res = items;
+    if (searchTokens.length) res = res.filter(i => tokenMatch(i, searchTokens));
+    if (fDesde)    res = res.filter(i => i.fecha >= fDesde);
+    if (fHasta)    res = res.filter(i => i.fecha <= fHasta);
+    if (fVendedor) res = res.filter(i => i.vendedor === fVendedor);
+    if (fEstado)   res = res.filter(i => i.estado   === fEstado);
+    if (fMoneda)   res = res.filter(i => i.moneda   === fMoneda);
+    /* F. Price range */
+    const pMin = fPrecioMin ? parseFloat(String(fPrecioMin).replace(/\./g, "").replace(",", ".")) : 0;
+    const pMax = fPrecioMax ? parseFloat(String(fPrecioMax).replace(/\./g, "").replace(",", ".")) : 0;
+    if (pMin > 0) res = res.filter(i => i.pvARSc >= pMin);
+    if (pMax > 0) res = res.filter(i => i.pvARSc <= pMax);
+    return sortItems(res, sortKey, sortDir);
+  }, [items, searchTokens, fDesde, fHasta, fVendedor, fEstado, fMoneda, fPrecioMin, fPrecioMax, sortKey, sortDir]);
+
+  /* ── Multi-select (must be after filtered) ── */
   const visibleIds = useMemo(
     () => [...new Set(filtered.slice(0, 200).map(i => i.quoteId))],
     [filtered]
@@ -287,44 +317,11 @@ export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
   }
 
   function exportSelectedXLSX() {
-    const data = filtered.filter(i => selected.has(i.quoteId));
-    // reuse same logic but scoped to selection
-    exportXLSXFromData(data);
+    exportXLSXFromData(filtered.filter(i => selected.has(i.quoteId)));
   }
   function exportSelectedPrint() {
-    const data = filtered.filter(i => selected.has(i.quoteId));
-    exportPrintFromData(data);
+    exportPrintFromData(filtered.filter(i => selected.has(i.quoteId)));
   }
-
-  function clearFilters() {
-    setSearch(""); setFDesde(""); setFHasta("");
-    setFVendedor(""); setFEstado(""); setFMoneda("");
-    setFPrecioMin(""); setFPrecioMax("");
-  }
-
-  /* D. Token-based search tokens */
-  const searchTokens = useMemo(() => {
-    const q = norm(search.trim());
-    return q ? q.split(/\s+/).filter(t => t.length > 0) : [];
-  }, [search]);
-
-  /* filtered + sorted */
-  const filtered = useMemo(() => {
-    if (!items) return [];
-    let res = items;
-    if (searchTokens.length) res = res.filter(i => tokenMatch(i, searchTokens));
-    if (fDesde)    res = res.filter(i => i.fecha >= fDesde);
-    if (fHasta)    res = res.filter(i => i.fecha <= fHasta);
-    if (fVendedor) res = res.filter(i => i.vendedor === fVendedor);
-    if (fEstado)   res = res.filter(i => i.estado   === fEstado);
-    if (fMoneda)   res = res.filter(i => i.moneda   === fMoneda);
-    /* F. Price range */
-    const pMin = fPrecioMin ? parseFloat(String(fPrecioMin).replace(/\./g, "").replace(",", ".")) : 0;
-    const pMax = fPrecioMax ? parseFloat(String(fPrecioMax).replace(/\./g, "").replace(",", ".")) : 0;
-    if (pMin > 0) res = res.filter(i => i.pvARSc >= pMin);
-    if (pMax > 0) res = res.filter(i => i.pvARSc <= pMax);
-    return sortItems(res, sortKey, sortDir);
-  }, [items, searchTokens, fDesde, fHasta, fVendedor, fEstado, fMoneda, fPrecioMin, fPrecioMax, sortKey, sortDir]);
 
   /* B. Grouped data */
   const groupedData = useMemo(() => {
