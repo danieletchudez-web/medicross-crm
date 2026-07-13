@@ -842,7 +842,6 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     };
     if (quoteNumber)       snap.quote_number       = quoteNumber;
     if (quoteNumFormatted) snap.quote_num_formatted = quoteNumFormatted;
-    if (sourceTenderId)     snap.tender_id          = sourceTenderId;
     return snap;
   }
 
