@@ -309,7 +309,7 @@ function UseProductModal({ item, renglones, onApply, onClose }) {
 }
 
 /* ─── QuotePreviewModal ──────────────────────────────────────────────── */
-function QuotePreviewModal({ quoteId, onClose, onLoadInEditor }) {
+function QuotePreviewModal({ quoteId, onClose, onLoadInEditor, onCreateRevision }) {
   const [cot, setCot]       = useState(null);
   const [loading, setLoad]  = useState(true);
   const [err, setErr]       = useState(null);
@@ -431,6 +431,12 @@ function QuotePreviewModal({ quoteId, onClose, onLoadInEditor }) {
         {/* Actions */}
         <div className="qpm-actions">
           <button className="qpm-btn qpm-btn--sec" onClick={onClose}>Cerrar</button>
+          {cot && onCreateRevision && (
+            <button className="qpm-btn qpm-btn--rev" onClick={() => { onCreateRevision(quoteId); onClose(); }}
+              title="Duplicar esta cotización para modificar precios, conservando el original">
+              Nueva versión
+            </button>
+          )}
           {cot && (
             <button className="qpm-btn qpm-btn--pri" onClick={() => { onLoadInEditor(quoteId); onClose(); }}>
               Cargar en editor
@@ -903,7 +909,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   }
 
   async function ensureSavedForExport() {
-    const validQuoteNum = formatQuoteNumber(quoteNum);
+    const isRevision = String(quoteNum || "").includes("-R");
+    const validQuoteNum = isRevision ? quoteNum : formatQuoteNumber(quoteNum);
     if (validQuoteNum) return { quoteNum: validQuoteNum, savedDocId: docId };
     const result = await saveCotizacion({ silent: true });
     if (!result.ok) return null;
@@ -986,10 +993,57 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     else showToast("Error: "+error.message,"err");
   }
 
+  async function createRevision(sourceId) {
+    const { data: source, error: fetchErr } = await supabase.from("cotizaciones").select("*").eq("id", sourceId).single();
+    if (fetchErr || !source) { showToast("No se pudo cargar la cotización original", "err"); return; }
+
+    const { data: existingRevs } = await supabase
+      .from("cotizaciones").select("revision_num").eq("parent_quote_id", sourceId)
+      .eq("deleted", false).order("revision_num", { ascending: false }).limit(1);
+    const nextRevNum = existingRevs?.length > 0 ? (existingRevs[0].revision_num || 1) + 1 : 1;
+    const revFormatted = `${source.quote_num_formatted}-R${nextRevNum}`;
+
+    const {
+      id: _id, created_at: _ca, created_by: _cb, quote_number: _qn,
+      deleted_at: _da, deleted_by_name: _dbn, accepted_opportunity_id: _aoi,
+      ...rest
+    } = source;
+    const snap = {
+      ...rest,
+      quote_num_formatted: revFormatted,
+      quote_number: null,
+      parent_quote_id: sourceId,
+      revision_num: nextRevNum,
+      estado: "borrador",
+      created_at: new Date().toISOString(),
+      created_by: profile?.email || "desconocido",
+      updated_at: new Date().toISOString(),
+      updated_by: profile?.email || "",
+      deleted: false, deleted_at: null, deleted_by_name: null,
+      accepted_opportunity_id: null,
+    };
+
+    const { data: newRow, error: insertErr } = await supabase.from("cotizaciones").insert([snap]).select().single();
+    if (insertErr) {
+      if (insertErr.message?.includes("parent_quote_id") || insertErr.message?.includes("column")) {
+        showToast("Primero ejecutá el SQL de migración en Supabase (ALTER TABLE cotizaciones ADD COLUMN parent_quote_id uuid, revision_num int)", "err");
+      } else {
+        showToast("Error al crear revisión: " + insertErr.message, "err");
+      }
+      return;
+    }
+    setHistItems(prev => [newRow, ...prev]);
+    await loadCotizacion(newRow.id);
+    showToast(`Revisión ${revFormatted} creada — modificá los precios y guardá ✓`);
+  }
+
   async function loadCotizacion(id) {
     const { data, error } = await supabase.from("cotizaciones").select("*").eq("id",id).single();
     if (error||!data) { showToast("No encontrada","err"); return; }
-    setDocId(data.id); setQuoteNum(formatQuoteNumber(data.quote_num_formatted) || formatQuoteNumber(data.quote_number) || "?");
+    const rawNum = data.quote_num_formatted || data.quote_number;
+    const isRevision = String(rawNum || "").includes("-R");
+    const displayNum = isRevision ? rawNum : (formatQuoteNumber(rawNum) || "?");
+    setDocId(data.id); setQuoteNum(displayNum);
     setSourceTenderId(data.tender_id || null);
     setVendedor(data.vendedor||""); setTc(String(data.tc||"1425"));
     setFechaApert(data.fecha_apert||""); setNroLicit(data.nro_licit||"");
@@ -1328,6 +1382,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             quoteId={previewQuoteId}
             onClose={() => setPreviewQuoteId(null)}
             onLoadInEditor={(id) => { loadCotizacion(id); window.scrollTo(0, 0); }}
+            onCreateRevision={(id) => { createRevision(id); setPreviewQuoteId(null); }}
           />
         )}
 
@@ -1669,6 +1724,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   </div>
                   <div className="cot-hist-item__meta">
                     <span className="cot-hist-num">#{c.quote_num_formatted||"???"}</span>
+                    {c.parent_quote_id && <span className="cot-hist-rev-badge">Revisión</span>}
                     {c.vendedor&&<span className="cot-hist-vend">{c.vendedor.split(" ")[0]}</span>}
                     <select
                       className="cot-estado-inline"
@@ -1693,6 +1749,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   )}
                   <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
                     <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(c.id)}>Editar</button>
+                    <button className="cot-btn cot-btn--rev cot-btn--sm" onClick={()=>{createRevision(c.id);setShowHistorial(false);}}
+                      title="Crear revisión con precios actualizados, conservando el original">
+                      Nueva versión
+                    </button>
                     {c.estado === "aceptada" && (
                       <button className="cot-btn cot-btn--success cot-btn--sm" onClick={()=>convertAcceptedQuote(c)}>
                         {c.accepted_opportunity_id ? "✓ Oportunidad creada" : "✓ Convertir en oportunidad"}
