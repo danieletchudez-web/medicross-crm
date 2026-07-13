@@ -235,6 +235,131 @@ function CotHistHint({ cotHistory, descr, onApply }) {
   );
 }
 
+/* ─── QuotePreviewModal ──────────────────────────────────────────────── */
+function QuotePreviewModal({ quoteId, onClose, onLoadInEditor }) {
+  const [cot, setCot]       = useState(null);
+  const [loading, setLoad]  = useState(true);
+  const [err, setErr]       = useState(null);
+
+  useEffect(() => {
+    if (!quoteId) return;
+    setLoad(true); setErr(null); setCot(null);
+    supabase.from("cotizaciones").select("*").eq("id", quoteId).single()
+      .then(({ data, error }) => {
+        if (error || !data) setErr("No se pudo cargar la cotización.");
+        else setCot(data);
+        setLoad(false);
+      });
+  }, [quoteId]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const tcG = parseN(cot?.tc) || 1425;
+  const renglones = cot?.renglones || [];
+  const total = renglones.reduce((sum, r) => {
+    const calc = calcR(r, tcG);
+    return sum + (calc ? calc.sub : 0);
+  }, 0);
+  const estado = cot?.estado || "borrador";
+  const badge  = ESTADO_COLORS[estado] || { bg:"#e5e7eb", color:"#374151" };
+
+  return createPortal(
+    <div className="qpm-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="qpm-panel" role="dialog" aria-modal="true">
+        {/* Header */}
+        <div className="qpm-header">
+          <div className="qpm-title">
+            <span className="qpm-num">Cotización #{cot?.quote_num_formatted || "…"}</span>
+            {cot && (
+              <span className="qpm-badge" style={{ background: badge.bg, color: badge.color }}>
+                {ESTADO_LABELS[estado] || estado}
+              </span>
+            )}
+          </div>
+          <button className="qpm-close" onClick={onClose} title="Cerrar">✕</button>
+        </div>
+
+        {loading && <div className="qpm-loading">Cargando…</div>}
+        {err     && <div className="qpm-err">{err}</div>}
+
+        {cot && !loading && (
+          <>
+            {/* Meta */}
+            <div className="qpm-meta">
+              {cot.institucion && <div><span>Institución</span><strong>{cot.institucion}</strong></div>}
+              {cot.vendedor    && <div><span>Vendedor</span><strong>{cot.vendedor}</strong></div>}
+              {cot.fecha_apert && <div><span>Fecha apertura</span><strong>{cot.fecha_apert}</strong></div>}
+              {cot.nro_licit   && <div><span>N° Licitación</span><strong>{cot.nro_licit}</strong></div>}
+              <div><span>TC USD→ARS</span><strong>${parseN(cot.tc).toLocaleString("es-AR")}</strong></div>
+              {cot.plazo_venta  && <div><span>Plazo de venta</span><strong>{cot.plazo_venta}</strong></div>}
+              {cot.forma_cobro  && <div><span>Forma de cobro</span><strong>{cot.forma_cobro}</strong></div>}
+            </div>
+
+            {/* Renglones table */}
+            <div className="qpm-table-wrap">
+              <table className="qpm-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Descripción</th><th>Marca</th>
+                    <th className="qpm-r">Costo USD</th>
+                    <th className="qpm-r">Markup</th>
+                    <th className="qpm-r">PV c/IVA</th>
+                    <th className="qpm-r">Cant.</th>
+                    <th className="qpm-r">Subtotal</th>
+                    <th className="qpm-r">GM %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {renglones.map((r, i) => {
+                    const calc = calcR(r, tcG);
+                    const rnLabel = [r.renglon, r.subitem].filter(Boolean).join(".");
+                    return (
+                      <tr key={i}>
+                        <td className="qpm-rn">{rnLabel || i + 1}</td>
+                        <td className="qpm-descr" title={r.descr}>{r.descr || "—"}</td>
+                        <td>{r.marca || "—"}</td>
+                        <td className="qpm-r">{calc ? `USD ${parseN(r.costo).toFixed(2)}` : "—"}</td>
+                        <td className="qpm-r">{calc ? `×${parseN(r.markup).toFixed(2)}` : "—"}</td>
+                        <td className="qpm-r">{calc ? fARS(calc.pvARSc) : "—"}</td>
+                        <td className="qpm-r">{r.cant || 1}</td>
+                        <td className="qpm-r qpm-sub">{calc ? fARS(calc.sub) : "—"}</td>
+                        <td className="qpm-r">{calc ? <span className="qpm-gm">{fPct(calc.gm)}</span> : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={7} className="qpm-total-lbl">Total cotización</td>
+                    <td className="qpm-r qpm-total">{fARS(total)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* Actions */}
+        <div className="qpm-actions">
+          <button className="qpm-btn qpm-btn--sec" onClick={onClose}>Cerrar</button>
+          {cot && (
+            <button className="qpm-btn qpm-btn--pri" onClick={() => { onLoadInEditor(quoteId); onClose(); }}>
+              Cargar en editor
+            </button>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function CotizadorPage({ profile, onNavigate, initialData, pageKey }) {
   const [vendedor,    setVendedor]    = useState(initialData?.vendedor    || "");
   const [vendedores,  setVendedores]  = useState(VENDEDORES);
@@ -253,6 +378,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   const [saving,        setSaving]        = useState(false);
   const [toast,         setToast]         = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
+  const [previewQuoteId, setPreviewQuoteId] = useState(null);
   const [showPapelera,  setShowPapelera]  = useState(false);
   const [histItems,      setHistItems]      = useState([]);
   const [papItems,       setPapItems]       = useState([]);
@@ -1107,9 +1233,17 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         <DashboardComercial pageKey={pageKey} />
 
         <CotizadorIntel
-          onOpenQuote={(id) => { loadCotizacion(id); window.scrollTo(0, 0); }}
+          onOpenQuote={(id) => setPreviewQuoteId(id)}
           onUseInRenglon={handleUseFromIntel}
         />
+
+        {previewQuoteId && (
+          <QuotePreviewModal
+            quoteId={previewQuoteId}
+            onClose={() => setPreviewQuoteId(null)}
+            onLoadInEditor={(id) => { loadCotizacion(id); window.scrollTo(0, 0); }}
+          />
+        )}
 
         <div className="cot-card">
           <h3 className="cot-section-title">⚙️ Parámetros globales</h3>
