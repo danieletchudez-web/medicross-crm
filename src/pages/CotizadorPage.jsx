@@ -235,6 +235,79 @@ function CotHistHint({ cotHistory, descr, onApply }) {
   );
 }
 
+/* ─── UseProductModal ────────────────────────────────────────────────── */
+function UseProductModal({ item, renglones, onApply, onClose }) {
+  const opts = renglones.map((r, i) => ({
+    id: r.id,
+    label: `Renglón ${i + 1}${r.descr ? ` — ${r.descr.slice(0, 50)}` : ""}`,
+  }));
+  const [targetId, setTargetId] = useState(renglones[renglones.length - 1]?.id || "");
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const fields = [
+    { label: "Descripción", value: item.descr },
+    { label: "Empresa / Proveedor", value: item.empresa },
+    { label: "Marca", value: item.marca },
+    { label: "Código", value: item.codigo },
+  ].filter(f => f.value);
+
+  return createPortal(
+    <div className="qpm-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="qpm-panel upm-panel" role="dialog" aria-modal="true">
+        <div className="qpm-header">
+          <div className="qpm-title">
+            <span className="qpm-num">Usar producto en renglón</span>
+          </div>
+          <button className="qpm-close" onClick={onClose} title="Cerrar">✕</button>
+        </div>
+
+        <div className="upm-body">
+          <div className="upm-product">
+            <p className="upm-section-lbl">Producto seleccionado</p>
+            {fields.map(f => (
+              <div key={f.label} className="upm-field">
+                <span className="upm-field__lbl">{f.label}</span>
+                <span className="upm-field__val">{f.value}</span>
+              </div>
+            ))}
+            {!fields.length && <p className="upm-empty">Sin datos de producto.</p>}
+          </div>
+
+          <div className="upm-target">
+            <p className="upm-section-lbl">Aplicar en</p>
+            {opts.length === 0 ? (
+              <p className="upm-empty">No hay renglones en la cotización actual.</p>
+            ) : opts.length === 1 ? (
+              <p className="upm-single">{opts[0].label}</p>
+            ) : (
+              <select className="upm-select" value={targetId} onChange={e => setTargetId(e.target.value)}>
+                {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            )}
+          </div>
+        </div>
+
+        <div className="qpm-actions">
+          <button className="qpm-btn qpm-btn--sec" onClick={onClose}>Cancelar</button>
+          <button
+            className="qpm-btn qpm-btn--pri"
+            disabled={!targetId || !fields.length}
+            onClick={() => { onApply(item, targetId); onClose(); }}
+          >
+            Aplicar al renglón
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 /* ─── QuotePreviewModal ──────────────────────────────────────────────── */
 function QuotePreviewModal({ quoteId, onClose, onLoadInEditor }) {
   const [cot, setCot]       = useState(null);
@@ -389,6 +462,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   const [toast,         setToast]         = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
   const [previewQuoteId, setPreviewQuoteId] = useState(null);
+  const [useProductItem, setUseProductItem] = useState(null);
   const [showPapelera,  setShowPapelera]  = useState(false);
   const [histItems,      setHistItems]      = useState([]);
   const [papItems,       setPapItems]       = useState([]);
@@ -498,23 +572,22 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
   /* ── A. Usar desde Inteligencia Comercial ── */
   function handleUseFromIntel(item) {
-    const targetId = activeRenglonId || renglones[renglones.length - 1]?.id;
-    if (!targetId) return;
+    setUseProductItem(item);
+  }
+
+  function applyProductToRenglon(item, targetId) {
     setRenglones(prev => prev.map(r => {
       if (r.id !== targetId) return r;
       return {
         ...r,
-        descr:   item.descr  || r.descr,
-        empresa: item.empresa || r.empresa,
-        codigo:  item.codigo  || r.codigo,
-        marca:   item.marca   || r.marca,
+        descr:   item.descr   || r.descr,
+        empresa: item.empresa  || r.empresa,
+        codigo:  item.codigo   || r.codigo,
+        marca:   item.marca    || r.marca,
       };
     }));
     const rIdx = renglones.findIndex(r => r.id === targetId);
-    showToast(`Descripción copiada al Renglón ${rIdx + 1} ✓`);
-    setTimeout(() => {
-      document.querySelectorAll(".cot-renglon")[rIdx]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }, 80);
+    showToast(`Producto copiado al Renglón ${rIdx + 1} ✓`);
   }
 
   /* ── Aplicar sugerencia de markup desde CotHistHint ── */
@@ -1255,6 +1328,15 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             quoteId={previewQuoteId}
             onClose={() => setPreviewQuoteId(null)}
             onLoadInEditor={(id) => { loadCotizacion(id); window.scrollTo(0, 0); }}
+          />
+        )}
+
+        {useProductItem && (
+          <UseProductModal
+            item={useProductItem}
+            renglones={renglones}
+            onApply={applyProductToRenglon}
+            onClose={() => setUseProductItem(null)}
           />
         )}
 

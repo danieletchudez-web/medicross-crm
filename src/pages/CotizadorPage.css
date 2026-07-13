@@ -762,3 +762,53 @@
 [data-theme="dark"] .qpm-btn--sec:hover { background: #2a2a2a; }
 .qpm-btn--pri { background: #6366f1; color: #fff; }
 .qpm-btn--pri:hover { background: #4f46e5; }
+.qpm-btn--pri:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+/* ─── UseProductModal ───────────────────────────────────────────────── */
+.upm-panel {
+  height: auto !important;
+  max-width: 540px !important;
+  min-height: unset !important;
+}
+.upm-body {
+  flex: 1 1 auto;
+  padding: 0 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.upm-section-lbl {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #9ca3af; margin-bottom: 8px;
+}
+[data-theme="dark"] .upm-section-lbl { color: #6b7280; }
+.upm-product {
+  background: #f8fafc; border-radius: 8px; padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+}
+[data-theme="dark"] .upm-product { background: #111; border-color: #2a2a2a; }
+.upm-field { display: flex; flex-direction: column; margin-bottom: 8px; }
+.upm-field:last-child { margin-bottom: 0; }
+.upm-field__lbl {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .04em;
+  color: #9ca3af; margin-bottom: 2px;
+}
+[data-theme="dark"] .upm-field__lbl { color: #6b7280; }
+.upm-field__val { font-size: .88rem; font-weight: 500; color: #111; line-height: 1.4; }
+[data-theme="dark"] .upm-field__val { color: #e5e7eb; }
+.upm-empty { font-size: .85rem; color: #9ca3af; font-style: italic; }
+.upm-target { padding: 0 2px; }
+.upm-single {
+  font-size: .9rem; font-weight: 600; color: #374151; padding: 10px 12px;
+  background: #f3f4f6; border-radius: 7px;
+}
+[data-theme="dark"] .upm-single { background: #222; color: #d1d5db; }
+.upm-select {
+  width: 100%; padding: 9px 12px; border-radius: 7px;
+  border: 1px solid #d1d5db; font-size: .9rem; color: #111;
+  background: #fff; cursor: pointer; outline: none;
+}
+.upm-select:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.15); }
+[data-theme="dark"] .upm-select {
+  background: #1a1a1a; border-color: #3a3a3a; color: #e5e7eb;
+}
