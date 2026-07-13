@@ -818,16 +818,6 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                   ⬇ PDF
                 </button>
                 <button
-                  className="ci-csv-btn"
-                  type="button"
-                  onClick={exportCSV}
-                  disabled={!filtered.length}
-                  title="Exportar resultados como CSV"
-                  style={{ fontSize: ".78rem", opacity: .75 }}
-                >
-                  ⬇ CSV
-                </button>
-                <button
                   className="ci-refresh-btn"
                   type="button"
                   onClick={loadData}
