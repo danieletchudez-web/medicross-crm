@@ -477,6 +477,8 @@ function InlineAttachments({ tenderId }) {
   const [fileList, setFileList]   = useState([]);
   const [uploading, setUploading] = useState(false);
   const [loadingF, setLoadingF]   = useState(true);
+  const [attachError, setAttachError] = useState(null);
+  const [uploadMsg,   setUploadMsg]   = useState(null);
   const inputRef = useRef(null);
   const folder   = `tender_${tenderId}`;
 
@@ -484,29 +486,42 @@ function InlineAttachments({ tenderId }) {
 
   async function load() {
     setLoadingF(true);
-    const { data } = await supabase.storage.from(BUCKET).list(folder);
-    setFileList(data || []);
+    setAttachError(null);
+    const { data, error } = await supabase.storage.from(BUCKET).list(folder, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
+    if (error) {
+      setAttachError(`Error al cargar adjuntos: ${error.message}`);
+      setFileList([]);
+    } else {
+      setFileList((data || []).filter(f => f.name !== ".emptyFolderPlaceholder"));
+    }
     setLoadingF(false);
   }
 
   async function handleUpload(e) {
-    const list = Array.from(e.target.files||[]);
+    const list = Array.from(e.target.files || []);
     if (!list.length) return;
     setUploading(true);
+    setUploadMsg(null);
+    setAttachError(null);
+    const errors = [];
     for (const file of list) {
       const safe = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"_");
-      await supabase.storage.from(BUCKET).upload(`${folder}/${Date.now()}_${safe}`, file, {
-        cacheControl:"3600", upsert:false, contentType:file.type,
+      const { error } = await supabase.storage.from(BUCKET).upload(`${folder}/${Date.now()}_${safe}`, file, {
+        cacheControl:"3600", upsert:true, contentType:file.type,
       });
+      if (error) errors.push(`${file.name}: ${error.message}`);
     }
     await load();
     setUploading(false);
     if (inputRef.current) inputRef.current.value = "";
+    if (errors.length) setAttachError("Error al subir: " + errors.join(" | "));
+    else setUploadMsg((list.length === 1 ? "1 archivo subido" : list.length + " archivos subidos") + " \u2713");
   }
 
   async function handleDelete(name) {
     if (!confirm(`¿Eliminar "${name.replace(/^\d+_/,"")}"?`)) return;
-    await supabase.storage.from(BUCKET).remove([`${folder}/${name}`]);
+    const { error } = await supabase.storage.from(BUCKET).remove([`${folder}/${name}`]);
+    if (error) { alert("Error al eliminar: " + error.message); return; }
     setFileList(prev => prev.filter(f => f.name !== name));
   }
 
@@ -525,6 +540,16 @@ function InlineAttachments({ tenderId }) {
         <input ref={inputRef} type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx"
           style={{display:"none"}} onChange={handleUpload}/>
       </div>
+      {attachError && (
+        <div style={{ margin:"8px 0", padding:"8px 12px", background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, fontSize:12, color:"#b91c1c" }}>
+          &#9888; {attachError}
+        </div>
+      )}
+      {uploadMsg && (
+        <div style={{ margin:"8px 0", padding:"8px 12px", background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:8, fontSize:12, color:"#15803d" }}>
+          {uploadMsg}
+        </div>
+      )}
       {loadingF ? <p className="tn-attach-empty">Cargando…</p>
       : fileList.length === 0 ? <p className="tn-attach-empty">Sin archivos adjuntos todavía.</p>
       : (
