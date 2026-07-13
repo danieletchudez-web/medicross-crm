@@ -12,12 +12,28 @@ const HABIT_COLORS = [
   "#14b8a6", "#6b7280",
 ];
 
-const FREQ_OPTIONS = [
-  { value: "daily",    label: "Todos los días" },
-  { value: "weekdays", label: "Días de semana" },
-  { value: "weekend",  label: "Fines de semana" },
-  { value: "custom",   label: "Personalizado" },
-];
+const DAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
+const DAY_NAMES  = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const ALL_DAYS   = [0,1,2,3,4,5,6];
+
+function freqToDays(freq) {
+  if (!freq || freq === "daily")    return [0,1,2,3,4,5,6];
+  if (freq === "weekdays")          return [0,1,2,3,4];
+  if (freq === "weekend")           return [5,6];
+  try {
+    const p = JSON.parse(freq);
+    if (Array.isArray(p)) return p.filter(n => n >= 0 && n <= 6);
+  } catch {}
+  return [0,1,2,3,4,5,6];
+}
+
+function daysToFreq(days) {
+  const s = [...days].sort((a, b) => a - b);
+  if (s.length === 7)                              return "daily";
+  if (JSON.stringify(s) === "[0,1,2,3,4]")        return "weekdays";
+  if (JSON.stringify(s) === "[5,6]")              return "weekend";
+  return JSON.stringify(s);
+}
 
 const TYPES = [
   { value: "habit", label: "Hábito",  desc: "Se repite en días fijos o varias veces por semana o mes" },
@@ -64,7 +80,7 @@ function buildMiniCal(year, month) {
 function emptyForm() {
   return {
     title: "", description: "", type: "habit",
-    color: "#22c55e", frequency: "daily",
+    color: "#22c55e", frequency: "daily", schedule_days: [0,1,2,3,4,5,6],
     time_enabled: false, habit_time: "",
     date_enabled: false, habit_date: "",
     priority: "none", category: "",
@@ -250,18 +266,20 @@ export default function HabitsPage({ profile, onNavigate }) {
 
   function openEdit(habit) {
     setEditingHabit(habit);
+    const freq = habit.frequency || "daily";
     setForm({
-      title:        habit.title        || "",
-      description:  habit.description  || "",
-      type:         habit.type         || "habit",
-      color:        habit.color        || "#22c55e",
-      frequency:    habit.frequency    || "daily",
-      time_enabled: habit.time_enabled || false,
-      habit_time:   habit.habit_time   || "",
-      date_enabled: habit.date_enabled || false,
-      habit_date:   habit.habit_date   || "",
-      priority:     habit.priority     || "none",
-      category:     habit.category     || "",
+      title:         habit.title        || "",
+      description:   habit.description  || "",
+      type:          habit.type         || "habit",
+      color:         habit.color        || "#22c55e",
+      frequency:     freq,
+      schedule_days: freqToDays(freq),
+      time_enabled:  habit.time_enabled || false,
+      habit_time:    habit.habit_time   || "",
+      date_enabled:  habit.date_enabled || false,
+      habit_date:    habit.habit_date   || "",
+      priority:      habit.priority     || "none",
+      category:      habit.category     || "",
     });
     setShowModal(true);
   }
@@ -274,7 +292,7 @@ export default function HabitsPage({ profile, onNavigate }) {
       description:  form.description.trim() || null,
       type:         form.type,
       color:        form.color,
-      frequency:    form.frequency,
+      frequency:    form.type === "habit" ? daysToFreq(form.schedule_days) : form.frequency,
       time_enabled: form.time_enabled,
       habit_time:   form.time_enabled ? form.habit_time : null,
       date_enabled: form.date_enabled,
@@ -784,16 +802,50 @@ function HabitModal({ form, setForm, editing, titleRef, onSave, onDelete, onClos
           {/* Habit-only fields */}
           {form.type === "habit" && (
             <>
-              <div className="hb-prop">
-                <span className="hb-prop__label">
+              <div className="hb-prop hb-prop--days">
+                <span className="hb-prop__label hb-prop__label--top">
                   <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M17 2H7a2 2 0 00-2 2v16l7-3 7 3V4a2 2 0 00-2-2z"/>
                   </svg>
-                  Repetir
+                  Días
                 </span>
-                <select className="hb-field-select" value={form.frequency} onChange={e => upd("frequency", e.target.value)}>
-                  {FREQ_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <div className="hb-days-picker">
+                  <div className="hb-days-presets">
+                    {[
+                      { label: "Todos",  days: [0,1,2,3,4,5,6] },
+                      { label: "L – V",  days: [0,1,2,3,4] },
+                      { label: "S – D",  days: [5,6] },
+                    ].map(p => {
+                      const active = JSON.stringify([...form.schedule_days].sort((a,b)=>a-b)) === JSON.stringify(p.days);
+                      return (
+                        <button key={p.label} type="button"
+                          className={`hb-days-preset${active ? " hb-days-preset--active" : ""}`}
+                          onClick={() => upd("schedule_days", p.days)}>
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="hb-days-row">
+                    {DAY_LABELS.map((lbl, i) => {
+                      const on = form.schedule_days.includes(i);
+                      return (
+                        <button key={i} type="button"
+                          className={`hb-day-chip${on ? " hb-day-chip--on" : ""}`}
+                          title={DAY_NAMES[i]}
+                          onClick={() => {
+                            const next = on
+                              ? form.schedule_days.filter(d => d !== i)
+                              : [...form.schedule_days, i];
+                            upd("schedule_days", next.length ? next : form.schedule_days);
+                          }}>
+                          <span className="hb-day-chip__lbl">{lbl}</span>
+                          {on && <span className="hb-day-chip__check">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
               <div className="hb-prop">
                 <span className="hb-prop__label">

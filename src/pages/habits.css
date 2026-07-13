@@ -915,6 +915,93 @@
 .hb-toggle input:checked + .hb-toggle__track::after { transform: translateX(16px); }
 [data-theme="dark"] .hb-toggle input:checked + .hb-toggle__track::after { background: #1A1A1A; }
 
+/* Days picker */
+.hb-prop--days {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.hb-prop__label--top {
+  margin-bottom: 0;
+}
+.hb-days-picker {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hb-days-presets {
+  display: flex;
+  gap: 6px;
+}
+.hb-days-preset {
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--hb-border);
+  background: transparent;
+  color: var(--hb-text3);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.hb-days-preset:hover {
+  background: var(--hb-pill-bg);
+  color: var(--hb-text2);
+}
+.hb-days-preset--active {
+  background: var(--hb-accent, #111);
+  color: #fff;
+  border-color: transparent;
+}
+[data-theme="dark"] .hb-days-preset--active {
+  background: #fff;
+  color: #111;
+}
+.hb-days-row {
+  display: flex;
+  gap: 6px;
+}
+.hb-day-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--hb-border);
+  background: var(--hb-pill-bg);
+  color: var(--hb-text3);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+  gap: 2px;
+}
+.hb-day-chip:hover:not(.hb-day-chip--on) {
+  border-color: var(--hb-text3);
+  color: var(--hb-text2);
+}
+.hb-day-chip--on {
+  background: var(--hb-accent, #111);
+  color: #fff;
+  border-color: transparent;
+}
+[data-theme="dark"] .hb-day-chip--on {
+  background: #ffffff;
+  color: #111111;
+  border-color: transparent;
+}
+.hb-day-chip__lbl { line-height: 1; }
+.hb-day-chip__check {
+  font-size: 9px;
+  line-height: 1;
+  opacity: .85;
+}
+
 /* Type selector */
 .hb-type-grid {
   display: flex;
