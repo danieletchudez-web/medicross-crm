@@ -260,7 +260,10 @@ function QuotePreviewModal({ quoteId, onClose, onLoadInEditor }) {
   }, [onClose]);
 
   const tcG = parseN(cot?.tc) || 1425;
-  const renglones = cot?.renglones || [];
+  const rawRenglones = cot?.renglones;
+  const renglones = Array.isArray(rawRenglones)
+    ? rawRenglones
+    : (typeof rawRenglones === "string" ? (() => { try { return JSON.parse(rawRenglones); } catch { return []; } })() : []);
   const total = renglones.reduce((sum, r) => {
     const calc = calcR(r, tcG);
     return sum + (calc ? calc.sub : 0);
@@ -302,45 +305,52 @@ function QuotePreviewModal({ quoteId, onClose, onLoadInEditor }) {
 
             {/* Renglones table */}
             <div className="qpm-table-wrap">
-              <table className="qpm-table">
-                <thead>
-                  <tr>
-                    <th>#</th><th>Descripción</th><th>Marca</th>
-                    <th className="qpm-r">Costo USD</th>
-                    <th className="qpm-r">Markup</th>
-                    <th className="qpm-r">PV c/IVA</th>
-                    <th className="qpm-r">Cant.</th>
-                    <th className="qpm-r">Subtotal</th>
-                    <th className="qpm-r">GM %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {renglones.map((r, i) => {
-                    const calc = calcR(r, tcG);
-                    const rnLabel = [r.renglon, r.subitem].filter(Boolean).join(".");
-                    return (
-                      <tr key={i}>
-                        <td className="qpm-rn">{rnLabel || i + 1}</td>
-                        <td className="qpm-descr" title={r.descr}>{r.descr || "—"}</td>
-                        <td>{r.marca || "—"}</td>
-                        <td className="qpm-r">{calc ? `USD ${parseN(r.costo).toFixed(2)}` : "—"}</td>
-                        <td className="qpm-r">{calc ? `×${parseN(r.markup).toFixed(2)}` : "—"}</td>
-                        <td className="qpm-r">{calc ? fARS(calc.pvARSc) : "—"}</td>
-                        <td className="qpm-r">{r.cant || 1}</td>
-                        <td className="qpm-r qpm-sub">{calc ? fARS(calc.sub) : "—"}</td>
-                        <td className="qpm-r">{calc ? <span className="qpm-gm">{fPct(calc.gm)}</span> : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={7} className="qpm-total-lbl">Total cotización</td>
-                    <td className="qpm-r qpm-total">{fARS(total)}</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
+              {renglones.length === 0 ? (
+                <div className="qpm-empty">Sin renglones cargados en esta cotización.</div>
+              ) : (
+                <table className="qpm-table">
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Descripción</th><th>Marca</th>
+                      <th className="qpm-r">Costo</th>
+                      <th className="qpm-r">Markup</th>
+                      <th className="qpm-r">PV c/IVA</th>
+                      <th className="qpm-r">Cant.</th>
+                      <th className="qpm-r">Subtotal</th>
+                      <th className="qpm-r">GM %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {renglones.map((r, i) => {
+                      const calc = calcR(r, tcG);
+                      const rnLabel = [r.renglon, r.subitem].filter(Boolean).join(".");
+                      const costoLabel = r.moneda === "ARS"
+                        ? fARS(parseN(r.costo))
+                        : `USD ${parseN(r.costo).toFixed(2)}`;
+                      return (
+                        <tr key={i}>
+                          <td className="qpm-rn">{rnLabel || i + 1}</td>
+                          <td className="qpm-descr" title={r.descr}>{r.descr || "—"}</td>
+                          <td>{r.marca || "—"}</td>
+                          <td className="qpm-r">{parseN(r.costo) > 0 ? costoLabel : "—"}</td>
+                          <td className="qpm-r">{parseN(r.markup) > 0 ? `×${parseN(r.markup).toFixed(2)}` : "—"}</td>
+                          <td className="qpm-r">{calc ? fARS(calc.pvARSc) : "—"}</td>
+                          <td className="qpm-r">{r.cant || 1}</td>
+                          <td className="qpm-r qpm-sub">{calc ? fARS(calc.sub) : "—"}</td>
+                          <td className="qpm-r">{calc ? <span className="qpm-gm">{fPct(calc.gm)}</span> : "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={7} className="qpm-total-lbl">Total cotización</td>
+                      <td className="qpm-r qpm-total">{fARS(total)}</td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
             </div>
           </>
         )}

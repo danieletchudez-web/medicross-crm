@@ -640,8 +640,10 @@
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 24px 64px rgba(0,0,0,.22);
-  width: 100%; max-width: 860px;
-  max-height: 90vh;
+  width: 100%; max-width: 960px;
+  height: 82vh;
+  max-height: 900px;
+  min-height: 380px;
   display: flex; flex-direction: column;
   overflow: hidden;
 }
@@ -695,8 +697,13 @@
 .qpm-table-wrap {
   overflow: auto;
   flex: 1 1 0;
-  padding: 0 20px 8px;
+  min-height: 0;
+  padding: 8px 20px 8px;
 }
+.qpm-empty {
+  padding: 32px 0; text-align: center; color: #9ca3af; font-size: .88rem;
+}
+[data-theme="dark"] .qpm-empty { color: #6b7280; }
 .qpm-table {
   width: 100%; border-collapse: collapse; font-size: .82rem;
   min-width: 640px;
