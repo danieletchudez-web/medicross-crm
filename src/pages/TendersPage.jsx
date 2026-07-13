@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
-import { bacTenderNotes, comparativaSignature, parseBacComparativaFile } from "../lib/bacComparativa";
+import { bacTenderNotes, comparativaSignature, isExternalBacTender, parseBacComparativaFile } from "../lib/bacComparativa";
 import "./tenders.css";
 
 /* ─── Constantes ─────────────────────────────────────────────────────── */
@@ -1979,22 +1979,25 @@ export default function TendersPage({ profile, onNavigate }) {
     }]);
   }
 
+  // Licitaciones propias — excluye las importadas solo como referencia de precios BAC
+  const ownTenders = useMemo(() => tenders.filter(t => !isExternalBacTender(t)), [tenders]);
+
   const kpis = useMemo(() => {
-    const activas    = tenders.filter(t => EN_CURSO.includes(t.operational_status) && !isTenderLost(t));
+    const activas    = ownTenders.filter(t => EN_CURSO.includes(t.operational_status) && !isTenderLost(t));
     const montoTotal = activas.reduce((s,t) => s+Number(t.purchase_order_amount||0), 0);
-    const adjMontos  = tenders.filter(isTenderWon).reduce((s,t)=>s+Number(t.monto_adjudicado||t.purchase_order_amount||0),0);
+    const adjMontos  = ownTenders.filter(isTenderWon).reduce((s,t)=>s+Number(t.monto_adjudicado||t.purchase_order_amount||0),0);
     const proxVencer = activas.filter(t=>{const d=daysUntil(t.end_date);return d!==null&&d>=0&&d<=7;}).length;
     const sinAccion  = activas.filter(t=>!t.next_action).length;
     const pendientesCarga = activas.filter(t => getTenderCompleteness(t).score < 86).length;
     const listasCotizar = activas.filter(t => getTenderCompleteness(t).score >= 86).length;
-    const ganadas    = tenders.filter(isTenderWon).length;
-    const perdidas   = tenders.filter(isTenderLost).length;
-    const cerradasConResultado = tenders.filter(t=>isTenderWon(t)||isTenderLost(t)).length;
+    const ganadas    = ownTenders.filter(isTenderWon).length;
+    const perdidas   = ownTenders.filter(isTenderLost).length;
+    const cerradasConResultado = ownTenders.filter(t=>isTenderWon(t)||isTenderLost(t)).length;
     const tasaCierre = cerradasConResultado>0?Math.round(ganadas/cerradasConResultado*100):null;
-    return {activas:activas.length,montoTotal,adjMontos,proxVencer,sinAccion,pendientesCarga,listasCotizar,ganadas,perdidas,total:tenders.length,tasaCierre};
-  }, [tenders]);
+    return {activas:activas.length,montoTotal,adjMontos,proxVencer,sinAccion,pendientesCarga,listasCotizar,ganadas,perdidas,total:ownTenders.length,tasaCierre};
+  }, [ownTenders]);
 
-  const tenderInsights = useMemo(() => tenders.map(t => ({ t, readiness:getTenderCompleteness(t) })), [tenders]);
+  const tenderInsights = useMemo(() => ownTenders.map(t => ({ t, readiness:getTenderCompleteness(t) })), [ownTenders]);
   const pendingRows = useMemo(() => tenderInsights
     .filter(({t,readiness}) => EN_CURSO.includes(t.operational_status) && !isTenderLost(t) && readiness.score < 86)
     .sort((a,b) => a.readiness.score - b.readiness.score)
@@ -2006,7 +2009,7 @@ export default function TendersPage({ profile, onNavigate }) {
   const quickDuplicates = useMemo(() => findTenderDuplicates(quickForm, tenders), [quickForm, tenders]);
 
   const filtered = useMemo(() => {
-    let rows = [...tenders];
+    let rows = [...ownTenders];
     if (viewMode === "pending") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && !isTenderLost(t) && getTenderCompleteness(t).score < 86);
     if (viewMode === "ready") rows = rows.filter(t => EN_CURSO.includes(t.operational_status) && !isTenderLost(t) && getTenderCompleteness(t).score >= 86);
     if (viewMode === "urgent") rows = rows.filter(t => {
@@ -2018,7 +2021,7 @@ export default function TendersPage({ profile, onNavigate }) {
     Object.entries(colFilters).forEach(([k,v])=>{if(!v)return;rows=rows.filter(t=>String(t[k]||"").toLowerCase().includes(v.toLowerCase()));});
     rows.sort((a,b)=>{const av=a[sortCol]||"",bv=b[sortCol]||"";return sortDir==="asc"?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));});
     return rows;
-  }, [tenders,viewMode,globalQ,colFilters,sortCol,sortDir]);
+  }, [ownTenders,viewMode,globalQ,colFilters,sortCol,sortDir]);
 
   const setColFilter    = (k,v) => setColFilters(prev=>({...prev,[k]:v}));
   const toggleSort      = (k) => {if(sortCol===k)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortCol(k);setSortDir("asc");}};
@@ -2638,7 +2641,7 @@ export default function TendersPage({ profile, onNavigate }) {
           {loading ? (
             <div className="tn-empty"><div className="tn-empty__icon">⏳</div><h3>Cargando…</h3></div>
           ) : filtered.length === 0 ? (
-            <div className="tn-empty"><div className="tn-empty__icon">⌕</div><h3>{tenders.length===0?"Sin licitaciones.":"Sin resultados con los filtros aplicados."}</h3></div>
+            <div className="tn-empty"><div className="tn-empty__icon">⌕</div><h3>{ownTenders.length===0?"Sin licitaciones.":"Sin resultados con los filtros aplicados."}</h3></div>
           ) : filtered.map(t => <MobileTenderCard key={t.id} tender={t}/>)}
         </div>
 
@@ -2670,7 +2673,7 @@ export default function TendersPage({ profile, onNavigate }) {
                 </thead>
                 <tbody>
                   {filtered.length===0
-                    ?<tr><td colSpan={COLS.length} className="tn-grid__empty">{tenders.length===0?"Sin licitaciones. Creá la primera con + Nueva licitación.":"Sin resultados con los filtros aplicados."}</td></tr>
+                    ?<tr><td colSpan={COLS.length} className="tn-grid__empty">{ownTenders.length===0?"Sin licitaciones. Creá la primera con + Nueva licitación.":"Sin resultados con los filtros aplicados."}</td></tr>
                     :filtered.map((t,idx)=>(
                       <tr key={t.id} className={`tn-grid__row ${idx%2===0?"":"tn-grid__row--alt"}`} onClick={()=>openEdit(t)}>
                         {COLS.map(col=>(
