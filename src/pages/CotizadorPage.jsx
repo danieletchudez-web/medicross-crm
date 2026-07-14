@@ -997,23 +997,32 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     const { data: source, error: fetchErr } = await supabase.from("cotizaciones").select("*").eq("id", sourceId).single();
     if (fetchErr || !source) { showToast("No se pudo cargar la cotización original", "err"); return; }
 
+    // Detectar número base (sin sufijo -Rn) para buscar revisiones existentes
+    const baseNum = (source.quote_num_formatted || "").replace(/-R\d+$/, "");
+
+    // Buscar revisiones existentes por patrón de número (sin necesitar columnas nuevas en DB)
     const { data: existingRevs } = await supabase
-      .from("cotizaciones").select("revision_num").eq("parent_quote_id", sourceId)
-      .eq("deleted", false).order("revision_num", { ascending: false }).limit(1);
-    const nextRevNum = existingRevs?.length > 0 ? (existingRevs[0].revision_num || 1) + 1 : 1;
-    const revFormatted = `${source.quote_num_formatted}-R${nextRevNum}`;
+      .from("cotizaciones")
+      .select("quote_num_formatted")
+      .ilike("quote_num_formatted", `${baseNum}-R%`)
+      .eq("deleted", false);
+    const maxRev = (existingRevs || []).reduce((max, r) => {
+      const m = String(r.quote_num_formatted || "").match(/-R(\d+)$/);
+      return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 0);
+    const nextRevNum = maxRev + 1;
+    const revFormatted = `${baseNum}-R${nextRevNum}`;
 
     const {
       id: _id, created_at: _ca, created_by: _cb, quote_number: _qn,
       deleted_at: _da, deleted_by_name: _dbn, accepted_opportunity_id: _aoi,
+      parent_quote_id: _pqi, revision_num: _rn,
       ...rest
     } = source;
     const snap = {
       ...rest,
       quote_num_formatted: revFormatted,
       quote_number: null,
-      parent_quote_id: sourceId,
-      revision_num: nextRevNum,
       estado: "borrador",
       created_at: new Date().toISOString(),
       created_by: profile?.email || "desconocido",
@@ -1025,11 +1034,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
     const { data: newRow, error: insertErr } = await supabase.from("cotizaciones").insert([snap]).select().single();
     if (insertErr) {
-      if (insertErr.message?.includes("parent_quote_id") || insertErr.message?.includes("column")) {
-        showToast("Primero ejecutá el SQL de migración en Supabase (ALTER TABLE cotizaciones ADD COLUMN parent_quote_id uuid, revision_num int)", "err");
-      } else {
-        showToast("Error al crear revisión: " + insertErr.message, "err");
-      }
+      showToast("Error al crear revisión: " + insertErr.message, "err");
       return;
     }
     setHistItems(prev => [newRow, ...prev]);
@@ -1756,7 +1761,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   </div>
                   <div className="cot-hist-item__meta">
                     <span className="cot-hist-num">#{c.quote_num_formatted||"???"}</span>
-                    {c.parent_quote_id && <span className="cot-hist-rev-badge">Revisión</span>}
+                    {/-R\d+$/.test(c.quote_num_formatted || "") && <span className="cot-hist-rev-badge">Revisión</span>}
                     {c.vendedor&&<span className="cot-hist-vend">{c.vendedor.split(" ")[0]}</span>}
                     <select
                       className="cot-estado-inline"
