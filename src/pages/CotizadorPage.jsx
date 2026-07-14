@@ -1013,23 +1013,27 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     const nextRevNum = maxRev + 1;
     const revFormatted = `${baseNum}-R${nextRevNum}`;
 
-    const {
-      id: _id, created_at: _ca, created_by: _cb, quote_number: _qn,
-      deleted_at: _da, deleted_by_name: _dbn, accepted_opportunity_id: _aoi,
-      parent_quote_id: _pqi, revision_num: _rn,
-      ...rest
-    } = source;
+    // Snap con campos explícitos — evita enviar columnas que no están en el schema cache de PostgREST
     const snap = {
-      ...rest,
+      vendedor:     source.vendedor       || null,
+      tc:           source.tc             || null,
+      fecha_apert:  source.fecha_apert    || null,
+      nro_licit:    source.nro_licit      || null,
+      institucion:  source.institucion    || null,
+      plazo_venta:  source.plazo_venta    || null,
+      mant_oferta:  source.mant_oferta    || null,
+      forma_cobro:  source.forma_cobro    || null,
+      renglones:    source.renglones      || [],
+      total_general:source.total_general  || 0,
+      owner_id:     source.owner_id       || null,
       quote_num_formatted: revFormatted,
       quote_number: null,
       estado: "borrador",
-      created_at: new Date().toISOString(),
-      created_by: profile?.email || "desconocido",
-      updated_at: new Date().toISOString(),
-      updated_by: profile?.email || "",
+      created_at:   new Date().toISOString(),
+      created_by:   profile?.email || "desconocido",
+      updated_at:   new Date().toISOString(),
+      updated_by:   profile?.email || "",
       deleted: false, deleted_at: null, deleted_by_name: null,
-      accepted_opportunity_id: null,
     };
 
     const { data: newRow, error: insertErr } = await supabase.from("cotizaciones").insert([snap]).select().single();
