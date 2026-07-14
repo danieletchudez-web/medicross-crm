@@ -822,3 +822,53 @@
 [data-theme="dark"] .upm-select {
   background: #1a1a1a; border-color: #3a3a3a; color: #e5e7eb;
 }
+
+/* ─── Toolbar: botón Revisión ───────────────────────────────────────── */
+.cot-btn--rev-tool {
+  color: #92400e; background: #fffbeb;
+  border: 1px solid #fcd34d !important;
+}
+.cot-btn--rev-tool:hover { background: #fef3c7; color: #78350f; }
+[data-theme="dark"] .cot-btn--rev-tool {
+  background: rgba(180,83,9,.15); color: #fbbf24;
+  border-color: rgba(251,191,36,.3) !important;
+}
+[data-theme="dark"] .cot-btn--rev-tool:hover { background: rgba(180,83,9,.28); }
+
+/* ─── Historial agrupado ─────────────────────────────────────────────── */
+.cot-hist-group { margin-bottom: 8px; }
+.cot-hist-group .cot-hist-item { margin-bottom: 0; border-radius: 10px 10px 0 0; }
+.cot-hist-group:has(.cot-hist-revs) .cot-hist-item { border-bottom: none; border-radius: 10px 10px 0 0; }
+.cot-hist-revs {
+  border: 1px solid #e2e8f0; border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: #f8faff;
+  padding: 0 0 4px 0;
+  overflow: hidden;
+}
+[data-theme="dark"] .cot-hist-revs { background: #131313; border-color: #2a2a2a; }
+
+.cot-hist-rev-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px 7px 20px;
+  border-top: 1px solid #eef2f7;
+  cursor: pointer; gap: 10px;
+  transition: background .12s;
+}
+.cot-hist-rev-row:hover { background: #eef3ff; }
+[data-theme="dark"] .cot-hist-rev-row { border-color: #222; }
+[data-theme="dark"] .cot-hist-rev-row:hover { background: #1e2a3a; }
+
+.cot-hist-rev-row__meta {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+}
+.cot-hist-rev-row__num {
+  font-size: 11.5px; font-weight: 700; color: #b45309; font-family: monospace;
+  white-space: nowrap;
+}
+[data-theme="dark"] .cot-hist-rev-row__num { color: #fbbf24; }
+.cot-hist-rev-row__total {
+  font-size: 12px; font-weight: 700; color: #0f2444; margin-left: auto;
+}
+[data-theme="dark"] .cot-hist-rev-row__total { color: #e5e7eb; }
+.cot-hist-rev-row__date { font-size: 10.5px; color: #9ca3af; white-space: nowrap; }

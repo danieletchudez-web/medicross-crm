@@ -1092,6 +1092,30 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     return items;
   }, [histItems, histSearch, filterVendedor, filterMes]);
 
+  // Agrupa revisiones bajo su cotización original
+  const histAgrupado = useMemo(() => {
+    const isRev = n => /-R\d+$/.test(n || "");
+    const originals = histFiltrado.filter(c => !isRev(c.quote_num_formatted));
+    const revisions = histFiltrado.filter(c =>  isRev(c.quote_num_formatted));
+    const revsByBase = {};
+    revisions.forEach(r => {
+      const base = (r.quote_num_formatted || "").replace(/-R\d+$/, "");
+      (revsByBase[base] = revsByBase[base] || []).push(r);
+    });
+    const groups = originals.map(o => ({
+      original: o,
+      revisions: (revsByBase[o.quote_num_formatted || ""] || [])
+        .sort((a,b) => {
+          const na = +((a.quote_num_formatted||"").match(/-R(\d+)$/)?.[1]||0);
+          const nb = +((b.quote_num_formatted||"").match(/-R(\d+)$/)?.[1]||0);
+          return nb - na;
+        }),
+    }));
+    const includedRevIds = new Set(groups.flatMap(g => g.revisions.map(r => r.id)));
+    const orphans = revisions.filter(r => !includedRevIds.has(r.id)).map(r => ({ original: r, revisions: [] }));
+    return [...groups, ...orphans];
+  }, [histFiltrado]);
+
   /* ── Export PDF ── */
   async function exportPDF() {
     if (!hasCondicionesCompletas) {
@@ -1389,6 +1413,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
               <span>Papelera</span>
             </button>
+            {docId && <>
+              <div className="cot-toolbar__sep"/>
+              <button className="cot-btn cot-btn--rev-tool" onClick={()=>createRevision(docId)}
+                title="Crear nueva versión de precios conservando el original">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span>Revisión</span>
+              </button>
+            </>}
             <div className="cot-toolbar__sep"/>
             <button className="cot-btn cot-btn--ghost" onClick={nuevaCotizacion}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1748,6 +1780,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   </button>
                 )}
                 <span className="cot-hist-filter-count">{histFiltrado.length} resultado{histFiltrado.length!==1?"s":""}</span>
+
               </div>
             </div>
             <div className="cot-modal__body">
@@ -1755,52 +1788,68 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                 <p style={{textAlign:"center",color:"#94a3b8",padding:32}}>Cargando…</p>
               ) : histFiltrado.length===0 ? (
                 <p style={{textAlign:"center",color:"#94a3b8",padding:32}}>{histItems.length===0?"No hay cotizaciones guardadas.":"Sin resultados."}</p>
-              ) : histFiltrado.map(c=>(
-                <div key={c.id} className="cot-hist-item" onClick={()=>loadCotizacion(c.id)}>
-                  <div className="cot-hist-item__head">
-                    <div className="cot-hist-inst">
-                      {c.institucion || <span style={{color:"#94a3b8",fontStyle:"italic",fontWeight:400}}>Sin institución</span>}
+              ) : histAgrupado.map(({original: c, revisions: revs})=>(
+                <div key={c.id} className="cot-hist-group">
+                  {/* Cotización original */}
+                  <div className="cot-hist-item" onClick={()=>loadCotizacion(c.id)}>
+                    <div className="cot-hist-item__head">
+                      <div className="cot-hist-inst">
+                        {c.institucion || <span style={{color:"#94a3b8",fontStyle:"italic",fontWeight:400}}>Sin institución</span>}
+                      </div>
+                      <span className="cot-hist-date">{c.created_at?new Date(c.created_at).toLocaleDateString("es-AR"):"-"}</span>
                     </div>
-                    <span className="cot-hist-date">{c.created_at?new Date(c.created_at).toLocaleDateString("es-AR"):"-"}</span>
+                    <div className="cot-hist-item__meta">
+                      <span className="cot-hist-num">#{c.quote_num_formatted||"???"}</span>
+                      {/-R\d+$/.test(c.quote_num_formatted || "") && <span className="cot-hist-rev-badge">Revisión</span>}
+                      {c.vendedor&&<span className="cot-hist-vend">{c.vendedor.split(" ")[0]}</span>}
+                      <select
+                        className="cot-estado-inline"
+                        value={c.estado||"borrador"}
+                        style={(() => { const s = ESTADO_COLORS[c.estado||"borrador"]||ESTADO_COLORS.borrador; return {background:s.bg,color:s.color}; })()}
+                        onChange={e=>{e.stopPropagation();cambiarEstado(c.id,e.target.value);}}
+                        onClick={e=>e.stopPropagation()}
+                      >
+                        {ESTADOS.map(s=><option key={s} value={s}>{ESTADO_LABELS[s]}</option>)}
+                      </select>
+                      <span className="cot-hist-total">{c.total_general?fARS(c.total_general):"—"}</span>
+                    </div>
+                    {(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).length>0&&(
+                      <div className="cot-hist-items">{(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).slice(0,3).join(" · ")}</div>
+                    )}
+                    <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
+                      <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(c.id)}>Editar</button>
+                      <button className="cot-btn cot-btn--rev cot-btn--sm" onClick={()=>{createRevision(c.id);setShowHistorial(false);}} title="Crear revisión de precios">Nueva versión</button>
+                      {c.estado==="aceptada"&&<button className="cot-btn cot-btn--success cot-btn--sm" onClick={()=>convertAcceptedQuote(c)}>{c.accepted_opportunity_id?"✓ Oportunidad creada":"✓ Convertir en oportunidad"}</button>}
+                      <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>softDelete(c.id,c.quote_num_formatted||"???")}>Borrar</button>
+                    </div>
                   </div>
-                  <div className="cot-hist-item__meta">
-                    <span className="cot-hist-num">#{c.quote_num_formatted||"???"}</span>
-                    {/-R\d+$/.test(c.quote_num_formatted || "") && <span className="cot-hist-rev-badge">Revisión</span>}
-                    {c.vendedor&&<span className="cot-hist-vend">{c.vendedor.split(" ")[0]}</span>}
-                    <select
-                      className="cot-estado-inline"
-                      value={c.estado||"borrador"}
-                      style={(() => {
-                        const s = ESTADO_COLORS[c.estado||"borrador"] || ESTADO_COLORS.borrador;
-                        return { background: s.bg, color: s.color };
-                      })()}
-                      onChange={e => { e.stopPropagation(); cambiarEstado(c.id, e.target.value); }}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      {ESTADOS.map(s => (
-                        <option key={s} value={s}>{ESTADO_LABELS[s]}</option>
+                  {/* Revisiones anidadas */}
+                  {revs.length > 0 && (
+                    <div className="cot-hist-revs">
+                      {revs.map(r=>(
+                        <div key={r.id} className="cot-hist-rev-row" onClick={()=>loadCotizacion(r.id)}>
+                          <div className="cot-hist-rev-row__meta">
+                            <span className="cot-hist-rev-row__num">↳ {r.quote_num_formatted}</span>
+                            <select
+                              className="cot-estado-inline"
+                              value={r.estado||"borrador"}
+                              style={(() => { const s = ESTADO_COLORS[r.estado||"borrador"]||ESTADO_COLORS.borrador; return {background:s.bg,color:s.color}; })()}
+                              onChange={e=>{e.stopPropagation();cambiarEstado(r.id,e.target.value);}}
+                              onClick={e=>e.stopPropagation()}
+                            >
+                              {ESTADOS.map(s=><option key={s} value={s}>{ESTADO_LABELS[s]}</option>)}
+                            </select>
+                            <span className="cot-hist-rev-row__total">{r.total_general?fARS(r.total_general):"—"}</span>
+                            <span className="cot-hist-rev-row__date">{r.created_at?new Date(r.created_at).toLocaleDateString("es-AR"):"-"}</span>
+                          </div>
+                          <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
+                            <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(r.id)}>Editar</button>
+                            <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>softDelete(r.id,r.quote_num_formatted||"???")}>Borrar</button>
+                          </div>
+                        </div>
                       ))}
-                    </select>
-                    <span className="cot-hist-total">{c.total_general?fARS(c.total_general):"—"}</span>
-                  </div>
-                  {(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).length > 0 && (
-                    <div className="cot-hist-items">
-                      {(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).slice(0,3).join(" · ")}
                     </div>
                   )}
-                  <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
-                    <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(c.id)}>Editar</button>
-                    <button className="cot-btn cot-btn--rev cot-btn--sm" onClick={()=>{createRevision(c.id);setShowHistorial(false);}}
-                      title="Crear revisión con precios actualizados, conservando el original">
-                      Nueva versión
-                    </button>
-                    {c.estado === "aceptada" && (
-                      <button className="cot-btn cot-btn--success cot-btn--sm" onClick={()=>convertAcceptedQuote(c)}>
-                        {c.accepted_opportunity_id ? "✓ Oportunidad creada" : "✓ Convertir en oportunidad"}
-                      </button>
-                    )}
-                    <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>softDelete(c.id,c.quote_num_formatted||"???")}>Borrar</button>
-                  </div>
                 </div>
               ))}
             </div>
