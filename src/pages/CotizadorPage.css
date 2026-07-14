@@ -378,6 +378,8 @@
 }
 .cot-hist-filter-clear:hover { background: #fecaca; }
 .cot-hist-filter-count { font-size: 11px; color: #9D9D9D; margin-left: auto; }
+.cot-hist-refreshing { font-size: 10px; font-weight: 500; color: #94a3b8; margin-left: 8px; animation: cotHistPulse 1.2s ease-in-out infinite; }
+@keyframes cotHistPulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 .cot-modal__body {
   flex: 1;
   min-height: 0;

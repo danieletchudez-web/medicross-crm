@@ -918,8 +918,11 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   }
 
   async function abrirHistorial() {
-    setLoadingHist(true); setShowHistorial(true);
-    const { data, error } = await supabase.from("cotizaciones").select("*").eq("deleted",false).order("created_at",{ascending:false}).limit(100);
+    // Si ya hay datos cargados, mostrar inmediatamente sin bloquear
+    const firstLoad = histItems.length === 0;
+    if (firstLoad) setLoadingHist(true);
+    setShowHistorial(true);
+    const { data, error } = await supabase.from("cotizaciones").select("*").eq("deleted",false).order("created_at",{ascending:false}).limit(200);
     if (!error) {
       const now = Date.now();
       const nextItems = (data || []).map((quote) => {
@@ -928,8 +931,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         if (["enviada", "evaluacion"].includes(quote.estado) && daysOpen > expirationDays) return { ...quote, estado: "vencida" };
         return quote;
       });
+      // Actualizar vencidas en background sin bloquear la UI
       const expired = nextItems.filter((quote, index) => quote.estado === "vencida" && data[index]?.estado !== "vencida");
-      if (expired.length) await Promise.all(expired.map((quote) => supabase.from("cotizaciones").update({ estado: "vencida", updated_at: new Date().toISOString() }).eq("id", quote.id)));
+      if (expired.length) expired.forEach(quote => supabase.from("cotizaciones").update({ estado: "vencida", updated_at: new Date().toISOString() }).eq("id", quote.id));
       setHistItems(nextItems);
     } else showToast("Error: "+error.message,"err");
     setLoadingHist(false);
@@ -1760,7 +1764,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         <div className="cot-overlay" onClick={e=>{if(e.target.classList.contains("cot-overlay"))setShowHistorial(false);}}>
           <div className="cot-modal">
             <div className="cot-modal__header">
-              <h3>📋 Historial de cotizaciones</h3>
+              <h3>📋 Historial de cotizaciones {loadingHist && <span className="cot-hist-refreshing">actualizando…</span>}</h3>
               <button className="cot-modal__close" onClick={()=>setShowHistorial(false)}>×</button>
             </div>
             <div className="cot-modal__search">
@@ -1784,7 +1788,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
               </div>
             </div>
             <div className="cot-modal__body">
-              {loadingHist ? (
+              {loadingHist && histItems.length===0 ? (
                 <p style={{textAlign:"center",color:"#94a3b8",padding:32}}>Cargando…</p>
               ) : histFiltrado.length===0 ? (
                 <p style={{textAlign:"center",color:"#94a3b8",padding:32}}>{histItems.length===0?"No hay cotizaciones guardadas.":"Sin resultados."}</p>
