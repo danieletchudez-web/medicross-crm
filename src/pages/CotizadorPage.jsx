@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Layout from "../components/Layout";
+import logoUrl from "../assets/logo.jpg";
 import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
 import CotizadorIntel, { useQuoteHint } from "./CotizadorIntel";
@@ -1096,6 +1097,24 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     const { quoteNum: exportQuoteNum, savedDocId } = exportResult;
     const tcN   = parseN(tc);
     const fecha = new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"long",year:"numeric"});
+
+    // Fetch logo image for PDF embedding
+    let logoImgW = 1400, logoImgH = 400, logoStr = null;
+    try {
+      const resp = await fetch(logoUrl);
+      const buf  = await resp.arrayBuffer();
+      const lb   = new Uint8Array(buf);
+      for (let i = 0; i < lb.length - 8; i++) {
+        if (lb[i] === 0xFF && (lb[i+1] === 0xC0 || lb[i+1] === 0xC2 || lb[i+1] === 0xC1)) {
+          logoImgH = (lb[i+5] << 8) | lb[i+6];
+          logoImgW = (lb[i+7] << 8) | lb[i+8];
+          break;
+        }
+      }
+      let s = "";
+      for (let i = 0; i < lb.length; i++) s += String.fromCharCode(lb[i]);
+      logoStr = s;
+    } catch(e) { /* logo no crítico, cae en texto */ }
     const esc   = (t) => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[\\]/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)").replace(/[^\x20-\x7E]/g,"").substring(0,110);
 
     // Splits description text respecting \n and word-wrapping long lines
@@ -1125,6 +1144,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     const strk = (x,y,w,h,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x} ${y} ${w} ${h} re S 0 0 0 RG`);
     const hln  = (x1,y1,x2,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x1} ${y1} m ${x2} ${y1} l S 0 0 0 RG`);
     const vln  = (x,y1,y2,r,g,b,lw=0.5) => ps.push(`${r} ${g} ${b} RG ${lw} w ${x} ${y1} m ${x} ${y2} l S 0 0 0 RG`);
+    const img  = (x,y,w,h) => ps.push(`q ${w} 0 0 ${h} ${x} ${y} cm /Logo Do Q`);
 
     function drawHeader() {
      // Fondo blanco para todo el header
@@ -1133,13 +1153,16 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
      // Fondo blanco en zona logo
      fill(0, H-HDR, 192, HDR, 1, 1, 1);
 
-     // Logo textual en azul sobre fondo blanco
-     ps.push(".055 .373 .659 rg");
-     txt(26, H-HDR+(HDR/2)+8, "MediCross", 22, true);
-
-     ps.push(".055 .373 .659 rg");
-     txt(26, H-HDR+(HDR/2)-10, "Productos Medicos Integrales", 7, false);
-
+     // Logo imagen (o texto de fallback si no cargó)
+     if (logoStr) {
+       const lgW = 150, lgH = Math.round(150 * logoImgH / logoImgW);
+       img(21, H - HDR + Math.round((HDR - lgH) / 2), lgW, lgH);
+     } else {
+       ps.push(".055 .373 .659 rg");
+       txt(26, H-HDR+(HDR/2)+8, "MediCross", 22, true);
+       ps.push(".055 .373 .659 rg");
+       txt(26, H-HDR+(HDR/2)-10, "Productos Medicos Integrales", 7, false);
+     }
      ps.push("0 0 0 rg");
 
       // Línea azul inferior del header
@@ -1269,16 +1292,21 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     let pdf="%PDF-1.4\n%\xFF\xFF\n";
     const obj=(n,b)=>{offs[n]=pdf.length;pdf+=`${n} 0 obj\n${b}\nendobj\n`;};
     const nPags=pages.length,baseP=3,baseC=baseP+nPags;
-    const fontR1=baseC+nPags,fontR2=fontR1+1;
+    const fontR1=baseC+nPags,fontR2=fontR1+1,imgObjN=fontR2+1;
     const kids=Array.from({length:nPags},(_,i)=>`${baseP+i} 0 R`).join(" ");
-    const res=`/Font << /F1 ${fontR1} 0 R /F2 ${fontR2} 0 R >>`;
+    const xobjRes = logoStr ? ` /XObject << /Logo ${imgObjN} 0 R >>` : "";
+    const res=`/Font << /F1 ${fontR1} 0 R /F2 ${fontR2} 0 R >>${xobjRes}`;
     obj(1,"<< /Type /Catalog /Pages 2 0 R >>");
     obj(2,`<< /Type /Pages /Kids [${kids}] /Count ${nPags} >>`);
     for(let i=0;i<nPags;i++) obj(baseP+i,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}]\n /Contents ${baseC+i} 0 R\n /Resources << ${res} >> >>`);
     for(let i=0;i<nPags;i++){const s=pages[i].join("\n");obj(baseC+i,`<< /Length ${s.length} >>\nstream\n${s}\nendstream`);}
     obj(fontR1,"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
     obj(fontR2,"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
-    const totN=fontR2+1;
+    if (logoStr) {
+      offs[imgObjN]=pdf.length;
+      pdf+=`${imgObjN} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${logoImgW} /Height ${logoImgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logoStr.length} >>\nstream\n${logoStr}\nendstream\nendobj\n`;
+    }
+    const totN=logoStr ? imgObjN+1 : fontR2+1;
     let xs=`xref\n0 ${totN}\n0000000000 65535 f \n`;
     for(let i=1;i<totN;i++) xs+=String(offs[i]||0).padStart(10,"0")+" 00000 n \n";
     const tr=`trailer\n<< /Size ${totN} /Root 1 0 R >>\nstartxref\n${pdf.length}\n%%EOF`;
