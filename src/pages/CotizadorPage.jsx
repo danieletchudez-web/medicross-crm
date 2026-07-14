@@ -1136,7 +1136,12 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
     }
 
     const W=595.28, H=841.89;
-    const HDR = (nroLicit||institucion||fechaApert) ? 136 : 100;
+    // HDR dinámico: mide el contenido real para evitar espacio vacío
+    const _nLict = [nroLicit,fechaApert,institucion,plazoVenta,mantOferta,formaCobro].filter(Boolean).length;
+    const _hasLicit = !!(nroLicit||institucion||fechaApert);
+    const _centerDepth = vendedor ? 82 : 65;                          // bottom of center column (pt from top)
+    const _licitDepth  = _hasLicit ? Math.max(27, 24+_nLict*10) : 0; // bottom of licit block
+    const HDR = Math.max(Math.max(_centerDepth,_licitDepth)+14, 82);  // +14 padding, min 82
     let ps=[], pageY=H, pages=[];
 
     const txt  = (x,y,t,sz,b) => ps.push(`BT /${b?"F2":"F1"} ${sz} Tf ${x} ${y} Td (${esc(t)}) Tj ET`);
