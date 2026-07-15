@@ -441,7 +441,7 @@ function fileIcon(name) {
 const COLS = [
   { key:"_check",               label:"☑",              w:36,  fixed:true },
   { key:"_alert",               label:"⚡",              w:52,  fixed:true },
-  { key:"institution",          label:"Hospital / Inst.", w:200 },
+  { key:"institution",          label:"Hospital / Inst.", w:300 },
   { key:"process_number",       label:"N° Proceso",      w:130 },
   { key:"process_name",         label:"Nombre proceso",  w:220 },
   { key:"expedient_number",     label:"Expediente",      w:140 },
@@ -2446,6 +2446,8 @@ export default function TendersPage({ profile, onNavigate }) {
         const bc=t.delivery_status==="Completa"?"green":t.delivery_status==="Parcial"?"yellow":"red";
         return <span className={`tn-badge tn-badge--${bc}`} style={{fontSize:10.5,padding:"2px 6px"}}>{t.delivery_status||"—"}</span>;
       }
+      case "institution":
+        return <span style={{fontSize:12,fontWeight:500,whiteSpace:"normal",lineHeight:1.35,display:"block"}} title={t.institution||""}>{t.institution||"—"}</span>;
       case "notes":
         return <span style={{fontSize:11,color:"#64748b",display:"block",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={t.notes||""}>{t.notes||"—"}</span>;
       default:
