@@ -484,6 +484,322 @@ function QuotePreviewModal({ quoteId, onClose, onLoadInEditor, onCreateRevision 
   );
 }
 
+/* ─── QuoteEditModal ─────────────────────────────────────────────────── */
+function QuoteEditModal({ quoteId, profile, onClose, onSaved }) {
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [toast,      setToast]      = useState(null);
+  const [docId,      setDocId]      = useState(null);
+  const [quoteNum,   setQuoteNum]   = useState(null);
+  const [estado,     setEstado]     = useState("generado");
+  const [vendedor,   setVendedor]   = useState("");
+  const [vendedores, setVendedores] = useState(VENDEDORES);
+  const [tc,         setTc]         = useState("1425");
+  const [fechaApert, setFechaApert] = useState("");
+  const [nroLicit,   setNroLicit]   = useState("");
+  const [institucion,setInstitucion]= useState("");
+  const [plazoVenta, setPlazoVenta] = useState("");
+  const [mantOferta, setMantOferta] = useState("");
+  const [formaCobro, setFormaCobro] = useState("");
+  const [renglones,  setRenglones]  = useState([emptyR()]);
+
+  useEffect(() => {
+    const esc = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", esc);
+    supabase.from("profiles").select("full_name,email,role,approved,is_active,allowed_modules").order("full_name")
+      .then(({ data }) => { if (data) setVendedores(uniqueNames([...data.filter(canQuoteUser).map(u => u.full_name || u.email), ...VENDEDORES])); });
+    supabase.from("cotizaciones").select("*").eq("id", quoteId).single()
+      .then(({ data }) => {
+        if (!data) { onClose(); return; }
+        const rawNum = data.quote_num_formatted || data.quote_number;
+        const isRev  = String(rawNum || "").includes("-R");
+        setDocId(data.id);
+        setQuoteNum(isRev ? rawNum : (formatQuoteNumber(rawNum) || String(rawNum || "?")));
+        setVendedor(data.vendedor || "");
+        setTc(String(data.tc || "1425"));
+        setFechaApert(data.fecha_apert || "");
+        setNroLicit(data.nro_licit || "");
+        setInstitucion(data.institucion || "");
+        setPlazoVenta(data.plazo_venta || "");
+        setMantOferta(data.mant_oferta || "");
+        setFormaCobro(data.forma_cobro || "");
+        setEstado(data.estado || "generado");
+        const raws = data.renglones || [];
+        setRenglones(raws.length > 0 ? raws.map(r => ({
+          id: Date.now() + Math.random(),
+          empresa: r.empresa||"", renglon: r.renglon||"", subitem: r.subitem||"",
+          codigo: r.codigo||"", marca: r.marca||"", descr: r.descr||"",
+          costo: r.costo||"", cant: r.cant||1, moneda: r.moneda||"USD",
+          iva: String(r.iva||"10.5"), markup: String(r.markup||"2"),
+          tcInd: r.tcInd||"", modoManual: r.modoManual||"auto", pvManual: r.pvManual||"",
+          catalog_product_id: r.catalog_product_id||null, market_reference: r.market_reference||null,
+        })) : [emptyR()]);
+        setLoading(false);
+      });
+    return () => window.removeEventListener("keydown", esc);
+  }, [quoteId]);
+
+  function showT(msg, type = "ok") { setToast({ msg, type }); setTimeout(() => setToast(null), 3200); }
+
+  const tcN = parseN(tc);
+  const totalGeneral = renglones.reduce((s, r) => s + (calcR(r, tcN)?.sub || 0), 0);
+  const updateR  = (id, key, val) => setRenglones(prev => prev.map(r => r.id === id ? { ...r, [key]: val } : r));
+  const addR_    = () => setRenglones(prev => [...prev, emptyR()]);
+  const removeR_ = id => { if (renglones.length > 1) setRenglones(prev => prev.filter(r => r.id !== id)); };
+
+  async function save({ andClose = false } = {}) {
+    if (!institucion.trim()) { showT("La institución es obligatoria", "err"); return; }
+    setSaving(true);
+    try {
+      const snap = {
+        vendedor, tc: tcN, estado,
+        fecha_apert: fechaApert||null, nro_licit: nroLicit||null,
+        institucion: institucion||null, plazo_venta: plazoVenta||null,
+        mant_oferta: mantOferta||null, forma_cobro: formaCobro||null,
+        renglones: renglones.map(r => ({
+          empresa:r.empresa, renglon:r.renglon, subitem:r.subitem, codigo:r.codigo,
+          marca:r.marca, descr:r.descr, costo:r.costo, cant:r.cant, moneda:r.moneda,
+          iva:String(r.iva), markup:String(r.markup), tcInd:r.tcInd||"",
+          modoManual:r.modoManual||"auto", pvManual:r.pvManual||"",
+          catalog_product_id:r.catalog_product_id||null, market_reference:r.market_reference||null,
+        })),
+        total_general: totalGeneral,
+        updated_at: new Date().toISOString(),
+        updated_by: profile?.email||"desconocido",
+      };
+      const { error } = await supabase.from("cotizaciones").update(snap).eq("id", docId);
+      if (error) throw error;
+      showT(`Cotización #${quoteNum} guardada ✓`);
+      if (onSaved) onSaved({ id: docId, ...snap, quote_num_formatted: quoteNum });
+      if (andClose) setTimeout(onClose, 700);
+    } catch(e) {
+      showT("Error: " + e.message, "err");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const estadoBadge = ESTADO_COLORS[estado] || ESTADO_COLORS.generado;
+
+  return createPortal(
+    <div className="qpm-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="qem-panel" role="dialog" aria-modal="true">
+
+        {/* Header */}
+        <div className="qem-header">
+          <div className="qem-header-left">
+            <span className="qem-title">#{quoteNum || "…"}</span>
+            <select className="qem-estado-sel" value={estado}
+              style={{ background: estadoBadge.bg, color: estadoBadge.color }}
+              onChange={e => setEstado(e.target.value)}>
+              {ESTADOS.map(st => <option key={st} value={st}>{ESTADO_LABELS[st]}</option>)}
+            </select>
+          </div>
+          <div className="qem-header-right">
+            <button className="qpm-btn qpm-btn--sec" onClick={() => save()} disabled={saving}>
+              {saving ? "Guardando…" : "Guardar"}
+            </button>
+            <button className="qpm-btn qpm-btn--pri" onClick={() => save({ andClose: true })} disabled={saving}>
+              Guardar y cerrar
+            </button>
+            <button className="qpm-close" onClick={onClose} title="Cerrar">✕</button>
+          </div>
+        </div>
+
+        {toast && <div className={`cot-toast cot-toast--${toast.type} qem-toast`}>{toast.msg}</div>}
+
+        {loading ? (
+          <div className="qem-loading">Cargando cotización…</div>
+        ) : (
+          <div className="qem-body">
+
+            {/* Parámetros globales */}
+            <div className="cot-card" style={{ marginBottom: 0 }}>
+              <h3 className="cot-section-title">Parámetros globales</h3>
+              <div className="cot-params-grid">
+                <div className="cot-field cot-f-2"><label>Vendedor</label>
+                  <select value={vendedor} onChange={e => setVendedor(e.target.value)}>
+                    <option value="">— Seleccionar —</option>
+                    {vendedores.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+                <div className="cot-field"><label>TC USD → ARS</label>
+                  <input type="number" value={tc} onChange={e => setTc(e.target.value)} placeholder="1425"/>
+                </div>
+                <div className="cot-field cot-f-2"><label>N° Licitación</label>
+                  <input value={nroLicit} onChange={e => setNroLicit(e.target.value)} placeholder="Ej: 001/2026"/>
+                </div>
+                <div className="cot-field"><label>Fecha apertura</label>
+                  <input type="date" value={fechaApert} onChange={e => setFechaApert(e.target.value)}/>
+                </div>
+                <div className="cot-field cot-f-3"><label>Institución / Hospital</label>
+                  <CotInstCombobox value={institucion} onChange={setInstitucion}/>
+                </div>
+                <div className="cot-field"><label>Plazo de venta</label>
+                  <select value={plazoVenta} onChange={e => setPlazoVenta(e.target.value)}>
+                    <option value="">— Seleccioná —</option>
+                    {PLAZOS_VENTA.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="cot-field"><label>Mantenimiento oferta</label>
+                  <select value={mantOferta} onChange={e => setMantOferta(e.target.value)}>
+                    <option value="">— Seleccioná —</option>
+                    {MANTENIMIENTOS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="cot-field"><label>Forma de cobro</label>
+                  <select value={formaCobro} onChange={e => setFormaCobro(e.target.value)}>
+                    <option value="">— Seleccioná —</option>
+                    {FORMAS_COBRO.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Renglones */}
+            <h3 className="cot-section-title" style={{ marginTop: 4 }}>Renglones</h3>
+            {renglones.map((r, idx) => {
+              const calc = calcR(r, tcN);
+              return (
+                <div key={r.id} className="cot-renglon">
+                  <div className="cot-renglon__header">
+                    <span className="cot-renglon__num">Renglón {idx + 1}</span>
+                    <button className="cot-btn-del" onClick={() => removeR_(r.id)} title="Eliminar renglón">×</button>
+                  </div>
+                  <div className="cot-renglon__body">
+                    <div className="cot-renglon__left">
+                      <div className="cot-renglon-ids">
+                        <div className="cot-field"><label>Empresa / Proveedor</label>
+                          <input value={r.empresa} onChange={e => updateR(r.id,"empresa",e.target.value)} placeholder="Proveedor"/></div>
+                        <div className="cot-field"><label>Renglón N°</label>
+                          <input type="number" value={r.renglon} onChange={e => updateR(r.id,"renglon",e.target.value)} placeholder="N°"/></div>
+                        <div className="cot-field"><label>Sub ítem</label>
+                          <input type="number" value={r.subitem} onChange={e => updateR(r.id,"subitem",e.target.value)} placeholder="N°"/></div>
+                        <div className="cot-field cot-field--qty"><label>Cantidad</label>
+                          <input type="number" value={r.cant} min={1} onChange={e => updateR(r.id,"cant",e.target.value)}/></div>
+                      </div>
+                      <div className="cot-grid-2" style={{ marginTop:10 }}>
+                        <div className="cot-field"><label>Código</label>
+                          <input value={r.codigo} onChange={e => updateR(r.id,"codigo",e.target.value)} placeholder="SKU"/></div>
+                        <div className="cot-field"><label>Marca</label>
+                          <input value={r.marca} onChange={e => updateR(r.id,"marca",e.target.value)} placeholder="Marca"/></div>
+                      </div>
+                      <div className="cot-field" style={{ marginTop:10 }}><label>Descripción del producto</label>
+                        <textarea rows={3} value={r.descr} onChange={e => updateR(r.id,"descr",e.target.value)} placeholder="Descripción completa del producto"/>
+                      </div>
+                      <div className="cot-divider"/>
+                      <div className="cot-costs-row">
+                        <div className="cot-field"><label>Moneda</label>
+                          <select value={r.moneda} onChange={e => updateR(r.id,"moneda",e.target.value)}>
+                            <option value="USD">USD</option><option value="ARS">ARS</option>
+                          </select></div>
+                        <div className="cot-field"><label>% IVA</label>
+                          <select value={r.iva} onChange={e => updateR(r.id,"iva",e.target.value)}>
+                            <option value="10.5">10,5%</option><option value="21">21%</option>
+                          </select></div>
+                        <div className="cot-field"><label>Multiplicador ×</label>
+                          <input value={r.markup} onChange={e => updateR(r.id,"markup",e.target.value)} placeholder="2"/></div>
+                        <div className="cot-field"><label>Costo unitario</label>
+                          <input value={r.costo} onChange={e => updateR(r.id,"costo",e.target.value)} placeholder="0,00"/></div>
+                        <div className="cot-field"><label>TC propio (vacío = global)</label>
+                          <input value={r.tcInd} onChange={e => updateR(r.id,"tcInd",e.target.value)} placeholder="ej: 1500"/></div>
+                      </div>
+                      {calc && (
+                        <div className="cot-costo-box">
+                          <span>Costo ARS: <strong>{fARS(calc.cARS)}</strong></span>
+                          <span style={{color:"#94a3b8",fontSize:11}}>+ IVA {r.iva}% = {fARS(calc.cIvaARS)}</span>
+                        </div>
+                      )}
+                      <div style={{marginTop:12,display:"flex",alignItems:"center",gap:10}}>
+                        <label style={{fontSize:11,fontWeight:600,color:"#64748b"}}>Modo precio:</label>
+                        <select value={r.modoManual} onChange={e => updateR(r.id,"modoManual",e.target.value)}
+                          style={{height:34,border:"1px solid rgba(15,36,68,.14)",borderRadius:8,fontSize:12.5,fontFamily:"inherit",padding:"0 10px",background:"#f8fafc",outline:"none"}}>
+                          <option value="auto">Automático (markup)</option>
+                          <option value="manual">Manual (precio fijo)</option>
+                        </select>
+                      </div>
+                      {r.modoManual==="manual" && (
+                        <div className="cot-field" style={{marginTop:10}}>
+                          <label style={{color:"#0f2444",fontWeight:700}}>Precio venta manual (ARS c/IVA)</label>
+                          <input value={r.pvManual} onChange={e => updateR(r.id,"pvManual",e.target.value)}
+                            placeholder="ej: 11001889"
+                            style={{borderColor:"#185fa5",background:"#eff6ff",fontWeight:700,fontSize:16}}/>
+                        </div>
+                      )}
+                    </div>
+                    <div className="cot-renglon__right">
+                      {calc ? (
+                        <>
+                          <div className="cot-mk-row">
+                            <div className="cot-mk-card"><span>Markup % <small style={{opacity:.6}}>(base costo)</small></span><strong>{fPct(calc.mkPct)}</strong></div>
+                            <div className="cot-mk-card cot-mk-card--ok"><span>GM % <small style={{opacity:.6}}>(base venta)</small></span><strong>{fPct(calc.gm)}</strong></div>
+                          </div>
+                          <div className="cot-pv-grid">
+                            <div className="cot-pv cot-pv--acc"><span>PV USD s/IVA</span><strong>{fUSD(calc.pvUSDs)}</strong></div>
+                            <div className="cot-pv cot-pv--acc"><span>PV USD c/IVA</span><strong>{fUSD(calc.pvUSDc)}</strong></div>
+                            <div className="cot-pv"><span>PV ARS s/IVA</span><strong>{fARS(calc.pvARSs)}</strong></div>
+                            <div className="cot-pv"><span>PV ARS c/IVA</span><strong>{fARS(calc.pvARSc)}</strong></div>
+                          </div>
+                          <div className="cot-divider"/>
+                          <div className="cot-subtotal">
+                            <div><span>Subtotal c/IVA</span><span style={{fontSize:10.5}}>{fARS(calc.pvARSc)} × {calc.cant} u.</span></div>
+                            <strong>{fARS(calc.sub)}</strong>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="cot-calc-placeholder">Ingresá el costo para ver el cálculo</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <button className="cot-btn-add" onClick={addR_}>+ Agregar renglón</button>
+
+            {/* Tabla resumen */}
+            {renglones.some(r => calcR(r, tcN)) && (
+              <div className="cot-preview" style={{ marginTop: 0 }}>
+                <div className="cot-table-wrap">
+                  <table className="cot-table">
+                    <thead>
+                      <tr><th>#</th><th>Empresa</th><th>Rengl.</th><th>Descripción</th><th>Marca</th>
+                        <th>PV USD s/IVA</th><th>PV ARS s/IVA</th><th>PV ARS c/IVA</th><th>Cant.</th><th>Subtotal</th></tr>
+                    </thead>
+                    <tbody>
+                      {renglones.map((r, idx) => {
+                        const c = calcR(r, tcN);
+                        return (
+                          <tr key={r.id}>
+                            <td>{idx+1}</td>
+                            <td>{(r.empresa||"-").substring(0,12)}</td>
+                            <td>{r.renglon||"-"}{r.subitem?"/"+r.subitem:""}</td>
+                            <td title={r.descr||""}>{(r.descr||r.codigo||"-").substring(0,28)}</td>
+                            <td>{(r.marca||"-").substring(0,10)}</td>
+                            <td className="nr">{c?fUSD(c.pvUSDs):"-"}</td>
+                            <td className="nr">{c?fARS(c.pvARSs):"-"}</td>
+                            <td className="nb">{c?fARS(c.pvARSc):"-"}</td>
+                            <td className="nr">{c?String(c.cant):"-"}</td>
+                            <td className="nb">{c?fARS(c.sub):"-"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="cot-total-bar">
+                  <span>TOTAL GENERAL c/IVA (ARS)</span>
+                  <strong>{fARS(totalGeneral)}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function CotizadorPage({ profile, onNavigate, initialData, pageKey }) {
   const [vendedor,    setVendedor]    = useState(initialData?.vendedor    || "");
   const [vendedores,  setVendedores]  = useState(VENDEDORES);
@@ -502,9 +818,10 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
   const [saving,        setSaving]        = useState(false);
   const [toast,         setToast]         = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
-  const [previewQuoteId, setPreviewQuoteId] = useState(null);
-  const [useProductItem, setUseProductItem] = useState(null);
-  const [showPapelera,  setShowPapelera]  = useState(false);
+  const [previewQuoteId,  setPreviewQuoteId]  = useState(null);
+  const [editModalQuoteId, setEditModalQuoteId] = useState(null);
+  const [useProductItem,  setUseProductItem]  = useState(null);
+  const [showPapelera,    setShowPapelera]    = useState(false);
   const [histItems,      setHistItems]      = useState([]);
   const [papItems,       setPapItems]       = useState([]);
   const [histSearch,     setHistSearch]     = useState("");
@@ -1517,7 +1834,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
         <CotizadorIntel
           onOpenQuote={(id) => setPreviewQuoteId(id)}
-          onEditQuote={(id) => loadCotizacion(id)}
+          onEditQuote={(id) => setEditModalQuoteId(id)}
           onUseInRenglon={handleUseFromIntel}
         />
 
@@ -1537,6 +1854,15 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             onApply={applyProductToRenglon}
             onAddNew={addRenglonFromProduct}
             onClose={() => setUseProductItem(null)}
+          />
+        )}
+
+        {editModalQuoteId && (
+          <QuoteEditModal
+            quoteId={editModalQuoteId}
+            profile={profile}
+            onClose={() => setEditModalQuoteId(null)}
+            onSaved={updated => setHistItems(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c))}
           />
         )}
 
@@ -1863,7 +2189,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
               ) : histAgrupado.map(({original: c, revisions: revs})=>(
                 <div key={c.id} className="cot-hist-group">
                   {/* Cotización original */}
-                  <div className="cot-hist-item" onClick={()=>loadCotizacion(c.id)}>
+                  <div className="cot-hist-item" onClick={()=>setEditModalQuoteId(c.id)}>
                     <div className="cot-hist-item__head">
                       <div className="cot-hist-inst">
                         {c.institucion || <span style={{color:"#94a3b8",fontStyle:"italic",fontWeight:400}}>Sin institución</span>}
@@ -1889,7 +2215,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                       <div className="cot-hist-items">{(c.renglones||[]).map(r=>(r.descr||r.codigo||r.marca||"")).filter(Boolean).slice(0,3).join(" · ")}</div>
                     )}
                     <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
-                      <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(c.id)}>Editar</button>
+                      <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>setEditModalQuoteId(c.id)}>Editar</button>
                       <button className="cot-btn cot-btn--rev cot-btn--sm" onClick={()=>{createRevision(c.id);setShowHistorial(false);}} title="Crear revisión de precios">Nueva versión</button>
                       {c.estado==="aceptada"&&<button className="cot-btn cot-btn--success cot-btn--sm" onClick={()=>convertAcceptedQuote(c)}>{c.accepted_opportunity_id?"✓ Oportunidad creada":"✓ Convertir en oportunidad"}</button>}
                       <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>softDelete(c.id,c.quote_num_formatted||"???")}>Borrar</button>
@@ -1899,7 +2225,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                   {revs.length > 0 && (
                     <div className="cot-hist-revs">
                       {revs.map(r=>(
-                        <div key={r.id} className="cot-hist-rev-row" onClick={()=>loadCotizacion(r.id)}>
+                        <div key={r.id} className="cot-hist-rev-row" onClick={()=>setEditModalQuoteId(r.id)}>
                           <div className="cot-hist-rev-row__meta">
                             <span className="cot-hist-rev-row__num">↳ {r.quote_num_formatted}</span>
                             <select
@@ -1915,7 +2241,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
                             <span className="cot-hist-rev-row__date">{r.created_at?new Date(r.created_at).toLocaleDateString("es-AR"):"-"}</span>
                           </div>
                           <div className="cot-hist-actions" onClick={e=>e.stopPropagation()}>
-                            <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>loadCotizacion(r.id)}>Editar</button>
+                            <button className="cot-btn cot-btn--primary cot-btn--sm" onClick={()=>setEditModalQuoteId(r.id)}>Editar</button>
                             <button className="cot-btn cot-btn--danger cot-btn--sm" onClick={()=>softDelete(r.id,r.quote_num_formatted||"???")}>Borrar</button>
                           </div>
                         </div>

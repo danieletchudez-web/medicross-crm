@@ -896,3 +896,52 @@
 }
 [data-theme="dark"] .cot-hist-rev-row__total { color: #e5e7eb; }
 .cot-hist-rev-row__date { font-size: 10.5px; color: #9ca3af; white-space: nowrap; }
+
+/* ─── QuoteEditModal ────────────────────────────────────────────────── */
+.qem-panel {
+  background: #fff;
+  border-radius: 16px;
+  width: min(1060px, 96vw);
+  height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,.22);
+}
+[data-theme="dark"] .qem-panel {
+  background: #0f1724;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5);
+}
+.qem-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 12px;
+}
+[data-theme="dark"] .qem-header { border-bottom-color: #252525; }
+.qem-header-left { display: flex; align-items: center; gap: 12px; }
+.qem-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.qem-title {
+  font-size: 1rem; font-weight: 700; color: #0f2444; letter-spacing: -.01em;
+}
+[data-theme="dark"] .qem-title { color: #f1f5f9; }
+.qem-estado-sel {
+  height: 26px; padding: 0 10px; border-radius: 20px;
+  border: none; font-size: 11px; font-weight: 700;
+  cursor: pointer; outline: none; font-family: inherit;
+}
+.qem-loading {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  color: #94a3b8; font-size: .9rem;
+}
+.qem-body {
+  flex: 1; overflow-y: auto; padding: 20px 24px 40px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.qem-toast {
+  position: sticky; top: 0; z-index: 10;
+  border-radius: 0; margin: 0; width: 100%;
+}
