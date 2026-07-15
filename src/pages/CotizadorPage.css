@@ -824,6 +824,28 @@
 [data-theme="dark"] .upm-select {
   background: #1a1a1a; border-color: #3a3a3a; color: #e5e7eb;
 }
+.upm-price-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.upm-price-item {
+  display: flex; flex-direction: column;
+  background: #f0f4ff; border-radius: 6px; padding: 7px 10px;
+  border: 1px solid #dbeafe;
+}
+.upm-price-lbl {
+  font-size: .66rem; text-transform: uppercase; letter-spacing: .04em;
+  color: #6b7280; margin-bottom: 2px;
+}
+.upm-price-val {
+  font-size: .82rem; font-weight: 700; color: #1e3a5f;
+}
+[data-theme="dark"] .upm-price-item {
+  background: rgba(96,165,250,.08); border-color: rgba(96,165,250,.2);
+}
+[data-theme="dark"] .upm-price-lbl { color: #6b7280; }
+[data-theme="dark"] .upm-price-val { color: #93c5fd; }
 
 /* ─── Toolbar: botón Revisión ───────────────────────────────────────── */
 .cot-btn--rev-tool {

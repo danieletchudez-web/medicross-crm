@@ -88,6 +88,8 @@ function expandCotizaciones(rows) {
         cant:        parseInt(r.cant) || 1,
         moneda:      r.moneda  || "USD",
         costo:       parseN(r.costo),
+        rawMarkup:   r.markup  || "2",
+        rawIva:      r.iva     || "10.5",
         ...(calc || { cARS: 0, pvARSs: 0, pvARSc: 0, mkPct: 0, gm: 0, subtotal: 0, tc: tcG }),
       });
     }
@@ -190,7 +192,7 @@ function SearchIcon() {
 /* ══════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ══════════════════════════════════════════════════════════════════════ */
-export default function CotizadorIntel({ onOpenQuote, onUseInRenglon }) {
+export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglon }) {
   const [open,       setOpen]       = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [items,      setItems]      = useState(null);
@@ -1128,7 +1130,8 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                             {sortKey === key ? (sortDir > 0 ? " ↑" : " ↓") : ""}
                           </th>
                         ))}
-                        <th className="ci-th-action">Ver/Editar</th>
+                        <th className="ci-th-action">Ver</th>
+                        {onEditQuote && <th className="ci-th-action">Editar</th>}
                         {onUseInRenglon && <th className="ci-th-action">Usar producto</th>}
                       </tr>
                     </thead>
@@ -1195,17 +1198,30 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                               {ESTADO_LABELS[item.estado] || item.estado}
                             </span>
                           </td>
-                          {/* Ver/Editar — acción secundaria */}
+                          {/* Ver — abre preview */}
                           <td className="ci-td-action">
                             <button
                               type="button"
                               className="ci-open-btn"
                               onClick={() => onOpenQuote(item.quoteId)}
-                              title="Ver y editar la cotización completa donde aparece este ítem"
+                              title="Ver resumen de la cotización"
                             >
-                              Ver/Editar
+                              Ver
                             </button>
                           </td>
+                          {/* Editar — carga directo en editor */}
+                          {onEditQuote && (
+                            <td className="ci-td-action">
+                              <button
+                                type="button"
+                                className="ci-open-btn ci-open-btn--edit"
+                                onClick={() => onEditQuote(item.quoteId)}
+                                title="Cargar en el editor para modificar"
+                              >
+                                Editar
+                              </button>
+                            </td>
+                          )}
                           {/* Usar producto — acción primaria */}
                           {onUseInRenglon && (
                             <td className="ci-td-action">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { Activity, AlertCircle, Clock, CheckCircle2, BarChart3, SlidersHorizontal } from "lucide-react";
 import Layout from "../components/Layout";
 import { supabase } from "../lib/supabaseClient";
 import { bacTenderNotes, comparativaSignature, isExternalBacTender, parseBacComparativaFile } from "../lib/bacComparativa";
@@ -1939,6 +1940,7 @@ export default function TendersPage({ profile, onNavigate }) {
   const [showQuick,    setShowQuick]    = useState(false);
   const [quickForm,    setQuickForm]    = useState({...EMPTY_QUICK_TENDER});
   const [viewMode,     setViewMode]     = useState("all");
+  const [showFilters,  setShowFilters]  = useState(() => { try { return localStorage.getItem("tn_show_filters") === "true"; } catch { return false; } });
   const [bacPreview,       setBacPreview]       = useState(null);
   const [bacSaving,        setBacSaving]        = useState(false);
   const [showCotizLink,    setShowCotizLink]    = useState(false);
@@ -2565,102 +2567,50 @@ export default function TendersPage({ profile, onNavigate }) {
           </div>
         </div>
 
-        <div className="tn-workbench">
-          <div className="tn-workbench-card tn-workbench-card--primary">
-            <span className="tn-workbench-eyebrow">Mesa de licitaciones</span>
-            <h3>Cargar menos, decidir antes</h3>
-            <p>Registrá procesos en borrador, completá sólo los campos críticos y usá comparativas BAC como base de inteligencia.</p>
-            <div className="tn-workbench-actions">
-              <button className="tn-btn tn-btn--primary" onClick={openNew}>+ Nueva licitación</button>
-              <button className="tn-btn" onClick={() => bacFileRef.current?.click()}>⬆ Importar BAC</button>
-            </div>
-          </div>
-
-          <div className="tn-workbench-card">
-            <div className="tn-workbench-head"><span>Para completar</span><strong>{kpis.pendientesCarga}</strong></div>
-            <div className="tn-workbench-list">
-              {pendingRows.length ? pendingRows.map(({t,readiness}) => (
-                <button key={t.id} className="tn-workbench-item" onClick={() => openEdit(t)}>
-                  <span>
-                    <strong>{t.institution || "Sin institución"}</strong>
-                    <em>{tenderDisplayTitle(t)}</em>
-                  </span>
-                  <b>{readiness.score}%</b>
-                </button>
-              )) : <p className="tn-workbench-empty">Sin pendientes críticos.</p>}
-            </div>
-          </div>
-
-          <div className="tn-workbench-card">
-            <div className="tn-workbench-head"><span>Listas para cotizar</span><strong>{kpis.listasCotizar}</strong></div>
-            <div className="tn-workbench-list">
-              {readyRows.length ? readyRows.map(({t}) => (
-                <button key={t.id} className="tn-workbench-item" onClick={() => openEdit(t)}>
-                  <span>
-                    <strong>{t.institution || "Sin institución"}</strong>
-                    <em>{tenderDisplayTitle(t)}</em>
-                  </span>
-                  <b>{daysUntil(t.end_date) ?? "—"}d</b>
-                </button>
-              )) : <p className="tn-workbench-empty">Todavía no hay fichas listas.</p>}
-            </div>
-          </div>
-        </div>
-
         <div className="tn-kpis">
-          <div className="tn-kpi tn-kpi--blue">
-            <span className="tn-kpi__icon">📋</span>
+          <div className={`tn-kpi tn-kpi--blue tn-kpi--clickable ${viewMode==="all"?"tn-kpi--active":""}`} onClick={() => setViewMode("all")} role="button" tabIndex={0}>
+            <span className="tn-kpi__icon-svg"><Activity size={15} strokeWidth={2}/></span>
             <span className="tn-kpi__label">En seguimiento</span>
             <span className="tn-kpi__val">{kpis.activas}</span>
             <span className="tn-kpi__sub">{compactMoney(kpis.montoTotal)} potencial</span>
           </div>
-          <div className={`tn-kpi ${kpis.pendientesCarga>0?"tn-kpi--warn":"tn-kpi--gray"}`}>
-            <span className="tn-kpi__icon">🧩</span>
+          <div className={`tn-kpi ${kpis.pendientesCarga>0?"tn-kpi--warn":"tn-kpi--gray"} tn-kpi--clickable ${viewMode==="pending"?"tn-kpi--active":""}`} onClick={() => setViewMode("pending")} role="button" tabIndex={0}>
+            <span className="tn-kpi__icon-svg"><AlertCircle size={15} strokeWidth={2}/></span>
             <span className="tn-kpi__label">Para completar</span>
             <span className="tn-kpi__val">{kpis.pendientesCarga}</span>
             <span className="tn-kpi__sub">requieren datos clave</span>
           </div>
-          <div className={`tn-kpi ${kpis.proxVencer>0?"tn-kpi--danger":"tn-kpi--gray"}`}>
-            <span className="tn-kpi__icon">⏰</span>
+          <div className={`tn-kpi ${kpis.proxVencer>0?"tn-kpi--danger":"tn-kpi--gray"} tn-kpi--clickable ${viewMode==="urgent"?"tn-kpi--active":""}`} onClick={() => setViewMode("urgent")} role="button" tabIndex={0}>
+            <span className="tn-kpi__icon-svg"><Clock size={15} strokeWidth={2}/></span>
             <span className="tn-kpi__label">Vencen en ≤7 días</span>
             <span className="tn-kpi__val">{kpis.proxVencer}</span>
             <span className="tn-kpi__sub">atención urgente</span>
           </div>
-          <div className="tn-kpi tn-kpi--green">
-            <span className="tn-kpi__icon">✅</span>
+          <div className={`tn-kpi tn-kpi--green tn-kpi--clickable ${viewMode==="ready"?"tn-kpi--active":""}`} onClick={() => setViewMode("ready")} role="button" tabIndex={0}>
+            <span className="tn-kpi__icon-svg"><CheckCircle2 size={15} strokeWidth={2}/></span>
             <span className="tn-kpi__label">Listas para cotizar</span>
             <span className="tn-kpi__val">{kpis.listasCotizar}</span>
             <span className="tn-kpi__sub">fichas completas</span>
           </div>
           <div className="tn-kpi tn-kpi--gray">
-            <span className="tn-kpi__icon">📊</span>
+            <span className="tn-kpi__icon-svg"><BarChart3 size={15} strokeWidth={2}/></span>
             <span className="tn-kpi__label">Total registradas</span>
             <span className="tn-kpi__val">{kpis.total}</span>
             <span className="tn-kpi__sub">{kpis.perdidas} perdidas</span>
           </div>
         </div>
 
-        <div className="tn-view-tabs">
-          {[
-            ["all", "Todas"],
-            ["pending", `Para completar (${kpis.pendientesCarga})`],
-            ["ready", `Listas (${kpis.listasCotizar})`],
-            ["urgent", `Urgentes (${kpis.proxVencer})`],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className={`tn-view-tab ${viewMode === key ? "tn-view-tab--active" : ""}`}
-              onClick={() => setViewMode(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
         <div className="tn-search-bar">
-          <input className="tn-search-input" placeholder="🔍  Buscar hospital, proceso, expediente, sector, responsable…" value={globalQ} onChange={e=>setGlobalQ(e.target.value)}/>
+          <input className="tn-search-input" placeholder="Buscar hospital, proceso, expediente, sector, responsable…" value={globalQ} onChange={e=>setGlobalQ(e.target.value)}/>
           <span className="tn-search-count">{filtered.length} resultado{filtered.length!==1?"s":""}</span>
+          <button
+            className={`tn-filter-toggle ${showFilters || Object.values(colFilters).some(Boolean) ? "tn-filter-toggle--active" : ""}`}
+            onClick={() => setShowFilters(prev => { const next=!prev; try{localStorage.setItem("tn_show_filters",String(next));}catch{} return next; })}
+            title={showFilters ? "Ocultar filtros de columna" : "Mostrar filtros de columna"}
+          >
+            <SlidersHorizontal size={13} strokeWidth={2.2}/>
+            {Object.values(colFilters).some(Boolean) && <span className="tn-filter-toggle__dot"/>}
+          </button>
         </div>
 
         <div className="tn-mobile-list">
@@ -2689,6 +2639,7 @@ export default function TendersPage({ profile, onNavigate }) {
                       </th>
                     ))}
                   </tr>
+                  {showFilters && (
                   <tr className="tn-grid__filter-row">
                     {COLS.map(col=>(
                       <th key={col.key} className="tn-grid__filter-cell" style={{minWidth:col.w,maxWidth:col.w,width:col.w}}>
@@ -2696,12 +2647,13 @@ export default function TendersPage({ profile, onNavigate }) {
                       </th>
                     ))}
                   </tr>
+                  )}
                 </thead>
                 <tbody>
                   {filtered.length===0
                     ?<tr><td colSpan={COLS.length} className="tn-grid__empty">{ownTenders.length===0?"Sin licitaciones. Creá la primera con + Nueva licitación.":"Sin resultados con los filtros aplicados."}</td></tr>
                     :filtered.map((t,idx)=>(
-                      <tr key={t.id} className={`tn-grid__row ${idx%2===0?"":"tn-grid__row--alt"}`} onClick={()=>openEdit(t)}>
+                      <tr key={t.id} className={`tn-grid__row ${idx%2===0?"":"tn-grid__row--alt"}${(()=>{const d=daysUntil(t.end_date);return d!==null&&d>=0&&d<=7&&!isTenderLost(t)?" tn-grid__row--urgent":""})()}`} onClick={()=>openEdit(t)}>
                         {COLS.map(col=>(
                           <td key={col.key} className="tn-grid__td" style={{minWidth:col.w,maxWidth:col.w,width:col.w}}>{renderCell(col,t)}</td>
                         ))}

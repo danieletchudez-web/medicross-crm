@@ -237,10 +237,10 @@ function CotHistHint({ cotHistory, descr, onApply }) {
 }
 
 /* ─── UseProductModal ────────────────────────────────────────────────── */
-function UseProductModal({ item, renglones, onApply, onClose }) {
+function UseProductModal({ item, renglones, onApply, onAddNew, onClose }) {
   const opts = renglones.map((r, i) => ({
     id: r.id,
-    label: `Renglón ${i + 1}${r.descr ? ` — ${r.descr.slice(0, 50)}` : ""}`,
+    label: `Renglón ${i + 1}${r.descr ? ` — ${r.descr.slice(0, 45)}` : " (vacío)"}`,
   }));
   const [targetId, setTargetId] = useState(renglones[renglones.length - 1]?.id || "");
 
@@ -250,11 +250,22 @@ function UseProductModal({ item, renglones, onApply, onClose }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const fields = [
-    { label: "Descripción", value: item.descr },
-    { label: "Empresa / Proveedor", value: item.empresa },
-    { label: "Marca", value: item.marca },
-    { label: "Código", value: item.codigo },
+  const fARS = (n) => "$ " + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fPct = (n) => Number(n||0).toFixed(1) + "%";
+
+  const descFields = [
+    { label: "Descripción",        value: item.descr },
+    { label: "Empresa / Proveedor",value: item.empresa },
+    { label: "Marca",              value: item.marca },
+    { label: "Código",             value: item.codigo },
+  ].filter(f => f.value);
+
+  const priceFields = [
+    { label: "Costo",    value: item.costo > 0 ? `${item.moneda || "USD"} ${Number(item.costo).toLocaleString("es-AR",{minimumFractionDigits:2})}` : null },
+    { label: "PV c/IVA", value: item.pvARSc > 0 ? fARS(item.pvARSc) : null },
+    { label: "Markup",   value: item.mkPct > 0  ? `×${(1 + item.mkPct/100).toFixed(2)} (${fPct(item.mkPct)})` : null },
+    { label: "GM",       value: item.gm > 0     ? fPct(item.gm) : null },
+    { label: "IVA",      value: item.rawIva ? `${item.rawIva}%` : null },
   ].filter(f => f.value);
 
   return createPortal(
@@ -262,27 +273,40 @@ function UseProductModal({ item, renglones, onApply, onClose }) {
       <div className="qpm-panel upm-panel" role="dialog" aria-modal="true">
         <div className="qpm-header">
           <div className="qpm-title">
-            <span className="qpm-num">Usar producto en renglón</span>
+            <span className="qpm-num">Usar producto</span>
           </div>
           <button className="qpm-close" onClick={onClose} title="Cerrar">✕</button>
         </div>
 
         <div className="upm-body">
           <div className="upm-product">
-            <p className="upm-section-lbl">Producto seleccionado</p>
-            {fields.map(f => (
+            <p className="upm-section-lbl">Producto</p>
+            {descFields.map(f => (
               <div key={f.label} className="upm-field">
                 <span className="upm-field__lbl">{f.label}</span>
                 <span className="upm-field__val">{f.value}</span>
               </div>
             ))}
-            {!fields.length && <p className="upm-empty">Sin datos de producto.</p>}
+            {!descFields.length && <p className="upm-empty">Sin datos de producto.</p>}
+            {priceFields.length > 0 && (
+              <>
+                <p className="upm-section-lbl" style={{marginTop:12}}>Precios históricos</p>
+                <div className="upm-price-grid">
+                  {priceFields.map(f => (
+                    <div key={f.label} className="upm-price-item">
+                      <span className="upm-price-lbl">{f.label}</span>
+                      <span className="upm-price-val">{f.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="upm-target">
-            <p className="upm-section-lbl">Aplicar en</p>
+            <p className="upm-section-lbl">Aplicar en renglón existente</p>
             {opts.length === 0 ? (
-              <p className="upm-empty">No hay renglones en la cotización actual.</p>
+              <p className="upm-empty">No hay renglones en la cotización.</p>
             ) : opts.length === 1 ? (
               <p className="upm-single">{opts[0].label}</p>
             ) : (
@@ -295,9 +319,19 @@ function UseProductModal({ item, renglones, onApply, onClose }) {
 
         <div className="qpm-actions">
           <button className="qpm-btn qpm-btn--sec" onClick={onClose}>Cancelar</button>
+          {onAddNew && (
+            <button
+              className="qpm-btn qpm-btn--rev"
+              disabled={!descFields.length}
+              onClick={() => onAddNew(item)}
+              title="Agregar un renglón nuevo al final con los datos de este producto"
+            >
+              + Nuevo renglón
+            </button>
+          )}
           <button
             className="qpm-btn qpm-btn--pri"
-            disabled={!targetId || !fields.length}
+            disabled={!targetId || !descFields.length}
             onClick={() => { onApply(item, targetId); onClose(); }}
           >
             Aplicar al renglón
@@ -587,14 +621,38 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       if (r.id !== targetId) return r;
       return {
         ...r,
-        descr:   item.descr   || r.descr,
-        empresa: item.empresa  || r.empresa,
-        codigo:  item.codigo   || r.codigo,
-        marca:   item.marca    || r.marca,
+        descr:    item.descr    || r.descr,
+        empresa:  item.empresa  || r.empresa,
+        codigo:   item.codigo   || r.codigo,
+        marca:    item.marca    || r.marca,
+        costo:    item.costo > 0 ? String(item.costo) : r.costo,
+        moneda:   item.moneda   || r.moneda,
+        markup:   item.rawMarkup ? String(item.rawMarkup) : r.markup,
+        iva:      item.rawIva   || r.iva,
+        modoManual: "auto",
+        pvManual: "",
       };
     }));
     const rIdx = renglones.findIndex(r => r.id === targetId);
-    showToast(`Producto copiado al Renglón ${rIdx + 1} ✓`);
+    showToast(`Producto copiado al Renglón ${rIdx + 1} (descripción + costos) ✓`);
+  }
+
+  function addRenglonFromProduct(item) {
+    const newR = {
+      ...emptyR(),
+      descr:    item.descr    || "",
+      empresa:  item.empresa  || "",
+      codigo:   item.codigo   || "",
+      marca:    item.marca    || "",
+      costo:    item.costo > 0 ? String(item.costo) : "",
+      moneda:   item.moneda   || "USD",
+      markup:   item.rawMarkup ? String(item.rawMarkup) : "2",
+      iva:      item.rawIva   || "10.5",
+    };
+    setRenglones(prev => [...prev, newR]);
+    setUseProductItem(null);
+    showToast(`"${(item.descr || "Producto").slice(0, 30)}" agregado como nuevo renglón ✓`);
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 120);
   }
 
   /* ── Aplicar sugerencia de markup desde CotHistHint ── */
@@ -1459,6 +1517,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
         <CotizadorIntel
           onOpenQuote={(id) => setPreviewQuoteId(id)}
+          onEditQuote={(id) => loadCotizacion(id)}
           onUseInRenglon={handleUseFromIntel}
         />
 
@@ -1476,6 +1535,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             item={useProductItem}
             renglones={renglones}
             onApply={applyProductToRenglon}
+            onAddNew={addRenglonFromProduct}
             onClose={() => setUseProductItem(null)}
           />
         )}
