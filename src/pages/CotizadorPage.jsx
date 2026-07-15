@@ -888,7 +888,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         const qNum = await getNextQuoteNumber();
         const qFormatted = formatQuoteNumber(qNum);
         if (!qFormatted) throw new Error("No se pudo generar un número de cotización válido.");
-        const snap = { ...buildSnap(qNum, qFormatted), created_at: new Date().toISOString(), created_by: profile?.email||"desconocido", estado:"borrador", deleted:false };
+        const snap = { ...buildSnap(qNum, qFormatted), created_at: new Date().toISOString(), created_by: profile?.email||"desconocido", estado:"generado", deleted:false };
         const { data: newRow, error } = await supabase.from("cotizaciones").insert([snap]).select().single();
         if (error) throw error;
         setDocId(newRow.id); setQuoteNum(qFormatted);
@@ -1032,7 +1032,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       owner_id:     source.owner_id       || null,
       quote_num_formatted: revFormatted,
       quote_number: null,
-      estado: "borrador",
+      estado: "generado",
       created_at:   new Date().toISOString(),
       created_by:   profile?.email || "desconocido",
       updated_at:   new Date().toISOString(),
