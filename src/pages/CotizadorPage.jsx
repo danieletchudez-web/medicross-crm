@@ -934,7 +934,14 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       // Actualizar vencidas en background sin bloquear la UI
       const expired = nextItems.filter((quote, index) => quote.estado === "vencida" && data[index]?.estado !== "vencida");
       if (expired.length) expired.forEach(quote => supabase.from("cotizaciones").update({ estado: "vencida", updated_at: new Date().toISOString() }).eq("id", quote.id));
-      setHistItems(nextItems);
+      // Migrar borradores existentes → generado (one-time cleanup, fire-and-forget)
+      const borradores = nextItems.filter(q => q.estado === "borrador");
+      if (borradores.length) {
+        borradores.forEach(q => supabase.from("cotizaciones").update({ estado: "generado", updated_at: new Date().toISOString() }).eq("id", q.id));
+        setHistItems(nextItems.map(q => q.estado === "borrador" ? { ...q, estado: "generado" } : q));
+      } else {
+        setHistItems(nextItems);
+      }
     } else showToast("Error: "+error.message,"err");
     setLoadingHist(false);
   }
