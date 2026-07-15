@@ -16,6 +16,13 @@ function getTodaySeenKey(userId, today = todayISO()) {
   return `crm_daily_message_seen:${userId}:${today}`;
 }
 
+function msUntilMidnight() {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  return midnight.getTime() - now.getTime();
+}
+
 export function useDailyMotivation(userId) {
   const [showPopup, setShowPopup]   = useState(false);
   const [message,   setMessage]     = useState(null);
@@ -26,8 +33,10 @@ export function useDailyMotivation(userId) {
     if (!userId) return;
 
     let cancelled = false;
+    let midnightTimer = null;
 
     async function check() {
+      savedRef.current = false; // resetear para el nuevo día
       setLoading(true);
       try {
         const today = todayISO();
@@ -110,8 +119,23 @@ export function useDailyMotivation(userId) {
       }
     }
 
+    function scheduleNextMidnight() {
+      const ms = msUntilMidnight();
+      midnightTimer = setTimeout(() => {
+        if (!cancelled) {
+          check();
+          scheduleNextMidnight(); // reprogramar para la siguiente medianoche
+        }
+      }, ms);
+    }
+
     check();
-    return () => { cancelled = true; };
+    scheduleNextMidnight();
+
+    return () => {
+      cancelled = true;
+      if (midnightTimer) clearTimeout(midnightTimer);
+    };
   }, [userId]);
 
   const closePopup = useCallback(async () => {
