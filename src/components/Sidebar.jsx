@@ -10,7 +10,6 @@ import { Moon, Sun,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
-  CircleDollarSign,
   Clock3,
   FileText,
   Handshake,
@@ -312,42 +311,6 @@ export default function Sidebar({ profile, onNavigate }) {
         <div className={`sidebar-body ${menuOpen ? "open" : ""}`}>
 
           <nav className="sidebar-nav">
-            <div className="sidebar-quick">
-              {canSee("visits") && (
-                <button
-                  onClick={() => handleNavigate("visits", { action: "create", source: "sidebarQuickAction" })}
-                  aria-label="Nueva visita"
-                  onMouseEnter={(e) => showTooltip(e, "Nueva visita")}
-                  onMouseLeave={hideTooltip}
-                >
-                  <span><CalendarPlus aria-hidden="true"/></span>
-                  <em>Visita</em>
-                </button>
-              )}
-              {canSee("accounts") && (
-                <button
-                  onClick={() => handleNavigate("accounts")}
-                  aria-label="Nuevo cliente"
-                  onMouseEnter={(e) => showTooltip(e, "Nuevo cliente")}
-                  onMouseLeave={hideTooltip}
-                >
-                  <span><Building2 aria-hidden="true"/></span>
-                  <em>Cliente</em>
-                </button>
-              )}
-              {canSee("opportunities") && (
-                <button
-                  onClick={() => handleNavigate("opportunities")}
-                  aria-label="Nueva oportunidad"
-                  onMouseEnter={(e) => showTooltip(e, "Nueva oportunidad")}
-                  onMouseLeave={hideTooltip}
-                >
-                  <span><CircleDollarSign aria-hidden="true"/></span>
-                  <em>Oportunidad</em>
-                </button>
-              )}
-            </div>
-
             <div className="sidebar-nav__group-row">
               <span className="sidebar-nav__group-label">MÓDULOS</span>
               <button
