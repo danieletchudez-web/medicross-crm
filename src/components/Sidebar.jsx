@@ -34,11 +34,27 @@ import logoDarkImg from "../assets/logo-dark.png";
 
 const MENU_SECTIONS = [
   {
+    label: "PRIORIDAD DEL DÍA",
+    priority: true,
+    items: [
+      { id: "todayActions", label: "Acciones Hoy", icon: Clock3 },
+      { id: "habits",       label: "Hábitos",       icon: RefreshCw },
+      { id: "tasks",        label: "Tareas",         icon: CheckSquare },
+    ],
+  },
+  {
     label: "ANÁLISIS",
     items: [
       { id: "managerDashboard", label: "Dashboard",          icon: LayoutDashboard },
-      { id: "importer",         label: "BI Comercial",       icon: BarChart3 },
       { id: "salesAnalytics",   label: "Análisis Comercial", icon: ChartPie },
+      { id: "importer",         label: "BI Comercial",       icon: BarChart3 },
+    ],
+  },
+  {
+    label: "COTIZACIONES",
+    items: [
+      { id: "tenders",   label: "Licitaciones", icon: FileText },
+      { id: "cotizador", label: "Cotizador",    icon: Calculator },
     ],
   },
   {
@@ -46,34 +62,33 @@ const MENU_SECTIONS = [
     items: [
       { id: "accounts",      label: "Clientes / Cuentas",    icon: Building2 },
       { id: "products",      label: "Productos / Share Kit", icon: PackageOpen },
-      { id: "suppliers",     label: "Proveedores",           icon: Truck },
       { id: "opportunities", label: "Oportunidades",         icon: Target },
       { id: "campaigns",     label: "Campañas",              icon: Megaphone },
+      { id: "suppliers",     label: "Proveedores",           icon: Truck },
+      { id: "visits",        label: "Visitas",               icon: Handshake },
+      { id: "calendar",      label: "Calendario",            icon: CalendarDays },
     ],
   },
   {
-    label: "COTIZACIONES",
+    label: "OPERACIÓN INTERNA",
     items: [
-      { id: "cotizador", label: "Cotizador",    icon: Calculator },
-      { id: "tenders",   label: "Licitaciones", icon: FileText },
-    ],
-  },
-  {
-    label: "OPERACIONES",
-    items: [
+      { id: "adminUsers",    label: "Administración",    icon: ShieldCheck },
       { id: "notifications", label: "Centro de Alertas", icon: BellRing },
-      { id: "tasks",         label: "Tareas",             icon: CheckSquare },
-      { id: "habits",        label: "Hábitos",            icon: RefreshCw },
-      { id: "todayActions",  label: "Acciones Hoy",      icon: Clock3 },
-      { id: "visits",        label: "Visitas",            icon: Handshake },
-      { id: "calendar",      label: "Calendario",         icon: CalendarDays },
-      { id: "adminUsers",    label: "Administración",     icon: ShieldCheck },
-      { id: "settings",      label: "Configuración",      icon: Settings },
+      { id: "settings",      label: "Configuración",     icon: Settings },
     ],
   },
 ];
 
 const ALL_IDS = MENU_SECTIONS.flatMap(s => s.items.map(i => i.id));
+
+function freqToDaysLocal(freq) {
+  if (!freq || freq === "daily") return [0,1,2,3,4,5,6];
+  if (freq === "weekdays")       return [0,1,2,3,4];
+  if (freq === "weekend")        return [5,6];
+  try { const p = JSON.parse(freq); if (Array.isArray(p)) return p.filter(n => n >= 0 && n <= 6); } catch {}
+  return [0,1,2,3,4,5,6];
+}
+
 const MOBILE_NAV = [
   { id: "todayActions",  label: "Hoy",       icon: Clock3 },
   { id: "accounts",      label: "Clientes",  icon: Building2 },
@@ -131,6 +146,27 @@ export default function Sidebar({ profile, onNavigate }) {
   const hoverTimer = useRef(null);
   const notificationCount = useNotificationCount(profile?.id);
   const { count: taskAlertCount } = useTaskAlerts(profile?.id);
+  const [habitsProgress, setHabitsProgress] = useState(null);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    let active = true;
+    async function loadHabits() {
+      const today = new Date().toISOString().slice(0, 10);
+      const dow   = (new Date().getDay() + 6) % 7;
+      const [hRes, cRes] = await Promise.all([
+        supabase.from("habits").select("id,frequency").eq("user_id", profile.id),
+        supabase.from("habit_completions").select("habit_id").eq("completed_date", today).eq("user_id", profile.id),
+      ]);
+      if (!active) return;
+      const todayHabits = (hRes.data || []).filter(h => freqToDaysLocal(h.frequency).includes(dow));
+      const doneIds = new Set((cRes.data || []).map(c => c.habit_id));
+      setHabitsProgress({ done: todayHabits.filter(h => doneIds.has(h.id)).length, total: todayHabits.length });
+    }
+    loadHabits();
+    const timer = setInterval(loadHabits, 5 * 60 * 1000);
+    return () => { active = false; clearInterval(timer); };
+  }, [profile?.id]);
 
   function toggleTheme() {
     const next = !isDark;
@@ -352,10 +388,11 @@ export default function Sidebar({ profile, onNavigate }) {
             {sections.map((section, si) => {
               const visible = section.items.filter(item => canSee(item.id));
               if (visible.length === 0) return null;
+              const isPriority = !!section.priority;
               return (
-                <div key={section.label} className="sidebar-section">
-                  {si > 0 && <div className="sidebar-section__divider"/>}
-                  <span className="sidebar-section__label">{section.label}</span>
+                <div key={section.label} className={`sidebar-section${isPriority ? " sidebar-section--priority" : ""}`}>
+                  {si > 0 && !isPriority && !sections[si - 1]?.priority && <div className="sidebar-section__divider"/>}
+                  <span className={`sidebar-section__label${isPriority ? " sidebar-section__label--priority" : ""}`}>{section.label}</span>
                   {visible.map(item => (
                     <div
                       key={item.id}
@@ -369,7 +406,7 @@ export default function Sidebar({ profile, onNavigate }) {
                       {editing && <span className="sidebar-drag-handle">⠿</span>}
                       <button
                         type="button"
-                        className="sidebar-nav__item"
+                        className={`sidebar-nav__item${isPriority ? " sidebar-nav__item--priority" : ""}`}
                         onClick={() => { if (!editing) handleNavigate(item.id); }}
                         style={{ cursor: editing ? "grab" : "pointer" }}
                         aria-label={item.label}
@@ -380,6 +417,11 @@ export default function Sidebar({ profile, onNavigate }) {
                         <span className="sidebar-nav__label">{item.label}</span>
                         {item.id === "notifications" && notificationCount > 0 && <span className="sidebar-nav__badge">{notificationCount > 99 ? "99+" : notificationCount}</span>}
                         {item.id === "tasks" && taskAlertCount > 0 && <span className="sidebar-nav__badge sidebar-nav__badge--red">{taskAlertCount > 9 ? "9+" : taskAlertCount}</span>}
+                        {item.id === "habits" && habitsProgress && habitsProgress.total > 0 && (
+                          <span className={`sidebar-nav__badge ${habitsProgress.done === habitsProgress.total ? "sidebar-nav__badge--green" : "sidebar-nav__badge--blue"}`}>
+                            {habitsProgress.done}/{habitsProgress.total}
+                          </span>
+                        )}
                       </button>
                       {editing && (
                         <button

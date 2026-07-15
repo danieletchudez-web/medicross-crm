@@ -1770,3 +1770,182 @@
     transition: stroke-width 0.12s ease;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PRIORIDAD DEL DÍA — sección destacada
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.sidebar-section--priority {
+  background: rgba(37, 99, 235, 0.07);
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-left: 3px solid #2563EB;
+  border-radius: 12px;
+  padding: 6px 6px 8px;
+  margin: 4px 0 14px;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.07);
+}
+
+.sidebar-section__label--priority {
+  color: rgba(147, 197, 253, 0.7) !important;
+  font-size: 8.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  padding: 2px 8px 5px !important;
+}
+
+/* Items dentro de Prioridad del Día: iconos y labels ligeramente mayores */
+.sidebar-nav__item--priority {
+  padding: 9px 10px;
+  gap: 11px;
+}
+
+.sidebar-nav__item--priority .sidebar-nav__icon {
+  width: 20px;
+  height: 20px;
+  color: rgba(147, 197, 253, 0.55) !important;
+}
+
+.sidebar-nav__item--priority .sidebar-nav__icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.05;
+}
+
+.sidebar-nav__item--priority .sidebar-nav__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.sidebar-nav__item--priority:hover {
+  background: rgba(37, 99, 235, 0.14) !important;
+  transform: translateX(3px) !important;
+}
+
+.sidebar-nav__item--priority:hover .sidebar-nav__icon {
+  color: #93c5fd !important;
+  transform: scale(1.15) !important;
+}
+
+.sidebar-nav__item--priority:hover .sidebar-nav__label {
+  color: #f1f5f9 !important;
+}
+
+/* Badge variantes para hábitos */
+.sidebar-nav__badge--blue {
+  background: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 28px;
+}
+
+.sidebar-nav__badge--green {
+  background: #16a34a;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.28);
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 28px;
+}
+
+/* Dark mode — Prioridad del Día */
+[data-theme="dark"] .sidebar-section--priority {
+  background: rgba(37, 99, 235, 0.09) !important;
+  border-color: rgba(37, 99, 235, 0.22) !important;
+  border-left-color: #3b82f6 !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .sidebar-section__label--priority {
+  color: rgba(147, 197, 253, 0.6) !important;
+}
+
+[data-theme="dark"] .sidebar-nav__item--priority .sidebar-nav__icon {
+  color: rgba(147, 197, 253, 0.45) !important;
+}
+
+[data-theme="dark"] .sidebar-nav__item--priority .sidebar-nav__label {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+[data-theme="dark"] .sidebar-nav__item--priority:hover {
+  background: rgba(37, 99, 235, 0.16) !important;
+  transform: translateX(3px) !important;
+}
+
+[data-theme="dark"] .sidebar-nav__item--priority:hover .sidebar-nav__icon {
+  color: #93c5fd !important;
+  transform: none !important;
+}
+
+[data-theme="dark"] .sidebar-nav__item--priority:hover .sidebar-nav__label {
+  color: #EDEDED !important;
+}
+
+/* Collapsed state — priority section se comporta igual que las demás secciones */
+@media (min-width: 769px) {
+  .sidebar--collapsed .sidebar-section--priority {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 6px 0;
+    margin: 4px 0 8px;
+    box-shadow: none;
+  }
+
+  .sidebar--collapsed.sidebar--expanded .sidebar-section--priority {
+    background: rgba(37, 99, 235, 0.07);
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    border-left: 3px solid #2563EB;
+    border-radius: 12px;
+    padding: 6px 6px 8px;
+    margin: 4px 0 14px;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.07);
+  }
+
+  /* En collapsed, los items de prioridad vuelven al estilo rail estándar */
+  .sidebar--collapsed .sidebar-nav__item--priority {
+    padding: 0;
+    gap: 0;
+  }
+
+  .sidebar--collapsed .sidebar-nav__item--priority .sidebar-nav__icon {
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.52) !important;
+  }
+
+  /* En hover-expand, los items recuperan el estilo priority */
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item--priority {
+    padding: 9px 10px;
+    gap: 11px;
+  }
+
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item--priority .sidebar-nav__icon {
+    width: 20px;
+    height: 20px;
+    color: rgba(147, 197, 253, 0.55) !important;
+  }
+
+  .sidebar--collapsed.sidebar--expanded .sidebar-nav__item--priority .sidebar-nav__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72) !important;
+  }
+}
+
+/* Mobile — sección priority mantiene el bloque destacado dentro del drawer */
+@media (max-width: 768px) {
+  .sidebar-section--priority {
+    margin: 4px 0 10px;
+    padding: 8px 8px 10px;
+  }
+
+  .sidebar-nav__item--priority {
+    padding: 12px 10px;
+  }
+
+  .sidebar-nav__item--priority .sidebar-nav__label {
+    font-size: 14.5px;
+  }
+}
