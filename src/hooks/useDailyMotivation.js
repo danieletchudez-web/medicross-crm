@@ -129,12 +129,31 @@ export function useDailyMotivation(userId) {
       }, ms);
     }
 
+    let lastCheckedDate = todayISO();
+
+    function handleVisibilityChange() {
+      if (document.visibilityState !== "visible") return;
+      const today = todayISO();
+      if (today !== lastCheckedDate) {
+        lastCheckedDate = today;
+        if (midnightTimer) {
+          clearTimeout(midnightTimer);
+          midnightTimer = null;
+        }
+        check();
+        scheduleNextMidnight();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     check();
     scheduleNextMidnight();
 
     return () => {
       cancelled = true;
       if (midnightTimer) clearTimeout(midnightTimer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [userId]);
 
