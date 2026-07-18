@@ -518,9 +518,6 @@ export default function CalendarPage({ profile, onNavigate }) {
         {selected       && <DetailModal v={selected} onClose={() => setSelected(null)}/>}
         {selectedRental && <RentalEventModal ev={selectedRental} onClose={() => setSelectedRental(null)}/>}
 
-        <footer className="cal-footer">
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>
-        </footer>
       </div>
     </Layout>
   );

@@ -564,10 +564,6 @@ export default function OpportunitiesPage({ profile, onNavigate, navigationData 
           </div>
         )}
 
-        <footer style={{ textAlign: "center", padding: "12px 0", fontSize: 11, color: "#4b5563" }}>
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{ color: "#4b5563", textDecoration: "none" }}>Designed by Daniel Etchudez</a>
-        </footer>
-
       </div>
     </Layout>
   );

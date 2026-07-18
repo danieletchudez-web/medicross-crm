@@ -165,10 +165,8 @@ export default function App() {
   const [loading,      setLoading]      = useState(true);
   const [crmData,      setCrmData]      = useState(null);
   const [transitionKey, setTransitionKey] = useState(0);
-  const [routeLoading, setRouteLoading] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(() => hasPasswordRecoveryIntent());
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia?.("(max-width: 768px)").matches || false);
-  const routeLoadingTimer = useRef(null);
   const profileRetryTimer = useRef(null);
   // Pages that have been visited at least once (stay mounted forever after)
   const [mounted,      setMounted]      = useState(() => {
@@ -190,7 +188,6 @@ export default function App() {
     );
     return () => {
       subscription.unsubscribe();
-      if (routeLoadingTimer.current) clearTimeout(routeLoadingTimer.current);
       if (profileRetryTimer.current) clearTimeout(profileRetryTimer.current);
     };
   }, []);
@@ -261,7 +258,7 @@ export default function App() {
       setSession(s);
       if (s?.user) loadProfile(s.user);
     } catch { setSession(null); setProfile(null); }
-    finally { setTimeout(() => setLoading(false), 900); }
+    finally { setLoading(false); }
   }
 
   async function loadProfile(user) {
@@ -356,14 +353,6 @@ export default function App() {
       ? p
       : getFirstOpenModule(safeProfile, isMobileViewport) || "settings";
     setNavigateData(data || null);
-    if (targetPage !== page) {
-      setRouteLoading(true);
-      if (routeLoadingTimer.current) clearTimeout(routeLoadingTimer.current);
-      routeLoadingTimer.current = setTimeout(() => {
-        setRouteLoading(false);
-        routeLoadingTimer.current = null;
-      }, 520);
-    }
     setPage(targetPage);
     setTransitionKey((key) => key + 1);
     localStorage.setItem("crm_current_page", targetPage);
@@ -417,7 +406,6 @@ export default function App() {
           </div>
         );
       })}
-      {routeLoading && <FullPageLoader label="Preparando módulo…" overlay />}
       <SafeRender><CRMAssistant profile={safeProfile} currentPage={currentPage} crmData={crmData} /></SafeRender>
       <SafeRender><DialogSystem /></SafeRender>
       <SafeRender><MobileNav currentPage={currentPage} onNavigate={navigate} /></SafeRender>

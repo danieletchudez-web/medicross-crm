@@ -565,7 +565,7 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
         </div>
 
         {/* OPERATIONAL METRICS PANEL */}
-        <div className="p-panel">
+        <div className="p-panel dash-health-panel">
           <div className="p-hd">
             <div className="p-hd-left">
               <span className="p-title">Salud comercial</span>
@@ -682,14 +682,6 @@ export default function ManagerDashboard({ profile, onNavigate, pageKey }) {
             </div>
           </div>
         )}
-
-        <div className="p-panel">
-          <div className="p-body" style={{ textAlign: "center" }}>
-            <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{ color: "#64748b", fontSize: 12, textDecoration: "none" }}>
-              Designed by Daniel Etchudez
-            </a>
-          </div>
-        </div>
 
       </div>
     </Layout>

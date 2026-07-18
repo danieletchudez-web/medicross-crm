@@ -1080,9 +1080,6 @@ export default function ImporterPage({ profile, onNavigate }) {
             </div>
           )}
 
-          <footer className="bi-footer">
-            <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>
-          </footer>
         </div>
       </div>
     </div>

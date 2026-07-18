@@ -445,12 +445,6 @@ export default function SellerDashboard({ profile, onNavigate, pageKey }) {
 
         </div>
 
-        <footer style={{ textAlign: "center", padding: "8px 0 4px" }}>
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#4b5563", textDecoration: "none" }}>
-            Designed by Daniel Etchudez
-          </a>
-        </footer>
-
       </div>
     </Layout>
   );

@@ -81,7 +81,9 @@ function expandCotizaciones(rows) {
         institucion: cot.institucion || "",
         vendedor:    cot.vendedor || "",
         estado:      cot.estado || "borrador",
-        empresa:     r.empresa || "",
+        // Las cotizaciones actuales guardan el proveedor en `empresa`.
+        // Conservamos aliases para que también sean buscables registros importados.
+        empresa:     r.empresa || r.proveedor || r.supplier || "",
         codigo:      r.codigo  || "",
         marca:       r.marca   || "",
         descr:       r.descr   || "",
@@ -107,12 +109,16 @@ function sortItems(arr, key, dir) {
 }
 
 /* D. Token-based search ─────────────────────────────────────────────── */
-function tokenMatch(item, tokens) {
+function tokenMatch(item, tokens, scope = "all") {
   if (!tokens.length) return true;
-  return tokens.every(tok =>
-    [item.descr, item.codigo, item.marca, item.empresa, item.institucion, item.vendedor, item.quoteNum, item.estado]
-      .some(f => norm(f).includes(tok))
-  );
+  const generalFields = [item.descr, item.codigo, item.marca, item.institucion, item.vendedor, item.quoteNum, item.estado];
+  const supplierFields = [item.empresa];
+  const fields = scope === "suppliers"
+    ? supplierFields
+    : scope === "general"
+      ? generalFields
+      : [...generalFields, ...supplierFields];
+  return tokens.every(tok => fields.some(f => norm(f).includes(tok)));
 }
 
 /* E. Highlight matching tokens ──────────────────────────────────────── */
@@ -197,6 +203,7 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
   const [loading,    setLoading]    = useState(false);
   const [items,      setItems]      = useState(null);
   const [search,     setSearch]     = useState("");
+  const [searchScope,setSearchScope]= useState("all");
   const [fDesde,     setFDesde]     = useState("");
   const [fHasta,     setFHasta]     = useState("");
   const [fVendedor,  setFVendedor]  = useState("");
@@ -245,6 +252,7 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
 
   function clearFilters() {
     setSearch(""); setFDesde(""); setFHasta("");
+    setSearchScope("all");
     setFVendedor(""); setFEstado(""); setFMoneda("");
     setFPrecioMin(""); setFPrecioMax("");
   }
@@ -259,7 +267,7 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
   const filtered = useMemo(() => {
     if (!items) return [];
     let res = items;
-    if (searchTokens.length) res = res.filter(i => tokenMatch(i, searchTokens));
+    if (searchTokens.length) res = res.filter(i => tokenMatch(i, searchTokens, searchScope));
     if (fDesde)    res = res.filter(i => i.fecha >= fDesde);
     if (fHasta)    res = res.filter(i => i.fecha <= fHasta);
     if (fVendedor) res = res.filter(i => i.vendedor === fVendedor);
@@ -271,7 +279,7 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
     if (pMin > 0) res = res.filter(i => i.pvARSc >= pMin);
     if (pMax > 0) res = res.filter(i => i.pvARSc <= pMax);
     return sortItems(res, sortKey, sortDir);
-  }, [items, searchTokens, fDesde, fHasta, fVendedor, fEstado, fMoneda, fPrecioMin, fPrecioMax, sortKey, sortDir]);
+  }, [items, searchTokens, searchScope, fDesde, fHasta, fVendedor, fEstado, fMoneda, fPrecioMin, fPrecioMax, sortKey, sortDir]);
 
   /* ── Multi-select (must be after filtered) ── */
   const visibleIds = useMemo(
@@ -731,6 +739,7 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
     { key: "quoteNum",    label: "#Cot."        },
     { key: "institucion", label: "Cliente"      },
     { key: "descr",       label: "Descripción"  },
+    { key: "empresa",     label: "Proveedor"    },
     { key: "cant",        label: "Cant."        },
     { key: "cARS",        label: "Costo ARS"    },
     { key: "pvARSc",      label: "PV c/IVA"     },
@@ -780,13 +789,28 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                     className="ci-search-input"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder="Buscar producto, descripción, código, cliente, vendedor, N° cotización…"
+                    placeholder={searchScope === "suppliers"
+                      ? "Buscar proveedor…"
+                      : searchScope === "general"
+                        ? "Buscar producto, descripción, código, cliente, vendedor, N° cotización…"
+                        : "Buscar producto, proveedor, descripción, código, cliente, vendedor, N° cotización…"}
                     autoComplete="off"
                   />
                   {search && (
                     <button className="ci-search-clear" type="button" onClick={() => setSearch("")}>×</button>
                   )}
                 </div>
+                <select
+                  className="ci-search-scope"
+                  value={searchScope}
+                  onChange={e => setSearchScope(e.target.value)}
+                  aria-label="Elegir dónde buscar"
+                  title="Elegir dónde buscar"
+                >
+                  <option value="all">Buscar en todo</option>
+                  <option value="general">Sin proveedores</option>
+                  <option value="suppliers">Solo proveedores</option>
+                </select>
                 {/* B. Vista toggle Individual/Agrupado */}
                 <div className="ci-view-toggle">
                   <button
@@ -875,47 +899,42 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
               {/* ── KPIs ── */}
               {kpis && (
                 <div className="ci-kpis">
-                  <div className="ci-kpi">
-                    <span>Ítems encontrados</span>
-                    <strong>{kpis.count}</strong>
-                  </div>
                   <div className="ci-kpi ci-kpi--accent">
-                    <span>Último precio</span>
-                    <strong>{fARS(kpis.lastPrice)}</strong>
-                    <small>{fmtDate(kpis.lastDate)}</small>
+                    <span>Resumen</span>
+                    <div className="ci-kpi__summary">
+                      <div><small>Ítems</small><strong>{kpis.count}</strong></div>
+                      <div><small>Último precio</small><strong>{fARS(kpis.lastPrice)}</strong></div>
+                    </div>
+                    <small>Actualizado {fmtDate(kpis.lastDate)}</small>
                   </div>
-                  <div className="ci-kpi">
-                    <span>Precio mínimo</span>
-                    <strong>{fARS(kpis.minPrice)}</strong>
+
+                  <div className="ci-kpi ci-kpi--wide">
+                    <span>Rango de precios</span>
+                    <div className="ci-kpi__metrics ci-kpi__metrics--three">
+                      <div><small>Mínimo</small><strong>{fARS(kpis.minPrice)}</strong></div>
+                      <div><small>Promedio</small><strong>{fARS(kpis.avgPrice)}</strong></div>
+                      <div><small>Máximo</small><strong>{fARS(kpis.maxPrice)}</strong></div>
+                    </div>
                   </div>
-                  <div className="ci-kpi">
-                    <span>Precio máximo</span>
-                    <strong>{fARS(kpis.maxPrice)}</strong>
-                  </div>
-                  <div className="ci-kpi">
-                    <span>Precio promedio</span>
-                    <strong>{fARS(kpis.avgPrice)}</strong>
-                  </div>
-                  <div className="ci-kpi">
-                    <span>Markup promedio</span>
-                    <strong>{fPct(kpis.avgMarkup)}</strong>
-                    <small>Mediana: {fPct(kpis.medMarkup)}</small>
+
+                  <div className="ci-kpi ci-kpi--wide">
+                    <span>Rentabilidad</span>
+                    <div className="ci-kpi__metrics">
+                      <div><small>Markup prom.</small><strong>{fPct(kpis.avgMarkup)}</strong><small>Mediana {fPct(kpis.medMarkup)}</small></div>
+                      <div><small>Gross margin</small><strong>{fPct(kpis.avgGM)}</strong><small>Mediana {fPct(kpis.medGM)}</small></div>
+                    </div>
                     {kpis.mkOutliers > 0 && (
                       <small className="ci-kpi__warn">
-                        ⚠ {kpis.mkOutliers} outlier{kpis.mkOutliers > 1 ? "s" : ""} excluido{kpis.mkOutliers > 1 ? "s" : ""}
+                        ⚠ {kpis.mkOutliers} outlier{kpis.mkOutliers > 1 ? "s" : ""} de markup excluido{kpis.mkOutliers > 1 ? "s" : ""}
                       </small>
                     )}
-                  </div>
-                  <div className="ci-kpi">
-                    <span>Gross Margin prom.</span>
-                    <strong>{fPct(kpis.avgGM)}</strong>
-                    <small>Mediana: {fPct(kpis.medGM)}</small>
                     {kpis.gmOutliers > 0 && (
                       <small className="ci-kpi__warn">
-                        ⚠ {kpis.gmOutliers} outlier{kpis.gmOutliers > 1 ? "s" : ""} excluido{kpis.gmOutliers > 1 ? "s" : ""}
+                        ⚠ {kpis.gmOutliers} outlier{kpis.gmOutliers > 1 ? "s" : ""} de margen excluido{kpis.gmOutliers > 1 ? "s" : ""}
                       </small>
                     )}
                   </div>
+
                   <div className="ci-kpi">
                     <span>Tendencia precio</span>
                     <strong className={
@@ -923,16 +942,14 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                       kpis.trend.startsWith("↓") ? "ci-trend--dn" : ""
                     }>{kpis.trend}</strong>
                   </div>
+
                   {kpis.cheapest && (
-                    <div className="ci-kpi">
-                      <span>Cotizado más barato en</span>
-                      <strong className="ci-kpi__client">{kpis.cheapest}</strong>
-                    </div>
-                  )}
-                  {kpis.mostExp && kpis.mostExp !== kpis.cheapest && (
-                    <div className="ci-kpi">
-                      <span>Cotizado más caro en</span>
-                      <strong className="ci-kpi__client">{kpis.mostExp}</strong>
+                    <div className="ci-kpi ci-kpi--clients">
+                      <span>Posición por cliente</span>
+                      <div><small>Más barato en</small><strong className="ci-kpi__client" title={kpis.cheapest}>{kpis.cheapest}</strong></div>
+                      {kpis.mostExp && kpis.mostExp !== kpis.cheapest && (
+                        <div><small>Más caro en</small><strong className="ci-kpi__client" title={kpis.mostExp}>{kpis.mostExp}</strong></div>
+                      )}
                     </div>
                   )}
                   {/* C. Sparkline en KPI row */}
@@ -1177,6 +1194,9 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                                 title={`Conversión histórica de este producto: ${conv}% de los ítems cotizados terminaron en Ganada/Facturada/Cobrada`}
                               >{conv}%</span>
                             )}
+                          </td>
+                          <td className="ci-td-clip" title={item.empresa}>
+                            <Highlight text={item.empresa || "—"} tokens={searchTokens} />
                           </td>
                           <td className="ci-td-r">{item.cant}</td>
                           {/* Costo ARS + tendencia de costo + alerta de cambio de costo */}

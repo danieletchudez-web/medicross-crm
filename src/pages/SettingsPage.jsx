@@ -135,7 +135,7 @@ export default function SettingsPage({ profile, onNavigate }) {
 
   return (
     <Layout title="Configuración" profile={profile} onNavigate={onNavigate}>
-      <div className="p-page">
+      <div className="p-page settings-workspace">
         <div className="p-panel">
           <div className="p-hd">
             <div className="p-hd-left">
@@ -185,17 +185,6 @@ export default function SettingsPage({ profile, onNavigate }) {
               <OperationalRow label="Cotización enviada sin respuesta" value={operational.quote_expiration_days} suffix="días" onChange={value => updateOperational("quote_expiration_days", value)} disabled={!canWriteOperational} />
             </div>
             {operationalStatus && <p className="p-sub" style={{ marginTop: 12 }}>{operationalStatus}</p>}
-          </div>
-        </div>
-
-        <div className="p-panel">
-          <div className="p-hd">
-            <div className="p-hd-left">
-              <span className="p-title">Preferencias y control operativo</span>
-            </div>
-          </div>
-          <div className="p-body">
-            <p className="p-sub">La primera sección conserva preferencias locales por dispositivo. Los umbrales operativos se comparten mediante Supabase y sólo un Super Admin puede modificarlos.</p>
           </div>
         </div>
 

@@ -959,10 +959,6 @@ export default function VisitsPage({profile,onNavigate,navigationData,pageKey}) 
           </div>
         )}
 
-        <footer style={{textAlign:"center",padding:"16px 0 4px",borderTop:"1px solid #1f1f1f",marginTop:8}}>
-          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{fontSize:12,color:"#4b5563",textDecoration:"none"}}>Designed by Daniel Etchudez</a>
-        </footer>
-
       </div>
     </Layout>
   );
