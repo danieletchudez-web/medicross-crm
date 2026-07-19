@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   COST_STATUSES, PENDING_REASONS, addQuotationComment, downloadAttachment,
   ensureWorkflowItems, getPurchasingUsers, getWorkflowConfig, getWorkflowMetrics,
@@ -106,7 +107,7 @@ function ValidationDialog({ quote, items, onClose, onValidated }) {
     catch (error) { setErrorMessage(error.message || "No se pudo validar la solicitud."); }
     finally { setSubmitting(false); }
   };
-  return <div className="qwf-modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+  return createPortal(<div className="qwf-modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
     <section className="qwf-modal">
       <header><div><small>Compras</small><h3>Validar cotización</h3></div><button type="button" onClick={onClose} aria-label="Cerrar sin validar">×</button></header>
       <div className="qwf-validation-kpis"><span><b>{items.length}</b>Total</span><span><b>{eligible.length}</b>Con costo</span><span><b>{items.filter(i => !i.cost_available && !i.current_cost).length}</b>Sin costo</span><span><b>{items.filter(i => i.cost_available).length}</b>Ya validados</span></div>
@@ -117,7 +118,7 @@ function ValidationDialog({ quote, items, onClose, onValidated }) {
       {errorMessage && <div className="qwf-modal-error" role="alert">{errorMessage}</div>}
       <footer><button type="button" className="qwf-secondary" onClick={onClose}>Cerrar sin validar</button><button type="button" onClick={submit} disabled={!canSubmit || submitting}>{submitting ? "Validando…" : `Confirmar validación (${selected.length})`}</button></footer>
     </section>
-  </div>;
+  </div>, document.body);
 }
 
 export default function QuotationWorkflow({ quotationId, profile, context = "cotizador" }) {
