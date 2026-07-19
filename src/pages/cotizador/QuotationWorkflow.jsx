@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   COST_STATUSES, PENDING_REASONS, addQuotationComment, downloadAttachment,
@@ -9,12 +9,26 @@ import {
 } from "../../services/quotationWorkflow";
 import "./QuotationWorkflow.css";
 import "./QuotationWorkflowModal.css";
+import "./QuotationWorkflowActions.css";
 
 const money = (value, currency = "ARS") => `${currency} ${Number(value || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const shortDate = value => value ? new Date(value).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }) : "—";
 const labelStatus = value => String(value || "pendiente").replaceAll("_", " ");
 const isPurchasing = profile => profile?.department === "compras" || profile?.role === "super_admin";
 const isSales = profile => ["ventas", "vendedor"].includes(profile?.department || profile?.role) || profile?.role === "super_admin";
+
+const PURCHASE_COLUMNS = [
+  ["ID interno", "id"], ["Renglón", "line"], ["Subítem", "subitem"], ["Descripción requerida", "description"], ["Cantidad", "quantity"], ["Marca requerida", "desired_brand"], ["Proveedor sugerido", "suggested_supplier"],
+  ["Proveedor", "supplier_name"], ["Producto ofrecido", "offered_product"], ["Marca", "brand"], ["Modelo", "model"], ["Código proveedor", "supplier_code"], ["Estado", "status"], ["Confianza", "confidence"],
+  ["Costo unitario", "unit_cost"], ["Moneda", "currency"], ["Tipo de cambio", "exchange_rate"], ["IVA %", "vat_pct"], ["Impuestos", "taxes"], ["Flete", "freight"], ["Gastos adicionales", "additional_expenses"],
+  ["Disponibilidad", "availability"], ["Plazo de entrega", "delivery_term"], ["Vigencia", "valid_until"], ["Condición de pago", "payment_terms"], ["Nº presupuesto proveedor", "supplier_quote_number"], ["Motivo pendiente", "pending_reason"], ["Observaciones", "notes"],
+];
+const purchaseRow = item => { const cost = item.current_cost || {}; return {
+  id:item.id, line:item.line_number || item.legacy_index + 1, subitem:item.subitem || "", description:item.requested_description || "", quantity:item.quantity || 1, desired_brand:item.desired_brand || "", suggested_supplier:item.suggested_supplier_name || "",
+  supplier_name:cost.supplier_name || item.suggested_supplier_name || "", offered_product:cost.offered_product || "", brand:cost.brand || item.desired_brand || "", model:cost.model || "", supplier_code:cost.supplier_code || "", status:cost.status || item.purchasing_status || "buscando_proveedor", confidence:cost.confidence || "pendiente_confirmacion",
+  unit_cost:cost.unit_cost || "", currency:cost.currency || "ARS", exchange_rate:cost.exchange_rate || "", vat_pct:cost.vat_pct || 0, taxes:cost.taxes || 0, freight:cost.freight || 0, additional_expenses:cost.additional_expenses || 0, availability:cost.availability || "", delivery_term:cost.delivery_term || "", valid_until:cost.valid_until || "", payment_terms:cost.payment_terms || "", supplier_quote_number:cost.supplier_quote_number || "", pending_reason:item.pending_reason || "", notes:cost.notes || item.purchasing_notes || "",
+}; };
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
 
 function CostEditor({ item, profile, onSaved }) {
   const base = item.current_cost || {};
@@ -128,6 +142,7 @@ export default function QuotationWorkflow({ quotationId, profile, context = "cot
   const [buyers, setBuyers] = useState([]), [sendForm, setSendForm] = useState({ purchasingOwnerId: "", deadline: "", priority: "normal" });
   const [files, setFiles] = useState([]), [fileForm, setFileForm] = useState({ itemId: "", category: "otro", description: "" }), [comment, setComment] = useState("");
   const [metrics, setMetrics] = useState([]);
+  const importInputRef = useRef(null);
   const load = useCallback(async () => {
     if (!quotationId) return;
     setLoading(true); setError("");
@@ -147,6 +162,41 @@ export default function QuotationWorkflow({ quotationId, profile, context = "cot
   const send = async () => { try { await sendToPurchasing({ quotationId, profile, ...sendForm }); await load(); } catch (e) { alert(e.message); } };
   const upload = async () => { if (!files.length) return; try { await uploadQuotationFiles({ quotationId, itemId: fileForm.itemId || null, files, category: fileForm.category, description: fileForm.description, profile }); setFiles([]); await load(); } catch (e) { alert(e.message); } };
   const addComment = async () => { if (!comment.trim()) return; try { await addQuotationComment(quotationId, null, comment, profile); setComment(""); await load(); } catch (e) { alert(e.message); } };
+  const exportPurchasesExcel = () => {
+    if (!window.XLSX) return alert("El generador de Excel todavía no está disponible. Recargá la página.");
+    const rows = data.items.map(item => { const source = purchaseRow(item); return Object.fromEntries(PURCHASE_COLUMNS.map(([label, key]) => [label, source[key]])); });
+    const sheet = window.XLSX.utils.json_to_sheet(rows, { header: PURCHASE_COLUMNS.map(([label]) => label) });
+    sheet["!cols"] = PURCHASE_COLUMNS.map(([label]) => ({ wch: Math.max(14, Math.min(40, label.length + 4)) }));
+    const book = window.XLSX.utils.book_new(); window.XLSX.utils.book_append_sheet(book, sheet, "Costos");
+    window.XLSX.writeFile(book, `compras_${data.quote.quote_num_formatted || quotationId}.xlsx`);
+  };
+  const exportPurchasesPdf = () => {
+    const columns = PURCHASE_COLUMNS.filter(([, key]) => !["id", "notes", "pending_reason"].includes(key));
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Compras ${escapeHtml(data.quote.quote_num_formatted || "")}</title><style>@page{size:A3 landscape;margin:10mm}body{font:10px Arial;color:#172033}h1{font-size:18px;margin:0 0 4px}p{color:#64748b;margin:0 0 14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d7dee8;padding:5px;vertical-align:top}th{background:#eef3f6;text-align:left;font-size:8px}td{font-size:8px}</style></head><body><h1>Solicitud de costos #${escapeHtml(data.quote.quote_num_formatted || "")}</h1><p>${escapeHtml(data.quote.institucion || "Sin institución")} · ${data.items.length} renglones</p><table><thead><tr>${columns.map(([label]) => `<th>${escapeHtml(label)}</th>`).join("")}</tr></thead><tbody>${data.items.map(item => { const row = purchaseRow(item); return `<tr>${columns.map(([, key]) => `<td>${escapeHtml(row[key])}</td>`).join("")}</tr>`; }).join("")}</tbody></table><script>window.onload=()=>window.print();<\/script></body></html>`;
+    const popup = window.open("", "_blank"); if (!popup) return alert("Habilitá las ventanas emergentes para generar el PDF."); popup.document.write(html); popup.document.close();
+  };
+  const importPurchasesExcel = async event => {
+    const file = event.target.files?.[0]; event.target.value = ""; if (!file || !window.XLSX) return;
+    try {
+      const book = window.XLSX.read(await file.arrayBuffer(), { type:"array", cellDates:false });
+      const rawRows = window.XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { defval:"" });
+      if (!rawRows.length) throw new Error("El archivo no contiene renglones.");
+      const rows = rawRows.map(row => Object.fromEntries(PURCHASE_COLUMNS.map(([label, key]) => [key, row[label]]))).filter(row => row.id || row.line);
+      if (!rows.length) throw new Error("No aparecen “ID interno” o “Renglón”. Descargá y usá el Excel de esta gestión.");
+      if (!window.confirm(`Se encontraron ${rows.length} renglones. ¿Importar y guardar los costos reconocidos?`)) return;
+      let saved = 0, ignored = 0;
+      for (const row of rows) {
+        const item = data.items.find(candidate => candidate.id === String(row.id)) || data.items.find(candidate => Number(candidate.line_number || candidate.legacy_index + 1) === Number(row.line));
+        if (!item || item.cost_available) { ignored++; continue; }
+        const status = row.status || (Number(row.unit_cost) > 0 ? "costo_cargado" : "buscando_proveedor");
+        const values = { ...row, status, currency:row.currency || "ARS", confidence:row.confidence || "pendiente_confirmacion" };
+        if (["costo_cargado", "completo", "alternativa_propuesta"].includes(status) && Number(row.unit_cost) > 0) { await saveItemCost(item, values, profile); saved++; }
+        else if (row.pending_reason && String(row.notes).trim()) { await savePendingResolution(item, values, profile); saved++; }
+        else ignored++;
+      }
+      await load(); alert(`Importación finalizada: ${saved} renglones actualizados${ignored ? `, ${ignored} omitidos` : ""}.`);
+    } catch (error) { alert(`No se pudo importar el Excel: ${error.message}`); }
+  };
   const tabs = [["summary", "Resumen"], ...(context === "purchases" || (isPurchasing(profile) && !isSales(profile)) ? [["costs", `Costos (${progress.available}/${progress.total})`]] : []), ...(context !== "purchases" && isSales(profile) ? [["commercial", "Definición comercial"]] : []), ["documents", `Documentación (${support?.attachments.length || 0})`], ["history", "Historial"], ["comments", "Comentarios"], ["metrics", "KPIs"]];
   return <section className="qwf-shell">
     <header className="qwf-head"><div><span>Flujo colaborativo</span><h3>{data.quote.workflow_status ? labelStatus(data.quote.workflow_status) : "Cotización en preparación"}</h3></div><div className="qwf-progress"><b>{progress.available} de {progress.total}</b><span>renglones con costo disponible</span><i><i style={{ width: `${progress.total ? progress.available / progress.total * 100 : 0}%` }}/></i></div></header>
@@ -154,7 +204,7 @@ export default function QuotationWorkflow({ quotationId, profile, context = "cot
     <nav className="qwf-tabs">{tabs.map(([id, label]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>{label}</button>)}</nav>
     <div className="qwf-body">
       {tab === "summary" && <div className="qwf-summary"><div className="qwf-kpis"><article><span>Total</span><b>{progress.total}</b><small>renglones</small></article><article><span>Disponibles</span><b>{progress.available}</b><small>para Ventas</small></article><article><span>Pendientes</span><b>{progress.pending}</b><small>en Compras</small></article><article><span>Definidos</span><b>{progress.commercial}</b><small>comercialmente</small></article></div><div className="qwf-meta"><span>Ventas <b>{data.quote.sales_owner_id ? "Asignado" : "Sin asignar"}</b></span><span>Compras <b>{data.quote.purchasing_owner_id ? "Asignado" : "Cola general"}</b></span><span>Fecha límite <b>{data.quote.internal_deadline || "Sin fecha"}</b></span><span>Prioridad <b>{data.quote.priority || "normal"}</b></span></div>{isSales(profile) && !data.quote.sent_to_purchasing_at && <div className="qwf-send"><select value={sendForm.purchasingOwnerId} onChange={e => setSendForm({ ...sendForm, purchasingOwnerId: e.target.value })}><option value="">Cola general de Compras</option>{buyers.map(user => <option key={user.id} value={user.id}>{user.full_name || user.email}</option>)}</select><input type="date" value={sendForm.deadline} onChange={e => setSendForm({ ...sendForm, deadline: e.target.value })}/><select value={sendForm.priority} onChange={e => setSendForm({ ...sendForm, priority: e.target.value })}><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select><button onClick={send}>Enviar a Compras</button></div>}{isPurchasing(profile) && !data.quote.purchasing_owner_id && data.quote.sent_to_purchasing_at && <button onClick={async () => { await takePurchasingOwnership(quotationId, profile); await load(); }}>Tomar gestión</button>}</div>}
-      {tab === "costs" && <><div className="qwf-section-head"><div><h4>Gestión de costos</h4><p>Los avances se guardan por renglón y cada costo genera una versión.</p></div>{isPurchasing(profile) && <button onClick={() => setValidationOpen(true)}>Validar cotización</button>}</div>{data.items.map(item => <CostEditor key={item.id} item={item} profile={profile} onSaved={load}/>)}</>}
+      {tab === "costs" && <><div className="qwf-section-head"><div><h4>Gestión de costos</h4><p>Los avances se guardan por renglón y cada costo genera una versión.</p></div><div className="qwf-cost-actions"><button className="qwf-secondary" onClick={exportPurchasesPdf}>PDF</button><button className="qwf-secondary" onClick={exportPurchasesExcel}>Excel</button><button className="qwf-secondary" onClick={() => importInputRef.current?.click()}>Importar Excel</button><input ref={importInputRef} type="file" accept=".xlsx,.xls" hidden onChange={importPurchasesExcel}/>{isPurchasing(profile) && <button onClick={() => setValidationOpen(true)}>Validar cotización</button>}</div></div>{data.items.map(item => <CostEditor key={item.id} item={item} profile={profile} onSaved={load}/>)}</>}
       {tab === "commercial" && <><div className="qwf-section-head"><div><h4>Definición comercial</h4><p>{progress.available} disponibles · {progress.pending} pendientes visibles</p></div>{progress.commercial === progress.total && progress.total > 0 && <button onClick={async () => { try { await sendToTenders(quotationId, data.items, profile); await load(); } catch (e) { alert(e.message); } }}>Enviar a Licitaciones</button>}</div>{data.items.map(item => <CommercialEditor key={item.id} item={item} profile={profile} purchasingOwnerId={data.quote.purchasing_owner_id} onSaved={load}/>)}</>}
       {tab === "documents" && <><div className="qwf-upload"><input type="file" multiple onChange={e => setFiles([...e.target.files])}/><select value={fileForm.itemId} onChange={e => setFileForm({ ...fileForm, itemId: e.target.value })}><option value="">Documento general</option>{data.items.map(item => <option key={item.id} value={item.id}>Renglón {item.line_number || item.legacy_index + 1}</option>)}</select><select value={fileForm.category} onChange={e => setFileForm({ ...fileForm, category: e.target.value })}>{["folleto", "ficha_tecnica", "pm_anmat", "certificado_anmat", "presupuesto_proveedor", "pliego", "imagen_producto", "otro"].map(value => <option key={value}>{value.replaceAll("_", " ")}</option>)}</select><input placeholder="Descripción" value={fileForm.description} onChange={e => setFileForm({ ...fileForm, description: e.target.value })}/><button onClick={upload} disabled={!files.length}>Subir {files.length || ""} archivo(s)</button></div><div className="qwf-files">{support.attachments.map(file => <article key={file.id}><div><b>{file.original_name}</b><span>{labelStatus(file.document_category)} · {file.file_size ? `${Math.ceil(file.file_size / 1024)} KB` : ""}</span></div><button onClick={() => downloadAttachment(file)}>Descargar</button><button className="qwf-danger" onClick={async () => { await softDeleteAttachment(file, profile); await load(); }}>Eliminar</button></article>)}</div></>}
       {tab === "history" && <div className="qwf-timeline">{support.activity.map(event => <article key={event.id}><i/><div><b>{labelStatus(event.action)}</b><span>{event.profiles?.full_name || event.profiles?.email || event.actor_department || "Sistema"} · {shortDate(event.created_at)}</span>{event.comment && <p>{event.comment}</p>}</div></article>)}</div>}

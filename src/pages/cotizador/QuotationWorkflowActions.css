@@ -1,0 +1,25 @@
+.qwf-shell .qwf-tabs button {
+  white-space: nowrap;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 9px 11px;
+  color: var(--muted, #64748b);
+  border-bottom: 2px solid transparent;
+}
+.qwf-shell .qwf-tabs button:hover {
+  background: var(--surface-2, #f8fafc);
+  color: var(--text, #172033);
+}
+.qwf-shell .qwf-tabs button.active,
+.qwf-shell .qwf-tabs button.active:hover {
+  background: transparent;
+  color: #185fa5;
+  border-color: #185fa5;
+}
+.qwf-cost-actions { display:flex; align-items:center; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
+.qwf-cost-actions input[hidden] { display:none; }
+@media (max-width: 720px) {
+  .qwf-section-head { align-items:flex-start; flex-direction:column; }
+  .qwf-cost-actions { width:100%; justify-content:flex-start; }
+}
