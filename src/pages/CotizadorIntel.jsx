@@ -72,10 +72,11 @@ function expandCotizaciones(rows) {
   for (const cot of rows) {
     const tcG   = parseN(cot.tc) || 1425;
     const fecha = cot.fecha_apert || cot.created_at?.slice(0, 10) || "";
-    for (const r of (cot.renglones || [])) {
+    for (const [legacyIndex, r] of (cot.renglones || []).entries()) {
       const calc = calcFlat(r, tcG);
       flat.push({
         quoteId:     cot.id,
+        legacyIndex,
         quoteNum:    cot.quote_num_formatted || String(cot.quote_number || "?"),
         fecha,
         institucion: cot.institucion || "",
@@ -230,7 +231,49 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      setItems(expandCotizaciones(data || []));
+      const legacyItems = expandCotizaciones(data || []);
+      // Cuando el flujo colaborativo está disponible, sus costos versionados
+      // reemplazan el costo legacy equivalente sin romper instalaciones previas.
+      const { data: workflowRows } = await supabase
+        .from("quotation_items")
+        .select("id,quotation_id,legacy_index,requested_description,quantity,desired_brand,suggested_supplier_name,markup,sale_price_unit,final_price_unit,commercial_status,quotation_item_costs(*),cotizaciones!inner(quote_num_formatted,quote_number,vendedor,institucion,estado,tc,created_at,fecha_apert)")
+        .order("created_at", { referencedTable: "quotation_item_costs", ascending: false });
+      const replacements = new Map();
+      for (const row of (workflowRows || [])) {
+        const current = (row.quotation_item_costs || []).find(cost => cost.is_current);
+        if (!current) continue;
+        const cot = row.cotizaciones;
+        const tcG = parseN(cot?.tc) || 1425;
+        const costo = parseN(current.total_unit_cost || current.converted_cost || current.unit_cost);
+        const raw = {
+          empresa: current.supplier_name || row.suggested_supplier_name,
+          marca: current.brand || row.desired_brand,
+          descr: row.requested_description,
+          cant: row.quantity,
+          moneda: current.currency || "ARS",
+          costo,
+          markup: row.markup ? 1 + Number(row.markup) / 100 : 1,
+          iva: current.vat_pct || 0,
+          modoManual: row.final_price_unit || row.sale_price_unit ? "manual" : "auto",
+          pvManual: row.final_price_unit || row.sale_price_unit || "",
+        };
+        const calc = calcFlat(raw, tcG);
+        replacements.set(`${row.quotation_id}:${row.legacy_index}`, {
+          quoteId: row.quotation_id, legacyIndex: row.legacy_index,
+          quoteNum: cot?.quote_num_formatted || String(cot?.quote_number || "?"),
+          fecha: cot?.fecha_apert || cot?.created_at?.slice(0, 10) || "",
+          institucion: cot?.institucion || "", vendedor: cot?.vendedor || "",
+          estado: row.commercial_status || cot?.estado || "borrador",
+          empresa: raw.empresa || "", codigo: current.supplier_code || "",
+          marca: raw.marca || "", descr: raw.descr || "", cant: Number(raw.cant) || 1,
+          moneda: raw.moneda, costo, rawMarkup: raw.markup, rawIva: raw.iva,
+          ...(calc || { cARS: costo, pvARSs: 0, pvARSc: 0, mkPct: 0, gm: 0, subtotal: 0, tc: tcG }),
+        });
+      }
+      const merged = legacyItems.map(item => replacements.get(`${item.quoteId}:${item.legacyIndex}`) || item);
+      const legacyKeys = new Set(legacyItems.map(item => `${item.quoteId}:${item.legacyIndex}`));
+      replacements.forEach((item, key) => { if (!legacyKeys.has(key)) merged.push(item); });
+      setItems(merged.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))));
     } catch (e) {
       console.error("[CotizadorIntel]", e);
     } finally {

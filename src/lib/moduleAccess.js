@@ -41,6 +41,7 @@ const DEFAULT_MODULE_ORDER = [
   "campaigns",
   "tenders",
   "cotizador",
+  "purchases",
   "importer",
   "salesAnalytics",
   "tasks",

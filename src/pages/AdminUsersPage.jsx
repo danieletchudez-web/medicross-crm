@@ -9,6 +9,13 @@ const ROLES = [
   { value: "seller",      label: "Vendedor"    },
 ];
 
+const DEPARTMENTS = [
+  { value: "ventas", label: "Ventas" },
+  { value: "compras", label: "Compras" },
+  { value: "licitaciones", label: "Licitaciones" },
+  { value: "administracion", label: "Administración" },
+];
+
 const MODULES = [
   { id: "managerDashboard", label: "Dashboard"             },
   { id: "importer",         label: "BI Comercial"          },
@@ -22,6 +29,7 @@ const MODULES = [
   { id: "calendar",         label: "Calendario"            },
   { id: "tenders",          label: "Licitaciones"          },
   { id: "cotizador",        label: "Cotizador"             },
+  { id: "purchases",        label: "Compras"               },
   { id: "preciosHistoricos",label: "Inteligencia de precios"},
   { id: "tasks",            label: "Tareas"                },
   { id: "habits",           label: "Hábitos"               },
@@ -38,21 +46,21 @@ const SELLER_MODULES = [
 const MANAGER_MODULES = [
   "managerDashboard","importer","salesAnalytics",
   "accounts","products","opportunities","campaigns",
-  "todayActions","visits","calendar","tenders","cotizador","preciosHistoricos","adminUsers",
+  "todayActions","visits","calendar","tenders","cotizador","purchases","preciosHistoricos","adminUsers",
 ];
 
 const FULL_MODULES = MODULES.map(m => m.id);
 const MOBILE_CORE_MODULES = ["todayActions","visits","calendar","accounts","opportunities"];
-const MOBILE_MANAGER_MODULES = ["managerDashboard","todayActions","visits","calendar","accounts","opportunities","cotizador","tenders"];
-const MOBILE_QUOTES_MODULES = ["accounts","opportunities","tenders","cotizador"];
+const MOBILE_MANAGER_MODULES = ["managerDashboard","todayActions","visits","calendar","accounts","opportunities","cotizador","tenders","purchases"];
+const MOBILE_QUOTES_MODULES = ["accounts","opportunities","tenders","cotizador","purchases"];
 const MOBILE_BI_MODULES = ["managerDashboard","importer","salesAnalytics"];
 
 const READ_ONLY_MODULES = [
   "managerDashboard","salesAnalytics","accounts","products","opportunities",
-  "campaigns","todayActions","visits","calendar","tenders","cotizador","preciosHistoricos",
+  "campaigns","todayActions","visits","calendar","tenders","cotizador","purchases","preciosHistoricos",
 ];
 
-const QUOTES_MODULES = ["accounts","products","opportunities","tenders","cotizador","preciosHistoricos"];
+const QUOTES_MODULES = ["accounts","products","opportunities","tenders","cotizador","purchases","preciosHistoricos"];
 const BI_MODULES = ["managerDashboard","importer","salesAnalytics"];
 
 const ACTIONS = [
@@ -122,6 +130,7 @@ const PRESETS = [
 ];
 
 const OPTIONAL_PROFILE_FIELDS = [
+  "department",
   "allowed_actions",
   "mobile_allowed_modules",
   "permission_preset",
@@ -651,6 +660,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                             hasPendingChanges={hasDraft(user.id)}
                             currentProfile={profile}
                             onRoleChange={role => queueUserChange(draftUser, { role })}
+                            onDepartmentChange={department => queueUserChange(draftUser, { department })}
                             onApprove={() => approveUser(draftUser)}
                             onBlock={() => blockUser(draftUser)}
                             onToggleModule={moduleId => toggleModule(draftUser, moduleId)}
@@ -687,6 +697,7 @@ export default function AdminUsersPage({ profile, onNavigate }) {
                         hasPendingChanges={hasDraft(user.id)}
                         currentProfile={profile}
                         onRoleChange={role => queueUserChange(draftUser, { role })}
+                        onDepartmentChange={department => queueUserChange(draftUser, { department })}
                         onApprove={() => approveUser(draftUser)}
                         onBlock={() => blockUser(draftUser)}
                         onToggleModule={moduleId => toggleModule(draftUser, moduleId)}
@@ -896,6 +907,7 @@ function UserRow({
   saving,
   currentProfile,
   onRoleChange,
+  onDepartmentChange,
   onApprove,
   onBlock,
   onToggleModule,
@@ -924,10 +936,17 @@ function UserRow({
         </div>
       </td>
       <td>
-        <select className="admin-select" value={user.role||"seller"}
-          onChange={e => onRoleChange(e.target.value)} disabled={saving||isSelf}>
-          {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
+        <div style={{display:"grid",gap:6}}>
+          <select className="admin-select" value={user.role||"seller"}
+            onChange={e => onRoleChange(e.target.value)} disabled={saving||isSelf}>
+            {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+          <select className="admin-select" value={user.department||""}
+            onChange={e => onDepartmentChange(e.target.value)} disabled={saving||isSelf}>
+            <option value="">Sin sector</option>
+            {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+          </select>
+        </div>
       </td>
       <td>
         <button className={`status-pill ${user.approved?"approved":"pending"}`}
@@ -1119,6 +1138,7 @@ function UserMobileCard({
   saving,
   currentProfile,
   onRoleChange,
+  onDepartmentChange,
   onApprove,
   onBlock,
   onToggleModule,
@@ -1149,6 +1169,14 @@ function UserMobileCard({
         <select className="admin-select" value={user.role||"seller"}
           onChange={e => onRoleChange(e.target.value)} disabled={saving||isSelf}>
           {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
+      </div>
+      <div className="mobile-admin-row">
+        <label>Sector</label>
+        <select className="admin-select" value={user.department||""}
+          onChange={e => onDepartmentChange(e.target.value)} disabled={saving||isSelf}>
+          <option value="">Sin sector</option>
+          {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>
       </div>
       <button className={`status-pill ${user.approved?"approved":"pending"}`}

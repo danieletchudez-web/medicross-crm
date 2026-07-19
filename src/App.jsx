@@ -58,6 +58,7 @@ const NotificationsPage     = lazy(() => import("./pages/NotificationsPage"));
 const TasksPage             = lazy(() => import("./pages/TasksPage"));
 const HabitsPage            = lazy(() => import("./pages/HabitsPage"));
 const SuppliersPage         = lazy(() => import("./pages/SuppliersPage"));
+const PurchasesPage         = lazy(() => import("./pages/PurchasesPage"));
 const SettingsPage          = lazy(() => import("./pages/SettingsPage"));
 const MobileHomePage        = lazy(() => import("./pages/MobileHomePage"));
 const ALL_PAGES = [
@@ -81,6 +82,7 @@ const ALL_PAGES = [
   { id: "tasks",             Component: TasksPage },
   { id: "habits",            Component: HabitsPage },
   { id: "suppliers",         Component: SuppliersPage },
+  { id: "purchases",         Component: PurchasesPage },
   { id: "settings",          Component: SettingsPage },
   { id: "mobileHome",        Component: MobileHomePage },
 ];
@@ -386,6 +388,8 @@ export default function App() {
         const isActive   = id === currentPage;
         const extraProps = id === "cotizador"
           ? { initialData: navigateData }
+          : id === "purchases"
+            ? { navigationData: navigateData }
           : id === "visits"
             ? { navigationData: navigateData }
             : id === "accountDetail" || id === "opportunities"

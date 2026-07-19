@@ -22,6 +22,7 @@ import { Moon, Sun,
   ShieldCheck,
   Target,
   Truck,
+  ShoppingCart,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
@@ -54,6 +55,7 @@ const MENU_SECTIONS = [
     items: [
       { id: "tenders",   label: "Licitaciones", icon: FileText },
       { id: "cotizador", label: "Cotizador",    icon: Calculator },
+      { id: "purchases", label: "Compras",      icon: ShoppingCart },
     ],
   },
   {

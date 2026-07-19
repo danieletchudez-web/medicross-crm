@@ -5,6 +5,7 @@ import logoUrl from "../assets/logo.jpg";
 import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
 import CotizadorIntel, { useQuoteHint } from "./CotizadorIntel";
+import QuotationWorkflow, { QuotationWorkflowInbox } from "./cotizador/QuotationWorkflow";
 import "./CotizadorPage.css";
 
 const fARS   = (n) => "$ "   + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1832,6 +1833,11 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
 
         <DashboardComercial pageKey={pageKey} />
 
+        <QuotationWorkflowInbox
+          profile={profile}
+          onOpenQuote={(id) => { loadCotizacion(id); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+        />
+
         <CotizadorIntel
           onOpenQuote={(id) => setPreviewQuoteId(id)}
           onEditQuote={(id) => setEditModalQuoteId(id)}
@@ -1907,6 +1913,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
             </div>
           </div>
         </div>
+
+        <QuotationWorkflow quotationId={docId} profile={profile} />
 
         <h3 className="cot-section-title" style={{marginTop:4}}>📦 Renglones</h3>
 
