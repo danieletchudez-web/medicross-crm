@@ -16,7 +16,7 @@ const dateLabel = value => value ? new Date(`${value}T00:00:00`).toLocaleDateStr
 export default function PurchasesPage({ profile, onNavigate, navigationData, pageKey }) {
   const [rows, setRows] = useState([]), [loading, setLoading] = useState(true), [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState(navigationData?.recordId || navigationData?.quoteId || null);
-  const [filters, setFilters] = useState({ search: "", status: "active", priority: "", owner: "all", deadline: "" });
+  const [filters, setFilters] = useState({ search: "", status: profile?.department === "compras" ? "active" : "", priority: "", owner: "all", deadline: "" });
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
@@ -50,7 +50,8 @@ export default function PurchasesPage({ profile, onNavigate, navigationData, pag
     const needle = filters.search.trim().toLowerCase();
     if (needle && ![row.quote_num_formatted, row.institucion].some(value => String(value || "").toLowerCase().includes(needle))) return false;
     if (filters.status === "active" && !activeStates.includes(row.workflow_status)) return false;
-    if (filters.status && filters.status !== "active" && row.workflow_status !== filters.status) return false;
+    if (filters.status === "pending_send" && row.workflow_status) return false;
+    if (filters.status && !["active", "pending_send"].includes(filters.status) && row.workflow_status !== filters.status) return false;
     if (filters.priority && row.priority !== filters.priority) return false;
     if (filters.owner === "mine" && row.purchasing_owner_id !== profile?.id) return false;
     if (filters.owner === "unassigned" && row.purchasing_owner_id) return false;
@@ -80,7 +81,7 @@ export default function PurchasesPage({ profile, onNavigate, navigationData, pag
       <section className="purchases-panel">
         <div className="purchases-filters">
           <label className="purchases-search"><Search size={15}/><input placeholder="Buscar número o institución…" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })}/></label>
-          <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}><option value="active">Solicitudes activas</option><option value="">Todos los estados</option><option value="pendiente_costos">Nuevas</option><option value="en_gestion_compras">En gestión</option><option value="costos_parciales">Parciales</option><option value="costos_completos">Completas</option></select>
+          <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}><option value="">Todas las cotizaciones</option><option value="active">Solicitudes activas</option><option value="pending_send">Sin enviar a Compras</option><option value="pendiente_costos">Nuevas</option><option value="en_gestion_compras">En gestión</option><option value="costos_parciales">Parciales</option><option value="costos_completos">Completas</option></select>
           <select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })}><option value="">Todas las prioridades</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select>
           <select value={filters.owner} onChange={e => setFilters({ ...filters, owner: e.target.value })}><option value="all">Todos los responsables</option><option value="mine">Mis solicitudes</option><option value="unassigned">Sin asignar</option></select>
           <input type="date" aria-label="Fecha límite" value={filters.deadline} onChange={e => setFilters({ ...filters, deadline: e.target.value })}/>

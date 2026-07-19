@@ -40,7 +40,7 @@ const MODULES = [
 const SELLER_MODULES = [
   "managerDashboard","importer","salesAnalytics",
   "accounts","products","opportunities","campaigns",
-  "todayActions","visits","calendar","tenders","cotizador","preciosHistoricos",
+  "todayActions","visits","calendar","tenders","cotizador","purchases","preciosHistoricos",
 ];
 
 const MANAGER_MODULES = [

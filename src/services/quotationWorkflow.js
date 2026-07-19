@@ -171,8 +171,26 @@ export async function getPurchasingUsers() {
 
 export async function getWorkflowMetrics() {
   const { data, error } = await supabase.from("quotation_workflow_metrics").select("*");
-  if (error) throw error;
-  return data || [];
+  if (!error) return data || [];
+  if (!/quotation_workflow_metrics|schema cache|does not exist/i.test(error.message || "")) throw error;
+
+  const [{ data: quotes, error: quoteError }, { data: items, error: itemError }] = await Promise.all([
+    supabase.from("cotizaciones").select("id,quote_num_formatted,institucion,workflow_status,sales_owner_id,purchasing_owner_id,internal_deadline,priority,sent_to_purchasing_at"),
+    supabase.from("quotation_items").select("quotation_id,cost_available,commercial_status,cost_validated_at"),
+  ]);
+  if (quoteError) throw quoteError;
+  if (itemError) throw itemError;
+  const byQuote = new Map();
+  for (const item of items || []) {
+    const aggregate = byQuote.get(item.quotation_id) || { total_items: 0, available_items: 0, pending_items: 0, commercial_resolved_items: 0, last_cost_validation_at: null };
+    aggregate.total_items += 1;
+    if (item.cost_available) aggregate.available_items += 1;
+    else aggregate.pending_items += 1;
+    if (["precio_definido", "aprobado_ventas", "descartado"].includes(item.commercial_status)) aggregate.commercial_resolved_items += 1;
+    if (item.cost_validated_at && (!aggregate.last_cost_validation_at || item.cost_validated_at > aggregate.last_cost_validation_at)) aggregate.last_cost_validation_at = item.cost_validated_at;
+    byQuote.set(item.quotation_id, aggregate);
+  }
+  return (quotes || []).map(quote => ({ quotation_id: quote.id, ...quote, ...(byQuote.get(quote.id) || { total_items: 0, available_items: 0, pending_items: 0, commercial_resolved_items: 0, last_cost_validation_at: null }) }));
 }
 
 export async function logActivity(quotationId, profile, action, itemId = null, newValue = null, comment = null, metadata = {}) {
