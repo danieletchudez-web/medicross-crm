@@ -34,7 +34,7 @@ function CostEditor({ item, profile, onSaved }) {
   const base = item.current_cost || {};
   const [form, setForm] = useState({ supplier_name: base.supplier_name || item.suggested_supplier_name || "", offered_product: base.offered_product || "", brand: base.brand || item.desired_brand || "", model: base.model || "", supplier_code: base.supplier_code || "", unit_cost: base.unit_cost || "", currency: base.currency || "ARS", exchange_rate: base.exchange_rate || "", vat_pct: base.vat_pct || 0, taxes: base.taxes || 0, freight: base.freight || 0, additional_expenses: base.additional_expenses || 0, delivery_term: base.delivery_term || "", availability: base.availability || "", valid_until: base.valid_until || "", payment_terms: base.payment_terms || "", supplier_quote_number: base.supplier_quote_number || "", confidence: base.confidence || "pendiente_confirmacion", status: base.status || item.purchasing_status || "buscando_proveedor", pending_reason: item.pending_reason || "", notes: base.notes || item.purchasing_notes || "" });
   const [saving, setSaving] = useState(false);
-  const change = (key, value) => setForm(current => ({ ...current, [key]: value }));
+  const change = (key, value) => setForm(current => ({ ...current, [key]: value, ...(key === "unit_cost" && Number(value) > 0 && !["completo", "alternativa_propuesta"].includes(current.status) ? { status: "costo_cargado" } : {}) }));
   const resolved = ["costo_cargado", "completo", "alternativa_propuesta"].includes(form.status);
   const save = async () => {
     if (!resolved && (!form.pending_reason || !form.notes.trim())) return alert("Indicá motivo y observación para el renglón pendiente.");
@@ -48,7 +48,15 @@ function CostEditor({ item, profile, onSaved }) {
   };
   return (
     <article className={`qwf-item ${item.cost_available ? "qwf-item--validated" : ""}`}>
-      <header><div><b>Renglón {item.line_number || item.legacy_index + 1}</b><p>{item.requested_description || "Sin descripción"}</p></div><span className={`qwf-badge qwf-badge--${item.cost_available ? "success" : "neutral"}`}>{item.cost_available ? "Validado" : labelStatus(form.status)}</span></header>
+      <header><div><b>Renglón {item.line_number || item.legacy_index + 1}</b><p>Solicitud enviada por Ventas</p></div><span className={`qwf-badge qwf-badge--${item.cost_available ? "success" : "neutral"}`}>{item.cost_available ? "Validado" : labelStatus(form.status)}</span></header>
+      <section className="qwf-sales-request">
+        <div className="qwf-sales-request__main"><span>Producto solicitado</span><strong>{item.requested_description || "Sin descripción informada"}</strong>{item.sales_notes && <small>{item.sales_notes}</small>}</div>
+        <div><span>Cantidad</span><strong>{item.quantity || 1} {item.unit || "u."}</strong></div>
+        <div><span>Marca requerida</span><strong>{item.desired_brand || "Sin especificar"}</strong></div>
+        <div><span>Modelo</span><strong>{item.desired_model || "Sin especificar"}</strong></div>
+        <div><span>Presentación</span><strong>{item.presentation || "Sin especificar"}</strong></div>
+        <div><span>Proveedor sugerido</span><strong>{item.suggested_supplier_name || "A buscar por Compras"}</strong></div>
+      </section>
       <div className="qwf-form-grid">
         <label>Proveedor<input value={form.supplier_name} onChange={e => change("supplier_name", e.target.value)} disabled={item.cost_available}/></label>
         <label>Producto ofrecido<input value={form.offered_product} onChange={e => change("offered_product", e.target.value)} disabled={item.cost_available}/></label>
@@ -56,18 +64,19 @@ function CostEditor({ item, profile, onSaved }) {
         <label>Modelo<input value={form.model} onChange={e => change("model", e.target.value)} disabled={item.cost_available}/></label>
         <label>Estado<select value={form.status} onChange={e => change("status", e.target.value)} disabled={item.cost_available}>{COST_STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>Confianza<select value={form.confidence} onChange={e => change("confidence", e.target.value)} disabled={item.cost_available}><option value="confirmado">Confirmado</option><option value="estimado">Estimado</option><option value="historico">Histórico</option><option value="pendiente_confirmacion">Pendiente de confirmación</option></select></label>
-        {resolved ? <>
-          <label>Costo unitario<input type="number" value={form.unit_cost} onChange={e => change("unit_cost", e.target.value)} disabled={item.cost_available}/></label>
+        <label className="qwf-cost-primary">Costo unitario<input type="number" min="0" step="0.01" placeholder="Ingresar costo" value={form.unit_cost} onChange={e => change("unit_cost", e.target.value)} disabled={item.cost_available}/><small>Al ingresar un importe cambia a “Costo cargado”.</small></label>
           <label>Moneda<select value={form.currency} onChange={e => change("currency", e.target.value)} disabled={item.cost_available}><option>ARS</option><option>USD</option><option>EUR</option></select></label>
           <label>Tipo de cambio<input type="number" value={form.exchange_rate} onChange={e => change("exchange_rate", e.target.value)} disabled={item.cost_available}/></label>
           <label>IVA %<input type="number" value={form.vat_pct} onChange={e => change("vat_pct", e.target.value)} disabled={item.cost_available}/></label>
+          <label>Impuestos<input type="number" value={form.taxes} onChange={e => change("taxes", e.target.value)} disabled={item.cost_available}/></label>
           <label>Flete<input type="number" value={form.freight} onChange={e => change("freight", e.target.value)} disabled={item.cost_available}/></label>
           <label>Gastos adicionales<input type="number" value={form.additional_expenses} onChange={e => change("additional_expenses", e.target.value)} disabled={item.cost_available}/></label>
           <label>Disponibilidad<input value={form.availability} onChange={e => change("availability", e.target.value)} disabled={item.cost_available}/></label>
           <label>Plazo de entrega<input value={form.delivery_term} onChange={e => change("delivery_term", e.target.value)} disabled={item.cost_available}/></label>
           <label>Vigencia<input type="date" value={form.valid_until} onChange={e => change("valid_until", e.target.value)} disabled={item.cost_available}/></label>
+          <label>Condición de pago<input value={form.payment_terms} onChange={e => change("payment_terms", e.target.value)} disabled={item.cost_available}/></label>
           <label>Presupuesto proveedor<input value={form.supplier_quote_number} onChange={e => change("supplier_quote_number", e.target.value)} disabled={item.cost_available}/></label>
-        </> : <label className="qwf-span-2">Motivo pendiente<select value={form.pending_reason} onChange={e => change("pending_reason", e.target.value)} disabled={item.cost_available}><option value="">Seleccionar…</option>{PENDING_REASONS.map(reason => <option key={reason}>{reason}</option>)}</select></label>}
+        {!resolved && <label className="qwf-span-2">Motivo pendiente<select value={form.pending_reason} onChange={e => change("pending_reason", e.target.value)} disabled={item.cost_available}><option value="">Seleccionar…</option>{PENDING_REASONS.map(reason => <option key={reason}>{reason}</option>)}</select></label>}
         <label className="qwf-span-2">Observaciones<textarea value={form.notes} onChange={e => change("notes", e.target.value)} disabled={item.cost_available}/></label>
       </div>
       <footer>{base.version && <small>Versión de costo {base.version} · {money(base.total_unit_cost || base.unit_cost, base.currency)}</small>}<button type="button" onClick={save} disabled={saving || item.cost_available}>{saving ? "Guardando…" : resolved ? "Guardar versión de costo" : "Guardar resolución pendiente"}</button></footer>
