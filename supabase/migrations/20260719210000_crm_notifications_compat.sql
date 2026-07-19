@@ -18,8 +18,9 @@ create table if not exists public.crm_notifications (
   created_at timestamptz not null default now()
 );
 
+drop index if exists public.crm_notifications_dedupe_idx;
 create unique index if not exists crm_notifications_dedupe_idx
-  on public.crm_notifications (dedupe_key) where dedupe_key is not null;
+  on public.crm_notifications (dedupe_key);
 create index if not exists crm_notifications_recipient_idx
   on public.crm_notifications (recipient_id, read_at, created_at desc);
 

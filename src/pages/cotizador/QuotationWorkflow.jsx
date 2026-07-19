@@ -8,6 +8,7 @@ import {
   sendToTenders, updateCommercialItem, uploadQuotationFiles, validateCosts,
 } from "../../services/quotationWorkflow";
 import "./QuotationWorkflow.css";
+import "./QuotationWorkflowModal.css";
 
 const money = (value, currency = "ARS") => `${currency} ${Number(value || 0).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const shortDate = value => value ? new Date(value).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }) : "—";

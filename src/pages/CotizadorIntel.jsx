@@ -45,6 +45,7 @@ const ESTADO_LABELS = {
   evaluacion: "En evaluación", aceptada: "Aceptada", rechazada: "Rechazada",
   vencida: "Vencida", seguimiento: "Seguimiento", negociacion: "Negociación",
   ganada: "Ganada", perdida: "Perdida", facturada: "Facturada", cobrada: "Cobrada",
+  pendiente_definicion: "Pendiente de precio", precio_definido: "Precio definido",
 };
 
 /* ── calcFlat (mirrors CotizadorPage) ──────────────────────────────── */
@@ -82,6 +83,8 @@ function expandCotizaciones(rows) {
         institucion: cot.institucion || "",
         vendedor:    cot.vendedor || "",
         estado:      cot.estado || "borrador",
+        workflowStatus: cot.workflow_status || null,
+        sentToPurchasingAt: cot.sent_to_purchasing_at || null,
         // Las cotizaciones actuales guardan el proveedor en `empresa`.
         // Conservamos aliases para que también sean buscables registros importados.
         empresa:     r.empresa || r.proveedor || r.supplier || "",
@@ -199,7 +202,7 @@ function SearchIcon() {
 /* ══════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ══════════════════════════════════════════════════════════════════════ */
-export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglon }) {
+export default function CotizadorIntel({ onOpenQuote, onEditQuote, onSendToPurchasing, onUseInRenglon }) {
   const [open,       setOpen]       = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [items,      setItems]      = useState(null);
@@ -217,6 +220,7 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
   const [grouped,    setGrouped]    = useState(false); /* B */
   const [selected,   setSelected]   = useState(new Set()); /* multi-select */
   const [deleting,   setDeleting]   = useState(false);
+  const [sendingId,  setSendingId]  = useState(null);
   const loadingRef = useRef(false);
 
   async function loadData() {
@@ -226,7 +230,7 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
     try {
       const { data, error } = await supabase
         .from("cotizaciones")
-        .select("id, quote_num_formatted, quote_number, vendedor, institucion, estado, tc, created_at, fecha_apert, renglones")
+        .select("id, quote_num_formatted, quote_number, vendedor, institucion, estado, tc, created_at, fecha_apert, renglones, workflow_status, sent_to_purchasing_at")
         .eq("deleted", false)
         .order("created_at", { ascending: false })
         .limit(500);
@@ -236,7 +240,7 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
       // reemplazan el costo legacy equivalente sin romper instalaciones previas.
       const { data: workflowRows } = await supabase
         .from("quotation_items")
-        .select("id,quotation_id,legacy_index,requested_description,quantity,desired_brand,suggested_supplier_name,markup,sale_price_unit,final_price_unit,commercial_status,quotation_item_costs(*),cotizaciones!inner(quote_num_formatted,quote_number,vendedor,institucion,estado,tc,created_at,fecha_apert)")
+        .select("id,quotation_id,legacy_index,requested_description,quantity,desired_brand,suggested_supplier_name,markup,sale_price_unit,final_price_unit,commercial_status,quotation_item_costs(*),cotizaciones!inner(quote_num_formatted,quote_number,vendedor,institucion,estado,tc,created_at,fecha_apert,workflow_status,sent_to_purchasing_at)")
         .order("created_at", { referencedTable: "quotation_item_costs", ascending: false });
       const replacements = new Map();
       for (const row of (workflowRows || [])) {
@@ -264,6 +268,8 @@ export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglo
           fecha: cot?.fecha_apert || cot?.created_at?.slice(0, 10) || "",
           institucion: cot?.institucion || "", vendedor: cot?.vendedor || "",
           estado: row.commercial_status || cot?.estado || "borrador",
+          workflowStatus: cot?.workflow_status || null,
+          sentToPurchasingAt: cot?.sent_to_purchasing_at || null,
           empresa: raw.empresa || "", codigo: current.supplier_code || "",
           marca: raw.marca || "", descr: raw.descr || "", cant: Number(raw.cant) || 1,
           moneda: raw.moneda, costo, rawMarkup: raw.markup, rawIva: raw.iva,
@@ -1191,6 +1197,7 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                           </th>
                         ))}
                         <th className="ci-th-action">Ver</th>
+                        {onSendToPurchasing && <th className="ci-th-action">Compras</th>}
                         {onEditQuote && <th className="ci-th-action">Editar</th>}
                         {onUseInRenglon && <th className="ci-th-action">Usar producto</th>}
                       </tr>
@@ -1272,6 +1279,18 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                               Ver
                             </button>
                           </td>
+                          {onSendToPurchasing && (
+                            <td className="ci-td-action">
+                              {item.sentToPurchasingAt || item.workflowStatus ? <span className="ci-estado ci-estado--pendiente_definicion">En Compras</span> : (
+                                <button type="button" className="ci-open-btn" disabled={sendingId === item.quoteId} onClick={async () => {
+                                  setSendingId(item.quoteId);
+                                  const sent = await onSendToPurchasing(item.quoteId);
+                                  if (sent) setItems(prev => prev?.map(row => row.quoteId === item.quoteId ? { ...row, workflowStatus: "pendiente_costos", sentToPurchasingAt: new Date().toISOString() } : row));
+                                  setSendingId(null);
+                                }}>{sendingId === item.quoteId ? "Enviando…" : "Enviar"}</button>
+                              )}
+                            </td>
+                          )}
                           {/* Editar — carga directo en editor */}
                           {onEditQuote && (
                             <td className="ci-td-action">
@@ -1279,9 +1298,9 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                                 type="button"
                                 className="ci-open-btn ci-open-btn--edit"
                                 onClick={() => onEditQuote(item.quoteId)}
-                                title="Cargar en el editor para modificar"
+                                title={item.estado === "pendiente_definicion" ? "Definir margen y precio con el costo validado" : "Cargar en el editor para modificar"}
                               >
-                                Editar
+                                {item.estado === "pendiente_definicion" ? "Definir precio" : "Editar"}
                               </button>
                             </td>
                           )}

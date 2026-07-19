@@ -5,6 +5,7 @@ import logoUrl from "../assets/logo.jpg";
 import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
 import CotizadorIntel, { useQuoteHint } from "./CotizadorIntel";
+import { saveCommercialDefinitionsFromLegacy, sendToPurchasing } from "../services/quotationWorkflow";
 import "./CotizadorPage.css";
 
 const fARS   = (n) => "$ "   + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -569,7 +570,8 @@ function QuoteEditModal({ quoteId, profile, onClose, onSaved }) {
       };
       const { error } = await supabase.from("cotizaciones").update(snap).eq("id", docId);
       if (error) throw error;
-      showT(`Cotización #${quoteNum} guardada ✓`);
+      const defined = await saveCommercialDefinitionsFromLegacy(docId, renglones, tcN, profile);
+      showT(defined ? `Precio definido en ${defined} renglón${defined === 1 ? "" : "es"} ✓` : `Cotización #${quoteNum} guardada ✓`);
       if (onSaved) onSaved({ id: docId, ...snap, quote_num_formatted: quoteNum });
       if (andClose) setTimeout(onClose, 700);
     } catch(e) {
@@ -1835,6 +1837,17 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         <CotizadorIntel
           onOpenQuote={(id) => setPreviewQuoteId(id)}
           onEditQuote={(id) => setEditModalQuoteId(id)}
+          onSendToPurchasing={async (id) => {
+            if (!window.confirm("¿Enviar esta cotización a Compras para buscar y validar costos?")) return false;
+            try {
+              await sendToPurchasing({ quotationId: id, profile, purchasingOwnerId: null, deadline: null, priority: "normal" });
+              window.dispatchEvent(new CustomEvent("crm:purchases-updated"));
+              return true;
+            } catch (error) {
+              window.alert(`No se pudo enviar a Compras: ${error.message}`);
+              return false;
+            }
+          }}
           onUseInRenglon={handleUseFromIntel}
         />
 

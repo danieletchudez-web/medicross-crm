@@ -39,6 +39,7 @@ export async function ensureWorkflowItems(quotationId) {
 }
 
 export async function sendToPurchasing({ quotationId, profile, purchasingOwnerId, deadline, priority = "normal" }) {
+  await ensureWorkflowItems(quotationId);
   const payload = { sales_owner_id: profile.id, purchasing_owner_id: purchasingOwnerId || null, purchasing_queue: !purchasingOwnerId, internal_deadline: deadline || null, priority, workflow_status: "pendiente_costos", sent_to_purchasing_at: now(), updated_at: now() };
   const { error } = await supabase.from("cotizaciones").update(payload).eq("id", quotationId);
   if (error) throw error;
@@ -94,6 +95,29 @@ export async function updateCommercialItem(item, values, profile) {
   if (error) throw error;
   await supabase.rpc("sync_quotation_item_to_legacy", { target_item: item.id });
   await logActivity(item.quotation_id, profile, "commercial_definition_saved", item.id, payload, values.commercial_notes);
+}
+
+export async function saveCommercialDefinitionsFromLegacy(quotationId, renglones, tcGlobal, profile) {
+  const { data: items, error } = await supabase.from("quotation_items").select("id,legacy_index,cost_available,commercial_started_at").eq("quotation_id", quotationId);
+  if (error) throw error;
+  const available = (items || []).filter(item => item.cost_available);
+  for (const item of available) {
+    const row = renglones[Number(item.legacy_index || 0)];
+    if (!row) continue;
+    const number = value => Number(String(value || 0).replace(",", "."));
+    const cost = number(row.costo), rate = number(row.tcInd || tcGlobal || 1) || 1;
+    const costArs = row.moneda === "ARS" ? cost : cost * rate;
+    const vat = number(row.iva) / 100, multiplier = number(row.markup) || 1;
+    const manual = row.modoManual === "manual" && number(row.pvManual) > 0;
+    const finalPrice = manual ? number(row.pvManual) : costArs * multiplier * (1 + vat);
+    const salePrice = finalPrice / (1 + vat);
+    const payload = { markup: costArs > 0 ? ((salePrice - costArs) / costArs) * 100 : null, sale_price_unit: salePrice || null, final_price_unit: finalPrice || null, sales_decision: "cotizar", commercial_status: "precio_definido", commercial_started_at: item.commercial_started_at || now(), commercial_completed_at: now(), updated_by: profile?.id || null };
+    const { error: updateError } = await supabase.from("quotation_items").update(payload).eq("id", item.id).eq("cost_available", true);
+    if (updateError) throw updateError;
+    await logActivity(quotationId, profile, "commercial_definition_saved", item.id, payload, "Precio definido desde Cotizador");
+  }
+  if (available.length) await supabase.from("cotizaciones").update({ workflow_status: "definicion_comercial", updated_at: now() }).eq("id", quotationId);
+  return available.length;
 }
 
 export async function sendToTenders(quotationId, items, profile) {

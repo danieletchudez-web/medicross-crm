@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import QuotationWorkflow from "./cotizador/QuotationWorkflow";
 import { getWorkflowConfig, getWorkflowMetrics } from "../services/quotationWorkflow";
 import "./purchases.css";
+import "./PurchasesAlerts.css";
 
 const activeStates = ["pendiente_costos", "en_gestion_compras", "costos_parciales", "revision_solicitada"];
 const statusLabel = value => ({
@@ -77,6 +78,7 @@ export default function PurchasesPage({ profile, onNavigate, navigationData, pag
   return <Layout title="Compras" profile={profile} onNavigate={onNavigate} pageKey={pageKey}>
     <div className="p-page purchases-page">
       <section className="purchases-hero"><div><span>Centro operativo</span><h2>Solicitudes de costos</h2><p>Costos, proveedores, disponibilidad y documentación en una sola bandeja.</p></div><button className="p-btn p-btn--ghost" onClick={load} disabled={loading}><RefreshCw size={15}/> Actualizar</button></section>
+      {stats.fresh > 0 && <div className="purchases-arrival-alert" role="status"><AlertTriangle size={17}/><b>{stats.fresh} solicitud{stats.fresh === 1 ? " nueva requiere" : "es nuevas requieren"} gestión de Compras</b><span>Abrí la solicitud para tomarla y comenzar la búsqueda de costos.</span></div>}
       <section className="purchases-kpis">{cards.map(([label, value, Icon]) => <article key={label}><Icon size={16}/><div><b>{value}</b><span>{label}</span></div></article>)}</section>
       <section className="purchases-panel">
         <div className="purchases-filters">

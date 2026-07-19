@@ -1,0 +1,16 @@
+.purchases-arrival-alert {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 13px;
+  border: 1px solid #f5c26b;
+  border-radius: 10px;
+  background: #fff8e8;
+  color: #7a4b00;
+  font-size: 12px;
+}
+.purchases-arrival-alert span { color: #8a6530; }
+@media (max-width: 640px) {
+  .purchases-arrival-alert { align-items: flex-start; flex-wrap: wrap; }
+  .purchases-arrival-alert span { width: 100%; padding-left: 26px; }
+}
