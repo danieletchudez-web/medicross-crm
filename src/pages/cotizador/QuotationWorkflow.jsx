@@ -96,11 +96,28 @@ function ValidationDialog({ quote, items, onClose, onValidated }) {
   const [type, setType] = useState(items.every(i => !i.cost_available) && eligible.length === items.length ? "total" : items.some(i => i.cost_available) ? "incremental" : "partial");
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const canSubmit = selected.length > 0 && Boolean(notes.trim()) && (type === "total" || Boolean(reason));
   const submit = async () => {
-    if (!notes.trim() || (type !== "total" && !reason)) return alert("Completá motivo y observación de cierre.");
-    try { await validateCosts({ quotationId: quote.id, type, reason, notes, itemIds: selected }); await onValidated(); onClose(); } catch (error) { alert(error.message); }
+    if (!canSubmit) { setErrorMessage("Completá los campos obligatorios antes de validar."); return; }
+    setSubmitting(true); setErrorMessage("");
+    try { await validateCosts({ quotationId: quote.id, type, reason, notes, itemIds: selected }); await onValidated(); onClose(); }
+    catch (error) { setErrorMessage(error.message || "No se pudo validar la solicitud."); }
+    finally { setSubmitting(false); }
   };
-  return <div className="qwf-modal-backdrop"><section className="qwf-modal"><header><div><small>Compras</small><h3>Validar cotización</h3></div><button onClick={onClose}>×</button></header><div className="qwf-validation-kpis"><span><b>{items.length}</b>Total</span><span><b>{eligible.length}</b>Con costo</span><span><b>{items.filter(i => !i.cost_available && !i.current_cost).length}</b>Sin costo</span><span><b>{items.filter(i => i.cost_available).length}</b>Ya validados</span></div><label>Tipo de validación<select value={type} onChange={e => setType(e.target.value)}><option value="partial">Validación parcial</option><option value="incremental">Validación incremental</option><option value="total">Validación total</option></select></label><div className="qwf-check-list">{eligible.map(item => <label key={item.id}><input type="checkbox" checked={selected.includes(item.id)} onChange={e => setSelected(current => e.target.checked ? [...current, item.id] : current.filter(id => id !== item.id))}/><span><b>Renglón {item.line_number || item.legacy_index + 1}</b>{item.requested_description}</span><em>{money(item.current_cost.total_unit_cost || item.current_cost.unit_cost, item.current_cost.currency)}</em></label>)}</div>{type !== "total" && <label>Motivo<select value={reason} onChange={e => setReason(e.target.value)}><option value="">Seleccionar…</option>{PENDING_REASONS.map(value => <option key={value}>{value}</option>)}</select></label>}<label>Observación de cierre<textarea value={notes} onChange={e => setNotes(e.target.value)} /></label><footer><button className="qwf-secondary" onClick={onClose}>Cancelar</button><button onClick={submit} disabled={!selected.length}>Validar {selected.length} renglones</button></footer></section></div>;
+  return <div className="qwf-modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <section className="qwf-modal">
+      <header><div><small>Compras</small><h3>Validar cotización</h3></div><button type="button" onClick={onClose} aria-label="Cerrar sin validar">×</button></header>
+      <div className="qwf-validation-kpis"><span><b>{items.length}</b>Total</span><span><b>{eligible.length}</b>Con costo</span><span><b>{items.filter(i => !i.cost_available && !i.current_cost).length}</b>Sin costo</span><span><b>{items.filter(i => i.cost_available).length}</b>Ya validados</span></div>
+      <label>Tipo de validación<select value={type} onChange={e => { setType(e.target.value); setErrorMessage(""); }}><option value="partial">Validación parcial</option><option value="incremental">Validación incremental</option><option value="total">Validación total</option></select></label>
+      <div className="qwf-check-list">{eligible.map(item => <label key={item.id}><input type="checkbox" checked={selected.includes(item.id)} onChange={e => setSelected(current => e.target.checked ? [...current, item.id] : current.filter(id => id !== item.id))}/><span><b>Renglón {item.line_number || item.legacy_index + 1}</b>{item.requested_description}</span><em>{money(item.current_cost.total_unit_cost || item.current_cost.unit_cost, item.current_cost.currency)}</em></label>)}</div>
+      {type !== "total" && <label>Motivo obligatorio<select value={reason} onChange={e => { setReason(e.target.value); setErrorMessage(""); }}><option value="">Seleccionar…</option>{PENDING_REASONS.map(value => <option key={value}>{value}</option>)}</select></label>}
+      <label>Observación de cierre obligatoria<textarea placeholder="Ej.: Costos y disponibilidad confirmados con el proveedor." value={notes} onChange={e => { setNotes(e.target.value); setErrorMessage(""); }} /></label>
+      {errorMessage && <div className="qwf-modal-error" role="alert">{errorMessage}</div>}
+      <footer><button type="button" className="qwf-secondary" onClick={onClose}>Cerrar sin validar</button><button type="button" onClick={submit} disabled={!canSubmit || submitting}>{submitting ? "Validando…" : `Confirmar validación (${selected.length})`}</button></footer>
+    </section>
+  </div>;
 }
 
 export default function QuotationWorkflow({ quotationId, profile, context = "cotizador" }) {
