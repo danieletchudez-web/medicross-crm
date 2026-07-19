@@ -305,13 +305,16 @@ export default function DashboardComercial({ pageKey }) {
 
   /* ── Render ── */
   return (
-    <div style={{ background: 'var(--bg2, #f7f7f6)', border: '.5px solid var(--bd, rgba(0,0,0,.11))', borderRadius: 16, padding: 20, marginBottom: 24 }}>
+    <div style={{ background: 'var(--bg, #fff)', border: '1px solid var(--bd, rgba(15,36,68,.13))', borderRadius: 14, overflow: 'hidden', padding: 0, marginBottom: 18, boxShadow: '0 1px 4px rgba(15,36,68,.06)' }}>
 
       {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: collapsed ? 0 : 18, gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>Análisis Comercial</div>
-            <div style={{ fontSize: 12, color: '#9a9a9a', marginTop: 2 }}>Indicadores y rendimiento de cotizaciones</div>
+        <div style={{ minHeight: 66, padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0, gap: 12, flexWrap: 'wrap', borderBottom: collapsed ? '1px solid transparent' : '1px solid var(--bd,rgba(15,36,68,.08))' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span aria-hidden="true" style={{display:'grid',placeItems:'center',width:26,height:26,borderRadius:7,background:'#eef3f6',color:'#5f7f94',fontSize:15}}>⌁</span>
+            <div>
+            <div style={{ fontSize: 13, lineHeight:1.25, fontWeight: 700 }}>Análisis Comercial</div>
+            <div style={{ fontSize: 11, lineHeight:1.25, color: '#8a96a6', marginTop: 2 }}>Indicadores y rendimiento de cotizaciones</div>
+            </div>
           </div>
           <button
             type="button"
@@ -319,15 +322,15 @@ export default function DashboardComercial({ pageKey }) {
             onClick={() => setCollapsed(c => !c)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              height: 34, padding: '0 14px',
+              height: 32, padding: '0 11px',
               borderRadius: 8,
-              background: collapsed ? '#1d65ad' : '#f1f5f9',
-              border: collapsed ? '1px solid #1557a0' : '1px solid #cbd5e1',
-              color: collapsed ? '#fff' : '#475569',
-              fontSize: 12, fontWeight: 700,
-              letterSpacing: '.04em', textTransform: 'uppercase',
+              background: '#f8fafc',
+              border: '1px solid #dce3eb',
+              color: '#526274',
+              fontSize: 11, fontWeight: 650,
+              letterSpacing: 0, textTransform: 'none',
               fontFamily: 'inherit', cursor: 'pointer',
-              boxShadow: collapsed ? '0 2px 8px rgba(29,101,173,.25)' : 'none',
+              boxShadow: 'none',
               transition: 'all .15s ease',
             }}
           >
@@ -338,7 +341,7 @@ export default function DashboardComercial({ pageKey }) {
             >
               <polyline points="6 9 12 15 18 9"/>
             </svg>
-            {collapsed ? 'Ver análisis' : 'Ocultar'}
+            {collapsed ? 'Ver análisis' : 'Ocultar análisis'}
           </button>
         </div>
 
@@ -348,7 +351,7 @@ export default function DashboardComercial({ pageKey }) {
           <div style={{
             display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 10,
             padding: '14px 16px', background: 'var(--bg,#fff)',
-            borderRadius: 10, border: '.5px solid var(--bd,rgba(0,0,0,.11))', marginBottom: 18,
+            borderRadius: 10, border: '.5px solid var(--bd,rgba(0,0,0,.11))', margin: '18px 18px 18px',
           }}>
             {[
               { label: 'Año', val: fYear, setter: setFYear, opts: years.map(y => ({ v: String(y), l: String(y) })) },

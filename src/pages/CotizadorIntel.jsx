@@ -803,8 +803,11 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
     <div className="ci-wrap">
       {/* ── toggle ── */}
       <button className="ci-toggle" onClick={toggle} type="button">
-        <span className="ci-toggle__ico">📊</span>
-        <span className="ci-toggle__label">Inteligencia Comercial de Cotizaciones</span>
+        <span className="ci-toggle__ico" aria-hidden="true">▥</span>
+        <span className="ci-toggle__copy">
+          <span className="ci-toggle__label">Inteligencia Comercial de Cotizaciones</span>
+          <span className="ci-toggle__description">Historial, precios y comportamiento comercial</span>
+        </span>
         {items !== null && (
           <span className="ci-toggle__badge">{items.length} ítems</span>
         )}
