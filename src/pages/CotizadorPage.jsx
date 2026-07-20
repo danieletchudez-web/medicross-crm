@@ -86,7 +86,7 @@ function calcR(r, tcGlobal) {
 const emptyR = () => ({
   id: Date.now() + Math.random(),
   empresa:"", renglon:"", subitem:"", codigo:"", marca:"", descr:"",
-  costo:"", cant:1, moneda:"USD", iva:"10.5", markup:"2",
+  costo:"", cant:1, moneda:"ARS", iva:"21", markup:"2",
   tcInd:"", modoManual:"auto", pvManual:"",
   market_reference:null,
 });
@@ -967,9 +967,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       codigo:   item.codigo   || "",
       marca:    item.marca    || "",
       costo:    item.costo > 0 ? String(item.costo) : "",
-      moneda:   item.moneda   || "USD",
+      moneda:   item.moneda   || "ARS",
       markup:   item.rawMarkup ? String(item.rawMarkup) : "2",
-      iva:      item.rawIva   || "10.5",
+      iva:      item.rawIva   || "21",
     };
     setRenglones(prev => [...prev, newR]);
     setUseProductItem(null);
