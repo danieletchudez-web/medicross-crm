@@ -1,0 +1,35 @@
+/* Resumen ejecutivo compacto: conserva todos los datos sin tarjetas vacías. */
+.ci-kpis {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+}
+.ci-kpis > .ci-kpi {
+  min-height: 92px;
+  height: auto;
+  padding: 10px 12px;
+  justify-content: flex-start;
+}
+.ci-kpis > .ci-kpi--accent { grid-column: span 2; }
+.ci-kpis > .ci-kpi--range { grid-column: span 4; }
+.ci-kpis > .ci-kpi--profit { grid-column: span 3; }
+.ci-kpis > .ci-kpi--clients { grid-column: span 3; }
+.ci-kpi__metrics--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ci-kpi__metrics--four > div + div { padding-left: 8px; border-left: 1px solid rgba(15,36,68,.08); }
+.ci-kpi--clients { display:grid;grid-template-columns:1fr 1fr;column-gap:12px;align-content:start; }
+.ci-kpi--clients > span { grid-column:1/-1; }
+.ci-kpi--clients > div { margin-top:5px; }
+.ci-kpi--clients .ci-kpi__client { white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;line-height:1.25; }
+@media (max-width: 1200px) {
+  .ci-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .ci-kpis > .ci-kpi--accent,
+  .ci-kpis > .ci-kpi--range,
+  .ci-kpis > .ci-kpi--profit,
+  .ci-kpis > .ci-kpi--clients { grid-column:span 1; }
+}
+@media (max-width: 768px) {
+  .ci-kpis { grid-template-columns:1fr; }
+  .ci-kpi__metrics--four { grid-template-columns:repeat(2,minmax(0,1fr));row-gap:8px; }
+  .ci-kpi__metrics--four > div:nth-child(3) { border-left:0;padding-left:0; }
+  .ci-kpis > .ci-kpi { min-height:0; }
+}

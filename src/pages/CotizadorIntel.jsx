@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import "./CotizadorIntel.css";
+import "./CotizadorIntelKpis.css";
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 const parseN   = (s) => parseFloat(String(s || "").replace(",", ".")) || 0;
@@ -960,16 +961,17 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                     <small>Actualizado {fmtDate(kpis.lastDate)}</small>
                   </div>
 
-                  <div className="ci-kpi ci-kpi--wide">
+                  <div className="ci-kpi ci-kpi--range">
                     <span>Rango de precios</span>
-                    <div className="ci-kpi__metrics ci-kpi__metrics--three">
+                    <div className="ci-kpi__metrics ci-kpi__metrics--four">
                       <div><small>Mínimo</small><strong>{fARS(kpis.minPrice)}</strong></div>
                       <div><small>Promedio</small><strong>{fARS(kpis.avgPrice)}</strong></div>
                       <div><small>Máximo</small><strong>{fARS(kpis.maxPrice)}</strong></div>
+                      <div><small>Tendencia</small><strong className={kpis.trend.startsWith("↑") ? "ci-trend--up" : kpis.trend.startsWith("↓") ? "ci-trend--dn" : ""}>{kpis.trend}</strong></div>
                     </div>
                   </div>
 
-                  <div className="ci-kpi ci-kpi--wide">
+                  <div className="ci-kpi ci-kpi--profit">
                     <span>Rentabilidad</span>
                     <div className="ci-kpi__metrics">
                       <div><small>Markup prom.</small><strong>{fPct(kpis.avgMarkup)}</strong><small>Mediana {fPct(kpis.medMarkup)}</small></div>
@@ -985,14 +987,6 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                         ⚠ {kpis.gmOutliers} outlier{kpis.gmOutliers > 1 ? "s" : ""} de margen excluido{kpis.gmOutliers > 1 ? "s" : ""}
                       </small>
                     )}
-                  </div>
-
-                  <div className="ci-kpi">
-                    <span>Tendencia precio</span>
-                    <strong className={
-                      kpis.trend.startsWith("↑") ? "ci-trend--up" :
-                      kpis.trend.startsWith("↓") ? "ci-trend--dn" : ""
-                    }>{kpis.trend}</strong>
                   </div>
 
                   {kpis.cheapest && (
