@@ -116,8 +116,19 @@ export async function saveCommercialDefinitionsFromLegacy(quotationId, renglones
     if (updateError) throw updateError;
     await logActivity(quotationId, profile, "commercial_definition_saved", item.id, payload, "Precio definido desde Cotizador");
   }
-  if (available.length) await supabase.from("cotizaciones").update({ workflow_status: "definicion_comercial", updated_at: now() }).eq("id", quotationId);
-  return available.length;
+  const pending = (items || []).filter(item => !item.cost_available);
+  if (pending.length) {
+    await supabase.from("quotation_items").update({ purchasing_status: "pendiente_compras", updated_by: profile?.id || null }).eq("quotation_id", quotationId).eq("cost_available", false);
+    await supabase.from("cotizaciones").update({ workflow_status: available.length ? "costos_parciales" : "pendiente_costos", updated_at: now() }).eq("id", quotationId);
+    const { data: quote } = await supabase.from("cotizaciones").select("purchasing_owner_id,quote_num_formatted").eq("id", quotationId).single();
+    const recipientsQuery = quote?.purchasing_owner_id
+      ? supabase.from("profiles").select("id").eq("id", quote.purchasing_owner_id)
+      : supabase.from("profiles").select("id").eq("department", "compras").eq("is_active", true);
+    const { data: recipients } = await recipientsQuery;
+    if (recipients?.length) await supabase.from("crm_notifications").upsert(recipients.map(recipient => ({ recipient_id: recipient.id, title: "Cotización modificada por Ventas", detail: `La cotización #${quote?.quote_num_formatted || ""} tiene ${pending.length} renglón${pending.length === 1 ? "" : "es"} pendiente${pending.length === 1 ? "" : "s"} de costo.`, category: "cotizaciones", severity: "warning", page: "purchases", record_id: quotationId, metadata: { pending_items: pending.length }, dedupe_key: `quotation-purchasing-change-${quotationId}-${recipient.id}-${pending.length}` })), { onConflict: "dedupe_key", ignoreDuplicates: true });
+    await logActivity(quotationId, profile, "items_returned_to_purchasing", null, { pending_items: pending.length }, "Ventas agregó o modificó renglones pendientes de costo");
+  } else if (available.length) await supabase.from("cotizaciones").update({ workflow_status: "definicion_comercial", updated_at: now() }).eq("id", quotationId);
+  return { defined: available.length, pending: pending.length };
 }
 
 export async function sendToTenders(quotationId, items, profile) {

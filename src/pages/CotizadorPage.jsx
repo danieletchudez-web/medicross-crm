@@ -570,8 +570,10 @@ function QuoteEditModal({ quoteId, profile, onClose, onSaved }) {
       };
       const { error } = await supabase.from("cotizaciones").update(snap).eq("id", docId);
       if (error) throw error;
-      const defined = await saveCommercialDefinitionsFromLegacy(docId, renglones, tcN, profile);
-      showT(defined ? `Precio definido en ${defined} renglón${defined === 1 ? "" : "es"} ✓` : `Cotización #${quoteNum} guardada ✓`);
+      const commercialResult = await saveCommercialDefinitionsFromLegacy(docId, renglones, tcN, profile);
+      showT(commercialResult.pending
+        ? `Guardado: ${commercialResult.pending} renglón${commercialResult.pending === 1 ? " enviado" : "es enviados"} a Compras ✓`
+        : commercialResult.defined ? `Precio definido en ${commercialResult.defined} renglón${commercialResult.defined === 1 ? "" : "es"} ✓` : `Cotización #${quoteNum} guardada ✓`);
       if (onSaved) onSaved({ id: docId, ...snap, quote_num_formatted: quoteNum });
       if (andClose) setTimeout(onClose, 700);
     } catch(e) {
@@ -757,6 +759,7 @@ function QuoteEditModal({ quoteId, profile, onClose, onSaved }) {
               );
             })}
             <button className="cot-btn-add" onClick={addR_}>+ Agregar renglón</button>
+            <p style={{ margin:"7px 2px 0", color:"#718096", fontSize:11 }}>Los renglones nuevos se enviarán automáticamente a Compras al guardar, sin modificar los precios ya definidos.</p>
 
             {/* Tabla resumen */}
             {renglones.some(r => calcR(r, tcN)) && (

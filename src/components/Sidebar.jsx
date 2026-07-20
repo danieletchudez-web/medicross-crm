@@ -154,7 +154,7 @@ export default function Sidebar({ profile, onNavigate }) {
     if (!profile?.id) return;
     let active = true;
     async function loadPurchasesAlerts() {
-      const { count, error } = await supabase.from("cotizaciones").select("id", { count: "exact", head: true }).eq("workflow_status", "pendiente_costos");
+      const { count, error } = await supabase.from("cotizaciones").select("id", { count: "exact", head: true }).in("workflow_status", ["pendiente_costos", "costos_parciales", "revision_solicitada"]);
       if (active && !error) setPurchasesAlertCount(count || 0);
     }
     loadPurchasesAlerts();
