@@ -154,14 +154,17 @@ export default function Sidebar({ profile, onNavigate }) {
     if (!profile?.id) return;
     let active = true;
     async function loadPurchasesAlerts() {
-      const { count, error } = await supabase.from("cotizaciones").select("id", { count: "exact", head: true }).in("workflow_status", ["pendiente_costos", "costos_parciales", "revision_solicitada"]);
+      let query = supabase.from("cotizaciones").select("id", { count: "exact", head: true }).in("workflow_status", ["pendiente_costos", "costos_parciales", "revision_solicitada"]);
+      const manager = ["super_admin", "admin", "manager", "purchasing_manager", "team_lead"].includes(profile?.role) || ["administracion", "manager"].includes(profile?.department);
+      if (profile?.department === "compras" && !manager) query = query.or(`purchasing_owner_id.is.null,purchasing_owner_id.eq.${profile.id}`);
+      const { count, error } = await query;
       if (active && !error) setPurchasesAlertCount(count || 0);
     }
     loadPurchasesAlerts();
     const timer = setInterval(loadPurchasesAlerts, 30000);
     window.addEventListener("crm:purchases-updated", loadPurchasesAlerts);
     return () => { active = false; clearInterval(timer); window.removeEventListener("crm:purchases-updated", loadPurchasesAlerts); };
-  }, [profile?.id]);
+  }, [profile?.id, profile?.role, profile?.department]);
 
   useEffect(() => {
     if (!profile?.id) return;

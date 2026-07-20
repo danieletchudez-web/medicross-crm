@@ -203,7 +203,7 @@ function SearchIcon() {
 /* ══════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ══════════════════════════════════════════════════════════════════════ */
-export default function CotizadorIntel({ onOpenQuote, onEditQuote, onSendToPurchasing, onUseInRenglon }) {
+export default function CotizadorIntel({ profile, onOpenQuote, onEditQuote, onSendToPurchasing, onUseInRenglon }) {
   const [open,       setOpen]       = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [items,      setItems]      = useState(null);

@@ -1220,6 +1220,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       updated_at: new Date().toISOString(),
       updated_by: profile?.email || "desconocido",
       owner_id: profile?.id || null,
+      sales_owner_id: profile?.id || null,
     };
     if (quoteNumber)       snap.quote_number       = quoteNumber;
     if (quoteNumFormatted) snap.quote_num_formatted = quoteNumFormatted;
@@ -1838,6 +1839,7 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         <DashboardComercial pageKey={pageKey} />
 
         <CotizadorIntel
+          profile={profile}
           onOpenQuote={(id) => setPreviewQuoteId(id)}
           onEditQuote={(id) => setEditModalQuoteId(id)}
           onSendToPurchasing={async (id) => {
