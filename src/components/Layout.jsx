@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import Sidebar from "./Sidebar";
 import GlobalSearch from "./GlobalSearch";
@@ -13,6 +13,24 @@ const ROLE_LABELS = {
   manager:     "Manager",
   seller:      "Vendedor",
 };
+
+// ─── Desktop live clock ───────────────────────────────────────────────────────
+
+function LiveClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const time = now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const date = now.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  return (
+    <div className="layout-clock">
+      <span className="layout-clock__time">{time}</span>
+      <span className="layout-clock__date">{date}</span>
+    </div>
+  );
+}
 
 // ─── Mobile header date ───────────────────────────────────────────────────────
 
@@ -113,6 +131,8 @@ export default function Layout({ title, profile, onNavigate, pageKey, children }
                   <span className="page-header__user-role">{roleLabel}</span>
                 </div>
               </div>
+              <div className="page-header__sep" aria-hidden="true" />
+              <LiveClock />
             </div>
           </header>
         )}

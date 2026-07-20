@@ -391,6 +391,10 @@ export default function AccountsPage({ profile, onNavigate }) {
           </div>
         </div>
 
+        <footer className="acc-footer">
+          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>
+        </footer>
+
       </div>
     </Layout>
   );

@@ -22,7 +22,6 @@ import { Moon, Sun,
   ShieldCheck,
   Target,
   Truck,
-  ShoppingCart,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { canOpenModule, getFirstOpenModule } from "../lib/moduleAccess";
@@ -55,7 +54,6 @@ const MENU_SECTIONS = [
     items: [
       { id: "tenders",   label: "Licitaciones", icon: FileText },
       { id: "cotizador", label: "Cotizador",    icon: Calculator },
-      { id: "purchases", label: "Compras",      icon: ShoppingCart },
     ],
   },
   {
@@ -147,24 +145,7 @@ export default function Sidebar({ profile, onNavigate }) {
   const hoverTimer = useRef(null);
   const notificationCount = useNotificationCount(profile?.id);
   const { count: taskAlertCount } = useTaskAlerts(profile?.id);
-  const [purchasesAlertCount, setPurchasesAlertCount] = useState(0);
   const [habitsProgress, setHabitsProgress] = useState(null);
-
-  useEffect(() => {
-    if (!profile?.id) return;
-    let active = true;
-    async function loadPurchasesAlerts() {
-      let query = supabase.from("cotizaciones").select("id", { count: "exact", head: true }).in("workflow_status", ["pendiente_costos", "costos_parciales", "revision_solicitada"]);
-      const manager = ["super_admin", "admin", "manager", "purchasing_manager", "team_lead"].includes(profile?.role) || ["administracion", "manager"].includes(profile?.department);
-      if (profile?.department === "compras" && !manager) query = query.or(`purchasing_owner_id.is.null,purchasing_owner_id.eq.${profile.id}`);
-      const { count, error } = await query;
-      if (active && !error) setPurchasesAlertCount(count || 0);
-    }
-    loadPurchasesAlerts();
-    const timer = setInterval(loadPurchasesAlerts, 30000);
-    window.addEventListener("crm:purchases-updated", loadPurchasesAlerts);
-    return () => { active = false; clearInterval(timer); window.removeEventListener("crm:purchases-updated", loadPurchasesAlerts); };
-  }, [profile?.id, profile?.role, profile?.department]);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -361,7 +342,6 @@ export default function Sidebar({ profile, onNavigate }) {
                       <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                       <span className="sidebar-nav__label">{item.label}</span>
                       {item.id === "notifications" && notificationCount > 0 && <span className="sidebar-nav__badge">{notificationCount > 99 ? "99+" : notificationCount}</span>}
-                      {item.id === "purchases" && purchasesAlertCount > 0 && <span className="sidebar-nav__badge sidebar-nav__badge--red">{purchasesAlertCount > 9 ? "9+" : purchasesAlertCount}</span>}
                     </button>
                   );
                 })}
@@ -399,7 +379,6 @@ export default function Sidebar({ profile, onNavigate }) {
                         <span className="sidebar-nav__icon"><SidebarIcon icon={item.icon} /></span>
                         <span className="sidebar-nav__label">{item.label}</span>
                         {item.id === "notifications" && notificationCount > 0 && <span className="sidebar-nav__badge">{notificationCount > 99 ? "99+" : notificationCount}</span>}
-                        {item.id === "purchases" && purchasesAlertCount > 0 && <span className="sidebar-nav__badge sidebar-nav__badge--red">{purchasesAlertCount > 9 ? "9+" : purchasesAlertCount}</span>}
                         {item.id === "tasks" && taskAlertCount > 0 && <span className="sidebar-nav__badge sidebar-nav__badge--red">{taskAlertCount > 9 ? "9+" : taskAlertCount}</span>}
                         {item.id === "habits" && habitsProgress && habitsProgress.total > 0 && (
                           <span className={`sidebar-nav__badge ${habitsProgress.done === habitsProgress.total ? "sidebar-nav__badge--green" : "sidebar-nav__badge--blue"}`}>

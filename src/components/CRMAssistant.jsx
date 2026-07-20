@@ -195,6 +195,32 @@ export default function CRMAssistant({ profile, currentPage, crmData }) {
 
   return (
     <>
+      {/* Desktop-only FAB (hidden on mobile via CSS) */}
+      <button
+        className={`crm-ai-fab ${panelState !== "closed" ? "crm-ai-fab--open" : ""}`}
+        onClick={() => setPanelState(s => s !== "closed" ? "closed" : "expanded")}
+        title="Asistente Comercial IA"
+      >
+        {panelState !== "closed" ? "✕" : "✦"}
+      </button>
+
+      {/* Minimized bar — mobile only, shown when panelState === "minimized" */}
+      {panelState === "minimized" && (
+        <div
+          className="crm-ai-mini"
+          onClick={() => setPanelState("expanded")}
+          role="button"
+          tabIndex={0}
+          aria-label="Expandir Medix"
+          onKeyDown={e => e.key === "Enter" && setPanelState("expanded")}
+        >
+          <span className="crm-ai-mini__dot" aria-hidden="true" />
+          <span className="crm-ai-mini__label">Medix</span>
+          <span className="crm-ai-mini__hint">Asistente IA</span>
+          <span className="crm-ai-mini__expand" aria-hidden="true">↑</span>
+        </div>
+      )}
+
       {/* Expanded panel */}
       {panelState === "expanded" && (
         <div className="crm-ai-panel">

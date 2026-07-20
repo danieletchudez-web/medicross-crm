@@ -599,6 +599,10 @@ export default function SalesAnalyticsPage({ profile, onNavigate }) {
           )}
         </div>
 
+        <footer className="sa-footer">
+          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer">Designed by Daniel Etchudez</a>
+        </footer>
+
       </div>
     </Layout>
   );

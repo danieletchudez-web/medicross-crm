@@ -5,7 +5,6 @@ import logoUrl from "../assets/logo.jpg";
 import { supabase } from "../lib/supabaseClient";
 import DashboardComercial from "../components/DashboardComercial";
 import CotizadorIntel, { useQuoteHint } from "./CotizadorIntel";
-import { saveCommercialDefinitionsFromLegacy, sendToPurchasing } from "../services/quotationWorkflow";
 import "./CotizadorPage.css";
 
 const fARS   = (n) => "$ "   + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -86,7 +85,7 @@ function calcR(r, tcGlobal) {
 const emptyR = () => ({
   id: Date.now() + Math.random(),
   empresa:"", renglon:"", subitem:"", codigo:"", marca:"", descr:"",
-  costo:"", cant:1, moneda:"ARS", iva:"21", markup:"2",
+  costo:"", cant:1, moneda:"USD", iva:"10.5", markup:"2",
   tcInd:"", modoManual:"auto", pvManual:"",
   market_reference:null,
 });
@@ -570,10 +569,7 @@ function QuoteEditModal({ quoteId, profile, onClose, onSaved }) {
       };
       const { error } = await supabase.from("cotizaciones").update(snap).eq("id", docId);
       if (error) throw error;
-      const commercialResult = await saveCommercialDefinitionsFromLegacy(docId, renglones, tcN, profile);
-      showT(commercialResult.pending
-        ? `Guardado: ${commercialResult.pending} renglón${commercialResult.pending === 1 ? " enviado" : "es enviados"} a Compras ✓`
-        : commercialResult.defined ? `Precio definido en ${commercialResult.defined} renglón${commercialResult.defined === 1 ? "" : "es"} ✓` : `Cotización #${quoteNum} guardada ✓`);
+      showT(`Cotización #${quoteNum} guardada ✓`);
       if (onSaved) onSaved({ id: docId, ...snap, quote_num_formatted: quoteNum });
       if (andClose) setTimeout(onClose, 700);
     } catch(e) {
@@ -759,7 +755,6 @@ function QuoteEditModal({ quoteId, profile, onClose, onSaved }) {
               );
             })}
             <button className="cot-btn-add" onClick={addR_}>+ Agregar renglón</button>
-            <p style={{ margin:"7px 2px 0", color:"#718096", fontSize:11 }}>Los renglones nuevos se enviarán automáticamente a Compras al guardar, sin modificar los precios ya definidos.</p>
 
             {/* Tabla resumen */}
             {renglones.some(r => calcR(r, tcN)) && (
@@ -967,9 +962,9 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       codigo:   item.codigo   || "",
       marca:    item.marca    || "",
       costo:    item.costo > 0 ? String(item.costo) : "",
-      moneda:   item.moneda   || "ARS",
+      moneda:   item.moneda   || "USD",
       markup:   item.rawMarkup ? String(item.rawMarkup) : "2",
-      iva:      item.rawIva   || "21",
+      iva:      item.rawIva   || "10.5",
     };
     setRenglones(prev => [...prev, newR]);
     setUseProductItem(null);
@@ -1220,7 +1215,6 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
       updated_at: new Date().toISOString(),
       updated_by: profile?.email || "desconocido",
       owner_id: profile?.id || null,
-      sales_owner_id: profile?.id || null,
     };
     if (quoteNumber)       snap.quote_number       = quoteNumber;
     if (quoteNumFormatted) snap.quote_num_formatted = quoteNumFormatted;
@@ -1839,20 +1833,8 @@ export default function CotizadorPage({ profile, onNavigate, initialData, pageKe
         <DashboardComercial pageKey={pageKey} />
 
         <CotizadorIntel
-          profile={profile}
           onOpenQuote={(id) => setPreviewQuoteId(id)}
           onEditQuote={(id) => setEditModalQuoteId(id)}
-          onSendToPurchasing={async (id) => {
-            if (!window.confirm("¿Enviar esta cotización a Compras para buscar y validar costos?")) return false;
-            try {
-              await sendToPurchasing({ quotationId: id, profile, purchasingOwnerId: null, deadline: null, priority: "normal" });
-              window.dispatchEvent(new CustomEvent("crm:purchases-updated"));
-              return true;
-            } catch (error) {
-              window.alert(`No se pudo enviar a Compras: ${error.message}`);
-              return false;
-            }
-          }}
           onUseInRenglon={handleUseFromIntel}
         />
 

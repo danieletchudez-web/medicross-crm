@@ -41,23 +41,6 @@ function hasRecoveryIntent() {
   return params.get("recovery") === "1" || window.location.hash.includes("type=recovery");
 }
 
-function getAuthErrorMessage(error, fallback) {
-  const message = error?.message?.toLowerCase() || "";
-
-  // Supabase can expose implementation details from the configured SMTP
-  // provider. Keep those details out of the UI and give the user an action.
-  if (
-    message.includes("api key") ||
-    message.includes("smtp") ||
-    message.includes("error sending") ||
-    message.includes("failed to send")
-  ) {
-    return "No pudimos enviar el email en este momento. El servicio de correo necesita ser reconfigurado por un administrador.";
-  }
-
-  return fallback;
-}
-
 export default function LoginPage({ initialMode, onRecoveryComplete }) {
   const [mode, setMode]         = useState(() => initialMode || (hasRecoveryIntent() ? "recovery" : "login"));
   const [email, setEmail]       = useState("");
@@ -132,10 +115,7 @@ export default function LoginPage({ initialMode, onRecoveryComplete }) {
     });
 
     if (error) {
-      setMessage({
-        type: "error",
-        text: getAuthErrorMessage(error, "No pudimos crear la cuenta. Intentá nuevamente."),
-      });
+      setMessage({ type: "error", text: error.message });
       setLoading(false);
       refreshLocalCaptcha();
       return;
@@ -173,10 +153,7 @@ export default function LoginPage({ initialMode, onRecoveryComplete }) {
     });
 
     if (error) {
-      setMessage({
-        type: "error",
-        text: getAuthErrorMessage(error, "No pudimos enviar el email de recuperación. Intentá nuevamente."),
-      });
+      setMessage({ type: "error", text: error.message });
     } else {
       setMessage({ type: "success", text: "Email de recuperación enviado. Revisá tu bandeja." });
     }
@@ -208,10 +185,7 @@ export default function LoginPage({ initialMode, onRecoveryComplete }) {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      setMessage({
-        type: "error",
-        text: getAuthErrorMessage(error, "No pudimos actualizar la contraseña. Solicitá un nuevo enlace."),
-      });
+      setMessage({ type: "error", text: error.message });
       setLoading(false);
       return;
     }
@@ -268,7 +242,7 @@ export default function LoginPage({ initialMode, onRecoveryComplete }) {
 
         {/* LOGO */}
         <div style={s.logoWrap}>
-          <img src={logoImg} alt="STORING Medical" style={s.logo} />
+          <img src={logoImg} alt="MediCross" style={s.logo} />
         </div>
 
         <p style={s.subtitle}>{titles[mode]}</p>

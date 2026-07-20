@@ -8,7 +8,6 @@ import "./index.css";
 import "./darkmode.css";
 import "./premium.css";
 import "./mobile.css";
-import "./quiet-ui.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

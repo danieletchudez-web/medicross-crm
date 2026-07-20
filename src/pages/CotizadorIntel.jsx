@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import "./CotizadorIntel.css";
-import "./CotizadorIntelKpis.css";
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 const parseN   = (s) => parseFloat(String(s || "").replace(",", ".")) || 0;
@@ -46,7 +45,6 @@ const ESTADO_LABELS = {
   evaluacion: "En evaluación", aceptada: "Aceptada", rechazada: "Rechazada",
   vencida: "Vencida", seguimiento: "Seguimiento", negociacion: "Negociación",
   ganada: "Ganada", perdida: "Perdida", facturada: "Facturada", cobrada: "Cobrada",
-  pendiente_definicion: "Pendiente de precio", precio_definido: "Precio definido",
 };
 
 /* ── calcFlat (mirrors CotizadorPage) ──────────────────────────────── */
@@ -74,21 +72,16 @@ function expandCotizaciones(rows) {
   for (const cot of rows) {
     const tcG   = parseN(cot.tc) || 1425;
     const fecha = cot.fecha_apert || cot.created_at?.slice(0, 10) || "";
-    for (const [legacyIndex, r] of (cot.renglones || []).entries()) {
+    for (const r of (cot.renglones || [])) {
       const calc = calcFlat(r, tcG);
       flat.push({
         quoteId:     cot.id,
-        legacyIndex,
         quoteNum:    cot.quote_num_formatted || String(cot.quote_number || "?"),
         fecha,
         institucion: cot.institucion || "",
         vendedor:    cot.vendedor || "",
         estado:      cot.estado || "borrador",
-        workflowStatus: cot.workflow_status || null,
-        sentToPurchasingAt: cot.sent_to_purchasing_at || null,
-        // Las cotizaciones actuales guardan el proveedor en `empresa`.
-        // Conservamos aliases para que también sean buscables registros importados.
-        empresa:     r.empresa || r.proveedor || r.supplier || "",
+        empresa:     r.empresa || "",
         codigo:      r.codigo  || "",
         marca:       r.marca   || "",
         descr:       r.descr   || "",
@@ -114,16 +107,12 @@ function sortItems(arr, key, dir) {
 }
 
 /* D. Token-based search ─────────────────────────────────────────────── */
-function tokenMatch(item, tokens, scope = "all") {
+function tokenMatch(item, tokens) {
   if (!tokens.length) return true;
-  const generalFields = [item.descr, item.codigo, item.marca, item.institucion, item.vendedor, item.quoteNum, item.estado];
-  const supplierFields = [item.empresa];
-  const fields = scope === "suppliers"
-    ? supplierFields
-    : scope === "general"
-      ? generalFields
-      : [...generalFields, ...supplierFields];
-  return tokens.every(tok => fields.some(f => norm(f).includes(tok)));
+  return tokens.every(tok =>
+    [item.descr, item.codigo, item.marca, item.empresa, item.institucion, item.vendedor, item.quoteNum, item.estado]
+      .some(f => norm(f).includes(tok))
+  );
 }
 
 /* E. Highlight matching tokens ──────────────────────────────────────── */
@@ -203,12 +192,11 @@ function SearchIcon() {
 /* ══════════════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ══════════════════════════════════════════════════════════════════════ */
-export default function CotizadorIntel({ profile, onOpenQuote, onEditQuote, onSendToPurchasing, onUseInRenglon }) {
+export default function CotizadorIntel({ onOpenQuote, onEditQuote, onUseInRenglon }) {
   const [open,       setOpen]       = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [items,      setItems]      = useState(null);
   const [search,     setSearch]     = useState("");
-  const [searchScope,setSearchScope]= useState("all");
   const [fDesde,     setFDesde]     = useState("");
   const [fHasta,     setFHasta]     = useState("");
   const [fVendedor,  setFVendedor]  = useState("");
@@ -221,7 +209,6 @@ export default function CotizadorIntel({ profile, onOpenQuote, onEditQuote, onSe
   const [grouped,    setGrouped]    = useState(false); /* B */
   const [selected,   setSelected]   = useState(new Set()); /* multi-select */
   const [deleting,   setDeleting]   = useState(false);
-  const [sendingId,  setSendingId]  = useState(null);
   const loadingRef = useRef(false);
 
   async function loadData() {
@@ -231,56 +218,12 @@ export default function CotizadorIntel({ profile, onOpenQuote, onEditQuote, onSe
     try {
       const { data, error } = await supabase
         .from("cotizaciones")
-        .select("id, quote_num_formatted, quote_number, vendedor, institucion, estado, tc, created_at, fecha_apert, renglones, workflow_status, sent_to_purchasing_at")
+        .select("id, quote_num_formatted, quote_number, vendedor, institucion, estado, tc, created_at, fecha_apert, renglones")
         .eq("deleted", false)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      const legacyItems = expandCotizaciones(data || []);
-      // Cuando el flujo colaborativo está disponible, sus costos versionados
-      // reemplazan el costo legacy equivalente sin romper instalaciones previas.
-      const { data: workflowRows } = await supabase
-        .from("quotation_items")
-        .select("id,quotation_id,legacy_index,requested_description,quantity,desired_brand,suggested_supplier_name,markup,sale_price_unit,final_price_unit,commercial_status,quotation_item_costs(*),cotizaciones!inner(quote_num_formatted,quote_number,vendedor,institucion,estado,tc,created_at,fecha_apert,workflow_status,sent_to_purchasing_at)")
-        .order("created_at", { referencedTable: "quotation_item_costs", ascending: false });
-      const replacements = new Map();
-      for (const row of (workflowRows || [])) {
-        const current = (row.quotation_item_costs || []).find(cost => cost.is_current);
-        if (!current) continue;
-        const cot = row.cotizaciones;
-        const tcG = parseN(cot?.tc) || 1425;
-        const costo = parseN(current.total_unit_cost || current.converted_cost || current.unit_cost);
-        const raw = {
-          empresa: current.supplier_name || row.suggested_supplier_name,
-          marca: current.brand || row.desired_brand,
-          descr: row.requested_description,
-          cant: row.quantity,
-          moneda: current.currency || "ARS",
-          costo,
-          markup: row.markup ? 1 + Number(row.markup) / 100 : 1,
-          iva: current.vat_pct || 0,
-          modoManual: row.final_price_unit || row.sale_price_unit ? "manual" : "auto",
-          pvManual: row.final_price_unit || row.sale_price_unit || "",
-        };
-        const calc = calcFlat(raw, tcG);
-        replacements.set(`${row.quotation_id}:${row.legacy_index}`, {
-          quoteId: row.quotation_id, legacyIndex: row.legacy_index,
-          quoteNum: cot?.quote_num_formatted || String(cot?.quote_number || "?"),
-          fecha: cot?.fecha_apert || cot?.created_at?.slice(0, 10) || "",
-          institucion: cot?.institucion || "", vendedor: cot?.vendedor || "",
-          estado: row.commercial_status || cot?.estado || "borrador",
-          workflowStatus: cot?.workflow_status || null,
-          sentToPurchasingAt: cot?.sent_to_purchasing_at || null,
-          empresa: raw.empresa || "", codigo: current.supplier_code || "",
-          marca: raw.marca || "", descr: raw.descr || "", cant: Number(raw.cant) || 1,
-          moneda: raw.moneda, costo, rawMarkup: raw.markup, rawIva: raw.iva,
-          ...(calc || { cARS: costo, pvARSs: 0, pvARSc: 0, mkPct: 0, gm: 0, subtotal: 0, tc: tcG }),
-        });
-      }
-      const merged = legacyItems.map(item => replacements.get(`${item.quoteId}:${item.legacyIndex}`) || item);
-      const legacyKeys = new Set(legacyItems.map(item => `${item.quoteId}:${item.legacyIndex}`));
-      replacements.forEach((item, key) => { if (!legacyKeys.has(key)) merged.push(item); });
-      setItems(merged.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))));
+      setItems(expandCotizaciones(data || []));
     } catch (e) {
       console.error("[CotizadorIntel]", e);
     } finally {
@@ -302,7 +245,6 @@ export default function CotizadorIntel({ profile, onOpenQuote, onEditQuote, onSe
 
   function clearFilters() {
     setSearch(""); setFDesde(""); setFHasta("");
-    setSearchScope("all");
     setFVendedor(""); setFEstado(""); setFMoneda("");
     setFPrecioMin(""); setFPrecioMax("");
   }
@@ -317,7 +259,7 @@ export default function CotizadorIntel({ profile, onOpenQuote, onEditQuote, onSe
   const filtered = useMemo(() => {
     if (!items) return [];
     let res = items;
-    if (searchTokens.length) res = res.filter(i => tokenMatch(i, searchTokens, searchScope));
+    if (searchTokens.length) res = res.filter(i => tokenMatch(i, searchTokens));
     if (fDesde)    res = res.filter(i => i.fecha >= fDesde);
     if (fHasta)    res = res.filter(i => i.fecha <= fHasta);
     if (fVendedor) res = res.filter(i => i.vendedor === fVendedor);
@@ -329,7 +271,7 @@ export default function CotizadorIntel({ profile, onOpenQuote, onEditQuote, onSe
     if (pMin > 0) res = res.filter(i => i.pvARSc >= pMin);
     if (pMax > 0) res = res.filter(i => i.pvARSc <= pMax);
     return sortItems(res, sortKey, sortDir);
-  }, [items, searchTokens, searchScope, fDesde, fHasta, fVendedor, fEstado, fMoneda, fPrecioMin, fPrecioMax, sortKey, sortDir]);
+  }, [items, searchTokens, fDesde, fHasta, fVendedor, fEstado, fMoneda, fPrecioMin, fPrecioMax, sortKey, sortDir]);
 
   /* ── Multi-select (must be after filtered) ── */
   const visibleIds = useMemo(
@@ -789,7 +731,6 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
     { key: "quoteNum",    label: "#Cot."        },
     { key: "institucion", label: "Cliente"      },
     { key: "descr",       label: "Descripción"  },
-    { key: "empresa",     label: "Proveedor"    },
     { key: "cant",        label: "Cant."        },
     { key: "cARS",        label: "Costo ARS"    },
     { key: "pvARSc",      label: "PV c/IVA"     },
@@ -804,11 +745,8 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
     <div className="ci-wrap">
       {/* ── toggle ── */}
       <button className="ci-toggle" onClick={toggle} type="button">
-        <span className="ci-toggle__ico" aria-hidden="true">▥</span>
-        <span className="ci-toggle__copy">
-          <span className="ci-toggle__label">Inteligencia Comercial de Cotizaciones</span>
-          <span className="ci-toggle__description">Historial, precios y comportamiento comercial</span>
-        </span>
+        <span className="ci-toggle__ico">📊</span>
+        <span className="ci-toggle__label">Inteligencia Comercial de Cotizaciones</span>
         {items !== null && (
           <span className="ci-toggle__badge">{items.length} ítems</span>
         )}
@@ -842,28 +780,13 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                     className="ci-search-input"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder={searchScope === "suppliers"
-                      ? "Buscar proveedor…"
-                      : searchScope === "general"
-                        ? "Buscar producto, descripción, código, cliente, vendedor, N° cotización…"
-                        : "Buscar producto, proveedor, descripción, código, cliente, vendedor, N° cotización…"}
+                    placeholder="Buscar producto, descripción, código, cliente, vendedor, N° cotización…"
                     autoComplete="off"
                   />
                   {search && (
                     <button className="ci-search-clear" type="button" onClick={() => setSearch("")}>×</button>
                   )}
                 </div>
-                <select
-                  className="ci-search-scope"
-                  value={searchScope}
-                  onChange={e => setSearchScope(e.target.value)}
-                  aria-label="Elegir dónde buscar"
-                  title="Elegir dónde buscar"
-                >
-                  <option value="all">Buscar en todo</option>
-                  <option value="general">Sin proveedores</option>
-                  <option value="suppliers">Solo proveedores</option>
-                </select>
                 {/* B. Vista toggle Individual/Agrupado */}
                 <div className="ci-view-toggle">
                   <button
@@ -952,50 +875,64 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
               {/* ── KPIs ── */}
               {kpis && (
                 <div className="ci-kpis">
+                  <div className="ci-kpi">
+                    <span>Ítems encontrados</span>
+                    <strong>{kpis.count}</strong>
+                  </div>
                   <div className="ci-kpi ci-kpi--accent">
-                    <span>Resumen</span>
-                    <div className="ci-kpi__summary">
-                      <div><small>Ítems</small><strong>{kpis.count}</strong></div>
-                      <div><small>Último precio</small><strong>{fARS(kpis.lastPrice)}</strong></div>
-                    </div>
-                    <small>Actualizado {fmtDate(kpis.lastDate)}</small>
+                    <span>Último precio</span>
+                    <strong>{fARS(kpis.lastPrice)}</strong>
+                    <small>{fmtDate(kpis.lastDate)}</small>
                   </div>
-
-                  <div className="ci-kpi ci-kpi--range">
-                    <span>Rango de precios</span>
-                    <div className="ci-kpi__metrics ci-kpi__metrics--four">
-                      <div><small>Mínimo</small><strong>{fARS(kpis.minPrice)}</strong></div>
-                      <div><small>Promedio</small><strong>{fARS(kpis.avgPrice)}</strong></div>
-                      <div><small>Máximo</small><strong>{fARS(kpis.maxPrice)}</strong></div>
-                      <div><small>Tendencia</small><strong className={kpis.trend.startsWith("↑") ? "ci-trend--up" : kpis.trend.startsWith("↓") ? "ci-trend--dn" : ""}>{kpis.trend}</strong></div>
-                    </div>
+                  <div className="ci-kpi">
+                    <span>Precio mínimo</span>
+                    <strong>{fARS(kpis.minPrice)}</strong>
                   </div>
-
-                  <div className="ci-kpi ci-kpi--profit">
-                    <span>Rentabilidad</span>
-                    <div className="ci-kpi__metrics">
-                      <div><small>Markup prom.</small><strong>{fPct(kpis.avgMarkup)}</strong><small>Mediana {fPct(kpis.medMarkup)}</small></div>
-                      <div><small>Gross margin</small><strong>{fPct(kpis.avgGM)}</strong><small>Mediana {fPct(kpis.medGM)}</small></div>
-                    </div>
+                  <div className="ci-kpi">
+                    <span>Precio máximo</span>
+                    <strong>{fARS(kpis.maxPrice)}</strong>
+                  </div>
+                  <div className="ci-kpi">
+                    <span>Precio promedio</span>
+                    <strong>{fARS(kpis.avgPrice)}</strong>
+                  </div>
+                  <div className="ci-kpi">
+                    <span>Markup promedio</span>
+                    <strong>{fPct(kpis.avgMarkup)}</strong>
+                    <small>Mediana: {fPct(kpis.medMarkup)}</small>
                     {kpis.mkOutliers > 0 && (
                       <small className="ci-kpi__warn">
-                        ⚠ {kpis.mkOutliers} outlier{kpis.mkOutliers > 1 ? "s" : ""} de markup excluido{kpis.mkOutliers > 1 ? "s" : ""}
-                      </small>
-                    )}
-                    {kpis.gmOutliers > 0 && (
-                      <small className="ci-kpi__warn">
-                        ⚠ {kpis.gmOutliers} outlier{kpis.gmOutliers > 1 ? "s" : ""} de margen excluido{kpis.gmOutliers > 1 ? "s" : ""}
+                        ⚠ {kpis.mkOutliers} outlier{kpis.mkOutliers > 1 ? "s" : ""} excluido{kpis.mkOutliers > 1 ? "s" : ""}
                       </small>
                     )}
                   </div>
-
+                  <div className="ci-kpi">
+                    <span>Gross Margin prom.</span>
+                    <strong>{fPct(kpis.avgGM)}</strong>
+                    <small>Mediana: {fPct(kpis.medGM)}</small>
+                    {kpis.gmOutliers > 0 && (
+                      <small className="ci-kpi__warn">
+                        ⚠ {kpis.gmOutliers} outlier{kpis.gmOutliers > 1 ? "s" : ""} excluido{kpis.gmOutliers > 1 ? "s" : ""}
+                      </small>
+                    )}
+                  </div>
+                  <div className="ci-kpi">
+                    <span>Tendencia precio</span>
+                    <strong className={
+                      kpis.trend.startsWith("↑") ? "ci-trend--up" :
+                      kpis.trend.startsWith("↓") ? "ci-trend--dn" : ""
+                    }>{kpis.trend}</strong>
+                  </div>
                   {kpis.cheapest && (
-                    <div className="ci-kpi ci-kpi--clients">
-                      <span>Posición por cliente</span>
-                      <div><small>Más barato en</small><strong className="ci-kpi__client" title={kpis.cheapest}>{kpis.cheapest}</strong></div>
-                      {kpis.mostExp && kpis.mostExp !== kpis.cheapest && (
-                        <div><small>Más caro en</small><strong className="ci-kpi__client" title={kpis.mostExp}>{kpis.mostExp}</strong></div>
-                      )}
+                    <div className="ci-kpi">
+                      <span>Cotizado más barato en</span>
+                      <strong className="ci-kpi__client">{kpis.cheapest}</strong>
+                    </div>
+                  )}
+                  {kpis.mostExp && kpis.mostExp !== kpis.cheapest && (
+                    <div className="ci-kpi">
+                      <span>Cotizado más caro en</span>
+                      <strong className="ci-kpi__client">{kpis.mostExp}</strong>
                     </div>
                   )}
                   {/* C. Sparkline en KPI row */}
@@ -1194,7 +1131,6 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                           </th>
                         ))}
                         <th className="ci-th-action">Ver</th>
-                        {onSendToPurchasing && <th className="ci-th-action">Compras</th>}
                         {onEditQuote && <th className="ci-th-action">Editar</th>}
                         {onUseInRenglon && <th className="ci-th-action">Usar producto</th>}
                       </tr>
@@ -1242,9 +1178,6 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                               >{conv}%</span>
                             )}
                           </td>
-                          <td className="ci-td-clip" title={item.empresa}>
-                            <Highlight text={item.empresa || "—"} tokens={searchTokens} />
-                          </td>
                           <td className="ci-td-r">{item.cant}</td>
                           {/* Costo ARS + tendencia de costo + alerta de cambio de costo */}
                           <td className="ci-td-r">
@@ -1276,18 +1209,6 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                               Ver
                             </button>
                           </td>
-                          {onSendToPurchasing && (
-                            <td className="ci-td-action">
-                              {item.sentToPurchasingAt || item.workflowStatus ? <span className="ci-estado ci-estado--pendiente_definicion">En Compras</span> : (
-                                <button type="button" className="ci-open-btn" disabled={sendingId === item.quoteId} onClick={async () => {
-                                  setSendingId(item.quoteId);
-                                  const sent = await onSendToPurchasing(item.quoteId);
-                                  if (sent) setItems(prev => prev?.map(row => row.quoteId === item.quoteId ? { ...row, workflowStatus: "pendiente_costos", sentToPurchasingAt: new Date().toISOString() } : row));
-                                  setSendingId(null);
-                                }}>{sendingId === item.quoteId ? "Enviando…" : "Enviar"}</button>
-                              )}
-                            </td>
-                          )}
                           {/* Editar — carga directo en editor */}
                           {onEditQuote && (
                             <td className="ci-td-action">
@@ -1295,9 +1216,9 @@ ${activeFilters ? `<p class="filters">Filtros activos: ${activeFilters}</p>` : "
                                 type="button"
                                 className="ci-open-btn ci-open-btn--edit"
                                 onClick={() => onEditQuote(item.quoteId)}
-                                title={item.estado === "pendiente_definicion" ? "Definir margen y precio con el costo validado" : "Cargar en el editor para modificar"}
+                                title="Cargar en el editor para modificar"
                               >
-                                {item.estado === "pendiente_definicion" ? "Definir precio" : "Editar"}
+                                Editar
                               </button>
                             </td>
                           )}

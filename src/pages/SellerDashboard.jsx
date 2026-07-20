@@ -210,7 +210,7 @@ export default function SellerDashboard({ profile, onNavigate, pageKey }) {
         <div className="p-panel">
           <div className="p-hd">
             <div className="p-hd-left">
-              <span className="p-sub">STORING Medical · CRM</span>
+              <span className="p-sub">MediCross · CRM</span>
               <span className="p-title" style={{ fontSize: 18, fontWeight: 600 }}>Hola, {firstName}</span>
               <span className="p-sub">Resumen del equipo comercial — pipeline, visitas, oportunidades y clientes.</span>
             </div>
@@ -444,6 +444,12 @@ export default function SellerDashboard({ profile, onNavigate, pageKey }) {
           </div>
 
         </div>
+
+        <footer style={{ textAlign: "center", padding: "8px 0 4px" }}>
+          <a href="https://www.linkedin.com/in/danieletchudez/" target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#4b5563", textDecoration: "none" }}>
+            Designed by Daniel Etchudez
+          </a>
+        </footer>
 
       </div>
     </Layout>

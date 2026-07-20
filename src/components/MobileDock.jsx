@@ -4,7 +4,6 @@ import {
   CheckSquare, FileText, Briefcase, Package, Truck, Megaphone, Bell,
   BarChart2, BarChart3, Users, Settings, User, ChevronRight, LogOut, Moon, Sun,
   Plus, X, Eye, EyeOff, RotateCcw, RefreshCw,
-  ShoppingCart,
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -21,7 +20,6 @@ const DOCK_CONTEXTS = {
   tasks:            { Icon: CheckSquare,  label: "Tarea",       action: "tasks" },
   tenders:          { Icon: Briefcase,    label: "Licitación",  action: "tenders" },
   cotizador:        { Icon: FileText,     label: "Cotización",  action: "cotizador" },
-  purchases:        { Icon: ShoppingCart, label: "Compras",     action: "purchases" },
   products:         { Icon: Package,      label: "Producto",    action: "products" },
   suppliers:        { Icon: Truck,        label: "Proveedor",   action: "suppliers" },
   campaigns:        { Icon: Megaphone,    label: "Campaña",     action: "campaigns" },
@@ -45,7 +43,6 @@ const ALL_MODULES = [
   { key: "suppliers",      label: "Proveedores",   Icon: Truck },
   { key: "campaigns",      label: "Campañas",      Icon: Megaphone },
   { key: "cotizador",      label: "Cotizador",     Icon: FileText },
-  { key: "purchases",      label: "Compras",       Icon: ShoppingCart },
 ];
 
 const PAGE_LABELS = {
@@ -54,7 +51,6 @@ const PAGE_LABELS = {
   tasks: "Tareas", habits: "Hábitos", products: "Productos", salesAnalytics: "Análisis",
   biComercial: "BI Comercial",
   suppliers: "Proveedores", campaigns: "Campañas", cotizador: "Cotizador",
-  purchases: "Compras",
   notifications: "Alertas", settings: "Configuración",
   managerDashboard: "Dashboard", sellerDashboard: "Mi Panel",
   accountDetail: "Detalle Cliente", todayActions: "Acciones Hoy",
